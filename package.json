@@ -50,11 +50,15 @@
     "typescript": "^5.0.0"
   },
   "dependencies": {
+    "@types/markdown-it": "^14.1.2",
     "chalk": "^5.0.0",
     "commander": "^11.0.0",
     "fs-extra": "^11.0.0",
     "inquirer": "^9.0.0",
     "markdown-it": "^14.0.0",
+    "markdown-it-anchor": "^9.2.0",
+    "markdown-it-attrs": "^4.3.1",
+    "markdown-it-table-of-contents": "^1.0.0",
     "ora": "^7.0.0",
     "puppeteer": "^21.0.0"
   }
