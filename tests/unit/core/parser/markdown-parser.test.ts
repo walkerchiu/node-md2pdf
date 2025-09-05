@@ -2,7 +2,7 @@
  * Unit tests for MarkdownParser
  */
 
-import { MarkdownParser } from '@/core/parser';
+import { MarkdownParser } from '../../../../src/core/parser';
 import { readFileSync } from 'fs';
 
 // Mock file system for error testing
