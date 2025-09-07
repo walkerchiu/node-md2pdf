@@ -2,14 +2,14 @@ module.exports = {
   preset: 'ts-jest',
   testEnvironment: 'node',
   
-  // 測試檔案路徑
+  // Test file paths
   testMatch: [
     '<rootDir>/tests/unit/**/*.test.ts',
     '<rootDir>/tests/integration/**/*.test.ts',
     '<rootDir>/tests/e2e/**/*.test.ts'
   ],
   
-  // 模組路徑對應
+  // Module path mapping
   moduleNameMapper: {
     '^@/core/(.*)$': '<rootDir>/src/core/$1',
     '^@/cli/(.*)$': '<rootDir>/src/cli/$1',
@@ -18,7 +18,7 @@ module.exports = {
     '^@/types$': '<rootDir>/src/types/index.ts'
   },
   
-  // 覆蓋率設定
+  // Coverage configuration
   collectCoverage: true,
   coverageDirectory: 'coverage',
   coverageReporters: ['text', 'lcov', 'html'],
@@ -31,14 +31,14 @@ module.exports = {
     }
   },
   
-  // 忽略檔案
+  // Ignore patterns
   testPathIgnorePatterns: [
     '/node_modules/',
     '/dist/',
     '/coverage/'
   ],
   
-  // 測試設定
+  // Test setup
   setupFilesAfterEnv: ['<rootDir>/tests/setup.ts'],
   verbose: true,
   clearMocks: true,
