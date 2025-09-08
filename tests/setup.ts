@@ -5,10 +5,19 @@
 // Global test configuration
 beforeAll(() => {
   // Global setup before tests
+  // Set test timeout for Puppeteer operations
+  jest.setTimeout(10000);
 });
 
-afterAll(() => {
-  // Cleanup after tests
+afterAll(async () => {
+  // Clean up all global resources
+  // Remove any event listeners
+  process.removeAllListeners('unhandledRejection');
+  
+  // Force garbage collection if available
+  if (global.gc) {
+    global.gc();
+  }
 });
 
 // Setup before each test

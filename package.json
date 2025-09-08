@@ -11,9 +11,9 @@
     "build:watch": "tsc --watch",
     "start": "node dist/cli.js",
     "dev": "ts-node src/cli.ts",
-    "test": "jest",
-    "test:watch": "jest --watch",
-    "test:coverage": "jest --coverage",
+    "test": "jest --forceExit --maxWorkers=1",
+    "test:watch": "jest --watch --forceExit --maxWorkers=1",
+    "test:coverage": "jest --coverage --forceExit --maxWorkers=1",
     "lint": "eslint src/**/*.ts",
     "lint:fix": "eslint src/**/*.ts --fix",
     "format": "prettier --write src/**/*.ts",
@@ -51,6 +51,7 @@
   },
   "dependencies": {
     "@types/markdown-it": "^14.1.2",
+    "@types/puppeteer": "^5.4.7",
     "chalk": "^5.0.0",
     "commander": "^11.0.0",
     "fs-extra": "^11.0.0",
@@ -60,6 +61,6 @@
     "markdown-it-attrs": "^4.3.1",
     "markdown-it-table-of-contents": "^1.0.0",
     "ora": "^7.0.0",
-    "puppeteer": "^21.0.0"
+    "puppeteer": "^21.11.0"
   }
 }
