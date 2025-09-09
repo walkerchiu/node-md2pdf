@@ -1,7 +1,8 @@
 module.exports = {
   parser: '@typescript-eslint/parser',
   extends: [
-    '@typescript-eslint/recommended',
+    'eslint:recommended',
+    'plugin:@typescript-eslint/recommended',
     'prettier'
   ],
   plugins: [
@@ -23,7 +24,7 @@ module.exports = {
     '@typescript-eslint/no-unused-vars': ['error', { 'argsIgnorePattern': '^_' }],
     '@typescript-eslint/explicit-function-return-type': 'warn',
     '@typescript-eslint/no-explicit-any': 'warn',
-    '@typescript-eslint/prefer-const': 'error',
+    'prefer-const': 'error',
     'no-console': 'warn'
   },
   ignorePatterns: [
