@@ -2,9 +2,12 @@
  * Interactive CLI mode
  */
 
-import inquirer from 'inquirer';
 import chalk from 'chalk';
+import ora from 'ora';
 import { ConversionConfig } from '../../types';
+import { MarkdownParser } from '../../core/parser';
+import { PDFGenerator } from '../../core/pdf';
+import { StyleOptions } from '../../core/pdf/types';
 
 export class InteractiveMode {
   /**
@@ -23,9 +26,7 @@ export class InteractiveMode {
       const confirmed = await this.confirmConfig(config);
 
       if (confirmed) {
-        console.log(chalk.green('🚀 Starting conversion...'));
-        // TODO: Implement actual conversion logic
-        console.log(chalk.green('✅ Conversion completed!'));
+        await this.performConversion(config);
       } else {
         console.log(chalk.yellow('❌ Conversion cancelled'));
       }
@@ -39,7 +40,8 @@ export class InteractiveMode {
    * Get conversion configuration
    */
   private async getConversionConfig(): Promise<ConversionConfig> {
-    const answers = await inquirer.prompt([
+    const inquirer = await import('inquirer');
+    const answers = await (inquirer as any).default.prompt([
       {
         type: 'input',
         name: 'inputPath',
@@ -109,7 +111,8 @@ export class InteractiveMode {
     console.log(chalk.gray('─'.repeat(50)));
     console.log();
 
-    const { confirmed } = await inquirer.prompt([
+    const inquirer = await import('inquirer');
+    const { confirmed } = await (inquirer as any).default.prompt([
       {
         type: 'confirm',
         name: 'confirmed',
@@ -119,5 +122,103 @@ export class InteractiveMode {
     ]);
 
     return confirmed;
+  }
+
+  /**
+   * Perform the actual conversion process
+   */
+  private async performConversion(config: ConversionConfig): Promise<void> {
+    const spinner = ora('🚀 Starting conversion process...').start();
+    
+    try {
+      // Step 1: Validate input file
+      spinner.text = '📄 Validating input file...';
+      const { existsSync } = await import('fs');
+      
+      if (!existsSync(config.inputPath)) {
+        throw new Error(`Input file not found: ${config.inputPath}`);
+      }
+      
+      // Step 2: Initialize parser and generator
+      spinner.text = '🔧 Initializing parser and PDF generator...';
+      const parser = new MarkdownParser();
+      const pdfGenerator = new PDFGenerator({
+        margin: {
+          top: '1in',
+          right: '1in', 
+          bottom: '1in',
+          left: '1in'
+        },
+        displayHeaderFooter: config.includePageNumbers,
+        footerTemplate: config.includePageNumbers ? 
+          '<div style="font-size:10px; width:100%; text-align:center;">Page <span class="pageNumber"></span> of <span class="totalPages"></span></div>' :
+          '',
+        printBackground: true
+      });
+      
+      // Step 3: Parse Markdown
+      spinner.text = '📖 Parsing Markdown content...';
+      const parsed = parser.parseFile(config.inputPath);
+      
+      // Step 4: Generate PDF
+      spinner.text = '📑 Generating PDF document...';
+      const outputPath = config.outputPath || config.inputPath.replace(/\.(md|markdown)$/, '.pdf');
+      
+      const options: {
+        title?: string;
+        customCSS?: string;
+        styleOptions?: StyleOptions;
+      } = {
+        title: config.inputPath.replace(/.*[/\\]/, '').replace(/\.(md|markdown)$/, '')
+      };
+      
+      if (config.chineseFontSupport) {
+        options.styleOptions = {
+          fontFamily: 'Noto Sans CJK SC, Arial, sans-serif'
+        };
+      }
+      
+      const result = await pdfGenerator.generatePDF(
+        parsed.content,
+        outputPath,
+        options
+      );
+      
+      // Step 5: Clean up
+      await pdfGenerator.close();
+      
+      if (result.success) {
+        spinner.succeed(chalk.green('✅ Conversion completed successfully!'));
+        console.log();
+        console.log(chalk.cyan('📄 Conversion Results:'));
+        console.log(chalk.gray('─'.repeat(50)));
+        console.log(`${chalk.bold('Output file:')} ${result.outputPath}`);
+        if (result.metadata) {
+          console.log(`${chalk.bold('Pages:')} ${result.metadata.pages}`);
+          console.log(`${chalk.bold('File size:')} ${this.formatBytes(result.metadata.fileSize)}`);
+          console.log(`${chalk.bold('Generation time:')} ${result.metadata.generationTime}ms`);
+        }
+        console.log(chalk.gray('─'.repeat(50)));
+        console.log();
+      } else {
+        spinner.fail(chalk.red('❌ Conversion failed!'));
+        console.error(chalk.red('Error:'), result.error);
+        throw new Error(result.error || 'Unknown conversion error');
+      }
+      
+    } catch (error) {
+      spinner.fail(chalk.red('❌ Conversion failed!'));
+      throw error;
+    }
+  }
+  
+  /**
+   * Format bytes to human readable string
+   */
+  private formatBytes(bytes: number): string {
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    if (bytes === 0) return '0 Bytes';
+    const i = Math.floor(Math.log(bytes) / Math.log(1024));
+    return Math.round(bytes / Math.pow(1024, i) * 100) / 100 + ' ' + sizes[i];
   }
 }

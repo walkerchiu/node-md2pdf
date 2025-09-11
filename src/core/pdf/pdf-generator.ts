@@ -33,18 +33,28 @@ export class PDFGenerator {
 
     try {
       this.browser = await puppeteer.launch({
-        headless: 'new',
+        headless: "new",
+        timeout: 30000,
         args: [
           '--no-sandbox',
           '--disable-setuid-sandbox',
           '--disable-dev-shm-usage',
           '--disable-gpu',
-          '--font-render-hinting=none',
-          '--disable-font-subpixel-positioning'
+          '--disable-web-security',
+          '--disable-features=VizDisplayCompositor'
         ]
       });
+      
+      // Test the browser connection
+      const page = await this.browser.newPage();
+      await page.close();
     } catch (error) {
-      const errorMsg = error instanceof Error ? error.message : JSON.stringify(error);
+      // Only log in development/debug mode
+      if (process.env.NODE_ENV === 'development' || process.env.DEBUG) {
+        console.error('Puppeteer launch error:', error);
+      }
+      const errorMsg = error instanceof Error ? error.message : 
+                       typeof error === 'object' ? JSON.stringify(error, null, 2) : String(error);
       throw new Error(`Failed to initialize PDF generator: ${errorMsg}`);
     }
   }

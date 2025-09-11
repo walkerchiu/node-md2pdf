@@ -8,12 +8,9 @@ import { PDFGenerator } from '../../../src/core/pdf';
 import { join } from 'path';
 import { existsSync, rmSync, mkdirSync } from 'fs';
 
-// Only skip if explicitly disabled
-const shouldSkipPuppeteerTests = process.env.SKIP_PUPPETEER_TESTS === 'true';
+// Run all integration tests - handle Puppeteer environment conditionally within tests
 
-const describeConditional = shouldSkipPuppeteerTests ? describe.skip : describe;
-
-describeConditional('Markdown to PDF Integration', () => {
+describe('Markdown to PDF Integration', () => {
   let parser: MarkdownParser;
   let pdfGenerator: PDFGenerator;
   const fixturesPath = join(__dirname, '../../fixtures/markdown');
@@ -41,31 +38,24 @@ describeConditional('Markdown to PDF Integration', () => {
   let canRunPuppeteer = false;
 
   beforeAll(async () => {
-    // Simple environment check without creating PDFGenerator instances
-    canRunPuppeteer = false; // Default to false in restricted environments
-    
-    // Only try to validate if we're not in CI or sandboxed environment
-    if (!process.env.CI && !process.env.JEST_WORKER_ID) {
-      try {
-        const testGenerator = new PDFGenerator();
-        const validation = await testGenerator.validateEnvironment();
-        canRunPuppeteer = validation.isValid;
-        
-        // Ensure immediate cleanup
-        await testGenerator.close();
-        
-        if (!canRunPuppeteer) {
-          console.warn('⚠️  Puppeteer environment validation failed');
-          console.warn('ℹ️  Tests will verify error handling instead of actual PDF generation');
-        } else {
-          console.log('✅ Puppeteer environment validation passed - will test actual PDF generation');
-        }
-      } catch (error) {
-        canRunPuppeteer = false;
-        console.warn('⚠️  Puppeteer environment check failed, using fallback mode');
+    // Check Puppeteer environment capability
+    try {
+      const testGenerator = new PDFGenerator();
+      const validation = await testGenerator.validateEnvironment();
+      canRunPuppeteer = validation.isValid;
+      
+      // Ensure immediate cleanup
+      await testGenerator.close();
+      
+      if (!canRunPuppeteer) {
+        console.warn('⚠️  Puppeteer environment validation failed');
+        console.warn('ℹ️  Tests will verify error handling instead of actual PDF generation');
+      } else {
+        console.log('✅ Puppeteer environment validation passed - will test actual PDF generation');
       }
-    } else {
-      console.warn('ℹ️  Running in CI/restricted environment - PDF tests will use fallback mode');
+    } catch (error) {
+      canRunPuppeteer = false;
+      console.warn('⚠️  Puppeteer environment check failed, using fallback mode');
     }
   });
   
@@ -228,7 +218,7 @@ describeConditional('Markdown to PDF Integration', () => {
     });
 
     it('should handle PDF generation errors gracefully', async () => {
-      const invalidOutputPath = 'invalid:/path/to/output.pdf';
+      const invalidOutputPath = '/nonexistent/directory/that/cannot/be/created/test.pdf';
       const parseResult = parser.parse('# Simple Test');
       
       const pdfResult = await pdfGenerator.generatePDF(

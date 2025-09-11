@@ -94,11 +94,15 @@ describe('PDFGenerator', () => {
       await generator.initialize();
 
       expect(puppeteer.launch).toHaveBeenCalledWith({
-        headless: 'new',
+        headless: "new",
+        timeout: 30000,
         args: expect.arrayContaining([
           '--no-sandbox',
           '--disable-setuid-sandbox',
-          '--disable-dev-shm-usage'
+          '--disable-dev-shm-usage',
+          '--disable-gpu',
+          '--disable-web-security',
+          '--disable-features=VizDisplayCompositor'
         ])
       });
     });
