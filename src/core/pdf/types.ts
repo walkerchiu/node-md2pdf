@@ -13,6 +13,17 @@ export interface PDFGeneratorOptions {
   printBackground?: boolean;
   scale?: number;
   preferCSSPageSize?: boolean;
+  /** Table of contents configuration */
+  toc?: {
+    /** Enable TOC generation */
+    enabled?: boolean;
+    /** Maximum depth of headings (1-6) */
+    maxDepth?: number;
+    /** Include page numbers in TOC */
+    includePageNumbers?: boolean;
+    /** Custom TOC title */
+    title?: string;
+  };
 }
 
 export interface PDFGenerationResult {

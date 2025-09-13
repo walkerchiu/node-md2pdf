@@ -153,7 +153,13 @@ export class InteractiveMode {
         footerTemplate: config.includePageNumbers ? 
           '<div style="font-size:10px; width:100%; text-align:center;">Page <span class="pageNumber"></span> of <span class="totalPages"></span></div>' :
           '',
-        printBackground: true
+        printBackground: true,
+        toc: {
+          enabled: true,
+          maxDepth: config.tocDepth,
+          includePageNumbers: config.includePageNumbers,
+          title: '目錄'
+        }
       });
       
       // Step 3: Parse Markdown
@@ -168,8 +174,10 @@ export class InteractiveMode {
         title?: string;
         customCSS?: string;
         styleOptions?: StyleOptions;
+        headings?: any[];
       } = {
-        title: config.inputPath.replace(/.*[/\\]/, '').replace(/\.(md|markdown)$/, '')
+        title: config.inputPath.replace(/.*[/\\]/, '').replace(/\.(md|markdown)$/, ''),
+        headings: parsed.headings
       };
       
       if (config.chineseFontSupport) {

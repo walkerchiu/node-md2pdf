@@ -3,6 +3,8 @@ import { existsSync, mkdirSync } from 'fs';
 import { dirname, resolve } from 'path';
 import { PDFGeneratorOptions, PDFGenerationResult, StyleOptions } from './types';
 import { PDFTemplates } from './templates';
+import { TOCGenerator } from '../toc';
+import { Heading } from '../../types/index';
 
 export class PDFGenerator {
   private browser: Browser | null = null;
@@ -16,13 +18,13 @@ export class PDFGenerator {
         top: '1in',
         right: '1in',
         bottom: '1in',
-        left: '1in'
+        left: '1in',
       },
       displayHeaderFooter: false,
       printBackground: true,
       scale: 1,
       preferCSSPageSize: false,
-      ...options
+      ...options,
     };
   }
 
@@ -33,7 +35,7 @@ export class PDFGenerator {
 
     try {
       this.browser = await puppeteer.launch({
-        headless: "new",
+        headless: 'new',
         timeout: 30000,
         args: [
           '--no-sandbox',
@@ -41,20 +43,25 @@ export class PDFGenerator {
           '--disable-dev-shm-usage',
           '--disable-gpu',
           '--disable-web-security',
-          '--disable-features=VizDisplayCompositor'
-        ]
+          '--disable-features=VizDisplayCompositor',
+        ],
       });
-      
+
       // Test the browser connection
       const page = await this.browser.newPage();
       await page.close();
     } catch (error) {
       // Only log in development/debug mode
       if (process.env.NODE_ENV === 'development' || process.env.DEBUG) {
+        // eslint-disable-next-line no-console
         console.error('Puppeteer launch error:', error);
       }
-      const errorMsg = error instanceof Error ? error.message : 
-                       typeof error === 'object' ? JSON.stringify(error, null, 2) : String(error);
+      const errorMsg =
+        error instanceof Error
+          ? error.message
+          : typeof error === 'object'
+            ? JSON.stringify(error, null, 2)
+            : String(error);
       throw new Error(`Failed to initialize PDF generator: ${errorMsg}`);
     }
   }
@@ -66,6 +73,7 @@ export class PDFGenerator {
       title?: string;
       customCSS?: string;
       styleOptions?: StyleOptions;
+      headings?: Heading[];
     } = {}
   ): Promise<PDFGenerationResult> {
     const startTime = Date.now();
@@ -87,23 +95,45 @@ export class PDFGenerator {
         throw new Error('Output path must end with .pdf extension');
       }
 
-      const fullHTML = PDFTemplates.getFullHTML(
-        htmlContent,
-        options.title,
-        options.customCSS
-      );
+      // Generate TOC if enabled and headings provided
+      let fullHTML: string;
+      if (this.options.toc?.enabled && options.headings && options.headings.length > 0) {
+        const tocGenerator = new TOCGenerator({
+          maxDepth: this.options.toc.maxDepth || 3,
+          includePageNumbers: this.options.toc.includePageNumbers || false,
+          cssClasses: {
+            container: 'toc-container',
+            title: 'toc-title',
+            list: 'toc-list',
+            item: 'toc-item',
+            link: 'toc-link',
+            pageNumber: 'toc-page-number',
+          },
+        });
+
+        const tocResult = tocGenerator.generateTOC(options.headings);
+
+        fullHTML = PDFTemplates.getFullHTMLWithTOC(
+          tocResult.html,
+          htmlContent,
+          options.title,
+          options.customCSS
+        );
+      } else {
+        fullHTML = PDFTemplates.getFullHTML(htmlContent, options.title, options.customCSS);
+      }
 
       const page = await this.browser.newPage();
 
       try {
-        await page.setContent(fullHTML, { 
+        await page.setContent(fullHTML, {
           waitUntil: 'networkidle0',
-          timeout: 30000 
+          timeout: 30000,
         });
 
         const pdfOptions: PDFOptions = {
           path: resolvedOutputPath,
-          format: this.options.format as any,
+          format: this.options.format as 'A4' | 'A3' | 'A5' | 'Legal' | 'Letter' | 'Tabloid',
           landscape: this.options.orientation === 'landscape',
           margin: this.options.margin || { top: '1in', right: '1in', bottom: '1in', left: '1in' },
           displayHeaderFooter: this.options.displayHeaderFooter || false,
@@ -111,7 +141,7 @@ export class PDFGenerator {
           footerTemplate: this.options.footerTemplate || '',
           printBackground: this.options.printBackground || true,
           scale: this.options.scale || 1,
-          preferCSSPageSize: this.options.preferCSSPageSize || false
+          preferCSSPageSize: this.options.preferCSSPageSize || false,
         };
 
         const pdfBuffer = await page.pdf(pdfOptions);
@@ -124,20 +154,18 @@ export class PDFGenerator {
           metadata: {
             pages: await this.getPageCount(page),
             fileSize: pdfBuffer.length,
-            generationTime
-          }
+            generationTime,
+          },
         };
 
         return result;
-
       } finally {
         await page.close();
       }
-
     } catch (error) {
       return {
         success: false,
-        error: `PDF generation failed: ${error instanceof Error ? error.message : String(error)}`
+        error: `PDF generation failed: ${error instanceof Error ? error.message : String(error)}`,
       };
     }
   }
@@ -149,13 +177,14 @@ export class PDFGenerator {
       title?: string;
       customCSS?: string;
       styleOptions?: StyleOptions;
+      headings?: Heading[];
     } = {}
   ): Promise<PDFGenerationResult> {
     try {
       if (!existsSync(inputPath)) {
         return {
           success: false,
-          error: `Input file not found: ${inputPath}`
+          error: `Input file not found: ${inputPath}`,
         };
       }
 
@@ -163,11 +192,10 @@ export class PDFGenerator {
       const htmlContent = readFileSync(inputPath, 'utf-8');
 
       return await this.generatePDF(htmlContent, outputPath, options);
-
     } catch (error) {
       return {
         success: false,
-        error: `Failed to read input file: ${error instanceof Error ? error.message : String(error)}`
+        error: `Failed to read input file: ${error instanceof Error ? error.message : String(error)}`,
       };
     }
   }
@@ -192,7 +220,7 @@ export class PDFGenerator {
 
     try {
       await this.initialize();
-      
+
       if (!this.browser) {
         errors.push('Failed to launch Puppeteer browser');
       } else {
@@ -201,12 +229,14 @@ export class PDFGenerator {
         await page.close();
       }
     } catch (error) {
-      errors.push(`Puppeteer initialization failed: ${error instanceof Error ? error.message : String(error)}`);
+      errors.push(
+        `Puppeteer initialization failed: ${error instanceof Error ? error.message : String(error)}`
+      );
     }
 
     return {
       isValid: errors.length === 0,
-      errors
+      errors,
     };
   }
 
@@ -216,9 +246,9 @@ export class PDFGenerator {
         // Add timeout to prevent hanging
         await Promise.race([
           this.browser.close(),
-          new Promise<void>((_, reject) => 
+          new Promise<void>((_, reject) =>
             setTimeout(() => reject(new Error('Browser close timeout')), 3000)
-          )
+          ),
         ]);
       } catch (error) {
         // Force kill browser process if normal close fails
