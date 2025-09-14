@@ -13,14 +13,14 @@ import puppeteer from 'puppeteer';
 
 const mockBrowser = {
   newPage: jest.fn(),
-  close: jest.fn()
+  close: jest.fn(),
 };
 
 const mockPage = {
   setContent: jest.fn(),
   pdf: jest.fn(),
   close: jest.fn(),
-  evaluate: jest.fn()
+  evaluate: jest.fn(),
 };
 
 (puppeteer.launch as jest.Mock).mockResolvedValue(mockBrowser);
@@ -70,7 +70,7 @@ describe('PDFGenerator', () => {
       const customOptions: PDFGeneratorOptions = {
         format: 'A3',
         orientation: 'landscape',
-        printBackground: false
+        printBackground: false,
       };
 
       const customGenerator = new PDFGenerator(customOptions);
@@ -94,7 +94,7 @@ describe('PDFGenerator', () => {
       await generator.initialize();
 
       expect(puppeteer.launch).toHaveBeenCalledWith({
-        headless: "new",
+        headless: 'new',
         timeout: 30000,
         args: expect.arrayContaining([
           '--no-sandbox',
@@ -102,15 +102,37 @@ describe('PDFGenerator', () => {
           '--disable-dev-shm-usage',
           '--disable-gpu',
           '--disable-web-security',
-          '--disable-features=VizDisplayCompositor'
-        ])
+          '--disable-features=VizDisplayCompositor',
+        ]),
       });
     });
 
     it('should handle initialization errors', async () => {
       (puppeteer.launch as jest.Mock).mockRejectedValueOnce(new Error('Launch failed'));
 
-      await expect(generator.initialize()).rejects.toThrow('Failed to initialize PDF generator: Launch failed');
+      await expect(generator.initialize()).rejects.toThrow(
+        'Failed to initialize PDF generator: Launch failed'
+      );
+    });
+
+    it('should log errors in development mode', async () => {
+      const originalEnv = process.env.NODE_ENV;
+      process.env.NODE_ENV = 'development';
+
+      const consoleSpy = jest.spyOn(console, 'error').mockImplementation();
+
+      (puppeteer.launch as jest.Mock).mockRejectedValueOnce(new Error('Launch failed'));
+
+      try {
+        await generator.initialize();
+      } catch (error) {
+        // Expected to throw
+      }
+
+      expect(consoleSpy).toHaveBeenCalledWith('Puppeteer launch error:', expect.any(Error));
+
+      consoleSpy.mockRestore();
+      process.env.NODE_ENV = originalEnv;
     });
 
     it('should not reinitialize if already initialized', async () => {
@@ -124,7 +146,7 @@ describe('PDFGenerator', () => {
   describe('PDF Generation', () => {
     it('should generate PDF from HTML content', async () => {
       const htmlContent = '<h1>Test Document</h1><p>This is a test.</p>';
-      
+
       const result = await generator.generatePDF(htmlContent, testOutputPath);
 
       expect(result.success).toBe(true);
@@ -137,7 +159,7 @@ describe('PDFGenerator', () => {
       const htmlContent = '<h1>Test Document</h1>';
       const options = {
         title: 'Custom Title',
-        customCSS: 'body { color: red; }'
+        customCSS: 'body { color: red; }',
       };
 
       const result = await generator.generatePDF(htmlContent, testOutputPath, options);
@@ -149,6 +171,31 @@ describe('PDFGenerator', () => {
       );
       expect(mockPage.setContent).toHaveBeenCalledWith(
         expect.stringContaining('body { color: red; }'),
+        expect.any(Object)
+      );
+    });
+
+    it('should generate PDF with TOC enabled', async () => {
+      // Set up generator with TOC enabled
+      const tocGenerator = new PDFGenerator({
+        toc: {
+          enabled: true,
+          maxDepth: 3,
+          includePageNumbers: false,
+        },
+      });
+
+      await tocGenerator.initialize();
+
+      const htmlContent = '<h1>Test Document</h1>';
+      const headings = [{ level: 1, text: 'Test Heading', id: 'heading1', anchor: '#heading1' }];
+      const options = { headings };
+
+      const result = await tocGenerator.generatePDF(htmlContent, testOutputPath, options);
+
+      expect(result.success).toBe(true);
+      expect(mockPage.setContent).toHaveBeenCalledWith(
+        expect.stringContaining('toc-container'),
         expect.any(Object)
       );
     });
@@ -175,7 +222,7 @@ describe('PDFGenerator', () => {
 
     it('should handle PDF generation errors', async () => {
       mockPage.pdf.mockRejectedValueOnce(new Error('PDF generation failed'));
-      
+
       const htmlContent = '<h1>Test</h1>';
       const result = await generator.generatePDF(htmlContent, testOutputPath);
 
@@ -203,7 +250,7 @@ describe('PDFGenerator', () => {
 
     it('should handle non-existent input file', async () => {
       const nonExistentPath = join(testOutputDir, 'non-existent.html');
-      
+
       const result = await generator.generatePDFFromFile(nonExistentPath, testOutputPath);
 
       expect(result.success).toBe(false);
@@ -254,7 +301,7 @@ describe('PDFGenerator', () => {
   describe('Page Count Calculation', () => {
     it('should calculate page count', async () => {
       mockPage.evaluate.mockResolvedValueOnce(2);
-      
+
       const htmlContent = '<h1>Multi-page content</h1>';
       const result = await generator.generatePDF(htmlContent, testOutputPath);
 
@@ -264,7 +311,7 @@ describe('PDFGenerator', () => {
 
     it('should handle page count calculation errors', async () => {
       mockPage.evaluate.mockRejectedValueOnce(new Error('Evaluation failed'));
-      
+
       const htmlContent = '<h1>Test</h1>';
       const result = await generator.generatePDF(htmlContent, testOutputPath);
 
@@ -276,7 +323,7 @@ describe('PDFGenerator', () => {
   describe('Chinese Content Support', () => {
     it('should handle Chinese content', async () => {
       const chineseContent = '<h1>中文標題</h1><p>這是中文內容測試。</p>';
-      
+
       const result = await generator.generatePDF(chineseContent, testOutputPath);
 
       expect(result.success).toBe(true);
@@ -294,14 +341,16 @@ describe('PDFGenerator', () => {
   describe('Edge Cases and Error Branches', () => {
     it('should handle browser not initialized after initialization attempt', async () => {
       // Mock the case where browser initialization appears successful but browser is null
-      const mockInitialize = jest.spyOn(generator as any, 'initialize').mockResolvedValueOnce(undefined);
+      const mockInitialize = jest
+        .spyOn(generator as any, 'initialize')
+        .mockResolvedValueOnce(undefined);
       (generator as any).browser = null;
 
       const result = await generator.generatePDF('<h1>Test</h1>', testOutputPath);
 
       expect(result.success).toBe(false);
       expect(result.error).toContain('Browser not initialized');
-      
+
       mockInitialize.mockRestore();
     });
 
@@ -309,16 +358,16 @@ describe('PDFGenerator', () => {
       // Create a file path that would cause a read error (not permissions issue, but encoding issue)
       const testInputPath = join(testOutputDir, 'test-input.html');
       writeFileSync(testInputPath, '<h1>Test</h1>', 'utf-8');
-      
+
       // Mock fs to throw an error
       const mockReadFileSync = jest.fn().mockImplementation(() => {
         throw new Error('File read error - encoding issue');
       });
-      
+
       // Mock fs to throw an error on readFileSync
       jest.doMock('fs', () => ({
         ...jest.requireActual('fs'),
-        readFileSync: mockReadFileSync
+        readFileSync: mockReadFileSync,
       }));
 
       // Force re-import of the method that uses fs
@@ -326,7 +375,7 @@ describe('PDFGenerator', () => {
 
       expect(result.success).toBe(false);
       expect(result.error).toContain('Failed to read input file');
-      
+
       // Restore original
       jest.doMock('fs', () => jest.requireActual('fs'));
     });
@@ -334,21 +383,23 @@ describe('PDFGenerator', () => {
     it('should handle validation environment error when browser fails after initialization', async () => {
       // Create a new generator instance and mock initialization to fail
       const testGenerator = new PDFGenerator();
-      const mockInitialize = jest.spyOn(testGenerator as any, 'initialize').mockResolvedValueOnce(undefined);
+      const mockInitialize = jest
+        .spyOn(testGenerator as any, 'initialize')
+        .mockResolvedValueOnce(undefined);
       (testGenerator as any).browser = null;
 
       const validation = await testGenerator.validateEnvironment();
 
       expect(validation.isValid).toBe(false);
       expect(validation.errors).toContain('Failed to launch Puppeteer browser');
-      
+
       mockInitialize.mockRestore();
     });
 
     it('should handle page evaluation errors in getPageCount', async () => {
       // Mock page.evaluate to throw an error
       mockPage.evaluate.mockRejectedValueOnce(new Error('Page evaluation failed'));
-      
+
       const htmlContent = '<h1>Test content</h1>';
       const result = await generator.generatePDF(htmlContent, testOutputPath);
 

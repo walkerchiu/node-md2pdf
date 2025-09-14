@@ -11,6 +11,7 @@ const mockReadFileSync = readFileSync as jest.MockedFunction<typeof readFileSync
 
 describe('MarkdownParser', () => {
   let parser: MarkdownParser;
+
   beforeEach(() => {
     parser = new MarkdownParser();
     jest.clearAllMocks();
@@ -20,6 +21,7 @@ describe('MarkdownParser', () => {
     it('should parse simple markdown to HTML', () => {
       const markdown = '# Hello World\n\nThis is a paragraph.';
       const result = parser.parse(markdown);
+
       expect(result.content).toContain('<h1');
       expect(result.content).toContain('Hello World');
       expect(result.content).toContain('<p>This is a paragraph.</p>');
@@ -27,12 +29,14 @@ describe('MarkdownParser', () => {
 
     it('should handle empty content', () => {
       const result = parser.parse('');
+
       expect(result.content).toBe('');
       expect(result.headings).toEqual([]);
     });
 
     it('should handle content with only whitespace', () => {
       const result = parser.parse('   \n\n   \t  \n');
+
       expect(result.content.trim()).toBe('');
       expect(result.headings).toEqual([]);
     });
@@ -47,18 +51,19 @@ describe('MarkdownParser', () => {
 ##### Heading 5
 ###### Heading 6`;
       const result = parser.parse(markdown);
+
       expect(result.headings).toHaveLength(6);
       expect(result.headings[0]).toEqual({
         level: 1,
         text: 'Heading 1',
         id: 'heading-1',
-        anchor: '#heading-1'
+        anchor: '#heading-1',
       });
       expect(result.headings[5]).toEqual({
         level: 6,
         text: 'Heading 6',
         id: 'heading-6',
-        anchor: '#heading-6'
+        anchor: '#heading-6',
       });
     });
 
@@ -69,31 +74,34 @@ describe('MarkdownParser', () => {
 Heading 2
 ---------`;
       const result = parser.parse(markdown);
+
       expect(result.headings).toHaveLength(2);
       expect(result.headings[0]).toEqual({
         level: 1,
         text: 'Heading 1',
         id: 'heading-1',
-        anchor: '#heading-1'
+        anchor: '#heading-1',
       });
       expect(result.headings[1]).toEqual({
         level: 2,
         text: 'Heading 2',
         id: 'heading-2',
-        anchor: '#heading-2'
+        anchor: '#heading-2',
       });
     });
     it('should handle Chinese headings', () => {
       const markdown = '# 中文標題\n## 測試章節';
       const result = parser.parse(markdown);
+
       expect(result.headings).toHaveLength(2);
       expect(result.headings[0]).toEqual({
         level: 1,
         text: '中文標題',
         id: '中文標題',
-        anchor: '#中文標題'
+        anchor: '#中文標題',
       });
     });
+
     it('should create unique slugs for duplicate headings', () => {
       const markdown = `# Test
 # Test
@@ -127,7 +135,7 @@ Heading 2
     it('should parse inline code', () => {
       const markdown = 'Use the `console.log()` function.';
       const result = parser.parse(markdown);
-      
+
       expect(result.content).toContain('<code>console.log()</code>');
     });
 
@@ -161,14 +169,29 @@ Heading 2
       const markdown = `| Header 1 | Header 2 |
 |----------|----------|
 | Cell 1   | Cell 2   |`;
-      
+
       const result = parser.parse(markdown);
-      
+
       expect(result.content).toContain('<table>');
       expect(result.content).toContain('<thead>');
       expect(result.content).toContain('<tbody>');
       expect(result.content).toContain('Header 1');
       expect(result.content).toContain('Cell 1');
+    });
+  });
+
+  describe('Error handling', () => {
+    it('should handle non-Error exceptions', () => {
+      // Mock markdown-it to throw a non-Error object
+      const mockRender = jest.fn().mockImplementation(() => {
+        throw 'String error'; // Non-Error exception
+      });
+
+      (parser as any).md.render = mockRender;
+
+      expect(() => {
+        parser.parse('# Test');
+      }).toThrow('Failed to parse markdown: Unknown error');
     });
   });
 
@@ -234,7 +257,9 @@ More content here.`;
         throw error;
       });
 
-      expect(() => parser.parseFile('/nonexistent/file.md')).toThrow('File not found: /nonexistent/file.md');
+      expect(() => parser.parseFile('/nonexistent/file.md')).toThrow(
+        'File not found: /nonexistent/file.md'
+      );
     });
 
     it('should handle other file read errors', () => {
@@ -243,10 +268,12 @@ More content here.`;
         throw error;
       });
 
-      expect(() => parser.parseFile('/restricted/file.md')).toThrow('Failed to read file /restricted/file.md: Permission denied');
+      expect(() => parser.parseFile('/restricted/file.md')).toThrow(
+        'Failed to read file /restricted/file.md: Permission denied'
+      );
     });
   });
-  
+
   describe('Validation', () => {
     it('should validate correct markdown', () => {
       const markdown = '# Valid Document\n\nThis is valid markdown.';
@@ -281,7 +308,7 @@ More content here.`;
         ['Mixed 中文 Content', 'mixed-中文-content'],
         ['Special!@#$%Characters', 'specialcharacters'],
         ['Multiple   Spaces', 'multiple-spaces'],
-        ['--Leading-Dashes--', 'leading-dashes']
+        ['--Leading-Dashes--', 'leading-dashes'],
       ];
 
       testCases.forEach(([input, expected]) => {

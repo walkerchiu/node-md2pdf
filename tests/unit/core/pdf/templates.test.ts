@@ -21,7 +21,7 @@ describe('PDFTemplates', () => {
         fontFamily: 'Arial, sans-serif',
         fontSize: '14px',
         lineHeight: 1.8,
-        maxWidth: '900px'
+        maxWidth: '900px',
       };
 
       const css = PDFTemplates.getDefaultCSS(customOptions);
@@ -46,7 +46,7 @@ describe('PDFTemplates', () => {
       expect(css).toContain('pre {');
       expect(css).toContain('background: #f6f8fa');
       expect(css).toContain('border-radius: 6px');
-      expect(css).toContain('font-family: \'SFMono-Regular\'');
+      expect(css).toContain("font-family: 'SFMono-Regular'");
     });
 
     it('should include table styles', () => {
@@ -162,7 +162,9 @@ describe('PDFTemplates', () => {
     it('should set proper viewport meta tag', () => {
       const html = PDFTemplates.getFullHTML('<h1>Test</h1>');
 
-      expect(html).toContain('<meta name="viewport" content="width=device-width, initial-scale=1.0">');
+      expect(html).toContain(
+        '<meta name="viewport" content="width=device-width, initial-scale=1.0">'
+      );
     });
 
     it('should trim whitespace from final HTML', () => {
@@ -192,6 +194,51 @@ describe('PDFTemplates', () => {
       expect(html).toContain('font-family: system-ui'); // Default
       expect(html).toContain('Noto Sans CJK SC'); // Chinese
       expect(html).toContain('.custom { color: blue; }'); // Custom
+    });
+  });
+
+  describe('getFullHTMLWithTOC', () => {
+    it('should generate HTML with TOC included', () => {
+      const tocHTML =
+        '<div class="toc-container"><h2>目錄</h2><ul><li><a href="#heading1">Test Heading</a></li></ul></div>';
+      const content = '<h1 id="heading1">Test Heading</h1><p>Content</p>';
+      const html = PDFTemplates.getFullHTMLWithTOC(tocHTML, content, 'Test Document');
+
+      expect(html).toContain('<!DOCTYPE html>');
+      expect(html).toContain('<title>Test Document</title>');
+      expect(html).toContain(tocHTML);
+      expect(html).toContain(content);
+      expect(html.indexOf(tocHTML)).toBeLessThan(html.indexOf(content));
+    });
+
+    it('should handle empty TOC', () => {
+      const content = '<h1>Test Heading</h1><p>Content</p>';
+      const html = PDFTemplates.getFullHTMLWithTOC('', content);
+
+      expect(html).toContain(content);
+      // TOC CSS is always included, but no actual TOC content
+      expect(html).toContain('toc-container'); // CSS class definition
+      expect(html).not.toContain('<div class="toc-container">'); // No actual TOC div
+    });
+
+    it('should include custom CSS with TOC', () => {
+      const tocHTML = '<div class="toc-container">TOC</div>';
+      const content = '<h1>Test</h1>';
+      const customCSS = '.custom { color: red; }';
+      const html = PDFTemplates.getFullHTMLWithTOC(tocHTML, content, 'Title', customCSS);
+
+      expect(html).toContain(customCSS);
+      expect(html).toContain('toc-container'); // TOC CSS should be included
+      expect(html).toContain('font-family: system-ui'); // Default CSS
+      expect(html).toContain('Noto Sans CJK SC'); // Chinese CSS
+    });
+
+    it('should handle null TOC HTML', () => {
+      const content = '<h1>Test</h1>';
+      const html = PDFTemplates.getFullHTMLWithTOC(null as any, content);
+
+      expect(html).toContain(content);
+      expect(html).toContain('<!DOCTYPE html>');
     });
   });
 });
