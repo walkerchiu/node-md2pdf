@@ -33,37 +33,82 @@ export class PDFGenerator {
       return;
     }
 
-    try {
-      this.browser = await puppeteer.launch({
-        headless: 'new',
-        timeout: 30000,
-        args: [
-          '--no-sandbox',
-          '--disable-setuid-sandbox',
-          '--disable-dev-shm-usage',
-          '--disable-gpu',
-          '--disable-web-security',
-          '--disable-features=VizDisplayCompositor',
-        ],
-      });
+    const baseArgs = [
+      '--no-sandbox',
+      '--disable-setuid-sandbox',
+      '--disable-dev-shm-usage',
+      '--disable-gpu',
+      '--disable-web-security',
+      '--disable-features=VizDisplayCompositor',
+    ];
 
-      // Test the browser connection
-      const page = await this.browser.newPage();
-      await page.close();
-    } catch (error) {
-      // Only log in development/debug mode
-      if (process.env.NODE_ENV === 'development' || process.env.DEBUG) {
-        // eslint-disable-next-line no-console
-        console.error('Puppeteer launch error:', error);
+    // Configuration attempts in order of preference
+    const configs = [
+      // Try bundled Chromium first
+      {
+        headless: 'new' as const,
+        timeout: 10000,
+        args: baseArgs,
+      },
+      // Fallback to system Chrome on macOS/Unix systems
+      {
+        executablePath: '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
+        headless: 'new' as const,
+        timeout: 10000,
+        args: ['--no-sandbox'],
+      },
+      // Fallback to system Chrome on Linux
+      {
+        executablePath: '/usr/bin/google-chrome',
+        headless: 'new' as const,
+        timeout: 10000,
+        args: ['--no-sandbox'],
+      },
+      // Fallback to system Chromium on Linux
+      {
+        executablePath: '/usr/bin/chromium-browser',
+        headless: 'new' as const,
+        timeout: 10000,
+        args: ['--no-sandbox'],
+      },
+    ];
+
+    let lastError: Error | null = null;
+
+    for (const config of configs) {
+      try {
+        this.browser = await puppeteer.launch(config);
+
+        // Test the browser connection
+        const page = await this.browser.newPage();
+        await page.close();
+
+        // If we get here, the browser launched successfully
+        return;
+      } catch (error) {
+        lastError = error as Error;
+
+        // Clean up failed browser instance
+        if (this.browser) {
+          try {
+            await this.browser.close();
+          } catch {
+            // Ignore cleanup errors
+          }
+          this.browser = null;
+        }
+
+        // Only log in development/debug mode
+        if (process.env.NODE_ENV === 'development' || process.env.DEBUG) {
+          // eslint-disable-next-line no-console
+          console.warn('Puppeteer config failed, trying next:', config.executablePath || 'bundled');
+        }
       }
-      const errorMsg =
-        error instanceof Error
-          ? error.message
-          : typeof error === 'object'
-            ? JSON.stringify(error, null, 2)
-            : String(error);
-      throw new Error(`Failed to initialize PDF generator: ${errorMsg}`);
     }
+
+    // If all configurations failed
+    const errorMsg = lastError?.message || 'Unknown error';
+    throw new Error(`Failed to initialize PDF generator: ${errorMsg}`);
   }
 
   async generatePDF(

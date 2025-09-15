@@ -50,6 +50,15 @@ describe('PDFGenerator', () => {
   beforeEach(() => {
     generator = new PDFGenerator();
     jest.clearAllMocks();
+
+    // Reset all mocks to their default working state
+    (puppeteer.launch as jest.Mock).mockResolvedValue(mockBrowser);
+    mockBrowser.newPage.mockResolvedValue(mockPage);
+    mockPage.pdf.mockResolvedValue(Buffer.from('fake pdf content'));
+    mockPage.evaluate.mockResolvedValue(1);
+    mockPage.setContent.mockResolvedValue(undefined);
+    mockPage.close.mockResolvedValue(undefined);
+    mockBrowser.close.mockResolvedValue(undefined);
   });
 
   afterEach(async () => {
@@ -93,22 +102,26 @@ describe('PDFGenerator', () => {
     it('should initialize browser successfully', async () => {
       await generator.initialize();
 
-      expect(puppeteer.launch).toHaveBeenCalledWith({
-        headless: 'new',
-        timeout: 30000,
-        args: expect.arrayContaining([
-          '--no-sandbox',
-          '--disable-setuid-sandbox',
-          '--disable-dev-shm-usage',
-          '--disable-gpu',
-          '--disable-web-security',
-          '--disable-features=VizDisplayCompositor',
-        ]),
-      });
+      // Should try the first configuration (bundled Chromium)
+      expect(puppeteer.launch).toHaveBeenCalledWith(
+        expect.objectContaining({
+          headless: 'new',
+          timeout: 10000,
+          args: expect.arrayContaining([
+            '--no-sandbox',
+            '--disable-setuid-sandbox',
+            '--disable-dev-shm-usage',
+            '--disable-gpu',
+            '--disable-web-security',
+            '--disable-features=VizDisplayCompositor',
+          ]),
+        })
+      );
     });
 
     it('should handle initialization errors', async () => {
-      (puppeteer.launch as jest.Mock).mockRejectedValueOnce(new Error('Launch failed'));
+      // Mock all launch attempts to fail
+      (puppeteer.launch as jest.Mock).mockRejectedValue(new Error('Launch failed'));
 
       await expect(generator.initialize()).rejects.toThrow(
         'Failed to initialize PDF generator: Launch failed'
@@ -119,9 +132,9 @@ describe('PDFGenerator', () => {
       const originalEnv = process.env.NODE_ENV;
       process.env.NODE_ENV = 'development';
 
-      const consoleSpy = jest.spyOn(console, 'error').mockImplementation();
+      const consoleWarnSpy = jest.spyOn(console, 'warn').mockImplementation();
 
-      (puppeteer.launch as jest.Mock).mockRejectedValueOnce(new Error('Launch failed'));
+      (puppeteer.launch as jest.Mock).mockRejectedValue(new Error('Launch failed'));
 
       try {
         await generator.initialize();
@@ -129,9 +142,12 @@ describe('PDFGenerator', () => {
         // Expected to throw
       }
 
-      expect(consoleSpy).toHaveBeenCalledWith('Puppeteer launch error:', expect.any(Error));
+      expect(consoleWarnSpy).toHaveBeenCalledWith(
+        'Puppeteer config failed, trying next:',
+        'bundled'
+      );
 
-      consoleSpy.mockRestore();
+      consoleWarnSpy.mockRestore();
       process.env.NODE_ENV = originalEnv;
     });
 
@@ -267,12 +283,14 @@ describe('PDFGenerator', () => {
     });
 
     it('should detect environment issues', async () => {
-      mockBrowser.newPage.mockRejectedValueOnce(new Error('Page creation failed'));
+      // Mock the entire puppeteer.launch to fail, simulating environment issues
+      (puppeteer.launch as jest.Mock).mockRejectedValue(new Error('Browser launch failed'));
 
       const validation = await generator.validateEnvironment();
 
       expect(validation.isValid).toBe(false);
       expect(validation.errors.length).toBeGreaterThan(0);
+      expect(validation.errors[0]).toContain('Puppeteer initialization failed');
     });
   });
 
