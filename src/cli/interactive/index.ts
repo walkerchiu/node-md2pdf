@@ -164,6 +164,8 @@ export class InteractiveMode {
       
       // Step 3: Parse Markdown
       spinner.text = '📖 Parsing Markdown content...';
+      const { readFileSync } = await import('fs');
+      const originalMarkdownContent = readFileSync(config.inputPath, 'utf-8');
       const parsed = parser.parseFile(config.inputPath);
       
       // Step 4: Generate PDF
@@ -175,9 +177,11 @@ export class InteractiveMode {
         customCSS?: string;
         styleOptions?: StyleOptions;
         headings?: any[];
+        markdownContent?: string;
       } = {
         title: config.inputPath.replace(/.*[/\\]/, '').replace(/\.(md|markdown)$/, ''),
-        headings: parsed.headings
+        headings: parsed.headings,
+        markdownContent: originalMarkdownContent
       };
       
       if (config.chineseFontSupport) {

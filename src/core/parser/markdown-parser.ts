@@ -72,6 +72,19 @@ export class MarkdownParser {
   }
 
   /**
+   * Generate unique ID for headings, handling duplicates
+   */
+  private generateUniqueId(baseId: string, usedIds: Record<string, number>): string {
+    if (usedIds[baseId]) {
+      usedIds[baseId]++;
+      return `${baseId}-${usedIds[baseId]}`;
+    } else {
+      usedIds[baseId] = 1;
+      return baseId;
+    }
+  }
+
+  /**
    * Code highlighting function
    */
   private highlightCode(str: string, lang: string): string {
@@ -127,6 +140,7 @@ export class MarkdownParser {
    */
   private extractHeadings(content: string): Heading[] {
     const headings: Heading[] = [];
+    const usedIds: Record<string, number> = {}; // Track used IDs for uniqueness
     const lines = content.split('\n');
 
     for (let i = 0; i < lines.length; i++) {
@@ -137,13 +151,14 @@ export class MarkdownParser {
       if (atxMatch) {
         const level = atxMatch[1].length;
         const text = atxMatch[2].trim();
-        const id = this.slugify(text);
+        const baseId = this.slugify(text);
+        const uniqueId = this.generateUniqueId(baseId, usedIds);
 
         headings.push({
           level,
           text,
-          id,
-          anchor: `#${id}`
+          id: uniqueId,
+          anchor: `#${uniqueId}`
         });
         continue;
       }
@@ -154,23 +169,25 @@ export class MarkdownParser {
         if (nextLine.match(/^=+$/)) {
           // H1
           const text = line.trim();
-          const id = this.slugify(text);
+          const baseId = this.slugify(text);
+          const uniqueId = this.generateUniqueId(baseId, usedIds);
           headings.push({
             level: 1,
             text,
-            id,
-            anchor: `#${id}`
+            id: uniqueId,
+            anchor: `#${uniqueId}`
           });
           i++; // Skip the underline
         } else if (nextLine.match(/^-+$/)) {
           // H2
           const text = line.trim();
-          const id = this.slugify(text);
+          const baseId = this.slugify(text);
+          const uniqueId = this.generateUniqueId(baseId, usedIds);
           headings.push({
             level: 2,
             text,
-            id,
-            anchor: `#${id}`
+            id: uniqueId,
+            anchor: `#${uniqueId}`
           });
           i++; // Skip the underline
         }

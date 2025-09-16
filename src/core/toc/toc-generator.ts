@@ -223,10 +223,39 @@ export class TOCGenerator {
    * Update page numbers in generated TOC items
    */
   updatePageNumbers(items: TOCItemFlat[], pageNumbers: Record<string, number>): void {
+    const usedKeys: Record<string, number> = {};
+
     for (const item of items) {
       const anchor = item.anchor.startsWith('#') ? item.anchor.substring(1) : item.anchor;
+
+      // Try to find matching page number
+      let pageNumber: number | undefined;
+
+      // First try exact match
       if (pageNumbers[anchor]) {
-        item.pageNumber = pageNumbers[anchor];
+        pageNumber = pageNumbers[anchor];
+      } else {
+        // Handle duplicate keys - look for numbered variants
+        const baseKey = anchor;
+        if (usedKeys[baseKey]) {
+          usedKeys[baseKey]++;
+          const numberedKey = `${baseKey}-${usedKeys[baseKey]}`;
+          if (pageNumbers[numberedKey]) {
+            pageNumber = pageNumbers[numberedKey];
+          }
+        } else {
+          usedKeys[baseKey] = 1;
+          // Check if this might be a duplicate that needs numbering
+          const numberedKey = `${baseKey}-2`;
+          if (pageNumbers[numberedKey]) {
+            // This means we have duplicates, use the first one
+            pageNumber = pageNumbers[anchor] || pageNumbers[numberedKey];
+          }
+        }
+      }
+
+      if (pageNumber !== undefined) {
+        item.pageNumber = pageNumber;
       }
     }
   }

@@ -3,7 +3,7 @@ import { existsSync, mkdirSync } from 'fs';
 import { dirname, resolve } from 'path';
 import { PDFGeneratorOptions, PDFGenerationResult, StyleOptions } from './types';
 import { PDFTemplates } from './templates';
-import { TOCGenerator } from '../toc';
+import { TOCGenerator, PageEstimator } from '../toc';
 import { Heading } from '../../types/index';
 
 export class PDFGenerator {
@@ -119,6 +119,7 @@ export class PDFGenerator {
       customCSS?: string;
       styleOptions?: StyleOptions;
       headings?: Heading[];
+      markdownContent?: string;
     } = {}
   ): Promise<PDFGenerationResult> {
     const startTime = Date.now();
@@ -156,7 +157,15 @@ export class PDFGenerator {
           },
         });
 
-        const tocResult = tocGenerator.generateTOC(options.headings);
+        let tocResult;
+        if (this.options.toc.includePageNumbers && options.markdownContent) {
+          // Use PageEstimator to calculate page numbers
+          const pageEstimator = new PageEstimator();
+          const pageNumbers = pageEstimator.estimatePageNumbers(options.headings, options.markdownContent);
+          tocResult = tocGenerator.generateTOCWithPageNumbers(options.headings, pageNumbers);
+        } else {
+          tocResult = tocGenerator.generateTOC(options.headings);
+        }
 
         fullHTML = PDFTemplates.getFullHTMLWithTOC(
           tocResult.html,
@@ -222,6 +231,7 @@ export class PDFGenerator {
       title?: string;
       customCSS?: string;
       styleOptions?: StyleOptions;
+      markdownContent?: string;
       headings?: Heading[];
     } = {}
   ): Promise<PDFGenerationResult> {
