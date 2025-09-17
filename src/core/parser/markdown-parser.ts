@@ -164,10 +164,11 @@ export class MarkdownParser {
       }
 
       // Setext-style headings (underlined with = or -)
-      if (i + 1 < lines.length) {
+      // Only process if current line has content (not empty/whitespace only)
+      if (i + 1 < lines.length && line.trim().length > 0) {
         const nextLine = lines[i + 1].trim();
         if (nextLine.match(/^=+$/)) {
-          // H1
+          // H1 - underlined with ===
           const text = line.trim();
           const baseId = this.slugify(text);
           const uniqueId = this.generateUniqueId(baseId, usedIds);
@@ -178,8 +179,8 @@ export class MarkdownParser {
             anchor: `#${uniqueId}`
           });
           i++; // Skip the underline
-        } else if (nextLine.match(/^-+$/)) {
-          // H2
+        } else if (nextLine.match(/^-{3,}$/)) {
+          // H2 - underlined with --- (must be 3 or more dashes to avoid conflicts with horizontal rules)
           const text = line.trim();
           const baseId = this.slugify(text);
           const uniqueId = this.generateUniqueId(baseId, usedIds);
