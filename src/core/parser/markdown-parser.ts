@@ -99,12 +99,28 @@ export class MarkdownParser {
   }
 
   /**
+   * Preprocess markdown content to fix common formatting issues
+   */
+  private preprocessContent(content: string): string {
+    // Fix bold syntax in lists where there's no space after colon
+    // Pattern: **text:** or **text：** immediately followed by non-space character
+    // Replace with: **text:** or **text：** followed by a space
+    return content
+      .replace(/(\*\*[^*]+：\*\*)([^\s])/g, '$1 $2')  // Chinese colon
+      .replace(/(\*\*[^*]+:\*\*)([^\s])/g, '$1 $2');  // English colon
+  }
+
+  /**
    * Parse markdown content to HTML
    */
   public parse(content: string): ParsedMarkdown {
     try {
+      // Preprocess content to fix formatting issues
+      const preprocessedContent = this.preprocessContent(content);
+
       // Render HTML
-      const html = this.md.render(content);
+      const html = this.md.render(preprocessedContent);
+
       // Extract headings
       const headings = this.extractHeadings(content);
       return {
