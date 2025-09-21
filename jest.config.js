@@ -1,14 +1,17 @@
 module.exports = {
   preset: 'ts-jest',
   testEnvironment: 'node',
-  
+
+  // Test timeout configuration for Puppeteer operations
+  testTimeout: 30000,
+
   // Test file paths
   testMatch: [
     '<rootDir>/tests/unit/**/*.test.ts',
     '<rootDir>/tests/integration/**/*.test.ts',
     '<rootDir>/tests/e2e/**/*.test.ts'
   ],
-  
+
   // Module path mapping
   moduleNameMapper: {
     '^@/core/(.*)$': '<rootDir>/src/core/$1',
@@ -17,7 +20,7 @@ module.exports = {
     '^@/types/(.*)$': '<rootDir>/src/types/$1',
     '^@/types$': '<rootDir>/src/types/index.ts'
   },
-  
+
   // Coverage configuration
   collectCoverage: true,
   coverageDirectory: 'coverage',
@@ -30,17 +33,20 @@ module.exports = {
       statements: 80
     }
   },
-  
+
   // Ignore patterns
   testPathIgnorePatterns: [
     '/node_modules/',
     '/dist/',
     '/coverage/'
   ],
-  
+
   // Test setup
   setupFilesAfterEnv: ['<rootDir>/tests/setup.ts'],
   verbose: true,
   clearMocks: true,
-  restoreMocks: true
+  restoreMocks: true,
+
+  // Puppeteer environment variables
+  setupFiles: ['<rootDir>/tests/jest-setup.ts']
 };

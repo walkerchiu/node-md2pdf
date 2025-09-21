@@ -50,7 +50,13 @@ describe('CLI End-to-End Tests', () => {
   // Mock environment check to determine if we can actually run PDF generation
   const canGeneratePDF = async (): Promise<boolean> => {
     try {
-      const validation = await pdfGenerator.validateEnvironment();
+      // Add timeout to prevent hanging during validation
+      const validation = await Promise.race([
+        pdfGenerator.validateEnvironment(),
+        new Promise<{ isValid: boolean; errors: string[] }>((_, reject) =>
+          setTimeout(() => reject(new Error('Validation timeout')), 8000)
+        ),
+      ]);
       return validation.isValid;
     } catch (error) {
       return false;
