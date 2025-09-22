@@ -120,6 +120,7 @@ export class PDFGenerator {
       styleOptions?: StyleOptions;
       headings?: Heading[];
       markdownContent?: string;
+      enableChineseSupport?: boolean;
     } = {}
   ): Promise<PDFGenerationResult> {
     const startTime = Date.now();
@@ -171,10 +172,11 @@ export class PDFGenerator {
           tocResult.html,
           htmlContent,
           options.title,
-          options.customCSS
+          options.customCSS,
+          options.enableChineseSupport || false
         );
       } else {
-        fullHTML = PDFTemplates.getFullHTML(htmlContent, options.title, options.customCSS);
+        fullHTML = PDFTemplates.getFullHTML(htmlContent, options.title, options.customCSS, options.enableChineseSupport || false);
       }
 
       const page = await this.browser.newPage();
@@ -233,6 +235,7 @@ export class PDFGenerator {
       styleOptions?: StyleOptions;
       markdownContent?: string;
       headings?: Heading[];
+      enableChineseSupport?: boolean;
     } = {}
   ): Promise<PDFGenerationResult> {
     try {

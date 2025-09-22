@@ -88,7 +88,7 @@ export class InteractiveMode {
       {
         type: 'confirm',
         name: 'chineseFontSupport',
-        message: 'Enable Chinese font support?',
+        message: 'Enable Chinese font support? (Choose "No" for faster processing and smaller file size when document contains only English text)',
         default: true,
       }
     ]);
@@ -117,7 +117,7 @@ export class InteractiveMode {
         type: 'confirm',
         name: 'confirmed',
         message: 'Confirm and start conversion?',
-        default: true
+        default: true,
       }
     ]);
 
@@ -178,10 +178,12 @@ export class InteractiveMode {
         styleOptions?: StyleOptions;
         headings?: any[];
         markdownContent?: string;
+        enableChineseSupport?: boolean;
       } = {
         title: config.inputPath.replace(/.*[/\\]/, '').replace(/\.(md|markdown)$/, ''),
         headings: parsed.headings,
-        markdownContent: originalMarkdownContent
+        markdownContent: originalMarkdownContent,
+        enableChineseSupport: config.chineseFontSupport
       };
       
       if (config.chineseFontSupport) {

@@ -342,7 +342,9 @@ describe('PDFGenerator', () => {
     it('should handle Chinese content', async () => {
       const chineseContent = '<h1>中文標題</h1><p>這是中文內容測試。</p>';
 
-      const result = await generator.generatePDF(chineseContent, testOutputPath);
+      const result = await generator.generatePDF(chineseContent, testOutputPath, {
+        enableChineseSupport: true,
+      });
 
       expect(result.success).toBe(true);
       expect(mockPage.setContent).toHaveBeenCalledWith(
@@ -360,9 +362,9 @@ describe('PDFGenerator', () => {
     it('should handle browser not initialized after initialization attempt', async () => {
       // Mock the case where browser initialization appears successful but browser is null
       const mockInitialize = jest
-        .spyOn(generator as any, 'initialize')
+        .spyOn(generator as { initialize: () => Promise<void> }, 'initialize')
         .mockResolvedValueOnce(undefined);
-      (generator as any).browser = null;
+      (generator as unknown as { browser: unknown }).browser = null;
 
       const result = await generator.generatePDF('<h1>Test</h1>', testOutputPath);
 
@@ -402,9 +404,9 @@ describe('PDFGenerator', () => {
       // Create a new generator instance and mock initialization to fail
       const testGenerator = new PDFGenerator();
       const mockInitialize = jest
-        .spyOn(testGenerator as any, 'initialize')
+        .spyOn(testGenerator as { initialize: () => Promise<void> }, 'initialize')
         .mockResolvedValueOnce(undefined);
-      (testGenerator as any).browser = null;
+      (testGenerator as unknown as { browser: unknown }).browser = null;
 
       const validation = await testGenerator.validateEnvironment();
 

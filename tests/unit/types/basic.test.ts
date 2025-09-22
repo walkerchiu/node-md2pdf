@@ -14,9 +14,9 @@ describe('Basic Functionality Tests', () => {
 
       const validateConfig = (config: TestConfig): boolean => {
         return !!(
-          config.inputPath && 
-          typeof config.tocDepth === 'number' && 
-          config.tocDepth >= 1 && 
+          config.inputPath &&
+          typeof config.tocDepth === 'number' &&
+          config.tocDepth >= 1 &&
           config.tocDepth <= 6 &&
           typeof config.includePageNumbers === 'boolean'
         );
@@ -25,19 +25,19 @@ describe('Basic Functionality Tests', () => {
       const validConfig: TestConfig = {
         inputPath: '/path/to/input.md',
         tocDepth: 3,
-        includePageNumbers: true
+        includePageNumbers: true,
       };
 
       const invalidConfig1: TestConfig = {
         inputPath: '',
         tocDepth: 3,
-        includePageNumbers: true
+        includePageNumbers: true,
       };
 
       const invalidConfig2: TestConfig = {
         inputPath: '/path/to/input.md',
         tocDepth: 7, // Invalid depth
-        includePageNumbers: true
+        includePageNumbers: true,
       };
 
       expect(validateConfig(validConfig)).toBe(true);
@@ -56,7 +56,7 @@ describe('Basic Functionality Tests', () => {
 
       const isValidHeading = (heading: TestHeading): boolean => {
         return !!(
-          heading.level >= 1 && 
+          heading.level >= 1 &&
           heading.level <= 6 &&
           heading.text.trim().length > 0 &&
           heading.id.length > 0
@@ -66,13 +66,13 @@ describe('Basic Functionality Tests', () => {
       const validHeading: TestHeading = {
         level: 2,
         text: 'Chapter 1',
-        id: 'chapter-1'
+        id: 'chapter-1',
       };
 
       const invalidHeading: TestHeading = {
         level: 7, // Invalid level
         text: 'Chapter 1',
-        id: 'chapter-1'
+        id: 'chapter-1',
       };
 
       expect(isValidHeading(validHeading)).toBe(true);
@@ -85,7 +85,7 @@ describe('Basic Functionality Tests', () => {
       enum TestErrorType {
         FILE_NOT_FOUND = 'FILE_NOT_FOUND',
         INVALID_FORMAT = 'INVALID_FORMAT',
-        PARSE_ERROR = 'PARSE_ERROR'
+        PARSE_ERROR = 'PARSE_ERROR',
       }
 
       interface TestError {
@@ -96,7 +96,7 @@ describe('Basic Functionality Tests', () => {
       const errors: TestError[] = [
         { type: TestErrorType.FILE_NOT_FOUND, message: 'File not found' },
         { type: TestErrorType.INVALID_FORMAT, message: 'Invalid format' },
-        { type: TestErrorType.PARSE_ERROR, message: 'Parse error' }
+        { type: TestErrorType.PARSE_ERROR, message: 'Parse error' },
       ];
 
       expect(errors).toHaveLength(3);

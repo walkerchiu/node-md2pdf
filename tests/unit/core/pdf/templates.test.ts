@@ -117,6 +117,15 @@ describe('PDFTemplates', () => {
       const html = PDFTemplates.getFullHTML(content);
 
       expect(html).toContain('font-family: system-ui');
+      // Chinese CSS is not included by default
+      expect(html).not.toContain('Noto Sans CJK SC');
+    });
+
+    it('should include Chinese CSS when enableChineseSupport is true', () => {
+      const content = '<h1>Test</h1>';
+      const html = PDFTemplates.getFullHTML(content, undefined, undefined, true);
+
+      expect(html).toContain('font-family: system-ui');
       expect(html).toContain('Noto Sans CJK SC');
     });
 
@@ -178,9 +187,9 @@ describe('PDFTemplates', () => {
   describe('CSS Integration', () => {
     it('should properly combine default and Chinese CSS', () => {
       const content = '<h1>測試</h1>';
-      const html = PDFTemplates.getFullHTML(content);
+      const html = PDFTemplates.getFullHTML(content, undefined, undefined, true);
 
-      // Should contain both default styles and Chinese styles
+      // Should contain both default styles and Chinese styles when enableChineseSupport is true
       expect(html).toContain('font-family: system-ui'); // Default CSS
       expect(html).toContain('Noto Sans CJK SC'); // Chinese CSS
       expect(html).toContain('text-align: justify'); // Chinese text formatting
@@ -189,10 +198,20 @@ describe('PDFTemplates', () => {
     it('should properly combine all three CSS sources when custom CSS is provided', () => {
       const content = '<h1>測試</h1>';
       const customCSS = '.custom { color: blue; }';
-      const html = PDFTemplates.getFullHTML(content, 'Title', customCSS);
+      const html = PDFTemplates.getFullHTML(content, 'Title', customCSS, true);
 
       expect(html).toContain('font-family: system-ui'); // Default
       expect(html).toContain('Noto Sans CJK SC'); // Chinese
+      expect(html).toContain('.custom { color: blue; }'); // Custom
+    });
+
+    it('should not include Chinese CSS when enableChineseSupport is false', () => {
+      const content = '<h1>測試</h1>';
+      const customCSS = '.custom { color: blue; }';
+      const html = PDFTemplates.getFullHTML(content, 'Title', customCSS, false);
+
+      expect(html).toContain('font-family: system-ui'); // Default
+      expect(html).not.toContain('Noto Sans CJK SC'); // No Chinese CSS
       expect(html).toContain('.custom { color: blue; }'); // Custom
     });
   });
@@ -225,7 +244,7 @@ describe('PDFTemplates', () => {
       const tocHTML = '<div class="toc-container">TOC</div>';
       const content = '<h1>Test</h1>';
       const customCSS = '.custom { color: red; }';
-      const html = PDFTemplates.getFullHTMLWithTOC(tocHTML, content, 'Title', customCSS);
+      const html = PDFTemplates.getFullHTMLWithTOC(tocHTML, content, 'Title', customCSS, true);
 
       expect(html).toContain(customCSS);
       expect(html).toContain('toc-container'); // TOC CSS should be included
@@ -233,9 +252,21 @@ describe('PDFTemplates', () => {
       expect(html).toContain('Noto Sans CJK SC'); // Chinese CSS
     });
 
+    it('should not include Chinese CSS with TOC when enableChineseSupport is false', () => {
+      const tocHTML = '<div class="toc-container">TOC</div>';
+      const content = '<h1>Test</h1>';
+      const customCSS = '.custom { color: red; }';
+      const html = PDFTemplates.getFullHTMLWithTOC(tocHTML, content, 'Title', customCSS, false);
+
+      expect(html).toContain(customCSS);
+      expect(html).toContain('toc-container'); // TOC CSS should be included
+      expect(html).toContain('font-family: system-ui'); // Default CSS
+      expect(html).not.toContain('Noto Sans CJK SC'); // No Chinese CSS
+    });
+
     it('should handle null TOC HTML', () => {
       const content = '<h1>Test</h1>';
-      const html = PDFTemplates.getFullHTMLWithTOC(null as any, content);
+      const html = PDFTemplates.getFullHTMLWithTOC(null as unknown as string, content);
 
       expect(html).toContain(content);
       expect(html).toContain('<!DOCTYPE html>');

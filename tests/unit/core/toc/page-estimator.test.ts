@@ -138,9 +138,7 @@ ${longContent}`;
     });
 
     it('should fallback to id when anchor is not available', () => {
-      const headings: Heading[] = [
-        { level: 1, text: '測試標題', id: 'test-id', anchor: '' },
-      ];
+      const headings: Heading[] = [{ level: 1, text: '測試標題', id: 'test-id', anchor: '' }];
 
       const markdownContent = '# 測試標題\n\n內容';
       const pageNumbers = estimator.estimatePageNumbers(headings, markdownContent);
@@ -149,9 +147,7 @@ ${longContent}`;
     });
 
     it('should create slug from text when anchor and id are not available', () => {
-      const headings: Heading[] = [
-        { level: 1, text: '測試 標題！', id: '', anchor: '' },
-      ];
+      const headings: Heading[] = [{ level: 1, text: '測試 標題！', id: '', anchor: '' }];
 
       const markdownContent = '# 測試 標題！\n\n內容';
       const pageNumbers = estimator.estimatePageNumbers(headings, markdownContent);
@@ -216,9 +212,7 @@ ${longContent}`;
     });
 
     it('should create proper slugs for Chinese text', () => {
-      const headings: Heading[] = [
-        { level: 1, text: '系統架構 & 設計', id: '', anchor: '' },
-      ];
+      const headings: Heading[] = [{ level: 1, text: '系統架構 & 設計', id: '', anchor: '' }];
 
       const markdownContent = '# 系統架構 & 設計\n\n內容';
       const pageNumbers = estimator.estimatePageNumbers(headings, markdownContent);
@@ -273,14 +267,12 @@ ${longContent}`;
         anchor: `#heading-${i + 1}`,
       }));
 
-      const markdownContent = manyHeadings
-        .map(h => `# ${h.text}\n\n一些內容。`)
-        .join('\n\n');
+      const markdownContent = manyHeadings.map(h => `# ${h.text}\n\n一些內容。`).join('\n\n');
 
       const pageNumbers = estimator.estimatePageNumbers(manyHeadings, markdownContent);
 
       expect(Object.keys(pageNumbers)).toHaveLength(100);
-      
+
       // With 100 headings, TOC should take multiple pages
       const firstHeadingPage = pageNumbers['heading-1'];
       expect(firstHeadingPage).toBeGreaterThan(2); // More than 1 TOC page

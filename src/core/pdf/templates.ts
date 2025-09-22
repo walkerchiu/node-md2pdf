@@ -263,9 +263,9 @@ export class PDFTemplates {
     `;
   }
 
-  static getFullHTML(content: string, title?: string, customCSS?: string): string {
+  static getFullHTML(content: string, title?: string, customCSS?: string, enableChineseSupport: boolean = false): string {
     const baseCSS = this.getDefaultCSS();
-    const chineseCSS = this.getChineseCSS();
+    const chineseCSS = enableChineseSupport ? this.getChineseCSS() : '';
     const tocCSS = this.getTOCCSS();
     const css = customCSS
       ? `${baseCSS}\n${chineseCSS}\n${tocCSS}\n${customCSS}`
@@ -293,10 +293,11 @@ export class PDFTemplates {
     tocHTML: string,
     content: string,
     title?: string,
-    customCSS?: string
+    customCSS?: string,
+    enableChineseSupport: boolean = false
   ): string {
     const baseCSS = this.getDefaultCSS();
-    const chineseCSS = this.getChineseCSS();
+    const chineseCSS = enableChineseSupport ? this.getChineseCSS() : '';
     const tocCSS = this.getTOCCSS();
     const css = customCSS
       ? `${baseCSS}\n${chineseCSS}\n${tocCSS}\n${customCSS}`
