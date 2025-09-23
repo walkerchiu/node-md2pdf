@@ -7,7 +7,7 @@
 import { Command } from 'commander';
 import chalk from 'chalk';
 import { version } from '../package.json';
-import { InteractiveMode } from './cli/interactive';
+import { MainInteractiveMode } from './cli/main-interactive';
 import { validateEnvironment } from './utils/validation';
 
 const program = new Command();
@@ -38,8 +38,8 @@ async function main(): Promise<void> {
       .command('convert', { isDefault: true })
       .description('Start interactive conversion mode')
       .action(async () => {
-        const interactive = new InteractiveMode();
-        await interactive.start();
+        const mainInteractive = new MainInteractiveMode();
+        await mainInteractive.start();
       });
 
     // Parse command line arguments

@@ -301,13 +301,25 @@ export class PDFGenerator {
   async close(): Promise<void> {
     if (this.browser) {
       try {
-        // Add timeout to prevent hanging
+        // Add timeout to prevent hanging with proper cleanup
+        let timeoutId: NodeJS.Timeout | null = null;
+        const timeoutPromise = new Promise<void>((_, reject) => {
+          timeoutId = setTimeout(() => reject(new Error('Browser close timeout')), 3000);
+          // Ensure timeout doesn't keep the process alive
+          if (timeoutId.unref) {
+            timeoutId.unref();
+          }
+        });
+
         await Promise.race([
           this.browser.close(),
-          new Promise<void>((_, reject) =>
-            setTimeout(() => reject(new Error('Browser close timeout')), 3000)
-          ),
+          timeoutPromise,
         ]);
+
+        // Clear the timeout if it exists
+        if (timeoutId) {
+          clearTimeout(timeoutId);
+        }
       } catch (error) {
         // Force kill browser process if normal close fails
         try {

@@ -8,29 +8,41 @@
 import path from 'path';
 import { TestCleanup } from '../tests/utils/test-cleanup';
 
-const fixturesDir = path.join(__dirname, '../tests/fixtures/markdown');
+const directories = [
+  path.join(__dirname, '../tests/fixtures/markdown'),
+  path.join(__dirname, '../tests/temp')
+];
 
 // eslint-disable-next-line no-console
 console.log('🧹 Cleaning up test-generated files...');
-// eslint-disable-next-line no-console
-console.log(`📁 Checking directory: ${fixturesDir}`);
 
-// List files that will be cleaned up
-const testFiles = TestCleanup.listTestFiles(fixturesDir);
-if (testFiles.length > 0) {
+let totalFiles = 0;
+directories.forEach(dir => {
   // eslint-disable-next-line no-console
-  console.log('🗂️ Found test files to clean up:');
-  // eslint-disable-next-line no-console
-  testFiles.forEach(file => console.log(`   - ${file}`));
-  // eslint-disable-next-line no-console
-  console.log();
-} else {
+  console.log(`📁 Checking directory: ${dir}`);
+
+  // List files that will be cleaned up
+  const testFiles = TestCleanup.listTestFiles(dir);
+  if (testFiles.length > 0) {
+    // eslint-disable-next-line no-console
+    console.log('🗂️ Found test files to clean up:');
+    // eslint-disable-next-line no-console
+    testFiles.forEach(file => console.log(`   - ${file}`));
+    totalFiles += testFiles.length;
+  }
+
+  // Perform cleanup
+  TestCleanup.cleanupTestFiles(dir);
+});
+
+// Also clean up entire temp directory if it exists
+const tempDir = path.join(__dirname, '../tests/temp');
+TestCleanup.cleanupTempDirectory(tempDir);
+
+if (totalFiles === 0) {
   // eslint-disable-next-line no-console
   console.log('✨ No test files found to clean up');
 }
-
-// Perform cleanup
-TestCleanup.cleanupTestFiles(fixturesDir);
 
 // eslint-disable-next-line no-console
 console.log('✅ Test file cleanup completed');

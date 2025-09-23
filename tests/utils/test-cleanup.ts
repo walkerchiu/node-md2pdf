@@ -3,7 +3,7 @@
  * Handles cleanup of test-generated files
  */
 
-import { existsSync, unlinkSync, readdirSync, statSync } from 'fs';
+import { existsSync, unlinkSync, readdirSync, statSync, rmSync } from 'fs';
 import path from 'path';
 
 export class TestCleanup {
@@ -70,6 +70,24 @@ export class TestCleanup {
         }
       }
     });
+  }
+
+  /**
+   * Clean up entire temp directory (for integration tests)
+   */
+  static cleanupTempDirectory(directory: string): void {
+    if (!existsSync(directory)) {
+      return;
+    }
+
+    try {
+      rmSync(directory, { recursive: true, force: true });
+      // eslint-disable-next-line no-console
+      console.log(`🧹 Cleaned up temp directory: ${directory}`);
+    } catch (error) {
+      // eslint-disable-next-line no-console
+      console.warn(`⚠️  Could not clean up temp directory ${directory}:`, error);
+    }
   }
 
   /**

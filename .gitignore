@@ -57,3 +57,4 @@ package-lock.json
 # Test artifacts
 test-results/
 test-output/
+tests/temp/
