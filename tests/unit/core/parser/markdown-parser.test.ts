@@ -187,7 +187,8 @@ Heading 2
         throw 'String error'; // Non-Error exception
       });
 
-      (parser as any).md.render = mockRender;
+      (parser as unknown as { md: { render: jest.MockedFunction<() => string> } }).md.render =
+        mockRender;
 
       expect(() => {
         parser.parse('# Test');
@@ -227,7 +228,12 @@ More content here.`;
       expect(result.metadata).toBeDefined();
       expect(result.metadata!.statistics).toBeDefined();
 
-      const stats = result.metadata!.statistics as any;
+      const stats = result.metadata!.statistics as {
+        headingCount: number;
+        wordCount: number;
+        lineCount: number;
+        characterCount: number;
+      };
       expect(stats.headingCount).toBe(2);
       expect(stats.wordCount).toBeGreaterThan(0);
       expect(stats.lineCount).toBeGreaterThan(0);
@@ -314,7 +320,7 @@ More content here.`;
       testCases.forEach(([input, expected]) => {
         // We need to access the private slugify method for testing
         // This is a bit hacky but necessary for thorough testing
-        const result = (parser as any).slugify(input);
+        const result = (parser as unknown as { slugify: (input: string) => string }).slugify(input);
         expect(result).toBe(expected);
       });
     });
