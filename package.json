@@ -16,10 +16,10 @@
     "test:coverage": "jest --config jest.config.unit.js --coverage --forceExit",
     "test:all": "jest --config jest.config.all.js --forceExit --detectOpenHandles",
     "test:light": "jest --config jest.config.light.js --forceExit --detectOpenHandles",
-    "test:unit": "jest tests/unit --forceExit --maxWorkers=50% --coverage=false",
-    "test:integration": "jest tests/integration --forceExit --maxWorkers=1 --coverage=false",
-    "test:pdf": "jest tests/integration/pdf --forceExit --maxWorkers=1 --coverage=false --testTimeout=240000",
-    "test:batch": "jest tests/integration/batch-processing.test.ts --forceExit --maxWorkers=1 --coverage=false --testTimeout=240000",
+    "test:unit": "jest --config jest.config.unit.js tests/unit --forceExit --maxWorkers=50% --coverage=false",
+    "test:integration": "jest --config jest.config.all.js tests/integration --forceExit --maxWorkers=1 --coverage=false",
+    "test:pdf": "jest --config jest.config.all.js tests/integration/pdf --forceExit --maxWorkers=1 --coverage=false --testTimeout=240000",
+    "test:batch": "jest --config jest.config.all.js tests/integration/batch-processing.test.ts --forceExit --maxWorkers=1 --coverage=false --testTimeout=240000",
     "lint": "eslint src/**/*.ts",
     "lint:fix": "eslint src/**/*.ts --fix",
     "format": "prettier --write src/**/*.ts",
@@ -41,6 +41,8 @@
     "node": ">=18.0.0"
   },
   "devDependencies": {
+    "@types/fs-extra": "^11.0.4",
+    "@types/glob": "^8.1.0",
     "@types/inquirer": "^9.0.9",
     "@types/jest": "^29.0.0",
     "@types/node": "^20.0.0",

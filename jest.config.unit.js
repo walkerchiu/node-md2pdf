@@ -36,7 +36,9 @@ module.exports = {
     '^@/cli/(.*)$': '<rootDir>/src/cli/$1',
     '^@/utils/(.*)$': '<rootDir>/src/utils/$1',
     '^@/types/(.*)$': '<rootDir>/src/types/$1',
-    '^@/types$': '<rootDir>/src/types/index.ts'
+    '^@/types$': '<rootDir>/src/types/index.ts',
+    '^@/infrastructure/(.*)$': '<rootDir>/src/infrastructure/$1',
+    '^@/shared/(.*)$': '<rootDir>/src/shared/$1'
   },
 
   // Coverage configuration
