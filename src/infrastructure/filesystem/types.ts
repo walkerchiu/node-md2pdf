@@ -30,7 +30,6 @@ export interface IFileSystemManager {
   // Utility operations
   createTempFile(prefix?: string, suffix?: string): Promise<string>;
   createTempDirectory(prefix?: string): Promise<string>;
-  findFiles(pattern: string, searchPath?: string): Promise<string[]>;
   getFileSize(filePath: string): Promise<number>;
   getModificationTime(filePath: string): Promise<Date>;
 }

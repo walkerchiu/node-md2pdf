@@ -4,34 +4,57 @@
  */
 
 import chalk from 'chalk';
-import { InteractiveMode } from './interactive';
+
 import { BatchInteractiveMode } from './batch';
+import { InteractiveMode } from './interactive';
+
+import type { ILogger } from '../infrastructure/logging/types';
+import type { ServiceContainer } from '../shared/container';
 
 export class MainInteractiveMode {
+  private logger: ILogger;
+
+  constructor(private readonly container: ServiceContainer) {
+    this.logger = container.resolve<ILogger>('logger');
+  }
+
   /**
    * Start main interactive mode
    */
   async start(): Promise<void> {
     try {
-      this.showWelcomeMessage();
-      const mode = await this.selectMode();
-      switch (mode) {
-        case 'single': {
-          const singleMode = new InteractiveMode();
-          await singleMode.start();
-          break;
+      this.logger.info('Starting main interactive mode');
+
+      // Main menu loop - keep showing menu until user exits
+      // eslint-disable-next-line no-constant-condition
+      while (true) {
+        this.showWelcomeMessage();
+        const mode = await this.selectMode();
+
+        switch (mode) {
+          case 'single': {
+            this.logger.info('User selected single file mode');
+            const singleMode = new InteractiveMode(this.container);
+            await singleMode.start();
+            // After single file conversion, continue loop to show menu again
+            break;
+          }
+          case 'batch': {
+            this.logger.info('User selected batch mode');
+            const batchMode = new BatchInteractiveMode(this.container);
+            await batchMode.start();
+            // After batch conversion, continue loop to show menu again
+            break;
+          }
+          case 'exit':
+            this.logger.info('User selected exit');
+            // eslint-disable-next-line no-console
+            console.log(chalk.cyan('👋 Goodbye!'));
+            return;
         }
-        case 'batch': {
-          const batchMode = new BatchInteractiveMode();
-          await batchMode.start();
-          break;
-        }
-        case 'exit':
-          // eslint-disable-next-line no-console
-          console.log(chalk.cyan('👋 Goodbye!'));
-          return;
       }
     } catch (error) {
+      this.logger.error('Main interactive mode error', error);
       // eslint-disable-next-line no-console
       console.error(chalk.red('❌ Main interactive mode error:'), error);
       throw error;

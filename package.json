@@ -7,10 +7,10 @@
     "md2pdf": "dist/cli.js"
   },
   "scripts": {
-    "build": "tsc",
-    "build:watch": "tsc --watch",
+    "build": "tsc && tsc-alias",
+    "build:watch": "tsc --watch & tsc-alias --watch",
     "start": "node dist/cli.js",
-    "dev": "ts-node src/cli.ts",
+    "dev": "ts-node -r tsconfig-paths/register src/cli.ts",
     "test": "jest --config jest.config.unit.js --detectOpenHandles",
     "test:watch": "jest --config jest.config.unit.js --watch",
     "test:coverage": "jest --config jest.config.unit.js --coverage --forceExit",
@@ -24,7 +24,7 @@
     "lint:fix": "eslint src/**/*.ts --fix",
     "format": "prettier --write src/**/*.ts",
     "clean": "rimraf dist coverage",
-    "clean:test": "ts-node scripts/clean-test-files.ts"
+    "clean:test": "ts-node -r tsconfig-paths/register scripts/clean-test-files.ts"
   },
   "keywords": [
     "markdown",
@@ -56,6 +56,8 @@
     "rimraf": "^5.0.0",
     "ts-jest": "^29.0.0",
     "ts-node": "^10.0.0",
+    "tsc-alias": "^1.8.16",
+    "tsconfig-paths": "^4.2.0",
     "typescript": "^5.0.0"
   },
   "dependencies": {
@@ -64,6 +66,7 @@
     "chalk": "^5.0.0",
     "commander": "^11.0.0",
     "fs-extra": "^11.0.0",
+    "glob": "^11.0.3",
     "inquirer": "^9.0.0",
     "markdown-it": "^14.0.0",
     "markdown-it-anchor": "^9.2.0",
