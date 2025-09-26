@@ -5,7 +5,6 @@
 import * as fs from 'fs-extra';
 import * as path from 'path';
 import * as os from 'os';
-import * as glob from 'glob';
 import {
   FileNotFoundError,
   FilePermissionError,
@@ -21,7 +20,10 @@ import type {
 
 export class FileSystemManager implements IFileSystemManager {
   // File operations
-  async readFile(filePath: string, encoding: BufferEncoding = 'utf8'): Promise<string | Buffer> {
+  async readFile(
+    filePath: string,
+    encoding: BufferEncoding = 'utf8',
+  ): Promise<string | Buffer> {
     try {
       if (!(await this.exists(filePath))) {
         throw new FileNotFoundError(filePath);
@@ -169,7 +171,10 @@ export class FileSystemManager implements IFileSystemManager {
     }
   }
 
-  async deleteDirectory(dirPath: string, recursive: boolean = false): Promise<void> {
+  async deleteDirectory(
+    dirPath: string,
+    recursive: boolean = false,
+  ): Promise<void> {
     try {
       if (await this.exists(dirPath)) {
         if (recursive) {
@@ -302,7 +307,10 @@ export class FileSystemManager implements IFileSystemManager {
   }
 
   // Utility operations
-  async createTempFile(prefix: string = 'md2pdf-', suffix: string = '.tmp'): Promise<string> {
+  async createTempFile(
+    prefix: string = 'md2pdf-',
+    suffix: string = '.tmp',
+  ): Promise<string> {
     const tempDir = os.tmpdir();
     const fileName = `${prefix}${Date.now()}-${Math.random().toString(36).substr(2, 9)}${suffix}`;
     const tempPath = path.join(tempDir, fileName);
@@ -317,28 +325,6 @@ export class FileSystemManager implements IFileSystemManager {
     const tempPath = path.join(tempDir, dirName);
     await this.createDirectory(tempPath);
     return tempPath;
-  }
-
-  async findFiles(pattern: string, searchPath: string = process.cwd()): Promise<string[]> {
-    try {
-      return new Promise((resolve, reject) => {
-        glob.glob(pattern, { cwd: searchPath, absolute: true }, (err, files) => {
-          if (err) {
-            reject(err);
-          } else {
-            resolve(files);
-          }
-        });
-      });
-    } catch (error) {
-      throw new MD2PDFError(
-        `Failed to find files: ${(error as Error).message}`,
-        'FILE_SEARCH_ERROR',
-        'file_system',
-        true,
-        { pattern, searchPath },
-      );
-    }
   }
 
   async getFileSize(filePath: string): Promise<number> {

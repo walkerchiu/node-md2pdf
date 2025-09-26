@@ -87,10 +87,26 @@ export class FileProcessorService implements IFileProcessorService {
       let finalHtmlContent = parsedContent.content;
       if (options.includeTOC && parsedContent.headings.length > 0) {
         this.logger.debug('Generating table of contents');
-        const tocResult = await this.tocGeneratorService.generateTOC(
-          parsedContent.headings,
-          options.tocOptions,
-        );
+
+        // Check if page numbers are requested
+        const includePageNumbers =
+          options.tocOptions?.includePageNumbers ?? false;
+
+        let tocResult;
+        if (includePageNumbers) {
+          this.logger.debug('Generating TOC with page numbers');
+          tocResult = await this.tocGeneratorService.generateTOCWithPageNumbers(
+            parsedContent.headings,
+            parsedContent.content,
+            options.tocOptions,
+          );
+        } else {
+          this.logger.debug('Generating TOC without page numbers');
+          tocResult = await this.tocGeneratorService.generateTOC(
+            parsedContent.headings,
+            options.tocOptions,
+          );
+        }
 
         finalHtmlContent = this.injectTOC(
           parsedContent.content,

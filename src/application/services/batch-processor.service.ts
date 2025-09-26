@@ -2,6 +2,9 @@
  * Simplified application service for batch processing
  */
 
+import * as path from 'path';
+import * as fs from 'fs';
+
 import {
   IFileProcessorService,
   FileProcessingOptions,
@@ -10,6 +13,7 @@ import {
 import {
   BatchConversionConfig,
   BatchConversionResult,
+  BatchError,
   BatchProcessingOptions,
 } from '../../types/batch';
 import { MD2PDFError } from '../../infrastructure/error/errors';
@@ -47,13 +51,11 @@ export class BatchProcessorService implements IBatchProcessorService {
   constructor(
     private readonly logger: ILogger,
     private readonly errorHandler: IErrorHandler,
-    private readonly _configManager: IConfigManager, // Reserved for future use
+    private readonly _configManager: IConfigManager,
     private readonly fileSystemManager: IFileSystemManager,
-    private readonly _fileProcessorService: IFileProcessorService, // Reserved for future use
+    private readonly fileProcessorService: IFileProcessorService,
   ) {
-    // _configManager and _fileProcessorService are reserved for future use
     void this._configManager;
-    void this._fileProcessorService;
   }
 
   async processBatch(
@@ -66,31 +68,129 @@ export class BatchProcessorService implements IBatchProcessorService {
     try {
       this.logger.info(`Starting batch processing: ${config.inputPattern}`);
 
-      // Validate batch configuration
       await this.validateBatchConfig(config);
 
-      // For now, return a simple successful result
-      // Full implementation would integrate with file collection and processing
-      const result: BatchProcessingServiceResult = {
-        success: true,
-        totalFiles: 0,
-        successfulFiles: 0,
-        failedFiles: 0,
+      // Collect files
+      const files = await this.collectFiles(config);
+
+      if (files.length === 0) {
+        this.logger.warn(
+          `No files found matching pattern: ${config.inputPattern}`,
+        );
+        return {
+          success: true,
+          totalFiles: 0,
+          successfulFiles: 0,
+          failedFiles: 0,
+          skippedFiles: 0,
+          processingTime: Date.now() - startTime,
+          errors: [],
+          results: [],
+          serviceResults: [],
+        };
+      }
+
+      this.logger.info(`Found ${files.length} files to process`);
+
+      const maxConcurrency =
+        batchOptions.maxConcurrency || config.maxConcurrentProcesses || 2;
+      const continueOnError =
+        batchOptions.continueOnError ?? config.continueOnError ?? true;
+
+      const results: FileProcessingResult[] = [];
+      const errors: BatchError[] = [];
+      let successCount = 0;
+      let failedCount = 0;
+
+      // Process files in batches
+      for (let i = 0; i < files.length; i += maxConcurrency) {
+        const batch = files.slice(i, i + maxConcurrency);
+        const batchPromises = batch.map(async (filePath) => {
+          try {
+            const outputPath = this.generateOutputPath(filePath, config);
+            const processOptions: FileProcessingOptions = {
+              ...fileOptions,
+              outputPath,
+            };
+
+            const result = await this.fileProcessorService.processFile(
+              filePath,
+              processOptions,
+            );
+            successCount++;
+            return result;
+          } catch (error) {
+            failedCount++;
+            const mdError =
+              error instanceof MD2PDFError
+                ? error
+                : new MD2PDFError(
+                    `File processing failed: ${(error as Error).message}`,
+                    'FILE_PROCESSING_ERROR',
+                    'file_processing',
+                    true,
+                    { inputPath: filePath, originalError: error },
+                  );
+
+            const errorInfo: BatchError = {
+              inputPath: filePath,
+              error: mdError as unknown as BatchError['error'],
+              canRetry: true,
+            };
+
+            errors.push(errorInfo);
+
+            if (!continueOnError) {
+              throw error;
+            }
+
+            this.logger.error(`Failed to process file: ${filePath}`, error);
+            return null;
+          }
+        });
+
+        const batchResults = await Promise.allSettled(batchPromises);
+
+        batchResults.forEach((result, index) => {
+          if (result.status === 'fulfilled' && result.value) {
+            results.push(result.value);
+          } else if (result.status === 'rejected') {
+            this.logger.error(
+              `Batch processing error for ${batch[index]}:`,
+              result.reason,
+            );
+          }
+        });
+      }
+
+      const processingTime = Date.now() - startTime;
+
+      const finalResult: BatchProcessingServiceResult = {
+        success: failedCount === 0 || continueOnError,
+        totalFiles: files.length,
+        successfulFiles: successCount,
+        failedFiles: failedCount,
         skippedFiles: 0,
-        processingTime: Date.now() - startTime,
-        errors: [],
-        results: [],
-        serviceResults: [],
+        processingTime,
+        errors,
+        results: results.map((r) => ({
+          inputPath: r.inputPath,
+          outputPath: r.outputPath,
+          success: r.success,
+          processingTime: r.processingTime,
+          fileSize: r.fileSize,
+          error: undefined,
+        })),
+        serviceResults: results,
       };
 
       this.logger.info(
-        `Batch processing completed: ${result.results.length}/${result.totalFiles} files successful`,
+        `Batch processing completed: ${successCount}/${files.length} files successful, ${failedCount} failed`,
       );
 
-      return result;
+      return finalResult;
     } catch (error) {
       const totalProcessingTime = Date.now() - startTime;
-
       const wrappedError = new MD2PDFError(
         `Batch processing failed: ${(error as Error).message}`,
         'BATCH_PROCESSING_ERROR',
@@ -137,7 +237,6 @@ export class BatchProcessorService implements IBatchProcessorService {
       }
 
       this.logger.info('Batch configuration validation passed');
-
       return true;
     } catch (error) {
       if (error instanceof MD2PDFError) {
@@ -164,15 +263,12 @@ export class BatchProcessorService implements IBatchProcessorService {
     }
   }
 
-  async estimateBatchSize(_config: BatchConversionConfig): Promise<number> {
+  async estimateBatchSize(config: BatchConversionConfig): Promise<number> {
     try {
       this.logger.debug('Estimating batch size');
-
-      // For now, return 0 - would integrate with file collector in full implementation
-      const estimatedSize = 0;
-
+      const files = await this.collectFiles(config);
+      const estimatedSize = files.length;
       this.logger.info(`Estimated batch size: ${estimatedSize} files`);
-
       return estimatedSize;
     } catch (error) {
       this.logger.warn(
@@ -189,5 +285,120 @@ export class BatchProcessorService implements IBatchProcessorService {
       this.logger.debug(`Batch progress: ${progress.toFixed(1)}% - ${current}`);
       onProgress?.(progress, current);
     };
+  }
+
+  private async collectFiles(config: BatchConversionConfig): Promise<string[]> {
+    const { inputPattern } = config;
+
+    try {
+      let files: string[] = [];
+
+      if (inputPattern.includes(',')) {
+        files = inputPattern
+          .split(',')
+          .map((f) => f.trim().replace(/['"]/g, ''));
+      } else if (inputPattern === '*.md' || inputPattern === '**/*.md') {
+        const allFiles = fs.readdirSync(process.cwd());
+        files = allFiles
+          .filter((file) => file.endsWith('.md') || file.endsWith('.markdown'))
+          .map((file) => path.join(process.cwd(), file));
+      } else {
+        if (fs.existsSync(inputPattern)) {
+          const stat = fs.statSync(inputPattern);
+          if (stat.isDirectory()) {
+            files = this.findMarkdownFilesInDirectory(inputPattern);
+          } else if (this.isMarkdownFile(inputPattern)) {
+            files = [inputPattern];
+          }
+        }
+      }
+
+      const markdownFiles = files
+        .filter((f) => this.isMarkdownFile(f))
+        .map((f) => path.resolve(f))
+        .filter((f) => fs.existsSync(f));
+
+      this.logger.debug(`Collected ${markdownFiles.length} markdown files`);
+      return markdownFiles;
+    } catch (error) {
+      this.logger.error('Error collecting files:', error);
+      throw new MD2PDFError(
+        `Failed to collect files: ${(error as Error).message}`,
+        'FILE_COLLECTION_ERROR',
+        'file_system',
+        true,
+        { inputPattern, originalError: error },
+      );
+    }
+  }
+
+  private findMarkdownFilesInDirectory(dirPath: string): string[] {
+    const results: string[] = [];
+
+    const traverse = (currentPath: string): void => {
+      const items = fs.readdirSync(currentPath);
+
+      for (const item of items) {
+        const fullPath = path.join(currentPath, item);
+        const stat = fs.statSync(fullPath);
+
+        if (stat.isDirectory()) {
+          if (!['node_modules', 'dist', 'build', '.git'].includes(item)) {
+            traverse(fullPath);
+          }
+        } else if (this.isMarkdownFile(fullPath)) {
+          results.push(fullPath);
+        }
+      }
+    };
+
+    traverse(dirPath);
+    return results;
+  }
+
+  private generateOutputPath(
+    inputPath: string,
+    config: BatchConversionConfig,
+  ): string {
+    const parsedInput = path.parse(inputPath);
+    let outputName = parsedInput.name;
+
+    switch (config.filenameFormat) {
+      case 'with_timestamp':
+        outputName = `${parsedInput.name}_${Date.now()}`;
+        break;
+      case 'with_date':
+        outputName = `${parsedInput.name}_${new Date().toISOString().split('T')[0]}`;
+        break;
+      case 'custom':
+        if (config.customFilenamePattern) {
+          outputName = config.customFilenamePattern
+            .replace('{name}', parsedInput.name)
+            .replace('{date}', new Date().toISOString().split('T')[0])
+            .replace('{timestamp}', Date.now().toString());
+        }
+        break;
+      default:
+        break;
+    }
+
+    const outputFileName = `${outputName}.pdf`;
+
+    if (config.outputDirectory) {
+      if (config.preserveDirectoryStructure) {
+        const relativePath = path.relative(process.cwd(), parsedInput.dir);
+        const outputDir = path.join(config.outputDirectory, relativePath);
+        return path.join(outputDir, outputFileName);
+      } else {
+        return path.join(config.outputDirectory, outputFileName);
+      }
+    }
+
+    return path.join(parsedInput.dir, outputFileName);
+  }
+
+  private isMarkdownFile(filePath: string): boolean {
+    const ext = path.extname(filePath).toLowerCase();
+    return ['.md', '.markdown'].includes(ext);
   }
 }

@@ -221,8 +221,8 @@ export class BatchProcessor {
         },
         displayHeaderFooter: config.includePageNumbers,
         footerTemplate: config.includePageNumbers
-          '<div style="font-size:10px; width:100%; text-align:center;">Page <span class="pageNumber"></span> of <span class="totalPages"></span></div>' :
-          '',
+          ? '<div style="font-size:10px; width:100%; text-align:center;">Page <span class="pageNumber"></span> of <span class="totalPages"></span></div>'
+          : '',
         printBackground: true,
         toc: {
           enabled: true,

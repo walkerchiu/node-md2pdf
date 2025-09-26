@@ -10,6 +10,14 @@ import { ErrorType, MD2PDFError } from '../../types';
 
 export class FileCollector {
   /**
+   * Find files matching pattern (public method for CLI use)
+   * Returns absolute paths of matching markdown files
+   */
+  async findFilesByPattern(pattern: string): Promise<string[]> {
+    return this.findFiles(pattern);
+  }
+
+  /**
    * Collect files based on input pattern
    */
   async collectFiles(config: BatchConversionConfig): Promise<BatchFileInfo[]> {
