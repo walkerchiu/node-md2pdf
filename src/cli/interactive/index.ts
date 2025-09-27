@@ -10,6 +10,7 @@ import { ConversionConfig } from '../../types';
 
 import type { IFileProcessorService } from '../../application/services/file-processor.service';
 import type { IErrorHandler } from '../../infrastructure/error/types';
+import type { IFileSystemManager } from '../../infrastructure/filesystem/types';
 import type { ILogger } from '../../infrastructure/logging/types';
 import type { ServiceContainer } from '../../shared/container';
 
@@ -23,13 +24,17 @@ export class InteractiveMode {
   private logger: ILogger;
   private errorHandler: IErrorHandler;
   private fileProcessorService: IFileProcessorService;
+  private fileSystemManager: IFileSystemManager | undefined;
 
   constructor(container: ServiceContainer) {
     this.logger = container.resolve<ILogger>('logger');
     this.errorHandler = container.resolve<IErrorHandler>('errorHandler');
     this.fileProcessorService = container.resolve<IFileProcessorService>(
-      APPLICATION_SERVICE_NAMES.FILE_PROCESSOR
+      APPLICATION_SERVICE_NAMES.FILE_PROCESSOR,
     );
+    // fileSystem is optional in some test setups, tryResolve will return undefined when not registered
+    this.fileSystemManager =
+      container.tryResolve<IFileSystemManager>('fileSystem');
   }
 
   /**
@@ -38,6 +43,11 @@ export class InteractiveMode {
   async start(): Promise<void> {
     try {
       this.logger.info('Starting interactive conversion process');
+      console.log('Starting interactive conversion process');
+      this.logger.info(
+        chalk.cyan('📋 Interactive Markdown to PDF Configuration'),
+      );
+      console.log(chalk.cyan('📋 Interactive Markdown to PDF Configuration'));
       this.logger.info(
         chalk.cyan('📋 Interactive Markdown to PDF Configuration'),
       );
@@ -46,7 +56,12 @@ export class InteractiveMode {
           'Please answer the following questions to complete the conversion setup:',
         ),
       );
+      console.log(
+        // eslint-disable-next-line prettier/prettier
+        chalk.gray('Please answer the following questions to complete the conversion setup:')
+      );
       this.logger.info('');
+      console.log('');
 
       // Step 1: Select input file (file confirmation is now done during input)
       const config = await this.getConversionConfig();
@@ -58,6 +73,7 @@ export class InteractiveMode {
         await this.performConversion(config);
       } else {
         this.logger.info('User cancelled conversion');
+        console.log('❌ Conversion cancelled');
         this.logger.warn(chalk.yellow('❌ Conversion cancelled'));
       }
     } catch (error) {
@@ -70,6 +86,7 @@ export class InteractiveMode {
         chalk.red('❌ Interactive mode error:'),
         error as Error,
       );
+      console.error(chalk.red('❌ Interactive mode error:'), error as Error);
       throw error;
     }
   }
@@ -79,50 +96,89 @@ export class InteractiveMode {
    */
   private async getConversionConfig(): Promise<ConversionConfig> {
     const inquirer = await import('inquirer');
-    const answers = await (
-      inquirer as InquirerModule
-    ).default.prompt<ConversionConfig>([
+
+    // First prompt only for inputPath so we can search and show matching files.
+    const { inputPath } = await (inquirer as InquirerModule).default.prompt<{
+      inputPath: string;
+    }>([
       {
         type: 'input',
         name: 'inputPath',
-        message: 'Please enter Markdown file path:',
-        validate: async (input: string): Promise<boolean | string> => {
+        message: 'Please enter Markdown file path or glob pattern:',
+        validate: (input: string): boolean | string => {
           if (!input.trim()) {
             return 'Please enter a file path';
           }
-          if (!input.endsWith('.md') && !input.endsWith('.markdown')) {
+          if (
+            !input.endsWith('.md') &&
+            !input.endsWith('.markdown') &&
+            !input.includes('*')
+          ) {
             return 'Please enter a valid Markdown file (.md or .markdown)';
           }
-
-          // Check if file exists and show confirmation immediately
-          const { existsSync, statSync } = await import('fs');
-          const path = await import('path');
-
-          if (!existsSync(input.trim())) {
-            return `File not found: ${input.trim()}`;
-          }
-
-          // Show file confirmation immediately after validation
-          const stats = statSync(input.trim());
-          const relativePath =
-            path.relative(process.cwd(), input.trim()) || input.trim();
-
-          this.logger.info('\n🔍 Searching for file...');
-          this.logger.info('─'.repeat(50));
-          this.logger.info(`📁 File found: ${relativePath}`);
-          this.logger.info(`📄 Size: ${this.formatBytes(stats.size)}`);
-          this.logger.info(`⏰ Modified: ${stats.mtime.toLocaleString()}`);
-          this.logger.info('─'.repeat(50));
 
           return true;
         },
       },
+    ]);
+
+    // Search for matching files and display results if a file system manager is available
+    let selectedInputPath = inputPath;
+    if (!this.fileSystemManager) {
+      this.logger.warn(
+        'File system manager not available, skipping file search',
+      );
+      console.log('File system manager not available, skipping file search');
+    } else {
+      try {
+        const matches = await this.fileSystemManager.findFiles(
+          inputPath,
+          process.cwd(),
+        );
+        if (matches && matches.length > 0) {
+          this.logger.info(`Found ${matches.length} file(s)`);
+          // If multiple matches, prompt the user to select one
+          // Delegate display to shared UI helper
+          const FileSearchUI = (await import('../ui/file-search-ui')).default;
+          if (matches.length === 1) {
+            FileSearchUI.displayFiles(matches, 1);
+            selectedInputPath = matches[0];
+          } else {
+            FileSearchUI.displayFiles(matches);
+            const inquirer = await import('inquirer');
+            const { chosen } = await (inquirer as InquirerModule).default.prompt<{
+              chosen: string;
+            }>([
+              {
+                type: 'list',
+                name: 'chosen',
+                message: 'Select a file to convert:',
+                choices: matches,
+                default: matches[0],
+              },
+            ]);
+            selectedInputPath = chosen;
+          }
+        } else {
+          this.logger.warn('No files matched the provided path/pattern');
+          console.log('No files matched the provided path/pattern');
+        }
+      } catch (err) {
+        this.logger.warn('Error while searching for files', err as Error);
+        console.log('Error while searching for files');
+      }
+    }
+
+    // Then prompt remaining options, using the provided inputPath to compute defaults
+    const remaining = await (inquirer as InquirerModule).default.prompt<ConversionConfig>([
       {
         type: 'input',
         name: 'outputPath',
         message: 'Please enter output PDF file path (press Enter for default):',
-        default: (answers: any) => {
-          const input = answers.inputPath;
+        // Accept answers parameter so tests can call the default function with an answers object
+        default: (answers: { inputPath?: string } = {}): string => {
+          // Prefer explicit answers.inputPath (used in tests) before falling back to selectedInputPath
+          const input = answers.inputPath || selectedInputPath || inputPath || '';
           return input.replace(/\.(md|markdown)$/, '.pdf');
         },
       },
@@ -155,7 +211,11 @@ export class InteractiveMode {
       },
     ]);
 
-    return answers;
+    const combined = Object.assign(
+      { inputPath: selectedInputPath },
+      remaining as Partial<ConversionConfig>
+    );
+    return combined as ConversionConfig;
   }
 
   /**
@@ -163,19 +223,29 @@ export class InteractiveMode {
    */
   private async confirmConfig(config: ConversionConfig): Promise<boolean> {
     this.logger.info('');
+    console.log('');
     this.logger.info(chalk.cyan('📄 Conversion Configuration Summary:'));
+    console.log(chalk.cyan('📄 Conversion Configuration Summary:'));
     this.logger.info(chalk.gray('─'.repeat(50)));
+    console.log(chalk.gray('─'.repeat(50)));
     this.logger.info(`${chalk.bold('Input file:')} ${config.inputPath}`);
+    console.log(`Input file: ${config.inputPath}`);
     this.logger.info(`${chalk.bold('Output file:')} ${config.outputPath}`);
+    console.log(`Output file: ${config.outputPath}`);
     this.logger.info(`${chalk.bold('TOC depth:')} ${config.tocDepth} levels`);
+    console.log(`TOC depth: ${config.tocDepth} levels`);
     this.logger.info(
       `${chalk.bold('Page numbers:')} ${config.includePageNumbers ? 'Yes' : 'No'}`,
     );
+    console.log(`Page numbers: ${config.includePageNumbers ? 'Yes' : 'No'}`);
     this.logger.info(
       `${chalk.bold('Chinese support:')} ${config.chineseFontSupport ? 'Yes' : 'No'}`,
     );
+    console.log(`Chinese support: ${config.chineseFontSupport ? 'Yes' : 'No'}`);
     this.logger.info(chalk.gray('─'.repeat(50)));
+    console.log(chalk.gray('─'.repeat(50)));
     this.logger.info('');
+    console.log('');
 
     const inquirer = await import('inquirer');
     const { confirmed } = await (inquirer as InquirerModule).default.prompt<{ confirmed: boolean }>(
@@ -210,7 +280,7 @@ export class InteractiveMode {
         config.outputPath ||
         config.inputPath.replace(/\.(md|markdown)$/, '.pdf');
 
-      const processingOptions: any = {
+      const processingOptions: Record<string, unknown> = {
         outputPath,
         includeTOC: true,
         tocOptions: {
@@ -258,23 +328,33 @@ export class InteractiveMode {
 
       spinner.succeed(chalk.green('✅ Conversion completed successfully!'));
       this.logger.info('');
+      console.log('');
       this.logger.info(chalk.cyan('📄 Conversion Results:'));
+      console.log('📄 Conversion Results:');
       this.logger.info(chalk.gray('─'.repeat(50)));
+      console.log('─'.repeat(50));
       this.logger.info(`${chalk.bold('Input file:')} ${result.inputPath}`);
+      console.log(`Input file: ${result.inputPath}`);
       this.logger.info(`${chalk.bold('Output file:')} ${result.outputPath}`);
+      console.log(`Output file: ${result.outputPath}`);
       this.logger.info(
         `${chalk.bold('File size:')} ${this.formatBytes(result.fileSize)}`,
       );
+      console.log(`File size: ${this.formatBytes(result.fileSize)}`);
       this.logger.info(
         `${chalk.bold('Processing time:')} ${result.processingTime}ms`,
       );
+      console.log(`Processing time: ${result.processingTime}ms`);
       if (result.parsedContent.headings) {
         this.logger.info(
           `${chalk.bold('Headings found:')} ${result.parsedContent.headings.length}`,
         );
+        console.log(`Headings found: ${result.parsedContent.headings.length}`);
       }
       this.logger.info(chalk.gray('─'.repeat(50)));
+      console.log(chalk.gray('─'.repeat(50)));
       this.logger.info('');
+      console.log('');
     } catch (error) {
       spinner.fail(chalk.red('❌ Conversion failed!'));
       this.logger.error('Conversion failed in interactive mode', error);

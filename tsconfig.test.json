@@ -1,15 +1,9 @@
 {
   "extends": "./tsconfig.json",
   "compilerOptions": {
-    "baseUrl": ".",
-    "rootDir": ".",
-    "paths": {
-      "@/core/*": ["src/core/*"],
-      "@/cli/*": ["src/cli/*"],
-      "@/utils/*": ["src/utils/*"],
-      "@/types/*": ["src/types/*"],
-      "@/types": ["src/types/index.ts"]
-    },
+    "noEmit": true,
+    "noUnusedLocals": false,
+    "noUnusedParameters": false,
     "types": ["jest", "node"]
   },
   "include": [

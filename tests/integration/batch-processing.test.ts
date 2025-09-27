@@ -4,6 +4,7 @@
 
 import { BatchProcessor } from '../../src/core/batch';
 import { BatchConversionConfig, BatchFilenameFormat } from '../../src/types/batch';
+import type { BatchProgressEvent } from '../../src/types/batch';
 import * as fs from 'fs';
 import * as path from 'path';
 
@@ -52,10 +53,7 @@ Just a simple markdown file for testing.`,
     ];
     // Write test files
     for (const testFile of testFiles) {
-      await fs.promises.writeFile(
-        path.join(testDir, testFile.name),
-        testFile.content
-      );
+      await fs.promises.writeFile(path.join(testDir, testFile.name), testFile.content);
     }
     // Create subdirectory with file
     const subDir = path.join(testDir, 'sub');
@@ -83,6 +81,7 @@ Just a simple markdown file for testing.`,
       await fs.promises.rm(testDir, { recursive: true, force: true });
     } catch (error) {
       // Ignore cleanup errors in tests
+      // eslint-disable-next-line no-console
       console.warn('Test cleanup failed:', error);
     }
   });
@@ -110,7 +109,10 @@ Just a simple markdown file for testing.`,
       expect(result.totalFiles).toBe(4); // Includes subdoc.md
       // Check that subdirectory structure is preserved
       const subOutputDir = path.join(outputDir, 'sub');
-      const subDirExists = await fs.promises.access(subOutputDir).then(() => true).catch(() => false);
+      const subDirExists = await fs.promises
+        .access(subOutputDir)
+        .then(() => true)
+        .catch(() => false);
       expect(subDirExists).toBe(true);
     }, 60000);
   });
@@ -175,11 +177,11 @@ Just a simple markdown file for testing.`,
 
   describe('Progress tracking', () => {
     test('should provide progress updates during processing', async () => {
-      const progressEvents: any[] = [];
+      const progressEvents: BatchProgressEvent[] = [];
       const result = await batchProcessor.processBatch(config, {
-        onProgress: (event) => {
+        onProgress: event => {
           progressEvents.push(event);
-        }
+        },
       });
       expect(result.success).toBe(true);
       expect(progressEvents.length).toBeGreaterThan(0);
@@ -191,7 +193,7 @@ Just a simple markdown file for testing.`,
     test('should track individual file completion', async () => {
       const completedFiles: string[] = [];
       const result = await batchProcessor.processBatch(config, {
-        onFileComplete: (result) => {
+        onFileComplete: result => {
           if (result.success) {
             completedFiles.push(result.inputPath);
           }
@@ -214,7 +216,10 @@ Just a simple markdown file for testing.`,
       const result = await batchProcessor.processBatch(configWithNewOutput);
       expect(result.success).toBe(true);
       // Check that directory was created
-      const dirExists = await fs.promises.access(newOutputDir).then(() => true).catch(() => false);
+      const dirExists = await fs.promises
+        .access(newOutputDir)
+        .then(() => true)
+        .catch(() => false);
       expect(dirExists).toBe(true);
     }, 60000);
     test('should handle file name conflicts', async () => {

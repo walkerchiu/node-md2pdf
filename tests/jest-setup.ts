@@ -18,6 +18,7 @@ process.env.npm_config_progress = 'false';
 
 // Handle uncaught rejections in tests gracefully
 process.on('unhandledRejection', (reason, promise) => {
+  // eslint-disable-next-line no-console
   console.warn('Unhandled Promise Rejection in test:', promise, 'reason:', reason);
 });
 

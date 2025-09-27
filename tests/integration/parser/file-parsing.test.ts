@@ -40,7 +40,7 @@ describe('MarkdownParser - File Parsing Integration', () => {
 
       // Verify statistics
       expect(result.metadata?.statistics).toBeDefined();
-      const stats = result.metadata?.statistics as any;
+      const stats = result.metadata?.statistics as { wordCount: number; headingCount: number };
       expect(stats.wordCount).toBeGreaterThan(0);
       expect(stats.headingCount).toBe(result.headings.length);
     });
@@ -56,19 +56,19 @@ describe('MarkdownParser - File Parsing Integration', () => {
       expect(result.headings[0]).toMatchObject({
         level: 1,
         text: 'Simple Test',
-        id: 'simple-test'
+        id: 'simple-test',
       });
 
       expect(result.headings[1]).toMatchObject({
         level: 2,
         text: 'Chapter 1',
-        id: 'chapter-1'
+        id: 'chapter-1',
       });
 
       expect(result.headings[2]).toMatchObject({
         level: 3,
         text: 'Section 1.1',
-        id: 'section-11'
+        id: 'section-11',
       });
     });
 
@@ -93,16 +93,12 @@ describe('MarkdownParser - File Parsing Integration', () => {
       const result = parser.parseFile(filePath);
 
       // Find Chinese headings
-      const chineseHeadings = result.headings.filter(h => 
-        /[\u4e00-\u9fff]/.test(h.text)
-      );
+      const chineseHeadings = result.headings.filter(h => /[\u4e00-\u9fff]/.test(h.text));
 
       expect(chineseHeadings.length).toBeGreaterThan(0);
 
       // Verify Chinese heading slugs are preserved
-      const chineseTestHeading = result.headings.find(h => 
-        h.text === '中文測試'
-      );
+      const chineseTestHeading = result.headings.find(h => h.text === '中文測試');
       if (chineseTestHeading) {
         expect(chineseTestHeading.id).toBe('中文測試');
         expect(chineseTestHeading.anchor).toBe('#中文測試');
@@ -114,8 +110,8 @@ describe('MarkdownParser - File Parsing Integration', () => {
 
       // Check that the content contains both English and Chinese
       expect(result.content).toContain('測試');
-      expect(result.content).toContain('English');  // Changed from 'Test' to match actual content
-      expect(result.content).toContain('Markdown');  // Capitalized to match actual content
+      expect(result.content).toContain('English'); // Changed from 'Test' to match actual content
+      expect(result.content).toContain('Markdown'); // Capitalized to match actual content
     });
   });
 
@@ -143,8 +139,8 @@ describe('MarkdownParser - File Parsing Integration', () => {
       expect(result.content).toContain('<pre class="language-typescript">');
       expect(result.content).toContain('<pre class="language-javascript">');
       // Check that special characters in code are escaped (check actual escaping used)
-      expect(result.content).toContain('&gt;');   // Check for > escaping (should exist)
-      expect(result.content).toContain('&#39;');  // Check for ' escaping (our highlighter uses this)
+      expect(result.content).toContain('&gt;'); // Check for > escaping (should exist)
+      expect(result.content).toContain('&#39;'); // Check for ' escaping (our highlighter uses this)
     });
     it('should generate clickable links', () => {
       const filePath = join(fixturesPath, 'sample.md');

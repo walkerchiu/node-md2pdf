@@ -3,9 +3,18 @@
  * Handles visual feedback for batch operations
  */
 
+/* eslint-disable no-console */
+
 import chalk from 'chalk';
 import ora, { Ora } from 'ora';
-import { BatchProgressEvent, BatchProgressInfo, SingleBatchResult, BatchError } from '../../types/batch';
+import {
+  BatchProgressEvent,
+  BatchProgressInfo,
+  SingleBatchResult,
+  BatchError,
+} from '../../types/batch';
+
+type DisplayErrorShape = { message?: string; suggestions?: string[] };
 
 export class BatchProgressUI {
   private spinner: Ora;
@@ -87,7 +96,9 @@ export class BatchProgressUI {
     console.log(chalk.gray('─'.repeat(60)));
     console.log(`${chalk.bold('Input Pattern:')} ${config.inputPattern}`);
     console.log(`${chalk.bold('Output Directory:')} ${config.outputDirectory}`);
-    console.log(`${chalk.bold('Preserve Structure:')} ${config.preserveDirectoryStructure ? 'Yes' : 'No'}`);
+    console.log(
+      `${chalk.bold('Preserve Structure:')} ${config.preserveDirectoryStructure ? 'Yes' : 'No'}`
+    );
     console.log(`${chalk.bold('Concurrent Processes:')} ${config.maxConcurrentProcesses}`);
     console.log(`${chalk.bold('Continue on Error:')} ${config.continueOnError ? 'Yes' : 'No'}`);
     console.log(chalk.gray('─'.repeat(60)));
@@ -156,12 +167,18 @@ export class BatchProgressUI {
     errors.forEach((error, index) => {
       const shortPath = this.shortenPath(error.inputPath);
       console.log(chalk.red(`  ${index + 1}. ${shortPath}`));
-      console.log(chalk.gray(`     ${error.error.message}`));
-      if (error.error.suggestions) {
-        console.log(chalk.gray('     Suggestions:'));
-        error.error.suggestions.forEach(suggestion => {
-          console.log(chalk.gray(`     • ${suggestion}`));
-        });
+      const err = error.error as unknown;
+      if (err && typeof err === 'object') {
+        const e = err as DisplayErrorShape;
+        if (e.message) {
+          console.log(chalk.gray(`     ${e.message}`));
+        }
+        if (Array.isArray(e.suggestions) && e.suggestions.length > 0) {
+          console.log(chalk.gray('     Suggestions:'));
+          e.suggestions.forEach(suggestion => {
+            console.log(chalk.gray(`     • ${suggestion}`));
+          });
+        }
       }
     });
     console.log(chalk.gray('─'.repeat(60)));
@@ -227,12 +244,15 @@ export class BatchProgressUI {
   /**
    * Handle file error
    */
-  private handleFileError(_data: BatchProgressInfo, currentFile?: string, error?: any): void {
+  private handleFileError(_data: BatchProgressInfo, currentFile?: string, error?: unknown): void {
     if (currentFile) {
       const shortPath = this.shortenPath(currentFile);
       console.log(chalk.red(`\n❌ Failed: ${shortPath}`));
-      if (error?.message) {
-        console.log(chalk.gray(`   Error: ${error.message}`));
+      if (error && typeof error === 'object') {
+        const e = error as DisplayErrorShape;
+        if (e.message) {
+          console.log(chalk.gray(`   Error: ${e.message}`));
+        }
       }
     }
   }
@@ -245,7 +265,11 @@ export class BatchProgressUI {
     if (successRate === 100) {
       this.spinner.succeed(chalk.green(`✅ All ${data.totalFiles} files processed successfully!`));
     } else if (data.successfulFiles > 0) {
-      this.spinner.warn(chalk.yellow(`⚠️  Processed ${data.successfulFiles}/${data.totalFiles} files (${successRate}% success rate)`));
+      this.spinner.warn(
+        chalk.yellow(
+          `⚠️  Processed ${data.successfulFiles}/${data.totalFiles} files (${successRate}% success rate)`
+        )
+      );
     } else {
       this.spinner.fail(chalk.red(`❌ Failed to process any files`));
     }
@@ -307,7 +331,7 @@ export class BatchProgressUI {
     const sizes = ['B', 'KB', 'MB', 'GB'];
     if (bytes === 0) return '0 B';
     const i = Math.floor(Math.log(bytes) / Math.log(1024));
-    return Math.round(bytes / Math.pow(1024, i) * 100) / 100 + ' ' + sizes[i];
+    return Math.round((bytes / Math.pow(1024, i)) * 100) / 100 + ' ' + sizes[i];
   }
 
   /**

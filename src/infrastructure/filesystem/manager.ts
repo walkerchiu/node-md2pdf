@@ -3,8 +3,9 @@
  */
 
 import * as fs from 'fs-extra';
-import * as path from 'path';
+import * as glob from 'glob';
 import * as os from 'os';
+import * as path from 'path';
 import {
   FileNotFoundError,
   FilePermissionError,
@@ -325,6 +326,25 @@ export class FileSystemManager implements IFileSystemManager {
     const tempPath = path.join(tempDir, dirName);
     await this.createDirectory(tempPath);
     return tempPath;
+  }
+
+  async findFiles(
+    pattern: string,
+    searchPath: string = process.cwd(),
+  ): Promise<string[]> {
+    try {
+      // Use synchronous glob to avoid callback typings and keep behavior deterministic.
+      const files = glob.sync(pattern, { cwd: searchPath, absolute: true });
+      return files;
+    } catch (error) {
+      throw new MD2PDFError(
+        `Failed to find files: ${(error as Error).message}`,
+        'FILE_SEARCH_ERROR',
+        'file_system',
+        true,
+        { pattern, searchPath }
+      );
+    }
   }
 
   async getFileSize(filePath: string): Promise<number> {

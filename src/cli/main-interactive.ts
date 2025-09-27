@@ -36,14 +36,14 @@ export class MainInteractiveMode {
             this.logger.info('User selected single file mode');
             const singleMode = new InteractiveMode(this.container);
             await singleMode.start();
-            // After single file conversion, continue loop to show menu again
+            // After single file conversion, continue to main menu
             break;
           }
           case 'batch': {
             this.logger.info('User selected batch mode');
             const batchMode = new BatchInteractiveMode(this.container);
             await batchMode.start();
-            // After batch conversion, continue loop to show menu again
+            // After batch conversion, continue to main menu
             break;
           }
           case 'exit':
