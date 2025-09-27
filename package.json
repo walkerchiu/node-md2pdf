@@ -24,6 +24,7 @@
     "lint:fix": "eslint src/**/*.ts --fix",
     "format": "prettier --write src/**/*.ts",
     "clean": "rimraf dist coverage",
+    "clean:all": "rimraf dist coverage .bmad-core .cursor .claude *.tmp test-results test-output",
     "clean:test": "ts-node -r tsconfig-paths/register scripts/clean-test-files.ts"
   },
   "keywords": [

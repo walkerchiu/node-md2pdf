@@ -5,6 +5,7 @@
 
 import chalk from 'chalk';
 
+import FileSearchUI from '../ui/file-search-ui';
 import { BatchProgressUI } from './batch-progress-ui';
 import { APPLICATION_SERVICE_NAMES } from '../../application/container';
 import { BatchConversionConfig, BatchFilenameFormat } from '../../types/batch';
@@ -13,6 +14,11 @@ import type { IBatchProcessorService } from '../../application/services/batch-pr
 import type { IErrorHandler } from '../../infrastructure/error/types';
 import type { ILogger } from '../../infrastructure/logging/types';
 import type { ServiceContainer } from '../../shared/container';
+
+/* eslint-disable no-console */
+/* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/explicit-module-boundary-types, @typescript-eslint/explicit-function-return-type */
+
+type InquirerModule = typeof import('inquirer');
 
 export class BatchInteractiveMode {
   private logger: ILogger;
@@ -34,22 +40,28 @@ export class BatchInteractiveMode {
   async start(): Promise<void> {
     try {
       this.logger.info('Starting batch interactive mode');
+      console.log('Starting batch interactive mode');
       this.logger.info(chalk.cyan('📦 Batch Conversion Mode'));
+      console.log(chalk.cyan('📦 Batch Conversion Mode'));
       this.logger.info(chalk.gray('Process multiple Markdown files at once'));
+      console.log(chalk.gray('Process multiple Markdown files at once'));
       this.logger.info('');
 
       // Step 1: Get input pattern and preview files
       const { inputPattern, files } = await this.getInputPatternAndFiles();
       // Step 2: Get remaining batch configuration
       const config = await this.getBatchConfig(inputPattern);
-      // Step 3: Final preview with configuration
+      // Step 3: Add collected files to config
+      config.inputFiles = files.map((f) => f.inputPath);
+      // Step 4: Final preview with configuration
       const confirmed = await this.finalConfirmation(config, files);
       if (!confirmed) {
         this.logger.info('User cancelled batch processing');
+        console.log('❌ Batch processing cancelled');
         this.logger.warn(chalk.yellow('❌ Batch processing cancelled'));
         return;
       }
-      // Step 4: Process batch
+      // Step 5: Process batch
       await this.processBatch(config);
     } catch (error) {
       this.logger.error('Batch interactive mode error', error as Error);
@@ -58,6 +70,7 @@ export class BatchInteractiveMode {
         'BatchInteractiveMode.start',
       );
       this.logger.error(chalk.red('❌ Batch mode error:'), error as Error);
+      console.error(chalk.red('❌ Batch mode error:'), error as Error);
       throw error;
     } finally {
       this.progressUI.stop();
@@ -69,17 +82,12 @@ export class BatchInteractiveMode {
    */
   private async getInputPatternAndFiles(): Promise<{
     inputPattern: string;
-    files: any[];
+    files: { inputPath: string }[];
   }> {
-    type InquirerModule = {
-      default: {
-        prompt: (questions: unknown) => Promise<Record<string, unknown>>;
-      };
-    };
-    const inquirer = await import('inquirer');
+    const inquirer = (await import('inquirer')) as InquirerModule;
 
     // Step 1: Ask for input pattern
-    const { inputPattern } = (await (inquirer as InquirerModule).default.prompt([
+    const { inputPattern } = (await inquirer.default.prompt([
       {
         type: 'input',
         name: 'inputPattern',
@@ -143,15 +151,8 @@ export class BatchInteractiveMode {
       const files = fileList.map((filePath) => ({
         inputPath: path.resolve(filePath),
       }));
-
-      this.logger.info(chalk.green('\n📁 Files found:'));
-      this.logger.info('────────────────────────────────────────────────────────────');
-      files.forEach((file: { inputPath: string }, index: number) => {
-        const relativePath = file.inputPath.replace(process.cwd() + '/', './');
-        this.logger.info(chalk.white(`  ${index + 1}. ${relativePath}`));
-      });
-      this.logger.info('────────────────────────────────────────────────────────────');
-      this.logger.info(chalk.gray(`Total: ${files.length} files`));
+      // Print file list directly to stdout to avoid logger timestamps
+      FileSearchUI.displayFiles(files.map((f) => f.inputPath));
 
       if (files.length === 0) {
         this.logger.warn(
@@ -161,16 +162,14 @@ export class BatchInteractiveMode {
       }
 
       // Step 3: Confirm file list
-      const { confirmFiles } = await (
-        inquirer as InquirerModule
-      ).default.prompt([
+      const { confirmFiles } = (await inquirer.default.prompt([
         {
           type: 'confirm',
           name: 'confirmFiles',
           message: `Proceed with these ${files.length} files?`,
           default: true,
         },
-      ]);
+      ])) as { confirmFiles: boolean };
       if (!confirmFiles) {
         this.logger.warn(chalk.yellow('❌ File selection cancelled'));
         process.exit(0);
@@ -185,14 +184,14 @@ export class BatchInteractiveMode {
       );
 
       // Ask if user wants to try again
-      const { tryAgain } = await (inquirer as InquirerModule).default.prompt([
+      const { tryAgain } = (await inquirer.default.prompt([
         {
           type: 'confirm',
           name: 'tryAgain',
           message: 'Would you like to try a different pattern?',
           default: true,
         },
-      ]);
+      ])) as { tryAgain: boolean };
 
       if (tryAgain) {
         return this.getInputPatternAndFiles(); // Recursive retry
@@ -208,19 +207,19 @@ export class BatchInteractiveMode {
   private async getBatchConfig(
     inputPattern: string,
   ): Promise<BatchConversionConfig> {
-    const inquirer = await import('inquirer');
+    const inquirer = (await import('inquirer')) as InquirerModule;
 
     console.log(chalk.cyan('\n⚙️  Configuration Options'));
     console.log(chalk.gray('Configure how your files will be processed'));
     console.log();
 
-    const answers = await (inquirer as any).default.prompt([
+    const answers = (await inquirer.default.prompt([
       {
         type: 'input',
         name: 'outputDirectory',
         message: 'Enter output directory:',
         default: './output',
-        validate: (input: string) => {
+        validate: (input: string): boolean | string => {
           if (!input.trim()) {
             return 'Please enter an output directory';
           }
@@ -260,9 +259,9 @@ export class BatchInteractiveMode {
         message:
           'Enter custom filename pattern (use {name}, {timestamp}, {date}):',
         default: '{name}_{date}.pdf',
-        when: (answers: any) =>
+        when: (answers: { filenameFormat: BatchFilenameFormat }) =>
           answers.filenameFormat === BatchFilenameFormat.CUSTOM,
-        validate: (input: string) => {
+        validate: (input: string): boolean | string => {
           if (!input.includes('{name}')) {
             return 'Pattern must include {name} placeholder';
           }
@@ -315,14 +314,24 @@ export class BatchInteractiveMode {
         message: 'Continue processing other files if one fails?',
         default: true,
       },
-    ]);
+    ])) as {
+      outputDirectory: string;
+      preserveDirectoryStructure: boolean;
+      filenameFormat: BatchFilenameFormat;
+      customFilenamePattern?: string;
+      tocDepth: number;
+      includePageNumbers: boolean;
+      chineseFontSupport: boolean;
+      maxConcurrentProcesses: number;
+      continueOnError: boolean;
+    };
 
     return {
       inputPattern: inputPattern,
       outputDirectory: answers.outputDirectory,
       preserveDirectoryStructure: answers.preserveDirectoryStructure,
       filenameFormat: answers.filenameFormat,
-      customFilenamePattern: answers.customFilenamePattern,
+      customFilenamePattern: answers.customFilenamePattern ?? '',
       tocDepth: answers.tocDepth,
       includePageNumbers: answers.includePageNumbers,
       chineseFontSupport: answers.chineseFontSupport,
@@ -336,9 +345,9 @@ export class BatchInteractiveMode {
    */
   private async finalConfirmation(
     config: BatchConversionConfig,
-    files: any[],
+    files: { inputPath: string }[],
   ): Promise<boolean> {
-    const inquirer = await import('inquirer');
+    const inquirer = (await import('inquirer')) as InquirerModule;
 
     // Display configuration summary
     console.log(chalk.cyan('\n📋 Configuration Summary'));
@@ -404,14 +413,14 @@ export class BatchInteractiveMode {
     );
     console.log();
 
-    const { finalConfirm } = await (inquirer as any).default.prompt([
+    const { finalConfirm } = (await inquirer.default.prompt([
       {
         type: 'confirm',
         name: 'finalConfirm',
         message: 'Start batch processing with the above configuration?',
         default: false,
       },
-    ]);
+    ])) as { finalConfirm: boolean };
 
     return finalConfirm;
   }
@@ -436,7 +445,7 @@ export class BatchInteractiveMode {
     process.on('SIGTERM', handleCancel);
 
     try {
-      const fileOptions = {
+      const fileOptions: Record<string, unknown> = {
         outputPath: config.outputDirectory,
         includeTOC: true,
         tocOptions: {
@@ -457,7 +466,7 @@ export class BatchInteractiveMode {
             : '',
           printBackground: true,
         },
-      } as any;
+      };
 
       if (config.chineseFontSupport) {
         fileOptions.customStyles = `
@@ -492,15 +501,15 @@ export class BatchInteractiveMode {
         if (result.errors.length > 0) {
           const retryableErrors = result.errors.filter((e) => e.canRetry);
           if (retryableErrors.length > 0) {
-            const inquirer = await import('inquirer');
-            const { retry } = await (inquirer as any).default.prompt([
+            const inquirer = (await import('inquirer')) as InquirerModule;
+            const { retry } = (await inquirer.default.prompt([
               {
                 type: 'confirm',
                 name: 'retry',
                 message: `${retryableErrors.length} files failed but can be retried. Retry failed files?`,
                 default: false,
               },
-            ]);
+            ])) as { retry: boolean };
             if (retry) {
               await this.retryFailedFiles(
                 config,

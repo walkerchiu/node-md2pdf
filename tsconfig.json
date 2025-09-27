@@ -7,6 +7,7 @@
     "rootDir": "./src",
     "strict": true,
     "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
     "declaration": true,
@@ -21,15 +22,16 @@
     "exactOptionalPropertyTypes": true,
     "resolveJsonModule": true,
     "moduleResolution": "node",
-    "baseUrl": "./src",
+    "baseUrl": ".",
     "paths": {
-      "@/core/*": ["core/*"],
-      "@/cli/*": ["cli/*"],
-      "@/utils/*": ["utils/*"],
-      "@/types/*": ["types/*"],
-      "@/infrastructure/*": ["infrastructure/*"],
-      "@/shared/*": ["shared/*"],
-      "@/application/*": ["application/*"]
+      "@/application/*": ["src/application/*"],
+      "@/cli/*": ["src/cli/*"],
+      "@/core/*": ["src/core/*"],
+      "@/infrastructure/*": ["src/infrastructure/*"],
+      "@/shared/*": ["src/shared/*"],
+      "@/types/*": ["src/types/*"],
+      "@/types": ["src/types/index.ts"],
+      "@/utils/*": ["src/utils/*"]
     }
   },
   "include": [
@@ -39,8 +41,6 @@
     "node_modules",
     "dist",
     "coverage",
-    "tests",
-    "**/*.test.ts",
-    "**/*.spec.ts"
+    "tests"
   ]
 }

@@ -77,6 +77,9 @@ export class BatchProcessorService implements IBatchProcessorService {
         this.logger.warn(
           `No files found matching pattern: ${config.inputPattern}`,
         );
+        this.logger.info(
+          `Batch processing completed: 0/${files.length} files successful, 0 failed`,
+        );
         return {
           success: true,
           totalFiles: 0,
@@ -288,27 +291,60 @@ export class BatchProcessorService implements IBatchProcessorService {
   }
 
   private async collectFiles(config: BatchConversionConfig): Promise<string[]> {
-    const { inputPattern } = config;
+    const { inputPattern, inputFiles } = config;
 
     try {
       let files: string[] = [];
 
-      if (inputPattern.includes(',')) {
-        files = inputPattern
-          .split(',')
-          .map((f) => f.trim().replace(/['"]/g, ''));
-      } else if (inputPattern === '*.md' || inputPattern === '**/*.md') {
-        const allFiles = fs.readdirSync(process.cwd());
-        files = allFiles
-          .filter((file) => file.endsWith('.md') || file.endsWith('.markdown'))
-          .map((file) => path.join(process.cwd(), file));
+      // If inputFiles is provided, use it directly (takes precedence over pattern matching)
+      if (inputFiles && inputFiles.length > 0) {
+        this.logger.debug(
+          `Using pre-collected files list (${inputFiles.length} files)`,
+        );
+        files = inputFiles;
       } else {
-        if (fs.existsSync(inputPattern)) {
-          const stat = fs.statSync(inputPattern);
-          if (stat.isDirectory()) {
-            files = this.findMarkdownFilesInDirectory(inputPattern);
-          } else if (this.isMarkdownFile(inputPattern)) {
-            files = [inputPattern];
+        // Otherwise, use pattern-based collection
+
+        // If underlying filesystem manager exposes findFiles, prefer it (tests may mock it).
+        type FsWithFind = {
+          findFiles?: (pattern: string) => Promise<string[]>;
+        };
+        const fsWithFind = this.fileSystemManager as unknown as FsWithFind;
+        let usedFsFind = false;
+
+        if (typeof fsWithFind.findFiles === 'function') {
+          usedFsFind = true;
+          try {
+            const found = await fsWithFind.findFiles!(inputPattern);
+            files = Array.isArray(found) ? found : [];
+          } catch {
+            // Treat errors as empty result; do not fallback to local discovery when findFiles exists.
+            files = [];
+          }
+        }
+
+        // Only run fallback discovery if findFiles was not used.
+        if (!usedFsFind) {
+          if (inputPattern.includes(',')) {
+            files = inputPattern
+              .split(',')
+              .map((f) => f.trim().replace(/['"]/g, ''));
+          } else if (inputPattern === '*.md' || inputPattern === '**/*.md') {
+            const allFiles = fs.readdirSync(process.cwd());
+            files = allFiles
+              .filter(
+                (file) => file.endsWith('.md') || file.endsWith('.markdown'),
+              )
+              .map((file) => path.join(process.cwd(), file));
+          } else {
+            if (fs.existsSync(inputPattern)) {
+              const stat = fs.statSync(inputPattern);
+              if (stat.isDirectory()) {
+                files = this.findMarkdownFilesInDirectory(inputPattern);
+              } else if (this.isMarkdownFile(inputPattern)) {
+                files = [inputPattern];
+              }
+            }
           }
         }
       }

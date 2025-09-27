@@ -19,14 +19,8 @@ describe('FileCollector', () => {
     // Create test directory and files
     await fs.promises.mkdir(testDir, { recursive: true });
     // Create test markdown files
-    await fs.promises.writeFile(
-      path.join(testDir, 'test1.md'),
-      '# Test 1\n\nThis is test file 1'
-    );
-    await fs.promises.writeFile(
-      path.join(testDir, 'test2.md'),
-      '# Test 2\n\nThis is test file 2'
-    );
+    await fs.promises.writeFile(path.join(testDir, 'test1.md'), '# Test 1\n\nThis is test file 1');
+    await fs.promises.writeFile(path.join(testDir, 'test2.md'), '# Test 2\n\nThis is test file 2');
     await fs.promises.writeFile(
       path.join(testDir, 'README.md'),
       '# README\n\nThis should be ignored'
@@ -39,10 +33,7 @@ describe('FileCollector', () => {
       '# Subtest\n\nThis is a file in subdirectory'
     );
     // Create non-markdown file (should be ignored)
-    await fs.promises.writeFile(
-      path.join(testDir, 'test.txt'),
-      'This is not a markdown file'
-    );
+    await fs.promises.writeFile(path.join(testDir, 'test.txt'), 'This is not a markdown file');
     config = {
       inputPattern: path.join(testDir, '*.md'),
       outputDirectory: path.join(testDir, 'output'),
@@ -158,7 +149,7 @@ describe('FileCollector', () => {
         outputPath: path.join('/root/restricted', 'test1.pdf'), // This should fail with permission
         relativeInputPath: 'test1.md',
         size: 100,
-        lastModified: new Date()
+        lastModified: new Date(),
       });
       const { invalid } = await fileCollector.validateFiles(files);
       // Some files should be invalid due to permission issues
@@ -201,7 +192,7 @@ describe('FileCollector', () => {
     test('should handle custom filename format', async () => {
       const customConfig = {
         ...config,
-        filenameFormat: 'custom' as any,
+        filenameFormat: 'custom' as BatchFilenameFormat,
         customFilenamePattern: '{name}_custom_{date}.pdf',
       };
       const files = await fileCollector.collectFiles(customConfig);
@@ -214,7 +205,7 @@ describe('FileCollector', () => {
     test('should handle custom filename format without pattern', async () => {
       const customConfig = {
         ...config,
-        filenameFormat: 'custom' as any,
+        filenameFormat: 'custom' as BatchFilenameFormat,
         // customFilenamePattern is undefined, should fall back to default
       };
       const files = await fileCollector.collectFiles(customConfig);
@@ -313,14 +304,14 @@ describe('FileCollector', () => {
         await fileCollector.collectFiles(invalidConfig);
         // If no error thrown, mark as expecting error
         expect(true).toBe(false);
-      } catch (error: any) {
-        expect(error.type).toBeDefined();
+      } catch (error: unknown) {
+        expect((error as { type?: string }).type).toBeDefined();
       }
     });
     test('should handle with_date filename format', async () => {
       const dateConfig = {
         ...config,
-        filenameFormat: 'with_date' as any,
+        filenameFormat: 'with_date' as BatchFilenameFormat,
       };
       const files = await fileCollector.collectFiles(dateConfig);
       expect(files.length).toBeGreaterThan(0);
@@ -353,7 +344,9 @@ describe('FileCollector', () => {
           inputPattern: '*.md', // No explicit directory, should use process.cwd()
         };
         // This should trigger the || process.cwd() fallback in findFiles and throw due to no files found
-        await expect(fileCollector.collectFiles(simpleConfig)).rejects.toThrow('No files found matching pattern');
+        await expect(fileCollector.collectFiles(simpleConfig)).rejects.toThrow(
+          'No files found matching pattern'
+        );
       } finally {
         // Restore original directory and cleanup
         process.chdir(originalCwd);
@@ -388,7 +381,9 @@ describe('FileCollector', () => {
           inputPattern: './test*.md', // Pattern that would result in '.' as base directory
         };
         // This should trigger the baseDir !== '.' ? baseDir : undefined branch and throw due to no files found
-        await expect(fileCollector.collectFiles(currentDirConfig)).rejects.toThrow('No files found matching pattern');
+        await expect(fileCollector.collectFiles(currentDirConfig)).rejects.toThrow(
+          'No files found matching pattern'
+        );
       } finally {
         // Restore original directory and cleanup
         process.chdir(originalCwd);
@@ -407,7 +402,11 @@ describe('FileCollector', () => {
         const originalAccess = fs.promises.access;
         // Mock fs.promises.access to throw for write permission
         jest.spyOn(fs.promises, 'access').mockImplementation(async (filePath, mode) => {
-          if (typeof filePath === 'string' && filePath.includes('restricted-test') && mode === fs.constants.W_OK) {
+          if (
+            typeof filePath === 'string' &&
+            filePath.includes('restricted-test') &&
+            mode === fs.constants.W_OK
+          ) {
             throw new Error('Permission denied');
           }
           // Use original implementation for other calls to avoid recursion
@@ -450,21 +449,15 @@ describe('FileCollector', () => {
       // This should trigger the !this.isMarkdownFile(inputPath) branch in createFileInfo
       const testConfig = {
         ...config,
-        inputPattern: path.join(testDir, 'test-file.txt')
+        inputPattern: path.join(testDir, 'test-file.txt'),
       };
       // Should find no files since txt files are filtered out
       await expect(fileCollector.collectFiles(testConfig)).rejects.toThrow();
     });
     test('should handle comma-separated file patterns', async () => {
       // Create specific test files
-      await fs.promises.writeFile(
-        path.join(testDir, 'file1.md'),
-        '# File 1\n\nContent of file 1'
-      );
-      await fs.promises.writeFile(
-        path.join(testDir, 'file2.md'),
-        '# File 2\n\nContent of file 2'
-      );
+      await fs.promises.writeFile(path.join(testDir, 'file1.md'), '# File 1\n\nContent of file 1');
+      await fs.promises.writeFile(path.join(testDir, 'file2.md'), '# File 2\n\nContent of file 2');
       const commaSeparatedConfig = {
         ...config,
         inputPattern: `${path.join(testDir, 'file1.md')}, ${path.join(testDir, 'file2.md')}, ${path.join(testDir, 'test1.md')}`,

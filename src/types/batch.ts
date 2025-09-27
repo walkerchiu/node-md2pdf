@@ -7,6 +7,7 @@ import { ConversionConfig, MD2PDFError } from './index';
 // Batch processing types
 export interface BatchConversionConfig extends Omit<ConversionConfig, 'inputPath' | 'outputPath'> {
   inputPattern: string; // Glob pattern like "*.md" or "**/*.md"
+  inputFiles?: string[]; // Pre-collected file list (optional, takes precedence over inputPattern)
   outputDirectory: string;
   preserveDirectoryStructure: boolean;
   filenameFormat: BatchFilenameFormat;

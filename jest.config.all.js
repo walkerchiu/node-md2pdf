@@ -27,6 +27,15 @@
 module.exports = {
   preset: 'ts-jest',
   testEnvironment: 'node',
+  extensionsToTreatAsEsm: ['.ts'],
+  globals: {
+    'ts-jest': {
+      useESM: true,
+    },
+  },
+  transformIgnorePatterns: [
+    'node_modules/(?!(chalk|ansi-styles|strip-ansi|ansi-regex|wrap-ansi|string-width|emoji-regex|is-fullwidth-code-point)/)',
+  ],
 
   // Extended timeout for all tests including heavy Puppeteer operations
   testTimeout: 300000, // 5 minutes for complete test suite
