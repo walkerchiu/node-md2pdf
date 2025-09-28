@@ -1,0 +1,397 @@
+/**
+ * Puppeteer PDF Engine Adapter
+ * Wraps existing PDFGenerator with the new engine interface
+ */
+
+import puppeteer, { Browser, Page, PDFOptions } from 'puppeteer';
+import { existsSync, mkdirSync } from 'fs';
+import { dirname, resolve } from 'path';
+
+import {
+  IPDFEngine,
+  PDFEngineOptions,
+  PDFGenerationContext,
+  PDFEngineResult,
+  PDFEngineHealthStatus,
+  PDFEngineCapabilities,
+  PDFEngineMetrics,
+} from './types';
+import { PDFTemplates } from '../templates';
+
+export class PuppeteerPDFEngine implements IPDFEngine {
+  public readonly name = 'puppeteer';
+  public readonly version: string;
+  public readonly capabilities: PDFEngineCapabilities = {
+    supportedFormats: ['A4', 'A3', 'A5', 'Letter', 'Legal'],
+    maxConcurrentJobs: 3,
+    supportsCustomCSS: true,
+    supportsChineseText: true,
+    supportsTOC: true,
+    supportsHeaderFooter: true,
+  };
+
+  private browser: Browser | null = null;
+  private isInitialized = false;
+  private metrics: PDFEngineMetrics;
+  private activeTasks = 0;
+  private initStartTime: number;
+
+  constructor() {
+    this.version = this.getPuppeteerVersion();
+    this.initStartTime = Date.now();
+    this.metrics = {
+      engineName: this.name,
+      totalTasks: 0,
+      successfulTasks: 0,
+      failedTasks: 0,
+      averageTime: 0,
+      peakMemoryUsage: 0,
+      uptime: 0,
+    };
+  }
+
+  private getPuppeteerVersion(): string {
+    try {
+      // Use dynamic import to load package.json in ESM/TypeScript
+      // eslint-disable-next-line @typescript-eslint/no-var-requires
+      const pkg = require('puppeteer/package.json');
+      return pkg.version || 'unknown';
+    } catch {
+      return 'unknown';
+    }
+  }
+
+  async initialize(): Promise<void> {
+    if (this.isInitialized && this.browser) {
+      return;
+    }
+
+    const baseArgs = [
+      '--no-sandbox',
+      '--disable-setuid-sandbox',
+      '--disable-dev-shm-usage',
+      '--disable-gpu',
+      '--disable-web-security',
+      '--disable-features=VizDisplayCompositor',
+    ];
+
+    const configs = [
+      {
+        headless: 'new' as const,
+        timeout: 10000,
+        args: baseArgs,
+      },
+      {
+        executablePath:
+          '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
+        headless: 'new' as const,
+        timeout: 10000,
+        args: ['--no-sandbox'],
+      },
+      {
+        executablePath: '/usr/bin/google-chrome',
+        headless: 'new' as const,
+        timeout: 10000,
+        args: ['--no-sandbox'],
+      },
+      {
+        executablePath: '/usr/bin/chromium-browser',
+        headless: 'new' as const,
+        timeout: 10000,
+        args: ['--no-sandbox'],
+      },
+    ];
+
+    let lastError: Error | null = null;
+
+    for (const config of configs) {
+      try {
+        this.browser = await puppeteer.launch(config);
+
+        // Test the browser connection
+        const page = await this.browser.newPage();
+        await page.close();
+
+        this.isInitialized = true;
+        return;
+      } catch (error) {
+        lastError = error as Error;
+
+        if (this.browser) {
+          try {
+            await this.browser.close();
+          } catch {
+            // Ignore cleanup errors
+          }
+          this.browser = null;
+        }
+      }
+    }
+
+    throw new Error(
+      `Failed to initialize Puppeteer engine: ${lastError?.message}`,
+    );
+  }
+
+  async generatePDF(
+    context: PDFGenerationContext,
+    options: PDFEngineOptions,
+  ): Promise<PDFEngineResult> {
+    const startTime = Date.now();
+    this.activeTasks++;
+    this.metrics.totalTasks++;
+
+    try {
+      if (!this.isInitialized || !this.browser) {
+        await this.initialize();
+      }
+
+      if (!this.browser) {
+        throw new Error('Browser not initialized');
+      }
+
+      // Ensure output directory exists
+      const outputDir = dirname(context.outputPath);
+      if (!existsSync(outputDir)) {
+        mkdirSync(outputDir, { recursive: true });
+      }
+
+      const resolvedOutputPath = resolve(context.outputPath);
+      if (!resolvedOutputPath.toLowerCase().endsWith('.pdf')) {
+        throw new Error('Output path must end with .pdf extension');
+      }
+
+      // Generate full HTML with TOC if enabled
+      const fullHTML = await this.generateFullHTML(context);
+
+      const page = await this.browser.newPage();
+
+      try {
+        await page.setContent(fullHTML, {
+          waitUntil: 'networkidle0',
+          timeout: 30000,
+        });
+
+        const pdfOptions = this.buildPDFOptions(resolvedOutputPath, options);
+        const pdfBuffer = await page.pdf(pdfOptions);
+
+        const generationTime = Date.now() - startTime;
+        this.updateMetrics(true, generationTime);
+
+        return {
+          success: true,
+          outputPath: resolvedOutputPath,
+          metadata: {
+            pages: await this.getPageCount(page),
+            fileSize: pdfBuffer.length,
+            generationTime,
+            engineUsed: this.name,
+          },
+        };
+      } finally {
+        await page.close();
+      }
+    } catch (error) {
+      const generationTime = Date.now() - startTime;
+      this.updateMetrics(false, generationTime);
+      this.metrics.lastFailure = {
+        timestamp: new Date(),
+        error: error instanceof Error ? error.message : String(error),
+        context,
+      };
+
+      return {
+        success: false,
+        error: `PDF generation failed: ${error instanceof Error ? error.message : String(error)}`,
+      };
+    } finally {
+      this.activeTasks--;
+    }
+  }
+
+  private async generateFullHTML(
+    context: PDFGenerationContext,
+  ): Promise<string> {
+    if (context.toc?.enabled && context.toc) {
+      // TOC generation logic would go here
+      // For now, return basic HTML
+      return PDFTemplates.getFullHTML(
+        context.htmlContent,
+        context.title,
+        context.customCSS,
+        context.enableChineseSupport || false,
+      );
+    }
+
+    return PDFTemplates.getFullHTML(
+      context.htmlContent,
+      context.title,
+      context.customCSS,
+      context.enableChineseSupport || false,
+    );
+  }
+
+  private buildPDFOptions(
+    outputPath: string,
+    options: PDFEngineOptions,
+  ): PDFOptions {
+    return {
+      path: outputPath,
+      format: options.format as 'A4' | 'A3' | 'A5' | 'Legal' | 'Letter',
+      landscape: options.orientation === 'landscape',
+      margin: options.margin || {
+        top: '1in',
+        right: '1in',
+        bottom: '1in',
+        left: '1in',
+      },
+      displayHeaderFooter: options.displayHeaderFooter || false,
+      headerTemplate: options.headerTemplate || '',
+      footerTemplate: options.footerTemplate || '',
+      printBackground: options.printBackground || true,
+      scale: options.scale || 1,
+      preferCSSPageSize: options.preferCSSPageSize || false,
+    };
+  }
+
+  private async getPageCount(page: Page): Promise<number> {
+    try {
+      const pageCount = await page.evaluate(() => {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const doc = (globalThis as any).document;
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const win = (globalThis as any).window;
+        return Math.ceil(doc.body.scrollHeight / win.innerHeight);
+      });
+      return Math.max(1, pageCount);
+    } catch {
+      return 1;
+    }
+  }
+
+  private updateMetrics(success: boolean, generationTime: number): void {
+    if (success) {
+      this.metrics.successfulTasks++;
+    } else {
+      this.metrics.failedTasks++;
+    }
+
+    // Update average time
+    const totalSuccessful = this.metrics.successfulTasks;
+    if (totalSuccessful > 0) {
+      this.metrics.averageTime =
+        (this.metrics.averageTime * (totalSuccessful - 1) + generationTime) /
+        totalSuccessful;
+    }
+
+    this.metrics.uptime = Date.now() - this.initStartTime;
+  }
+
+  async healthCheck(): Promise<PDFEngineHealthStatus> {
+    const errors: string[] = [];
+    let isHealthy = true;
+
+    try {
+      if (!this.browser || !this.isInitialized) {
+        await this.initialize();
+      }
+
+      if (!this.browser) {
+        errors.push('Browser not available');
+        isHealthy = false;
+      } else {
+        // Test basic functionality
+        const page = await this.browser.newPage();
+        try {
+          await page.setContent(
+            '<html><body><h1>Health Check</h1></body></html>',
+          );
+          await page.close();
+        } catch (error) {
+          errors.push(
+            `Page operation failed: ${error instanceof Error ? error.message : String(error)}`,
+          );
+          isHealthy = false;
+        }
+      }
+    } catch (error) {
+      errors.push(
+        `Health check failed: ${error instanceof Error ? error.message : String(error)}`,
+      );
+      isHealthy = false;
+    }
+
+    return {
+      isHealthy,
+      engineName: this.name,
+      version: this.version,
+      lastCheck: new Date(),
+      errors,
+      performance: {
+        averageGenerationTime: this.metrics.averageTime,
+        successRate:
+          this.metrics.totalTasks > 0
+            ? this.metrics.successfulTasks / this.metrics.totalTasks
+            : 0,
+        memoryUsage: this.getCurrentMemoryUsage(),
+      },
+    };
+  }
+
+  async getResourceUsage(): Promise<{
+    memoryUsage: number;
+    activeTasks: number;
+    averageTaskTime: number;
+  }> {
+    return {
+      memoryUsage: this.getCurrentMemoryUsage(),
+      activeTasks: this.activeTasks,
+      averageTaskTime: this.metrics.averageTime,
+    };
+  }
+
+  private getCurrentMemoryUsage(): number {
+    try {
+      const usage = process.memoryUsage();
+      return usage.heapUsed;
+    } catch {
+      return 0;
+    }
+  }
+
+  async canHandle(_context: PDFGenerationContext): Promise<boolean> {
+    // Puppeteer can handle most contexts
+    return true;
+  }
+
+  async cleanup(): Promise<void> {
+    if (this.browser) {
+      try {
+        const timeoutPromise = new Promise<void>((_, reject) => {
+          const timeoutId = setTimeout(
+            () => reject(new Error('Browser close timeout')),
+            3000,
+          );
+          if (timeoutId.unref) {
+            timeoutId.unref();
+          }
+        });
+
+        await Promise.race([this.browser.close(), timeoutPromise]);
+      } catch (error) {
+        try {
+          await this.browser.disconnect();
+        } catch {
+          // Ignore disconnect errors
+        }
+      } finally {
+        this.browser = null;
+        this.isInitialized = false;
+      }
+    }
+  }
+
+  getMetrics(): PDFEngineMetrics {
+    return { ...this.metrics };
+  }
+}

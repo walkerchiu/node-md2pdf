@@ -35,7 +35,7 @@ export class OutputManager {
     for (const file of files) {
       let outputPath = file.outputPath;
       // Check if path already exists (in our list or on disk)
-      if (pathCounts.has(outputPath) || await this.fileExists(outputPath)) {
+      if (pathCounts.has(outputPath) || (await this.fileExists(outputPath))) {
         outputPath = await this.generateUniqueFileName(outputPath, pathCounts);
       }
       pathCounts.set(outputPath, (pathCounts.get(outputPath) || 0) + 1);
@@ -73,7 +73,10 @@ export class OutputManager {
   /**
    * Generate output structure report
    */
-  generateOutputReport(config: BatchConversionConfig, files: BatchFileInfo[]): {
+  generateOutputReport(
+    config: BatchConversionConfig,
+    files: BatchFileInfo[]
+  ): {
     summary: {
       totalFiles: number;
       outputDirectory: string;
@@ -111,13 +114,14 @@ export class OutputManager {
    * Clean up failed conversions
    */
   async cleanupFailedFiles(files: string[]): Promise<void> {
-    const cleanupPromises = files.map(async (filePath) => {
+    const cleanupPromises = files.map(async filePath => {
       try {
         if (await this.fileExists(filePath)) {
           await fs.promises.unlink(filePath);
         }
       } catch (error) {
         // Ignore cleanup errors
+        // eslint-disable-next-line no-console
         console.warn(`Failed to cleanup file: ${filePath}`, error);
       }
     });
@@ -157,6 +161,7 @@ export class OutputManager {
         await fs.promises.copyFile(backupPath, originalPath);
         await fs.promises.unlink(backupPath);
       } catch (error) {
+        // eslint-disable-next-line no-console
         console.warn(`Failed to restore backup: ${originalPath}`, error);
       }
     }
@@ -193,7 +198,7 @@ export class OutputManager {
     do {
       uniquePath = path.join(dir, `${baseName}_${counter}${ext}`);
       counter++;
-    } while (pathCounts.has(uniquePath) || await this.fileExists(uniquePath));
+    } while (pathCounts.has(uniquePath) || (await this.fileExists(uniquePath)));
     return uniquePath;
   }
 
@@ -252,9 +257,16 @@ export class OutputManager {
    */
   private isValidFileName(fileName: string): boolean {
     // Check for invalid characters (Windows and Unix)
-    const invalidChars = /[<>:"/\\|?*\x00-\x1f]/;
+    const invalidChars = /[<>:"/\\|?*]/;
     if (invalidChars.test(fileName)) {
       return false;
+    }
+    // Reject control characters (U+0000 through U+001F)
+    for (let i = 0; i < fileName.length; i++) {
+      const code = fileName.charCodeAt(i);
+      if (code >= 0 && code <= 0x1f) {
+        return false;
+      }
     }
     // Check for reserved names (Windows)
     const reservedNames = /^(con|prn|aux|nul|com[1-9]|lpt[1-9])$/i;

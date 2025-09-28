@@ -48,10 +48,11 @@ export class FileCollector {
 
     // Handle comma-separated file paths
     if (pattern.includes(',')) {
-      const filePaths = pattern.split(',')
+      const filePaths = pattern
+        .split(',')
         .map(p => p.trim())
         .filter(p => p)
-        .map(p => this.cleanFilePath(p)); // Remove quotes and clean path
+        .map(p => this.cleanFilePath(p));
       for (const filePath of filePaths) {
         if (await this.fileExists(filePath)) {
           files.push(path.resolve(filePath));
@@ -174,10 +175,12 @@ export class FileCollector {
    */
   private shouldIgnoreFile(filePath: string): boolean {
     const fileName = path.basename(filePath);
-    return fileName.startsWith('.') || 
+    return (
+      fileName.startsWith('.') ||
       fileName.toLowerCase() === 'readme.md' ||
-           filePath.includes('/node_modules/') ||
-           filePath.includes('/.git/');
+      filePath.includes('/node_modules/') ||
+      filePath.includes('/.git/')
+    );
   }
 
   /**
@@ -185,7 +188,7 @@ export class FileCollector {
    */
   private async createFileInfo(
     inputPath: string,
-    config: BatchConversionConfig
+    config: BatchConversionConfig,
   ): Promise<BatchFileInfo | null> {
     try {
       const stats = await fs.promises.stat(inputPath);
@@ -210,11 +213,7 @@ export class FileCollector {
           this.getBaseDirFromPattern(config.inputPattern) || process.cwd();
         relativeInputPath = path.relative(baseDir, inputPath);
       }
-      const outputPath = this.calculateOutputPath(
-        inputPath,
-        relativeInputPath,
-        config
-      );
+      const outputPath = this.calculateOutputPath(inputPath, relativeInputPath, config);
 
       return {
         inputPath,
@@ -235,7 +234,7 @@ export class FileCollector {
   private calculateOutputPath(
     inputPath: string,
     relativeInputPath: string,
-    config: BatchConversionConfig
+    config: BatchConversionConfig,
   ): string {
     const inputFileName = path.basename(inputPath, path.extname(inputPath));
     const inputDir = path.dirname(relativeInputPath);
@@ -252,10 +251,11 @@ export class FileCollector {
         outputFileName = `${inputFileName}_${date}.pdf`;
         break;
       case 'custom':
-        outputFileName = config.customFilenamePattern
-          ?.replace('{name}', inputFileName)
-          ?.replace('{timestamp}', timestamp.toString())
-          ?.replace('{date}', date) || `${inputFileName}.pdf`;
+        outputFileName =
+          config.customFilenamePattern
+            ?.replace('{name}', inputFileName)
+            ?.replace('{timestamp}', timestamp.toString())
+            ?.replace('{date}', date) || `${inputFileName}.pdf`;
         break;
       default:
         outputFileName = `${inputFileName}.pdf`;
@@ -324,13 +324,14 @@ export class FileCollector {
       } catch (error) {
         invalid.push({
           file,
-          error: error instanceof Error && 'type' in error
-            ? error as MD2PDFError
-            : this.createError(
-                ErrorType.SYSTEM_ERROR,
-                `File validation failed: ${error instanceof Error ? error.message : String(error)}`,
-                { inputPath: file.inputPath }
-              )
+          error:
+            error instanceof Error && 'type' in error
+              ? (error as MD2PDFError)
+              : this.createError(
+                  ErrorType.SYSTEM_ERROR,
+                  `File validation failed: ${error instanceof Error ? error.message : String(error)}`,
+                  { inputPath: file.inputPath }
+                ),
         });
       }
     }

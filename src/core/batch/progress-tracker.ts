@@ -3,7 +3,12 @@
  * Manages conversion progress and statistics
  */
 
-import { BatchProgressInfo, BatchProgressEvent, SingleBatchResult, BatchError } from '../../types/batch';
+import {
+  BatchProgressInfo,
+  BatchProgressEvent,
+  SingleBatchResult,
+  BatchError,
+} from '../../types/batch';
 import { EventEmitter } from 'events';
 
 export class ProgressTracker extends EventEmitter {

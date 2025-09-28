@@ -7,22 +7,26 @@ import { ServiceContainer, IServiceContainer } from '../shared/container';
 import { InfrastructureServices } from '../infrastructure/services';
 import {
   PDFGeneratorService,
+  EnhancedPDFGeneratorService,
   MarkdownParserService,
   TOCGeneratorService,
   FileProcessorService,
   BatchProcessorService,
   type IPDFGeneratorService,
+  type IEnhancedPDFGeneratorService,
   type IMarkdownParserService,
   type ITOCGeneratorService,
   type IFileProcessorService,
   type IBatchProcessorService,
 } from './services';
+import { FileCollector } from '@/core/batch/file-collector';
 
 import type { IConfigManager } from '../infrastructure/config/types';
 import type { ILogger } from '../infrastructure/logging/types';
 
 export const APPLICATION_SERVICE_NAMES = {
   PDF_GENERATOR: 'pdfGenerator',
+  ENHANCED_PDF_GENERATOR: 'enhancedPdfGenerator',
   MARKDOWN_PARSER: 'markdownParser',
   TOC_GENERATOR: 'tocGenerator',
   FILE_PROCESSOR: 'fileProcessor',
@@ -52,6 +56,17 @@ export class ApplicationServices {
       APPLICATION_SERVICE_NAMES.PDF_GENERATOR,
       (c) =>
         new PDFGeneratorService(
+          c.resolve('logger'),
+          c.resolve('errorHandler'),
+          c.resolve('config'),
+        ),
+    );
+
+    // Register Enhanced PDF Generator Service (new engine-based)
+    container.registerSingleton(
+      APPLICATION_SERVICE_NAMES.ENHANCED_PDF_GENERATOR,
+      (c) =>
+        new EnhancedPDFGeneratorService(
           c.resolve('logger'),
           c.resolve('errorHandler'),
           c.resolve('config'),
@@ -106,6 +121,7 @@ export class ApplicationServices {
           c.resolve('config'),
           c.resolve('fileSystem'),
           c.resolve(APPLICATION_SERVICE_NAMES.FILE_PROCESSOR),
+          new FileCollector(),
         ),
     );
   }
@@ -123,6 +139,18 @@ export class ApplicationServices {
     logger.setLevel(logLevel);
 
     return container.resolve(APPLICATION_SERVICE_NAMES.PDF_GENERATOR);
+  }
+
+  static createEnhancedPDFGeneratorService(
+    logLevel: 'error' | 'warn' | 'info' | 'debug' = 'info',
+  ): IEnhancedPDFGeneratorService {
+    const container = ApplicationServices.createContainer();
+
+    // Configure logging level
+    const logger = container.resolve<ILogger>('logger');
+    logger.setLevel(logLevel);
+
+    return container.resolve(APPLICATION_SERVICE_NAMES.ENHANCED_PDF_GENERATOR);
   }
 
   static createMarkdownParserService(

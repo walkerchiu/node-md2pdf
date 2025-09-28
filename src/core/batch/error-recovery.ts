@@ -3,6 +3,7 @@
  */
 
 import * as fs from 'fs';
+import * as os from 'os';
 import * as path from 'path';
 import { BatchError, BatchConversionConfig } from '../../types/batch';
 import { ErrorType } from '../../types';
@@ -46,6 +47,7 @@ export class ErrorRecoveryManager {
     const recoveredFiles: string[] = [];
     const permanentFailures: BatchError[] = [];
     let totalAttempts = 0;
+
     for (const error of errors) {
       totalAttempts++;
       if (this.isRecoverable(error, recoveryStrategy)) {
@@ -149,7 +151,10 @@ export class ErrorRecoveryManager {
     }
 
     // File access related recommendations
-    if (errorsByType[ErrorType.PERMISSION_DENIED] > 0 || errorsByType[ErrorType.FILE_NOT_FOUND] > 0) {
+    if (
+      errorsByType[ErrorType.PERMISSION_DENIED] > 0 ||
+      errorsByType[ErrorType.FILE_NOT_FOUND] > 0
+    ) {
       recommendations.push('Verify file system permissions and paths');
     }
 
@@ -207,6 +212,7 @@ export class ErrorRecoveryManager {
       retryableFiles.length *
       avgProcessingTime *
       this.defaultStrategy.maxRetries;
+      retryableFiles.length * avgProcessingTime * this.defaultStrategy.maxRetries;
 
     return {
       retryableFiles,
@@ -229,7 +235,7 @@ export class ErrorRecoveryManager {
       return;
     }
 
-    const cleanupPromises = failedFiles.map(async (inputPath) => {
+    const cleanupPromises = failedFiles.map(async inputPath => {
       try {
         // Determine expected output path
         const fileName = path.basename(inputPath, path.extname(inputPath));
@@ -249,6 +255,7 @@ export class ErrorRecoveryManager {
         }
       } catch (error) {
         // Ignore cleanup errors but log them
+        // eslint-disable-next-line no-console
         console.warn(`Cleanup warning for ${inputPath}:`, error);
       }
     });
@@ -269,15 +276,16 @@ export class ErrorRecoveryManager {
     try {
       // Check available memory
       const memUsage = process.memoryUsage();
-      const totalMem = require('os').totalmem();
+      const totalMem = os.totalmem();
       const memUsagePercent = (memUsage.heapUsed / totalMem) * 100;
       if (memUsagePercent > 80) {
         issues.push('High memory usage detected');
       } else if (memUsagePercent > 60) {
         warnings.push('Elevated memory usage');
       }
+
       // Check disk space (simplified check)
-      const tempDir = require('os').tmpdir();
+      const tempDir = os.tmpdir();
       try {
         const stats = await fs.promises.statfs(tempDir);
         const freeSpacePercent = (stats.bavail / stats.blocks) * 100;
@@ -290,9 +298,10 @@ export class ErrorRecoveryManager {
         // Disk space check not supported on all systems
         warnings.push('Could not verify disk space');
       }
+
       // Check if we're under high CPU load (simplified)
-      const loadAvg = require('os').loadavg()[0];
-      const cpuCount = require('os').cpus().length;
+      const loadAvg = os.loadavg()[0];
+      const cpuCount = os.cpus().length;
       const loadPercent = (loadAvg / cpuCount) * 100;
       if (loadPercent > 90) {
         warnings.push('High CPU load detected');
@@ -329,18 +338,24 @@ export class ErrorRecoveryManager {
         if (attempt > 1) {
           await this.sleep(strategy.retryDelay * attempt);
         }
+
         // Validate system health before retry
         const healthCheck = await this.validateSystemHealth();
         if (!healthCheck.healthy) {
+          // eslint-disable-next-line no-console
           console.warn(`System health issues detected, skipping retry for ${inputPath}`);
           return false;
         }
+
         // Here you would call the actual file processing logic
         // For now, we'll simulate success for recoverable errors
+        // eslint-disable-next-line no-console
         console.log(`Retrying ${inputPath} (attempt ${attempt}/${strategy.maxRetries})`);
+
         // In a real implementation, you'd call the actual processor here
         // const result = await this.processFile(inputPath, config);
         // return result.success;
+
         // For now, simulate success on the last attempt
         return attempt === strategy.maxRetries;
       } catch (error) {
@@ -357,11 +372,14 @@ export class ErrorRecoveryManager {
    * Group errors by type for analysis
    */
   private groupErrorsByType(errors: BatchError[]): Record<string, number> {
-    return errors.reduce((acc, error) => {
-      const type = error.error.type;
-      acc[type] = (acc[type] || 0) + 1;
-      return acc;
-    }, {} as Record<string, number>);
+    return errors.reduce(
+      (acc, error) => {
+        const type = error.error.type;
+        acc[type] = (acc[type] || 0) + 1;
+        return acc;
+      },
+      {} as Record<string, number>
+    );
   }
 
   /**

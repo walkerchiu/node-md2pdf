@@ -3,6 +3,8 @@
  */
 
 import { BatchProcessor } from '../../src/core/batch';
+import { FileCollector } from '../../src/core/batch/file-collector';
+import { OutputManager } from '../../src/core/batch/output-manager';
 import { BatchConversionConfig, BatchFilenameFormat } from '../../src/types/batch';
 import type { BatchProgressEvent } from '../../src/types/batch';
 import * as fs from 'fs';
@@ -15,7 +17,7 @@ describe('Batch Processing Integration', () => {
   let config: BatchConversionConfig;
 
   beforeEach(async () => {
-    batchProcessor = new BatchProcessor();
+    batchProcessor = new BatchProcessor(new FileCollector(), new OutputManager());
     testDir = path.join(__dirname, '../temp/batch-integration-test');
     outputDir = path.join(testDir, 'output');
     // Create test directory structure

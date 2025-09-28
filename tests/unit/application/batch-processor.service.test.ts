@@ -18,6 +18,8 @@ import type { IConfigManager } from '../../../src/infrastructure/config/types';
 import type { IFileSystemManager } from '../../../src/infrastructure/filesystem/types';
 import { MD2PDFError } from '../../../src/infrastructure/error/errors';
 import fs from 'fs';
+import { FileCollector } from '../../../src/core/batch/file-collector';
+import { BatchFileInfo } from '../../../src/types/batch';
 
 // Local minimal type for FileProcessingResult used in tests to avoid path-alias import
 type TestFileProcessingResult = {
@@ -45,6 +47,24 @@ type TestBatchProcessingResult = {
   serviceResults: unknown[];
   processingTime?: number;
 };
+
+// Helper type used in tests to access optional internals on the service.
+type ServiceWithCollector = {
+  fileCollector?: {
+    collectFiles: (config: BatchConversionConfig) => Promise<BatchFileInfo[]>;
+  };
+};
+
+// Reusable mock file list used in multiple tests.
+const foundFiles = [
+  {
+    inputPath: '/project/doc1.md',
+    outputPath: '/output/doc1.pdf',
+    relativeInputPath: 'doc1.md',
+    size: 123,
+    lastModified: new Date(),
+  },
+];
 
 describe('BatchProcessorService', () => {
   let service: IBatchProcessorService;
@@ -153,13 +173,23 @@ describe('BatchProcessorService', () => {
     mockFileSystemManager.createDirectory.mockResolvedValue();
 
     // Create service instance
+    // By default, inject a mock FileCollector that returns no files to keep tests deterministic.
+    const defaultMockCollector = {
+      collectFiles: jest.fn().mockResolvedValue([]),
+    } as unknown as FileCollector;
+
     service = new BatchProcessorService(
       mockLogger,
       mockErrorHandler,
       mockConfigManager,
       mockFileSystemManager,
-      mockFileProcessorService
+      mockFileProcessorService,
+      defaultMockCollector
     );
+  });
+
+  afterEach(() => {
+    jest.restoreAllMocks();
   });
 
   describe('processBatch', () => {
@@ -266,8 +296,19 @@ describe('BatchProcessorService', () => {
     });
 
     it('should process files returned by fileSystemManager.findFiles and include service results', async () => {
-      const foundFiles = ['/project/doc1.md'];
-      mockFileSystemManager.findFiles = jest.fn().mockResolvedValue(foundFiles as string[]);
+      // Mock FileCollector to return our found files
+      const mockFileCollector = {
+        collectFiles: jest.fn().mockResolvedValue([
+          {
+            inputPath: '/project/doc1.md',
+            outputPath: '/output/doc1.pdf',
+            relativeInputPath: 'doc1.md',
+            size: 123,
+            lastModified: new Date(),
+          },
+        ]),
+      };
+      (service as unknown as ServiceWithCollector).fileCollector = mockFileCollector;
 
       // Make fileProcessorService return a successful result for the file
       const mockResult: TestFileProcessingResult = {
@@ -284,9 +325,11 @@ describe('BatchProcessorService', () => {
         JSON.parse(JSON.stringify(mockResult)) as unknown as ProcessFileReturn
       );
 
-      // Spy on private collectFiles to return our found files to avoid fs.existsSync checks
-      const typedService = service as unknown as { collectFiles: () => Promise<string[]> };
-      const collectSpy = jest.spyOn(typedService, 'collectFiles').mockResolvedValue(foundFiles);
+      // Spy on FileCollector prototype to return our found files to avoid fs.existsSync checks
+      // Ensure the injected collector returns our found files
+      (service as unknown as ServiceWithCollector).fileCollector = {
+        collectFiles: jest.fn().mockResolvedValue(foundFiles as unknown as BatchFileInfo[]),
+      };
 
       const result = (await service.processBatch(
         sampleBatchConfig
@@ -296,19 +339,24 @@ describe('BatchProcessorService', () => {
       expect(result.successfulFiles).toBe(1);
       expect(result.failedFiles).toBe(0);
       expect(result.serviceResults).toHaveLength(1);
-
-      collectSpy.mockRestore();
     });
 
     it('should throw wrapped MD2PDFError when processFile fails and continueOnError is false', async () => {
-      const foundFiles = ['/project/bad.md'];
-      mockFileSystemManager.findFiles = jest.fn().mockResolvedValue(foundFiles as string[]);
+      // Mock FileCollector to return files that will cause processing failure
+      const mockFileCollector = {
+        collectFiles: jest.fn().mockResolvedValue([
+          {
+            inputPath: '/project/bad.md',
+            outputPath: '/output/bad.pdf',
+            relativeInputPath: 'bad.md',
+            size: 123,
+            lastModified: new Date(),
+          },
+        ]),
+      };
+      (service as unknown as ServiceWithCollector).fileCollector = mockFileCollector;
 
       mockFileProcessorService.processFile.mockRejectedValue(new Error('processing failed'));
-
-      // Ensure collectFiles returns the files so processing happens
-      const typedService2 = service as unknown as { collectFiles: () => Promise<string[]> };
-      const collectSpy = jest.spyOn(typedService2, 'collectFiles').mockResolvedValue(foundFiles);
 
       const result = (await service.processBatch(sampleBatchConfig, undefined, {
         continueOnError: false,
@@ -322,8 +370,6 @@ describe('BatchProcessorService', () => {
 
       // outer error handler should not have been called because processing does not rethrow
       expect(mockErrorHandler.handleError).not.toHaveBeenCalled();
-
-      collectSpy.mockRestore();
     });
 
     it('should use provided inputFiles instead of pattern matching', async () => {
@@ -348,6 +394,19 @@ describe('BatchProcessorService', () => {
         processingTime: 100,
         fileSize: 1024,
         parsedContent: { headings: [] },
+      };
+
+      // Make the FileCollector return BatchFileInfo entries for the provided inputFiles
+      const collected: BatchFileInfo[] = inputFiles.map(f => ({
+        inputPath: f,
+        outputPath: `/output/${f.split('/').pop()!.replace(/\.md$/, '.pdf')}`,
+        relativeInputPath: f.split('/').pop()!,
+        size: 100,
+        lastModified: new Date(),
+      }));
+      const collectSpy = jest.fn().mockResolvedValue(collected);
+      (service as unknown as ServiceWithCollector).fileCollector = {
+        collectFiles: collectSpy,
       };
 
       mockFileProcessorService.processFile
@@ -379,8 +438,8 @@ describe('BatchProcessorService', () => {
         expect.any(Object)
       );
 
-      // Verify logger shows using pre-collected files
-      expect(mockLogger.debug).toHaveBeenCalledWith('Using pre-collected files list (2 files)');
+      // Verify the file collector was used for the provided inputFiles
+      expect(collectSpy).toHaveBeenCalledWith(configWithInputFiles);
 
       // Clean up spy
       existsSyncSpy.mockRestore();
@@ -458,6 +517,12 @@ describe('BatchProcessorService', () => {
 
   describe('estimateBatchSize', () => {
     it('should estimate batch size successfully', async () => {
+      // Mock FileCollector to return empty results for estimation
+      const mockFileCollector = {
+        collectFiles: jest.fn().mockResolvedValue([]),
+      };
+      (service as unknown as ServiceWithCollector).fileCollector = mockFileCollector;
+
       const size = await service.estimateBatchSize(sampleBatchConfig);
 
       expect(size).toBe(0); // Current implementation returns 0
@@ -646,6 +711,12 @@ describe('BatchProcessorService', () => {
     });
 
     it('should maintain compatibility with batch processing interface', async () => {
+      // Mock FileCollector for consistency across all method calls
+      const mockFileCollector = {
+        collectFiles: jest.fn().mockResolvedValue([]),
+      };
+      (service as unknown as ServiceWithCollector).fileCollector = mockFileCollector;
+
       // Test all interface methods
       const validateResult = await service.validateBatchConfig(sampleBatchConfig);
       const estimateResult = await service.estimateBatchSize(sampleBatchConfig);
