@@ -26,7 +26,7 @@ export class MarkdownParser {
       linkify: true,
       typographer: true,
       quotes: '""\'\'',
-      highlight: this.highlightCode.bind(this)
+      highlight: this.highlightCode.bind(this),
     };
     const finalOptions = { ...defaultOptions, ...options };
 
@@ -37,7 +37,7 @@ export class MarkdownParser {
       linkify: finalOptions.linkify,
       typographer: finalOptions.typographer,
       quotes: finalOptions.quotes,
-      highlight: finalOptions.highlight
+      highlight: finalOptions.highlight,
     });
 
     // Configure plugins
@@ -52,7 +52,7 @@ export class MarkdownParser {
     this.md.use(anchor, {
       permalink: anchor.permalink.headerLink(),
       level: [1, 2, 3, 4, 5, 6],
-      slugify: this.slugify.bind(this)
+      slugify: this.slugify.bind(this),
     });
     // Note: markdown-it-attrs plugin disabled for now due to type issues
     // this.md.use(attrs);
@@ -66,7 +66,7 @@ export class MarkdownParser {
       .toLowerCase()
       .replace(/\s+/g, '-')
       .replace(/[^\w\-\u4e00-\u9fff]/g, '') // Keep Chinese characters
-      .replace(/\-\-+/g, '-')
+      .replace(/-{2,}/g, '-')
       .replace(/^-+/, '')
       .replace(/-+$/, '');
   }
@@ -106,8 +106,8 @@ export class MarkdownParser {
     // Pattern: **text:** or **text：** immediately followed by non-space character
     // Replace with: **text:** or **text：** followed by a space
     return content
-      .replace(/(\*\*[^*]+：\*\*)([^\s])/g, '$1 $2')  // Chinese colon
-      .replace(/(\*\*[^*]+:\*\*)([^\s])/g, '$1 $2');  // English colon
+      .replace(/(\*\*[^*]+：\*\*)([^\s])/g, '$1 $2') // Chinese colon
+      .replace(/(\*\*[^*]+:\*\*)([^\s])/g, '$1 $2'); // English colon
   }
 
   /**
@@ -126,10 +126,12 @@ export class MarkdownParser {
       return {
         content: html,
         headings,
-        metadata: this.extractMetadata(content)
+        metadata: this.extractMetadata(content),
       };
     } catch (error) {
-      throw new Error(`Failed to parse markdown: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      throw new Error(
+        `Failed to parse markdown: ${error instanceof Error ? error.message : 'Unknown error'}`
+      );
     }
   }
 
@@ -174,7 +176,7 @@ export class MarkdownParser {
           level,
           text,
           id: uniqueId,
-          anchor: `#${uniqueId}`
+          anchor: `#${uniqueId}`,
         });
         continue;
       }
@@ -192,7 +194,7 @@ export class MarkdownParser {
             level: 1,
             text,
             id: uniqueId,
-            anchor: `#${uniqueId}`
+            anchor: `#${uniqueId}`,
           });
           i++; // Skip the underline
         } else if (nextLine.match(/^-{3,}$/)) {
@@ -204,7 +206,7 @@ export class MarkdownParser {
             level: 2,
             text,
             id: uniqueId,
-            anchor: `#${uniqueId}`
+            anchor: `#${uniqueId}`,
           });
           i++; // Skip the underline
         }
@@ -245,8 +247,7 @@ export class MarkdownParser {
       .replace(/^---[\s\S]*?---/, '') // Remove frontmatter
       .replace(/[#*_`[\]()]/g, '') // Remove markdown syntax
       .split(/\s+/)
-      .filter(word => word.length > 0)
-      .length;
+      .filter(word => word.length > 0).length;
 
     const characterCount = content.length;
     const lineCount = content.split('\n').length;
@@ -255,7 +256,7 @@ export class MarkdownParser {
       wordCount,
       characterCount,
       lineCount,
-      headingCount: this.extractHeadings(content).length
+      headingCount: this.extractHeadings(content).length,
     };
 
     return metadata;

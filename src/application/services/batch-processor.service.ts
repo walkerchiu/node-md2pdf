@@ -3,7 +3,6 @@
  */
 
 import * as path from 'path';
-import * as fs from 'fs';
 
 import {
   IFileProcessorService,
@@ -16,6 +15,7 @@ import {
   BatchError,
   BatchProcessingOptions,
 } from '../../types/batch';
+import { FileCollector } from '../../core/batch/file-collector';
 import { MD2PDFError } from '../../infrastructure/error/errors';
 
 import type { IConfigManager } from '../../infrastructure/config/types';
@@ -48,14 +48,18 @@ export interface IBatchProcessorService {
 }
 
 export class BatchProcessorService implements IBatchProcessorService {
+  private readonly fileCollector: FileCollector;
+
   constructor(
     private readonly logger: ILogger,
     private readonly errorHandler: IErrorHandler,
     private readonly _configManager: IConfigManager,
     private readonly fileSystemManager: IFileSystemManager,
     private readonly fileProcessorService: IFileProcessorService,
+    private readonly fileCollectorParam?: FileCollector
   ) {
     void this._configManager;
+    this.fileCollector = this.fileCollectorParam ?? new FileCollector();
   }
 
   async processBatch(
@@ -71,7 +75,8 @@ export class BatchProcessorService implements IBatchProcessorService {
       await this.validateBatchConfig(config);
 
       // Collect files
-      const files = await this.collectFiles(config);
+      const fileInfos = await this.fileCollector.collectFiles(config);
+      const files = fileInfos.map(info => info.inputPath);
 
       if (files.length === 0) {
         this.logger.warn(
@@ -269,8 +274,8 @@ export class BatchProcessorService implements IBatchProcessorService {
   async estimateBatchSize(config: BatchConversionConfig): Promise<number> {
     try {
       this.logger.debug('Estimating batch size');
-      const files = await this.collectFiles(config);
-      const estimatedSize = files.length;
+      const fileInfos = await this.fileCollector.collectFiles(config);
+      const estimatedSize = fileInfos.length;
       this.logger.info(`Estimated batch size: ${estimatedSize} files`);
       return estimatedSize;
     } catch (error) {
@@ -288,108 +293,6 @@ export class BatchProcessorService implements IBatchProcessorService {
       this.logger.debug(`Batch progress: ${progress.toFixed(1)}% - ${current}`);
       onProgress?.(progress, current);
     };
-  }
-
-  private async collectFiles(config: BatchConversionConfig): Promise<string[]> {
-    const { inputPattern, inputFiles } = config;
-
-    try {
-      let files: string[] = [];
-
-      // If inputFiles is provided, use it directly (takes precedence over pattern matching)
-      if (inputFiles && inputFiles.length > 0) {
-        this.logger.debug(
-          `Using pre-collected files list (${inputFiles.length} files)`,
-        );
-        files = inputFiles;
-      } else {
-        // Otherwise, use pattern-based collection
-
-        // If underlying filesystem manager exposes findFiles, prefer it (tests may mock it).
-        type FsWithFind = {
-          findFiles?: (pattern: string) => Promise<string[]>;
-        };
-        const fsWithFind = this.fileSystemManager as unknown as FsWithFind;
-        let usedFsFind = false;
-
-        if (typeof fsWithFind.findFiles === 'function') {
-          usedFsFind = true;
-          try {
-            const found = await fsWithFind.findFiles!(inputPattern);
-            files = Array.isArray(found) ? found : [];
-          } catch {
-            // Treat errors as empty result; do not fallback to local discovery when findFiles exists.
-            files = [];
-          }
-        }
-
-        // Only run fallback discovery if findFiles was not used.
-        if (!usedFsFind) {
-          if (inputPattern.includes(',')) {
-            files = inputPattern
-              .split(',')
-              .map((f) => f.trim().replace(/['"]/g, ''));
-          } else if (inputPattern === '*.md' || inputPattern === '**/*.md') {
-            const allFiles = fs.readdirSync(process.cwd());
-            files = allFiles
-              .filter(
-                (file) => file.endsWith('.md') || file.endsWith('.markdown'),
-              )
-              .map((file) => path.join(process.cwd(), file));
-          } else {
-            if (fs.existsSync(inputPattern)) {
-              const stat = fs.statSync(inputPattern);
-              if (stat.isDirectory()) {
-                files = this.findMarkdownFilesInDirectory(inputPattern);
-              } else if (this.isMarkdownFile(inputPattern)) {
-                files = [inputPattern];
-              }
-            }
-          }
-        }
-      }
-
-      const markdownFiles = files
-        .filter((f) => this.isMarkdownFile(f))
-        .map((f) => path.resolve(f))
-        .filter((f) => fs.existsSync(f));
-
-      this.logger.debug(`Collected ${markdownFiles.length} markdown files`);
-      return markdownFiles;
-    } catch (error) {
-      this.logger.error('Error collecting files:', error);
-      throw new MD2PDFError(
-        `Failed to collect files: ${(error as Error).message}`,
-        'FILE_COLLECTION_ERROR',
-        'file_system',
-        true,
-        { inputPattern, originalError: error },
-      );
-    }
-  }
-
-  private findMarkdownFilesInDirectory(dirPath: string): string[] {
-    const results: string[] = [];
-
-    const traverse = (currentPath: string): void => {
-      const items = fs.readdirSync(currentPath);
-
-      for (const item of items) {
-        const fullPath = path.join(currentPath, item);
-        const stat = fs.statSync(fullPath);
-
-        if (stat.isDirectory()) {
-          if (!['node_modules', 'dist', 'build', '.git'].includes(item)) {
-            traverse(fullPath);
-          }
-        } else if (this.isMarkdownFile(fullPath)) {
-          results.push(fullPath);
-        }
-      }
-    };
-
-    traverse(dirPath);
-    return results;
   }
 
   private generateOutputPath(
@@ -431,10 +334,5 @@ export class BatchProcessorService implements IBatchProcessorService {
     }
 
     return path.join(parsedInput.dir, outputFileName);
-  }
-
-  private isMarkdownFile(filePath: string): boolean {
-    const ext = path.extname(filePath).toLowerCase();
-    return ['.md', '.markdown'].includes(ext);
   }
 }

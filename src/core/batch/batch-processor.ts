@@ -19,12 +19,22 @@ import {
   BatchProcessingOptions,
 } from '../../types/batch';
 import { ErrorType, MD2PDFError } from '../../types';
+import { Heading } from '../../types';
 import { StyleOptions } from '../pdf/types';
 
 export class BatchProcessor {
-  private fileCollector = new FileCollector();
-  private outputManager = new OutputManager();
+  private fileCollector: FileCollector;
+  private outputManager: OutputManager;
   private abortSignal?: AbortSignal;
+
+  /**
+   * Allow dependency injection for easier testing and customization.
+   * If dependencies are not provided, default instances will be created.
+   */
+  constructor(fileCollector?: FileCollector, outputManager?: OutputManager) {
+    this.fileCollector = fileCollector ?? new FileCollector();
+    this.outputManager = outputManager ?? new OutputManager();
+  }
 
   /**
    * Process batch conversion
@@ -86,7 +96,10 @@ export class BatchProcessor {
         success: results.results.length > 0,
         totalFiles: allFiles.length,
         successfulFiles: results.results.filter(r => r.success).length,
-        failedFiles: results.results.filter(r => !r.success).length + invalidFiles.length + outputInvalidFiles.length,
+        failedFiles:
+          results.results.filter(r => !r.success).length +
+          invalidFiles.length +
+          outputInvalidFiles.length,
         skippedFiles: 0,
         processingTime: totalProcessingTime,
         results: results.results,
@@ -102,15 +115,17 @@ export class BatchProcessor {
         skippedFiles: 0,
         processingTime: totalProcessingTime,
         results: [],
-        errors: [{
-          inputPath: config.inputPattern,
-          error: this.createError(
-            ErrorType.SYSTEM_ERROR,
-            `Batch processing failed: ${error instanceof Error ? error.message : String(error)}`,
-            { config }
-          ),
-          canRetry: true,
-        }],
+        errors: [
+          {
+            inputPath: config.inputPattern,
+            error: this.createError(
+              ErrorType.SYSTEM_ERROR,
+              `Batch processing failed: ${error instanceof Error ? error.message : String(error)}`,
+              { config }
+            ),
+            canRetry: true,
+          },
+        ],
       };
     }
   }
@@ -235,7 +250,7 @@ export class BatchProcessor {
         title?: string;
         customCSS?: string;
         styleOptions?: StyleOptions;
-        headings?: any[];
+        headings: Heading[];
         markdownContent?: string;
         enableChineseSupport?: boolean;
       } = {
@@ -249,11 +264,7 @@ export class BatchProcessor {
           fontFamily: 'Noto Sans CJK SC, Arial, sans-serif',
         };
       }
-      const result = await pdfGenerator.generatePDF(
-        parsed.content,
-        file.outputPath,
-        pdfOptions
-      );
+      const result = await pdfGenerator.generatePDF(parsed.content, file.outputPath, pdfOptions);
       await pdfGenerator.close();
       const processingTime = Date.now() - startTime;
       const stats = await fs.promises.stat(file.inputPath);
@@ -262,17 +273,22 @@ export class BatchProcessor {
         inputPath: file.inputPath,
         outputPath: file.outputPath,
         success: result.success,
-        error: result.success ? undefined : this.createError(
-          ErrorType.PDF_GENERATION_ERROR,
-          result.error || 'PDF generation failed',
-          { inputPath: file.inputPath, outputPath: file.outputPath }
-        ),
+        error: result.success
+          ? undefined
+          : this.createError(
+              ErrorType.PDF_GENERATION_ERROR,
+              result.error || 'PDF generation failed',
+              { inputPath: file.inputPath, outputPath: file.outputPath }
+            ),
         processingTime,
-        stats: result.success && outputStats ? {
-          inputSize: stats.size,
-          outputSize: outputStats.size,
-          pageCount: result.metadata?.pages || 0
-        } : undefined,
+        stats:
+          result.success && outputStats
+            ? {
+                inputSize: stats.size,
+                outputSize: outputStats.size,
+                pageCount: result.metadata?.pages || 0,
+              }
+            : undefined,
       };
       if (result.success) {
         progressTracker.completeFile(singleResult);

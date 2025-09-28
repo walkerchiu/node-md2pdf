@@ -4,12 +4,15 @@
 
 import { jest } from '@jest/globals';
 import { BatchProcessor } from '../../../../src/core/batch/batch-processor';
+import type { FileCollector as FileCollectorType } from '../../../../src/core/batch/file-collector';
+import type { OutputManager as OutputManagerType } from '../../../../src/core/batch/output-manager';
+import type { ProgressTracker as ProgressTrackerType } from '../../../../src/core/batch/progress-tracker';
 import {
   BatchConversionConfig,
   BatchFileInfo,
   BatchFilenameFormat,
 } from '../../../../src/types/batch';
-import { ErrorType } from '../../../../src/types';
+import { ErrorType, MD2PDFError } from '../../../../src/types';
 
 // Mocked classes for constructor checks
 // eslint-disable-next-line @typescript-eslint/no-var-requires
@@ -28,9 +31,9 @@ jest.mock('../../../../src/core/pdf');
 
 describe('BatchProcessor', () => {
   let batchProcessor: BatchProcessor;
-  let mockFileCollector: any;
-  let mockOutputManager: any;
-  let mockProgressTracker: any;
+  let mockFileCollector: jest.Mocked<FileCollectorType>;
+  let mockOutputManager: jest.Mocked<OutputManagerType>;
+  let mockProgressTracker: jest.Mocked<ProgressTrackerType>;
 
   beforeEach(() => {
     // Clear all mocks
@@ -41,13 +44,13 @@ describe('BatchProcessor', () => {
     mockFileCollector = {
       collectFiles: jest.fn(),
       validateFiles: jest.fn(),
-    };
+    } as unknown as jest.Mocked<FileCollectorType>;
 
     mockOutputManager = {
       resolveFileNameConflicts: jest.fn(),
       validateOutputPaths: jest.fn(),
       prepareOutputDirectories: jest.fn(),
-    };
+    } as unknown as jest.Mocked<OutputManagerType>;
 
     mockProgressTracker = {
       on: jest.fn(),
@@ -56,13 +59,17 @@ describe('BatchProcessor', () => {
       completeFile: jest.fn(),
       failFile: jest.fn(),
       complete: jest.fn(),
-    };
+    } as unknown as jest.Mocked<ProgressTrackerType>;
 
     FileCollector.mockImplementation(() => mockFileCollector);
     OutputManager.mockImplementation(() => mockOutputManager);
     ProgressTracker.mockImplementation(() => mockProgressTracker);
 
-    batchProcessor = new BatchProcessor();
+    // Inject mocks to avoid relying on constructor side-effects in tests
+    batchProcessor = new BatchProcessor(
+      mockFileCollector as unknown as FileCollectorType,
+      mockOutputManager as unknown as OutputManagerType
+    );
   });
 
   describe('Constructor', () => {
@@ -70,12 +77,16 @@ describe('BatchProcessor', () => {
       expect(batchProcessor).toBeInstanceOf(BatchProcessor);
     });
 
-    it('should initialize FileCollector', () => {
-      expect(FileCollector).toHaveBeenCalled();
+    it('should use injected FileCollector instance', () => {
+      expect(
+        (batchProcessor as unknown as { fileCollector: typeof mockFileCollector }).fileCollector
+      ).toBe(mockFileCollector);
     });
 
-    it('should initialize OutputManager', () => {
-      expect(OutputManager).toHaveBeenCalled();
+    it('should use injected OutputManager instance', () => {
+      expect(
+        (batchProcessor as unknown as { outputManager: typeof mockOutputManager }).outputManager
+      ).toBe(mockOutputManager);
     });
   });
 
@@ -146,7 +157,11 @@ describe('BatchProcessor', () => {
       const invalidFiles = [
         {
           file: mockFiles[0],
-          error: { type: ErrorType.INVALID_FORMAT, message: 'Invalid file' },
+          error: {
+            name: 'InvalidFormatError',
+            type: ErrorType.INVALID_FORMAT,
+            message: 'Invalid file',
+          } as MD2PDFError,
         },
       ];
 
@@ -173,7 +188,11 @@ describe('BatchProcessor', () => {
       const outputInvalidFiles = [
         {
           file: mockFiles[0],
-          error: { type: ErrorType.PERMISSION_DENIED, message: 'No permission' },
+          error: {
+            name: 'PermissionDenied',
+            type: ErrorType.PERMISSION_DENIED,
+            message: 'No permission',
+          } as MD2PDFError,
         },
       ];
 
@@ -282,7 +301,11 @@ describe('BatchProcessor', () => {
           size: 1024,
           lastModified: new Date(),
         },
-        error: { type: ErrorType.SYSTEM_ERROR, message: 'System error' },
+        error: {
+          name: 'SystemError',
+          type: ErrorType.SYSTEM_ERROR,
+          message: 'System error',
+        } as MD2PDFError,
       };
 
       mockFileCollector.collectFiles.mockResolvedValue([systemError.file]);

@@ -162,7 +162,10 @@ export class PerformanceMonitor {
   /**
    * Optimize batch processing based on current system state
    */
-  optimizeBatchSettings(currentConcurrency: number, totalFiles: number): {
+  optimizeBatchSettings(
+    currentConcurrency: number,
+    totalFiles: number
+  ): {
     recommendedConcurrency: number;
     shouldPause: boolean;
     shouldReduce: boolean;
@@ -193,8 +196,10 @@ export class PerformanceMonitor {
       }
 
       // Recommend pause for extreme conditions
-      if (stressCheck.metrics.memoryUsage.percentage > 95 || 
-          stressCheck.processMetrics.heapPercentage > 95) {
+      if (
+        stressCheck.metrics.memoryUsage.percentage > 95 ||
+        stressCheck.processMetrics.heapPercentage > 95
+      ) {
         shouldPause = true;
         optimizations.push('Recommend pausing processing due to critical resource usage');
       }
@@ -275,7 +280,7 @@ export class PerformanceMonitor {
       averageCpuUsage: Math.round(cpuUsages.reduce((a, b) => a + b, 0) / cpuUsages.length),
       peakCpuUsage: Math.max(...cpuUsages),
       totalWarnings: this.warnings.length,
-      processingDuration: this.metrics.length * 5 // Assuming 5 second intervals
+      processingDuration: this.metrics.length * 5, // Assuming 5 second intervals
     };
   }
 
@@ -317,7 +322,7 @@ export class PerformanceMonitor {
     const sizes = ['B', 'KB', 'MB', 'GB'];
     if (bytes === 0) return '0 B';
     const i = Math.floor(Math.log(bytes) / Math.log(1024));
-    return Math.round(bytes / Math.pow(1024, i) * 100) / 100 + ' ' + sizes[i];
+    return Math.round((bytes / Math.pow(1024, i)) * 100) / 100 + ' ' + sizes[i];
   }
 
   /**
@@ -343,7 +348,9 @@ export class PerformanceMonitor {
   private checkForWarnings(systemMetrics: SystemMetrics, processMetrics: ProcessMetrics): void {
     const timestamp = new Date().toISOString();
     if (systemMetrics.memoryUsage.percentage > this.thresholds.maxMemoryUsage) {
-      this.warnings.push(`${timestamp}: High system memory usage: ${systemMetrics.memoryUsage.percentage}%`);
+      this.warnings.push(
+        `${timestamp}: High system memory usage: ${systemMetrics.memoryUsage.percentage}%`
+      );
     }
     if (systemMetrics.cpuLoad.percentage > this.thresholds.maxCpuUsage) {
       this.warnings.push(`${timestamp}: High CPU usage: ${systemMetrics.cpuLoad.percentage}%`);
