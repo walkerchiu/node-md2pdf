@@ -1,4 +1,4 @@
-import { ApplicationServices, APPLICATION_SERVICE_NAMES } from '@/application/container';
+import { ApplicationServices, APPLICATION_SERVICE_NAMES } from '../../../src/application/container';
 
 describe('ApplicationServices Integration', () => {
   describe('Service Container Creation', () => {

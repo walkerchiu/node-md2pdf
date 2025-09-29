@@ -77,6 +77,14 @@ export class InteractiveMode {
         this.logger.warn(chalk.yellow('❌ Conversion cancelled'));
       }
     } catch (error) {
+      // Don't log our internal control flow errors
+      if (
+        error instanceof Error &&
+        (error.message === 'USER_CANCELLED' || error.message === 'USER_RETRY')
+      ) {
+        throw error; // Re-throw without logging
+      }
+
       this.logger.error('Interactive mode error', error as Error);
       await this.errorHandler.handleError(
         error as Error,
@@ -160,10 +168,39 @@ export class InteractiveMode {
             selectedInputPath = chosen;
           }
         } else {
-          this.logger.warn('No files matched the provided path/pattern');
-          console.log('No files matched the provided path/pattern');
+          console.log(chalk.red('❌ Invalid Markdown file path. Please check:'));
+          console.log(chalk.red('   • File exists'));
+          console.log(chalk.red('   • File has .md, .markdown, .mdown, or .mkd extension'));
+
+          // Ask user to retry or exit
+          const inquirer2 = await import('inquirer');
+          const { action } = await inquirer2.default.prompt<{ action: string }>({
+            type: 'list',
+            name: 'action',
+            message: 'What would you like to do?',
+            choices: [
+              { name: '✏️  Try entering a different file path', value: 'retry' },
+              { name: '↩️  Return to Main Menu', value: 'exit' },
+            ],
+          });
+
+          if (action === 'exit') {
+            this.logger.info('User chose to Return to Main Menu');
+            console.log('❌ Conversion cancelled');
+            throw new Error('USER_CANCELLED');
+          } else if (action === 'retry') {
+            // Throw retry error to be handled by parent
+            throw new Error('USER_RETRY');
+          }
         }
       } catch (err) {
+        // Re-throw our custom errors to be handled by the parent
+        if (
+          err instanceof Error &&
+          (err.message === 'USER_CANCELLED' || err.message === 'USER_RETRY')
+        ) {
+          throw err;
+        }
         this.logger.warn('Error while searching for files', err as Error);
         console.log('Error while searching for files');
       }

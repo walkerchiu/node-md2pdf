@@ -143,12 +143,12 @@ describe('MainInteractiveMode', () => {
       ).showWelcomeMessage!.bind(mainMode);
       showWelcomeMessage();
 
-      expect(consoleSpy).toHaveBeenCalledWith('┌─────────────────────────────────────────┐');
-      expect(consoleSpy).toHaveBeenCalledWith('│           MD2PDF Main Menu              │');
-      expect(consoleSpy).toHaveBeenCalledWith('├─────────────────────────────────────────┤');
-      expect(consoleSpy).toHaveBeenCalledWith('│  Convert Markdown files to professional │');
-      expect(consoleSpy).toHaveBeenCalledWith('│  PDF documents with table of contents   │');
-      expect(consoleSpy).toHaveBeenCalledWith('└─────────────────────────────────────────┘');
+      expect(consoleSpy).toHaveBeenCalledWith('┌──────────────────────────────────────────┐');
+      expect(consoleSpy).toHaveBeenCalledWith('│           MD2PDF Main Menu               │');
+      expect(consoleSpy).toHaveBeenCalledWith('├──────────────────────────────────────────┤');
+      expect(consoleSpy).toHaveBeenCalledWith('│  Convert Markdown files to professional  │');
+      expect(consoleSpy).toHaveBeenCalledWith('│  PDF documents with table of contents    │');
+      expect(consoleSpy).toHaveBeenCalledWith('└──────────────────────────────────────────┘');
     });
   });
 

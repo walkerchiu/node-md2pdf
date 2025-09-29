@@ -2,9 +2,9 @@
  * Environment validation utilities
  */
 
+import chalk from 'chalk';
 import { exec } from 'child_process';
 import { promisify } from 'util';
-import chalk from 'chalk';
 
 const execAsync = promisify(exec);
 
@@ -16,10 +16,16 @@ export async function validateNodeVersion(): Promise<boolean> {
   const majorVersion = parseInt(nodeVersion.slice(1).split('.')[0]);
 
   if (majorVersion >= 18) {
-    console.log(chalk.green(`✅ Node.js version: ${nodeVersion} (meets requirements)`));
+    console.log(
+      chalk.green(`✅ Node.js version: ${nodeVersion} (meets requirements)`),
+    );
     return true;
   } else {
-    console.error(chalk.red(`❌ Node.js version too old: ${nodeVersion}, requires >= 18.0.0`));
+    console.error(
+      chalk.red(
+        `❌ Node.js version too old: ${nodeVersion}, requires >= 18.0.0`,
+      ),
+    );
     return false;
   }
 }
@@ -47,7 +53,8 @@ export async function checkSystemResources(): Promise<boolean> {
     const memoryUsage = parseInt(stdout.trim());
     const memoryMB = Math.round(memoryUsage / 1024 / 1024);
 
-    if (memoryMB < 100) {  // Basic memory requirement
+    if (memoryMB < 100) {
+      // Basic memory requirement
       console.log(chalk.green(`✅ Memory usage: ${memoryMB} MB`));
       return true;
     } else {
@@ -67,13 +74,15 @@ export async function validateEnvironment(): Promise<void> {
   const checks = [
     validateNodeVersion(),
     validatePuppeteer(),
-    checkSystemResources()
+    checkSystemResources(),
   ];
 
   const results = await Promise.all(checks);
-  const failedChecks = results.filter(result => !result).length;
+  const failedChecks = results.filter((result) => !result).length;
 
   if (failedChecks > 0) {
-    throw new Error(`Environment check failed (${failedChecks} checks not passed)`);
+    throw new Error(
+      `Environment check failed (${failedChecks} checks not passed)`,
+    );
   }
 }

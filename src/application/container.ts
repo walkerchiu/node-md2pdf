@@ -12,12 +12,14 @@ import {
   TOCGeneratorService,
   FileProcessorService,
   BatchProcessorService,
+  SmartDefaultsService,
   type IPDFGeneratorService,
   type IEnhancedPDFGeneratorService,
   type IMarkdownParserService,
   type ITOCGeneratorService,
   type IFileProcessorService,
   type IBatchProcessorService,
+  type ISmartDefaultsService,
 } from './services';
 import { FileCollector } from '@/core/batch/file-collector';
 
@@ -31,6 +33,7 @@ export const APPLICATION_SERVICE_NAMES = {
   TOC_GENERATOR: 'tocGenerator',
   FILE_PROCESSOR: 'fileProcessor',
   BATCH_PROCESSOR: 'batchProcessor',
+  SMART_DEFAULTS: 'smartDefaults',
 } as const;
 
 export class ApplicationServices {
@@ -76,7 +79,7 @@ export class ApplicationServices {
     // Register Markdown Parser Service
     container.registerSingleton(
       APPLICATION_SERVICE_NAMES.MARKDOWN_PARSER,
-      (c) =>
+      c =>
         new MarkdownParserService(
           c.resolve('logger'),
           c.resolve('errorHandler'),
@@ -123,6 +126,12 @@ export class ApplicationServices {
           c.resolve(APPLICATION_SERVICE_NAMES.FILE_PROCESSOR),
           new FileCollector(),
         ),
+    );
+
+    // Register Smart Defaults Service
+    container.registerSingleton(
+      APPLICATION_SERVICE_NAMES.SMART_DEFAULTS,
+      (c) => new SmartDefaultsService(c.resolve('logger')),
     );
   }
 
@@ -199,6 +208,18 @@ export class ApplicationServices {
     logger.setLevel(logLevel);
 
     return container.resolve(APPLICATION_SERVICE_NAMES.BATCH_PROCESSOR);
+  }
+
+  static createSmartDefaultsService(
+    logLevel: 'error' | 'warn' | 'info' | 'debug' = 'info',
+  ): ISmartDefaultsService {
+    const container = ApplicationServices.createContainer();
+
+    // Configure logging level
+    const logger = container.resolve<ILogger>('logger');
+    logger.setLevel(logLevel);
+
+    return container.resolve(APPLICATION_SERVICE_NAMES.SMART_DEFAULTS);
   }
 
   /**

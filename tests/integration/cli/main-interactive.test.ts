@@ -313,7 +313,7 @@ describe('MainInteractiveMode Integration Tests', () => {
   });
 
   describe('main menu loop behavior', () => {
-    it('should return to main menu after single file conversion', async () => {
+    it('should Return to Main Menu after single file conversion', async () => {
       mockPrompt.mockResolvedValueOnce({ mode: 'single' }).mockResolvedValueOnce({ mode: 'exit' });
 
       await mainInteractive.start();
@@ -324,7 +324,7 @@ describe('MainInteractiveMode Integration Tests', () => {
       expect(mockLogger.info).toHaveBeenCalledWith('User selected exit');
     });
 
-    it('should return to main menu after batch processing', async () => {
+    it('should Return to Main Menu after batch processing', async () => {
       mockPrompt.mockResolvedValueOnce({ mode: 'batch' }).mockResolvedValueOnce({ mode: 'exit' });
 
       await mainInteractive.start();

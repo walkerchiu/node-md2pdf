@@ -263,7 +263,12 @@ export class PDFTemplates {
     `;
   }
 
-  static getFullHTML(content: string, title?: string, customCSS?: string, enableChineseSupport: boolean = false): string {
+  static getFullHTML(
+    content: string,
+    title?: string,
+    customCSS?: string,
+    enableChineseSupport: boolean = false
+  ): string {
     const baseCSS = this.getDefaultCSS();
     const chineseCSS = enableChineseSupport ? this.getChineseCSS() : '';
     const tocCSS = this.getTOCCSS();

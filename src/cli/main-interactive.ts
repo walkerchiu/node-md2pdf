@@ -3,19 +3,27 @@
  * Presents options for single file or batch processing
  */
 
+/* eslint-disable prettier/prettier */
+
 import chalk from 'chalk';
 
 import { BatchInteractiveMode } from './batch';
+import { CustomizationMode } from './customization-mode';
 import { InteractiveMode } from './interactive';
+import { SettingsMode } from './settings-mode';
+import { SmartConversionMode } from './smart-conversion-mode';
+import { CliRenderer } from './utils/cli-renderer';
 
 import type { ILogger } from '../infrastructure/logging/types';
 import type { ServiceContainer } from '../shared/container';
 
 export class MainInteractiveMode {
   private logger: ILogger;
+  private renderer: CliRenderer;
 
   constructor(private readonly container: ServiceContainer) {
     this.logger = container.resolve<ILogger>('logger');
+    this.renderer = new CliRenderer();
   }
 
   /**
@@ -32,10 +40,40 @@ export class MainInteractiveMode {
         const mode = await this.selectMode();
 
         switch (mode) {
+          case 'smart': {
+            this.logger.info('User selected smart conversion mode');
+            const smartMode = new SmartConversionMode(this.container);
+            await smartMode.start();
+            // After smart conversion, continue to main menu
+            break;
+          }
           case 'single': {
             this.logger.info('User selected single file mode');
             const singleMode = new InteractiveMode(this.container);
-            await singleMode.start();
+            let retryCount = 0;
+            const maxRetries = 5;
+
+            while (retryCount < maxRetries) {
+              try {
+                await singleMode.start();
+                break; // Success, exit retry loop
+              } catch (error) {
+                if (error instanceof Error && error.message === 'USER_CANCELLED') {
+                  this.logger.info('Single file mode cancelled by user');
+                  break; // User cancelled, exit retry loop and continue to main menu
+                } else if (error instanceof Error && error.message === 'USER_RETRY') {
+                  retryCount++;
+                  this.logger.info(`User requested retry (attempt ${retryCount}/${maxRetries})`);
+                  if (retryCount >= maxRetries) {
+                    this.logger.warn('Max retry attempts reached');
+                    break; // Exit retry loop after max attempts
+                  }
+                  // Continue retry loop
+                } else {
+                  throw error; // Re-throw other errors
+                }
+              }
+            }
             // After single file conversion, continue to main menu
             break;
           }
@@ -46,17 +84,29 @@ export class MainInteractiveMode {
             // After batch conversion, continue to main menu
             break;
           }
+          case 'customization': {
+            this.logger.info('User selected customization mode');
+            const customizationMode = new CustomizationMode(this.container);
+            await customizationMode.start();
+            // After customization, continue to main menu
+            break;
+          }
+          case 'settings': {
+            this.logger.info('User selected settings mode');
+            const settingsMode = new SettingsMode(this.container);
+            await settingsMode.start();
+            // After settings, continue to main menu
+            break;
+          }
           case 'exit':
             this.logger.info('User selected exit');
-            // eslint-disable-next-line no-console
-            console.log(chalk.cyan('👋 Goodbye!'));
+            this.renderer.info(chalk.cyan('👋 Goodbye!'));
             return;
         }
       }
     } catch (error) {
       this.logger.error('Main interactive mode error', error);
-      // eslint-disable-next-line no-console
-      console.error(chalk.red('❌ Main interactive mode error:'), error);
+      this.renderer.error(chalk.red('❌ Main interactive mode error:'), error);
       throw error;
     }
   }
@@ -65,33 +115,38 @@ export class MainInteractiveMode {
    * Show welcome message
    */
   private showWelcomeMessage(): void {
-    // eslint-disable-next-line no-console
-    console.log(chalk.cyan('┌─────────────────────────────────────────┐'));
-    // eslint-disable-next-line no-console
-    console.log(chalk.cyan('│           MD2PDF Main Menu              │'));
-    // eslint-disable-next-line no-console
-    console.log(chalk.cyan('├─────────────────────────────────────────┤'));
-    // eslint-disable-next-line no-console
-    console.log(chalk.cyan('│  Convert Markdown files to professional │'));
-    // eslint-disable-next-line no-console
-    console.log(chalk.cyan('│  PDF documents with table of contents   │'));
-    // eslint-disable-next-line no-console
-    console.log(chalk.cyan('└─────────────────────────────────────────┘'));
-    // eslint-disable-next-line no-console
-    console.log();
+    this.renderer.header([
+      '┌──────────────────────────────────────────┐',
+      '│           MD2PDF Main Menu               │',
+      '├──────────────────────────────────────────┤',
+      '│  Convert Markdown files to professional  │',
+      '│  PDF documents with table of contents    │',
+      '└──────────────────────────────────────────┘',
+    ]);
+    this.renderer.newline();
   }
 
   /**
    * Select processing mode
    */
-  private async selectMode(): Promise<'single' | 'batch' | 'exit'> {
+  private async selectMode(): Promise<
+    'smart' | 'single' | 'batch' | 'customization' | 'settings' | 'exit'
+  > {
+    this.renderer.newline();
+
     const inquirer = await import('inquirer');
-    const { mode } = await inquirer.default.prompt([
+
+    const result = await inquirer.default.prompt([
       {
         type: 'list',
         name: 'mode',
         message: 'How would you like to process your files?',
         choices: [
+          {
+            name: '🎯 Smart Conversion - AI-powered settings with 3-step workflow',
+            value: 'smart',
+            short: 'Smart Conversion',
+          },
           {
             name: '📄 Single File - Convert one Markdown file to PDF',
             value: 'single',
@@ -103,14 +158,26 @@ export class MainInteractiveMode {
             short: 'Batch Processing',
           },
           {
+            name: '🎨 Customization - Advanced styling and templates',
+            value: 'customization',
+            short: 'Customization',
+          },
+          {
+            name: '⚙️  Settings - Language and preferences',
+            value: 'settings',
+            short: 'Settings',
+          },
+          {
             name: '🚪 Exit',
             value: 'exit',
             short: 'Exit',
           },
         ],
-        default: 'single',
+        default: 'smart',
+        pageSize: 8,
       },
     ]);
-    return mode;
+
+    return result.mode;
   }
 }
