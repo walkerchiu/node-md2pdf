@@ -92,8 +92,16 @@ describe('BatchProgressUI', () => {
         processingTime: 12000,
         results: [],
         errors: [
-          { inputPath: 'error1.md', error: { ...new Error('File not found'), type: 'FILE_ERROR' }, canRetry: true },
-          { inputPath: 'error2.md', error: { ...new Error('Permission denied'), type: 'PERMISSION_ERROR' }, canRetry: false },
+          {
+            inputPath: 'error1.md',
+            error: { ...new Error('File not found'), type: 'FILE_ERROR' },
+            canRetry: true,
+          },
+          {
+            inputPath: 'error2.md',
+            error: { ...new Error('Permission denied'), type: 'PERMISSION_ERROR' },
+            canRetry: false,
+          },
         ],
       };
 
@@ -111,7 +119,13 @@ describe('BatchProgressUI', () => {
         skippedFiles: 0,
         processingTime: 5000,
         results: [],
-        errors: [{ inputPath: 'error.md', error: { ...new Error('Critical error'), type: 'CRITICAL_ERROR' }, canRetry: false }],
+        errors: [
+          {
+            inputPath: 'error.md',
+            error: { ...new Error('Critical error'), type: 'CRITICAL_ERROR' },
+            canRetry: false,
+          },
+        ],
       };
 
       expect(() => progressUI.displayResults(failureResults as any)).not.toThrow();

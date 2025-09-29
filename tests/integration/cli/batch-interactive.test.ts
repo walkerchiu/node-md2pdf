@@ -2,13 +2,13 @@
  * Integration tests for BatchInteractiveMode CLI
  */
 
-import { ServiceContainer } from '@/shared/container';
-import { BatchInteractiveMode } from '@/cli/batch/batch-interactive';
-import { ILogger } from '@/infrastructure/logging/types';
-import { IErrorHandler } from '@/infrastructure/error/types';
-import { IBatchProcessorService } from '@/application/services/batch-processor.service';
-import { APPLICATION_SERVICE_NAMES } from '@/application/container';
-import { BatchFilenameFormat } from '@/types/batch';
+import { ServiceContainer } from '../../../src/shared/container';
+import { BatchInteractiveMode } from '../../../src/cli/batch/batch-interactive';
+import { ILogger } from '../../../src/infrastructure/logging/types';
+import { IErrorHandler } from '../../../src/infrastructure/error/types';
+import { IBatchProcessorService } from '../../../src/application/services/batch-processor.service';
+import { APPLICATION_SERVICE_NAMES } from '../../../src/application/container';
+import { BatchFilenameFormat } from '../../../src/types/batch';
 
 // Mock inquirer
 const mockInquirer = {
@@ -41,7 +41,7 @@ const mockProgressUI = {
   displayResults: jest.fn(),
 };
 
-jest.mock('@/cli/batch/batch-progress-ui', () => ({
+jest.mock('../../../src/cli/batch/batch-progress-ui', () => ({
   BatchProgressUI: jest.fn().mockImplementation(() => mockProgressUI),
 }));
 

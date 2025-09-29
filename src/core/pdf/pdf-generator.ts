@@ -162,7 +162,10 @@ export class PDFGenerator {
         if (this.options.toc.includePageNumbers && options.markdownContent) {
           // Use PageEstimator to calculate page numbers
           const pageEstimator = new PageEstimator();
-          const pageNumbers = pageEstimator.estimatePageNumbers(options.headings, options.markdownContent);
+          const pageNumbers = pageEstimator.estimatePageNumbers(
+            options.headings,
+            options.markdownContent
+          );
           tocResult = tocGenerator.generateTOCWithPageNumbers(options.headings, pageNumbers);
         } else {
           tocResult = tocGenerator.generateTOC(options.headings);
@@ -176,7 +179,12 @@ export class PDFGenerator {
           options.enableChineseSupport || false
         );
       } else {
-        fullHTML = PDFTemplates.getFullHTML(htmlContent, options.title, options.customCSS, options.enableChineseSupport || false);
+        fullHTML = PDFTemplates.getFullHTML(
+          htmlContent,
+          options.title,
+          options.customCSS,
+          options.enableChineseSupport || false
+        );
       }
 
       const page = await this.browser.newPage();
@@ -311,10 +319,7 @@ export class PDFGenerator {
           }
         });
 
-        await Promise.race([
-          this.browser.close(),
-          timeoutPromise,
-        ]);
+        await Promise.race([this.browser.close(), timeoutPromise]);
 
         // Clear the timeout if it exists
         if (timeoutId) {

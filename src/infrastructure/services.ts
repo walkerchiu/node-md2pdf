@@ -3,18 +3,18 @@
  */
 
 import { ConfigManager } from './config';
-import { ConsoleLogger } from './logging';
 import { ErrorHandler } from './error';
 import { FileSystemManager } from './filesystem';
 import { TranslationManager } from './i18n';
+import { ConsoleLogger } from './logging';
 import { ServiceContainer } from '../shared/container';
 
-import type { IServiceContainer } from '../shared/container';
 import type { IConfigManager } from './config';
-import type { ILogger, LogLevel } from './logging';
 import type { IErrorHandler } from './error';
 import type { IFileSystemManager } from './filesystem';
 import type { ITranslationManager, SupportedLocale } from './i18n';
+import type { ILogger, LogLevel } from './logging';
+import type { IServiceContainer } from '../shared/container';
 
 export class InfrastructureServices {
   /**
@@ -32,14 +32,14 @@ export class InfrastructureServices {
     });
 
     // Register logger as singleton
-    container.registerSingleton<ILogger>('logger', c => {
+    container.registerSingleton<ILogger>('logger', (c) => {
       const config = c.tryResolve<IConfigManager>('config');
       const logLevel = config?.get<string>('logging.level', 'info') || 'info';
       return new ConsoleLogger({ level: logLevel as LogLevel });
     });
 
     // Register error handler as singleton
-    container.registerSingleton<IErrorHandler>('errorHandler', c => {
+    container.registerSingleton<IErrorHandler>('errorHandler', (c) => {
       const logger = c.tryResolve<ILogger>('logger');
       return new ErrorHandler(logger);
     });
@@ -50,7 +50,7 @@ export class InfrastructureServices {
     });
 
     // Register translation manager as singleton
-    container.registerSingleton<ITranslationManager>('translator', c => {
+    container.registerSingleton<ITranslationManager>('translator', (c) => {
       const config = c.tryResolve<IConfigManager>('config');
       const locale = config?.get<string>('locale', 'en') || 'en';
       return new TranslationManager({
@@ -89,7 +89,9 @@ export class EnhancedServices {
   /**
    * Create enhanced configuration manager with better error handling
    */
-  static createConfigManager(options?: Record<string, unknown>): IConfigManager {
+  static createConfigManager(
+    options?: Record<string, unknown>,
+  ): IConfigManager {
     try {
       const manager = new ConfigManager(options);
       // Add environment-specific defaults
@@ -102,7 +104,10 @@ export class EnhancedServices {
     } catch (error) {
       // Fallback to basic config manager
       // eslint-disable-next-line no-console
-      console.warn('Enhanced ConfigManager failed, using basic version:', error);
+      console.warn(
+        'Enhanced ConfigManager failed, using basic version:',
+        error,
+      );
       return new ConfigManager(options);
     }
   }
@@ -161,7 +166,10 @@ export class EnhancedServices {
       return new FileSystemManager();
     } catch (error) {
       // eslint-disable-next-line no-console
-      console.warn('Enhanced FileSystemManager failed, using basic version:', error);
+      console.warn(
+        'Enhanced FileSystemManager failed, using basic version:',
+        error,
+      );
       return new FileSystemManager();
     }
   }
@@ -178,7 +186,10 @@ export class EnhancedServices {
       });
     } catch (error) {
       // eslint-disable-next-line no-console
-      console.warn('Enhanced TranslationManager failed, using basic version:', error);
+      console.warn(
+        'Enhanced TranslationManager failed, using basic version:',
+        error,
+      );
       return new TranslationManager({ defaultLocale: 'en' });
     }
   }

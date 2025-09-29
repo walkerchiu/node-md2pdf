@@ -28,10 +28,7 @@ export class PageEstimator {
   /**
    * Estimate page numbers for headings based on content position
    */
-  estimatePageNumbers(
-    headings: Heading[],
-    markdownContent: string
-  ): Record<string, number> {
+  estimatePageNumbers(headings: Heading[], markdownContent: string): Record<string, number> {
     const result: Record<string, number> = {};
     const keyUsageCount: Record<string, number> = {};
 
@@ -49,7 +46,7 @@ export class PageEstimator {
       // Each TOC entry takes approximately 1-2 lines depending on level and text length
       const textLength = heading.text.length;
       const indentFactor = Math.max(1, heading.level - 1) * 0.5; // Deeper levels take more space
-      const estimatedLines = Math.ceil((textLength / 50) + indentFactor + 1);
+      const estimatedLines = Math.ceil(textLength / 50 + indentFactor + 1);
       tocEntryLines += estimatedLines;
     }
 
@@ -82,8 +79,7 @@ export class PageEstimator {
       let headingLine = -1;
       for (let j = contentHeadingIndex; j < headingPositions.length; j++) {
         const contentHeading = headingPositions[j];
-        if (contentHeading.level === heading.level && 
-            contentHeading.text === heading.text.trim()) {
+        if (contentHeading.level === heading.level && contentHeading.text === heading.text.trim()) {
           headingLine = contentHeading.line;
           contentHeadingIndex = j + 1; // Start from next position for subsequent headings
           break;
@@ -115,7 +111,8 @@ export class PageEstimator {
 
         // Convert meaningful lines to pages with more realistic estimation
         const effectiveLinesPerPage = this.options.linesPerPage * 0.8; // Account for margins and spacing
-        const estimatedPage = contentStartPage + Math.floor(meaningfulLines / effectiveLinesPerPage);
+        const estimatedPage =
+          contentStartPage + Math.floor(meaningfulLines / effectiveLinesPerPage);
 
         // Ensure page is at least the content start page
         finalPage = Math.max(contentStartPage, estimatedPage);

@@ -5,16 +5,16 @@
 import {
   PDFGeneratorService,
   IPDFGeneratorService,
-} from '@/application/services/pdf-generator.service';
-import { PDFGenerator } from '@/core/pdf/pdf-generator';
-import { PDFGeneratorOptions, PDFGenerationResult } from '@/core/pdf/types';
-import type { ILogger } from '@/infrastructure/logging/types';
-import type { IErrorHandler } from '@/infrastructure/error/types';
-import type { IConfigManager } from '@/infrastructure/config/types';
-import { MD2PDFError } from '@/infrastructure/error/errors';
+} from '../../../src/application/services/pdf-generator.service';
+import { PDFGenerator } from '../../../src/core/pdf/pdf-generator';
+import { PDFGeneratorOptions, PDFGenerationResult } from '../../../src/core/pdf/types';
+import type { ILogger } from '../../../src/infrastructure/logging/types';
+import type { IErrorHandler } from '../../../src/infrastructure/error/types';
+import type { IConfigManager } from '../../../src/infrastructure/config/types';
+import { MD2PDFError } from '../../../src/infrastructure/error/errors';
 
 // Mock the PDFGenerator
-jest.mock('@/core/pdf/pdf-generator');
+jest.mock('../../../src/core/pdf/pdf-generator');
 
 describe('PDFGeneratorService', () => {
   let service: IPDFGeneratorService;

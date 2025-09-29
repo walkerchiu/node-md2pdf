@@ -8,7 +8,16 @@
  * - Error handling and cleanup
  */
 
+/// <reference types="jest" />
+
 import { jest } from '@jest/globals';
+import type {
+  EnhancedPDFGeneratorService as EnhancedPDFGeneratorServiceClass,
+  IEnhancedPDFGeneratorService,
+} from '../../../../src/application/services/enhanced-pdf-generator.service';
+import type { ILogger } from '../../../../src/infrastructure/logging/types';
+import type { IErrorHandler } from '../../../../src/infrastructure/error/types';
+import type { IConfigManager } from '../../../../src/infrastructure/config/types';
 
 // Mock all external dependencies to avoid compilation issues
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -31,7 +40,7 @@ jest.mock('../../../../src/core/pdf/engines', () => {
     ),
     cleanup: jest.fn(() => Promise.resolve()),
     getEngineStatus: jest.fn(() => new Map()),
-    performHealthCheck: jest.fn(() => Promise.resolve()),
+    performHealthChecks: jest.fn(() => Promise.resolve()),
     getAvailableEngines: jest.fn(() => ['puppeteer', 'chrome-headless']),
   };
 
@@ -58,8 +67,9 @@ jest.mock('../../../../src/core/pdf/engines', () => {
 });
 
 describe('EnhancedPDFGeneratorService', () => {
-  let EnhancedPDFGeneratorService: any;
-  let service: any;
+  let EnhancedPDFGeneratorService: typeof EnhancedPDFGeneratorServiceClass;
+
+  let service: IEnhancedPDFGeneratorService;
 
   // Mock services
   const mockLogger = {
@@ -69,19 +79,18 @@ describe('EnhancedPDFGeneratorService', () => {
     error: jest.fn(),
     log: jest.fn(),
     setLevel: jest.fn(),
-    getLevel: jest.fn(),
-  };
+    getLevel: jest.fn().mockReturnValue('info'),
+  } as unknown as jest.Mocked<ILogger>;
 
   const mockErrorHandler = {
     handleError: jest.fn(),
     formatError: jest.fn(),
     isRecoverable: jest.fn(),
     categorizeError: jest.fn(),
-  };
+  } as unknown as jest.Mocked<IErrorHandler>;
 
-  const mockConfigManager = {
-    get: jest.fn((key: string, defaultValue: unknown) => {
-      // Return appropriate config values for different keys
+  const mockConfigManager: IConfigManager = {
+    get<T = unknown>(key: string, defaultValue?: T): T {
       const configs: Record<string, unknown> = {
         'pdfEngine.selectionStrategy': 'health-first',
         'pdfEngine.primaryEngine': 'puppeteer',
@@ -95,13 +104,14 @@ describe('EnhancedPDFGeneratorService', () => {
           preferCSSPageSize: false,
         },
       };
-      return configs[key] !== undefined ? configs[key] : defaultValue;
-    }),
-    set: jest.fn(),
-    has: jest.fn(),
-    getAll: jest.fn(),
-    save: jest.fn(),
-    load: jest.fn(),
+
+      return configs[key] !== undefined ? (configs[key] as unknown as T) : (defaultValue as T);
+    },
+    set: (_key: string, _value: unknown) => {},
+    has: (_key: string) => false,
+    getAll: () => ({}),
+    save: async () => {},
+    load: async () => {},
   };
 
   beforeEach(async () => {
@@ -260,13 +270,11 @@ describe('EnhancedPDFGeneratorService', () => {
 
     it('should create primary-first strategy when configured', async () => {
       // Mock config to return primary-first strategy
-      mockConfigManager.get.mockImplementation(
-        (key: string, defaultValue: unknown) => {
-          if (key === 'pdfEngine.selectionStrategy') return 'primary-first';
-          if (key.includes('primaryEngine')) return 'puppeteer';
-          return defaultValue;
-        },
-      );
+      mockConfigManager.get = ((key: string, defaultValue?: unknown) => {
+        if (key === 'pdfEngine.selectionStrategy') return 'primary-first';
+        if (String(key).includes('primaryEngine')) return 'puppeteer';
+        return defaultValue as any;
+      }) as IConfigManager['get'];
 
       // Dynamically import the module to avoid hoisting issues in Jest
       const module = await import('../../../../src/core/pdf/engines');
@@ -308,8 +316,9 @@ describe('EnhancedPDFGeneratorService', () => {
         getEngineStatus: jest.fn(() => new Map()),
       };
 
-      (service as any).engineManager = mockEngine;
-      (service as any).isInitialized = true;
+      (service as unknown as Record<string, unknown>).engineManager =
+        mockEngine as unknown as Record<string, unknown>;
+      (service as unknown as Record<string, unknown>).isInitialized = true;
 
       const result = await service.generatePDF(
         '<html></html>',
