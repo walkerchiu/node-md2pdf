@@ -45,17 +45,33 @@ export class PDFEngineManager {
   }
 
   async initialize(): Promise<void> {
-    // Initialize primary engine
-    await this.initializeEngine(this.config.primaryEngine);
+    // Initialize engines reported by factory if available, otherwise use configured primary/fallback
+    const available = this.factory.getAvailableEngines
+      ? this.factory.getAvailableEngines()
+      : [];
+    if (available && available.length > 0) {
+      for (const engineName of available) {
+        try {
+          await this.initializeEngine(engineName);
+        } catch (error) {
+          this.logger.warn(
+            `Failed to initialize engine ${engineName}: ${error instanceof Error ? error.message : String(error)}`,
+          );
+        }
+      }
+    } else {
+      // Initialize primary engine
+      await this.initializeEngine(this.config.primaryEngine);
 
-    // Initialize fallback engines
-    for (const engineName of this.config.fallbackEngines) {
-      try {
-        await this.initializeEngine(engineName);
-      } catch (error) {
-        this.logger.warn(
-          `Failed to initialize fallback engine ${engineName}: ${error instanceof Error ? error.message : String(error)}`,
-        );
+      // Initialize fallback engines
+      for (const engineName of this.config.fallbackEngines) {
+        try {
+          await this.initializeEngine(engineName);
+        } catch (error) {
+          this.logger.warn(
+            `Failed to initialize fallback engine ${engineName}: ${error instanceof Error ? error.message : String(error)}`,
+          );
+        }
       }
     }
 
