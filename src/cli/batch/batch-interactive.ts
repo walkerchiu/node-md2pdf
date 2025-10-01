@@ -6,6 +6,7 @@
 import chalk from 'chalk';
 
 import FileSearchUI from '../ui/file-search-ui';
+import { CliRenderer } from '../utils/cli-renderer';
 import { BatchProgressUI } from './batch-progress-ui';
 import { APPLICATION_SERVICE_NAMES } from '../../application/container';
 import { BatchConversionConfig, BatchFilenameFormat } from '../../types/batch';
@@ -25,6 +26,7 @@ export class BatchInteractiveMode {
   private errorHandler: IErrorHandler;
   private batchProcessorService: IBatchProcessorService;
   private progressUI = new BatchProgressUI();
+  private renderer = new CliRenderer();
 
   constructor(container: ServiceContainer) {
     this.logger = container.resolve<ILogger>('logger');
@@ -40,12 +42,20 @@ export class BatchInteractiveMode {
   async start(): Promise<void> {
     try {
       this.logger.info('Starting batch interactive mode');
-      console.log('Starting batch interactive mode');
-      this.logger.info(chalk.cyan('📦 Batch Conversion Mode'));
-      console.log(chalk.cyan('📦 Batch Conversion Mode'));
-      this.logger.info(chalk.gray('Process multiple Markdown files at once'));
-      console.log(chalk.gray('Process multiple Markdown files at once'));
-      this.logger.info('');
+
+      // Show Batch Processing header with framework
+      this.renderer.header([
+        '┌─────────────────────────────────────────┐',
+        '│        📦 Batch Processing Mode         │',
+        '├─────────────────────────────────────────┤',
+        '│  Convert multiple files efficiently!    │',
+        '│                                         │',
+        '│  Step 1: Select Files                   │',
+        '│  Step 2: Configure Settings             │',
+        '│  Step 3: Process & Monitor              │',
+        '└─────────────────────────────────────────┘',
+      ]);
+      this.renderer.newline();
 
       // Step 1: Get input pattern and preview files
       const { inputPattern, files } = await this.getInputPatternAndFiles();
