@@ -46,7 +46,7 @@ export class BatchInteractiveMode {
       // Show Batch Processing header with framework
       this.renderer.header([
         '┌─────────────────────────────────────────┐',
-        '│        📦 Batch Processing Mode         │',
+        '│        📚 Batch Processing Mode         │',
         '├─────────────────────────────────────────┤',
         '│  Convert multiple files efficiently!    │',
         '│                                         │',
@@ -219,7 +219,7 @@ export class BatchInteractiveMode {
   ): Promise<BatchConversionConfig> {
     const inquirer = (await import('inquirer')) as InquirerModule;
 
-    console.log(chalk.cyan('\n⚙️  Configuration Options'));
+    console.log(chalk.cyan('\n🔧  Configuration Options'));
     console.log(chalk.gray('Configure how your files will be processed'));
     console.log();
 

@@ -143,27 +143,27 @@ export class MainInteractiveMode {
         message: 'How would you like to process your files?',
         choices: [
           {
-            name: '🎯 Smart Conversion - AI-powered settings with 3-step workflow',
+            name: `🤖 Smart Conversion ${chalk.gray('- AI-powered settings with 3-step workflow')}`,
             value: 'smart',
             short: 'Smart Conversion',
           },
           {
-            name: '📄 Single File - Convert one Markdown file to PDF',
+            name: `📄 Single File ${chalk.gray('- Convert one Markdown file to PDF')}`,
             value: 'single',
             short: 'Single File',
           },
           {
-            name: '📦 Batch Processing - Convert multiple files at once',
+            name: `📚 Batch Processing ${chalk.gray('- Convert multiple files at once')}`,
             value: 'batch',
             short: 'Batch Processing',
           },
           {
-            name: '🎨 Customization - Advanced styling and templates',
+            name: `🎨 Customization ${chalk.gray('- Advanced styling and templates')}`,
             value: 'customization',
             short: 'Customization',
           },
           {
-            name: '⚙️  Settings - Language and preferences',
+            name: `🔧 Settings ${chalk.gray('- Language and preferences')}`,
             value: 'settings',
             short: 'Settings',
           },

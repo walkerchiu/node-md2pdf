@@ -363,14 +363,14 @@ describe('BatchInteractiveMode', () => {
       const createHeader = () => {
         return [
           '┌─────────────────────────────────────────┐',
-          '│        📦 Batch Processing Mode         │',
+          '│        📚 Batch Processing Mode         │',
           '├─────────────────────────────────────────┤',
           '│  Convert multiple files efficiently!    │',
         ];
       };
 
       const header = createHeader();
-      expect(header[1]).toContain('📦 Batch Processing Mode');
+      expect(header[1]).toContain('📚 Batch Processing Mode');
       expect(header[3]).toContain('Convert multiple files efficiently!');
     });
   });

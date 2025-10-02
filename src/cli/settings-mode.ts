@@ -70,7 +70,7 @@ export class SettingsMode {
    */
   private showSettingsHeader(): void {
     console.log(chalk.blue('┌───────────────────────────────────────────┐'));
-    console.log(chalk.blue('│           ⚙️ Settings & Preferences        │'));
+    console.log(chalk.blue('│           🔧 Settings & Preferences        │'));
     console.log(chalk.blue('├───────────────────────────────────────────┤'));
     console.log(chalk.blue('│    Language, defaults, and system config  │'));
     console.log(chalk.blue('└───────────────────────────────────────────┘'));

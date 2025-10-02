@@ -126,7 +126,7 @@ describe('BatchInteractiveMode Integration Tests', () => {
       }
 
       expect(mockConsoleLog).toHaveBeenCalledWith(
-        expect.stringContaining('📦 Batch Conversion Mode')
+        expect.stringContaining('📚 Batch Conversion Mode')
       );
       expect(mockConsoleLog).toHaveBeenCalledWith(
         expect.stringContaining('Process multiple Markdown files at once')
