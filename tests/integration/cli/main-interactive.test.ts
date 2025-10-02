@@ -130,7 +130,7 @@ describe('MainInteractiveMode Integration Tests', () => {
               short: 'Single File',
             },
             {
-              name: '📦 Batch Processing - Convert multiple files at once',
+              name: '📚 Batch Processing - Convert multiple files at once',
               value: 'batch',
               short: 'Batch Processing',
             },

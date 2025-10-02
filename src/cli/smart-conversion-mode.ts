@@ -53,7 +53,7 @@ export class SmartConversionMode {
     // Show Smart Conversion header with framework
     this.renderer.header([
       '┌──────────────────────────────────────────────┐',
-      '│        🎯 Smart Conversion Mode              │',
+      '│        🤖 Smart Conversion Mode              │',
       '├──────────────────────────────────────────────┤',
       '│  Intelligent configuration in 3 steps!       │',
       '│                                              │',
@@ -262,7 +262,7 @@ export class SmartConversionMode {
     }
 
     this.renderer.info(
-      `   🎯 Document type: ${this.getDocumentTypeDisplay(analysis.contentComplexity.documentType)}`,
+      `   🤖 Document type: ${this.getDocumentTypeDisplay(analysis.contentComplexity.documentType)}`
     );
     this.renderer.info(
       `   📈 Complexity: ${analysis.contentComplexity.score}/10`,
@@ -343,8 +343,8 @@ export class SmartConversionMode {
       const { presetName } = await inquirer.default.prompt({
         type: 'list',
         name: 'presetName',
-        message: '⚙️ Select a preset configuration:',
-        choices: presetConfigs.map((preset) => ({
+        message: '🔧 Select a preset configuration:',
+        choices: presetConfigs.map(preset => ({
           name: `${preset.name} - ${preset.description}`,
           value: preset.name,
         })),
@@ -371,7 +371,7 @@ export class SmartConversionMode {
 
     this.renderer.info(chalk.cyan('\n📋 Conversion Summary:'));
     this.renderer.info(`   📁 Input: ${filePath}`);
-    this.renderer.info(`   ⚙️  Configuration: ${choice.name}`);
+    this.renderer.info(`   🔧  Configuration: ${choice.name}`);
     this.renderer.info(
       `   📄 ${analysis.wordCount.toLocaleString()} words → ${analysis.estimatedPages} pages (estimated)`,
     );

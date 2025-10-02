@@ -92,7 +92,7 @@ export class BatchProgressUI {
     maxConcurrentProcesses: number;
     continueOnError: boolean;
   }): void {
-    console.log(chalk.cyan('⚙️  Batch Configuration:'));
+    console.log(chalk.cyan('🔧  Batch Configuration:'));
     console.log(chalk.gray('─'.repeat(60)));
     console.log(`${chalk.bold('Input Pattern:')} ${config.inputPattern}`);
     console.log(`${chalk.bold('Output Directory:')} ${config.outputDirectory}`);
