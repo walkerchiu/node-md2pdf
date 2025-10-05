@@ -59,7 +59,8 @@
     "ts-node": "^10.0.0",
     "tsc-alias": "^1.8.16",
     "tsconfig-paths": "^4.2.0",
-    "typescript": "^5.0.0"
+    "typescript": "^5.0.0",
+    "lint-staged": "^16.1.6"
   },
   "dependencies": {
     "@types/markdown-it": "^14.1.2",
@@ -75,5 +76,13 @@
     "markdown-it-table-of-contents": "^1.0.0",
     "ora": "^7.0.0",
     "puppeteer": "^21.11.0"
+  },
+  "lint-staged": {
+    "*.{ts,js}": [
+      "eslint --fix"
+    ],
+    "*.{ts,js,json,md}": [
+      "prettier --write"
+    ]
   }
 }
