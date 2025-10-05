@@ -154,6 +154,9 @@ npm run test:coverage # Coverage reports
 npm run lint          # Code linting
 npm run format        # Code formatting
 npm run clean         # Clean build files
+
+# Git Hooks (requires setup)
+npx lint-staged       # Run linting on staged files
 ```
 
 ## 🚨 Troubleshooting
