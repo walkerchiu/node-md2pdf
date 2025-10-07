@@ -157,6 +157,8 @@ npm run clean         # Clean build files
 
 # Git Hooks (requires setup)
 npx lint-staged       # Run linting on staged files
+npx husky init        # Initialize Husky
+npm run prepare       # Run the prepare script
 ```
 
 ## 🚨 Troubleshooting
