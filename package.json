@@ -26,7 +26,8 @@
     "pretty-write": "prettier --write .",
     "clean": "rimraf dist coverage",
     "clean:all": "rimraf dist coverage .bmad-core .cursor .claude *.tmp test-results test-output",
-    "clean:test": "ts-node -r tsconfig-paths/register scripts/clean-test-files.ts"
+    "clean:test": "ts-node -r tsconfig-paths/register scripts/clean-test-files.ts",
+    "prepare": "husky install"
   },
   "keywords": [
     "markdown",
@@ -43,6 +44,8 @@
     "node": ">=18.0.0"
   },
   "devDependencies": {
+    "@commitlint/cli": "^19.8.1",
+    "@commitlint/config-conventional": "^19.8.1",
     "@types/fs-extra": "^11.0.4",
     "@types/glob": "^8.1.0",
     "@types/inquirer": "^9.0.9",
@@ -54,6 +57,7 @@
     "eslint-config-prettier": "^10.1.8",
     "eslint-plugin-import": "^2.32.0",
     "eslint-plugin-prettier": "^5.5.4",
+    "husky": "^9.1.7",
     "jest": "^29.0.0",
     "lint-staged": "^16.1.6",
     "prettier": "^3.6.2",
