@@ -55,7 +55,12 @@ describe('FileBrowser - Simple Tests', () => {
 
     it('should have markdown extensions property', () => {
       const markdownExtensions = (fileBrowser as any).markdownExtensions;
-      expect(markdownExtensions).toEqual(['.md', '.markdown', '.mdown', '.mkd']);
+      expect(markdownExtensions).toEqual([
+        '.md',
+        '.markdown',
+        '.mdown',
+        '.mkd',
+      ]);
     });
 
     it('should create renderer instance', () => {
@@ -66,7 +71,9 @@ describe('FileBrowser - Simple Tests', () => {
 
   describe('utility methods', () => {
     it('should format file size correctly', () => {
-      const formatFileSize = (fileBrowser as any).formatFileSize.bind(fileBrowser);
+      const formatFileSize = (fileBrowser as any).formatFileSize.bind(
+        fileBrowser,
+      );
 
       expect(formatFileSize(0)).toBe('0 B');
       expect(formatFileSize(1024)).toBe('1.0 KB');
@@ -100,9 +107,24 @@ describe('FileBrowser - Simple Tests', () => {
       const sortItems = (fileBrowser as any).sortItems.bind(fileBrowser);
 
       const items = [
-        { name: 'b.md', type: 'file', modified: new Date('2023-01-01'), size: 1000 },
-        { name: 'a.md', type: 'file', modified: new Date('2023-01-02'), size: 2000 },
-        { name: 'dir', type: 'directory', modified: new Date('2023-01-01'), size: 0 },
+        {
+          name: 'b.md',
+          type: 'file',
+          modified: new Date('2023-01-01'),
+          size: 1000,
+        },
+        {
+          name: 'a.md',
+          type: 'file',
+          modified: new Date('2023-01-02'),
+          size: 2000,
+        },
+        {
+          name: 'dir',
+          type: 'directory',
+          modified: new Date('2023-01-01'),
+          size: 0,
+        },
       ];
 
       const sortedByName = sortItems(items, 'name', 'asc');
@@ -115,9 +137,24 @@ describe('FileBrowser - Simple Tests', () => {
       const sortItems = (fileBrowser as any).sortItems.bind(fileBrowser);
 
       const items = [
-        { name: 'a.md', type: 'file', modified: new Date('2023-01-01'), size: 1000 },
-        { name: 'b.md', type: 'file', modified: new Date('2023-01-02'), size: 2000 },
-        { name: 'dir', type: 'directory', modified: new Date('2023-01-01'), size: 0 },
+        {
+          name: 'a.md',
+          type: 'file',
+          modified: new Date('2023-01-01'),
+          size: 1000,
+        },
+        {
+          name: 'b.md',
+          type: 'file',
+          modified: new Date('2023-01-02'),
+          size: 2000,
+        },
+        {
+          name: 'dir',
+          type: 'directory',
+          modified: new Date('2023-01-01'),
+          size: 0,
+        },
       ];
 
       const sortedByName = sortItems(items, 'name', 'desc');
@@ -130,9 +167,24 @@ describe('FileBrowser - Simple Tests', () => {
       const sortItems = (fileBrowser as any).sortItems.bind(fileBrowser);
 
       const items = [
-        { name: 'old.md', type: 'file', modified: new Date('2023-01-01'), size: 1000 },
-        { name: 'new.md', type: 'file', modified: new Date('2023-01-02'), size: 2000 },
-        { name: 'dir', type: 'directory', modified: new Date('2023-01-01'), size: 0 },
+        {
+          name: 'old.md',
+          type: 'file',
+          modified: new Date('2023-01-01'),
+          size: 1000,
+        },
+        {
+          name: 'new.md',
+          type: 'file',
+          modified: new Date('2023-01-02'),
+          size: 2000,
+        },
+        {
+          name: 'dir',
+          type: 'directory',
+          modified: new Date('2023-01-01'),
+          size: 0,
+        },
       ];
 
       const sortedByDate = sortItems(items, 'modified', 'desc');
@@ -145,9 +197,24 @@ describe('FileBrowser - Simple Tests', () => {
       const sortItems = (fileBrowser as any).sortItems.bind(fileBrowser);
 
       const items = [
-        { name: 'new.md', type: 'file', modified: new Date('2023-01-02'), size: 1000 },
-        { name: 'old.md', type: 'file', modified: new Date('2023-01-01'), size: 2000 },
-        { name: 'dir', type: 'directory', modified: new Date('2023-01-01'), size: 0 },
+        {
+          name: 'new.md',
+          type: 'file',
+          modified: new Date('2023-01-02'),
+          size: 1000,
+        },
+        {
+          name: 'old.md',
+          type: 'file',
+          modified: new Date('2023-01-01'),
+          size: 2000,
+        },
+        {
+          name: 'dir',
+          type: 'directory',
+          modified: new Date('2023-01-01'),
+          size: 0,
+        },
       ];
 
       const sortedByDate = sortItems(items, 'modified', 'asc');
@@ -160,9 +227,24 @@ describe('FileBrowser - Simple Tests', () => {
       const sortItems = (fileBrowser as any).sortItems.bind(fileBrowser);
 
       const items = [
-        { name: 'big.md', type: 'file', modified: new Date('2023-01-01'), size: 5000 },
-        { name: 'small.md', type: 'file', modified: new Date('2023-01-02'), size: 1000 },
-        { name: 'dir', type: 'directory', modified: new Date('2023-01-01'), size: 0 },
+        {
+          name: 'big.md',
+          type: 'file',
+          modified: new Date('2023-01-01'),
+          size: 5000,
+        },
+        {
+          name: 'small.md',
+          type: 'file',
+          modified: new Date('2023-01-02'),
+          size: 1000,
+        },
+        {
+          name: 'dir',
+          type: 'directory',
+          modified: new Date('2023-01-01'),
+          size: 0,
+        },
       ];
 
       const sortedBySize = sortItems(items, 'size', 'desc');
@@ -175,9 +257,24 @@ describe('FileBrowser - Simple Tests', () => {
       const sortItems = (fileBrowser as any).sortItems.bind(fileBrowser);
 
       const items = [
-        { name: 'big.md', type: 'file', modified: new Date('2023-01-01'), size: 5000 },
-        { name: 'small.md', type: 'file', modified: new Date('2023-01-02'), size: 1000 },
-        { name: 'dir', type: 'directory', modified: new Date('2023-01-01'), size: 0 },
+        {
+          name: 'big.md',
+          type: 'file',
+          modified: new Date('2023-01-01'),
+          size: 5000,
+        },
+        {
+          name: 'small.md',
+          type: 'file',
+          modified: new Date('2023-01-02'),
+          size: 1000,
+        },
+        {
+          name: 'dir',
+          type: 'directory',
+          modified: new Date('2023-01-01'),
+          size: 0,
+        },
       ];
 
       const sortedBySize = sortItems(items, 'size', 'asc');
@@ -190,7 +287,12 @@ describe('FileBrowser - Simple Tests', () => {
       const sortItems = (fileBrowser as any).sortItems.bind(fileBrowser);
 
       const items = [
-        { name: 'with-date.md', type: 'file', modified: new Date('2023-01-01'), size: 1000 },
+        {
+          name: 'with-date.md',
+          type: 'file',
+          modified: new Date('2023-01-01'),
+          size: 1000,
+        },
         { name: 'no-date.md', type: 'file', modified: undefined, size: 2000 },
       ];
 
@@ -204,8 +306,18 @@ describe('FileBrowser - Simple Tests', () => {
       const sortItems = (fileBrowser as any).sortItems.bind(fileBrowser);
 
       const items = [
-        { name: 'with-size.md', type: 'file', modified: new Date('2023-01-01'), size: 1000 },
-        { name: 'no-size.md', type: 'file', modified: new Date('2023-01-01'), size: undefined },
+        {
+          name: 'with-size.md',
+          type: 'file',
+          modified: new Date('2023-01-01'),
+          size: 1000,
+        },
+        {
+          name: 'no-size.md',
+          type: 'file',
+          modified: new Date('2023-01-01'),
+          size: undefined,
+        },
       ];
 
       const sortedBySize = sortItems(items, 'size', 'asc');
@@ -225,7 +337,9 @@ describe('FileBrowser - Simple Tests', () => {
       expect(matchesGlob('testxmd', 'test?md')).toBe(true);
       expect(matchesGlob('testxymd', 'test?md')).toBe(false); // ? matches only one char
       expect(matchesGlob('file-name.md', 'file-*')).toBe(true); // Wildcard
-      expect(matchesGlob('prefix-middle-suffix.txt', 'prefix-*-suffix.txt')).toBe(true);
+      expect(
+        matchesGlob('prefix-middle-suffix.txt', 'prefix-*-suffix.txt'),
+      ).toBe(true);
     });
 
     it('should handle special characters in glob patterns', () => {
@@ -246,10 +360,18 @@ describe('FileBrowser - Simple Tests', () => {
       const choices = buildChoices(items, currentPath);
 
       // Should contain utility options
-      expect(choices.some((choice: any) => choice.value === '__back_to_main__')).toBe(true);
-      expect(choices.some((choice: any) => choice.value === '__search__')).toBe(true);
-      expect(choices.some((choice: any) => choice.value === '__recent__')).toBe(true);
-      expect(choices.some((choice: any) => choice.value === '__up__')).toBe(true); // Parent directory
+      expect(
+        choices.some((choice: any) => choice.value === '__back_to_main__'),
+      ).toBe(true);
+      expect(choices.some((choice: any) => choice.value === '__search__')).toBe(
+        true,
+      );
+      expect(choices.some((choice: any) => choice.value === '__recent__')).toBe(
+        true,
+      );
+      expect(choices.some((choice: any) => choice.value === '__up__')).toBe(
+        true,
+      ); // Parent directory
     });
 
     it('should build choices correctly for root directory', () => {
@@ -261,8 +383,12 @@ describe('FileBrowser - Simple Tests', () => {
       const choices = buildChoices(items, currentPath);
 
       // Should not contain up navigation for root
-      expect(choices.some((choice: any) => choice.value === '__up__')).toBe(false);
-      expect(choices.some((choice: any) => choice.value === '__back_to_main__')).toBe(true);
+      expect(choices.some((choice: any) => choice.value === '__up__')).toBe(
+        false,
+      );
+      expect(
+        choices.some((choice: any) => choice.value === '__back_to_main__'),
+      ).toBe(true);
     });
 
     it('should build choices correctly with files and directories', () => {
@@ -299,11 +425,17 @@ describe('FileBrowser - Simple Tests', () => {
       const choices = buildChoices(items, currentPath);
 
       // Should contain directory
-      expect(choices.some((choice: any) => choice.value === '/test/subdir')).toBe(true);
+      expect(
+        choices.some((choice: any) => choice.value === '/test/subdir'),
+      ).toBe(true);
       // Should contain markdown file
-      expect(choices.some((choice: any) => choice.value === '/test/test.md')).toBe(true);
+      expect(
+        choices.some((choice: any) => choice.value === '/test/test.md'),
+      ).toBe(true);
       // Should contain other file (dimmed)
-      expect(choices.some((choice: any) => choice.value === '/test/other.txt')).toBe(true);
+      expect(
+        choices.some((choice: any) => choice.value === '/test/other.txt'),
+      ).toBe(true);
     });
 
     it('should build choices with many other files showing summary', () => {
@@ -320,8 +452,14 @@ describe('FileBrowser - Simple Tests', () => {
 
       const choices = buildChoices(items, '/test');
 
-      expect(choices.some((choice: any) => choice.value === '__show_all__')).toBe(true);
-      expect(choices.some((choice: any) => choice.name.includes('and 10 other files'))).toBe(true);
+      expect(
+        choices.some((choice: any) => choice.value === '__show_all__'),
+      ).toBe(true);
+      expect(
+        choices.some((choice: any) =>
+          choice.name.includes('and 10 other files'),
+        ),
+      ).toBe(true);
     });
 
     it('should show individual other files when count is small', () => {
@@ -339,11 +477,19 @@ describe('FileBrowser - Simple Tests', () => {
       const choices = buildChoices(items, '/test');
 
       // Should show individual files
-      expect(choices.some((choice: any) => choice.value === '/test/file0.txt')).toBe(true);
-      expect(choices.some((choice: any) => choice.value === '/test/file1.txt')).toBe(true);
-      expect(choices.some((choice: any) => choice.value === '/test/file2.txt')).toBe(true);
+      expect(
+        choices.some((choice: any) => choice.value === '/test/file0.txt'),
+      ).toBe(true);
+      expect(
+        choices.some((choice: any) => choice.value === '/test/file1.txt'),
+      ).toBe(true);
+      expect(
+        choices.some((choice: any) => choice.value === '/test/file2.txt'),
+      ).toBe(true);
       // Should not show summary
-      expect(choices.some((choice: any) => choice.value === '__show_all__')).toBe(false);
+      expect(
+        choices.some((choice: any) => choice.value === '__show_all__'),
+      ).toBe(false);
     });
 
     it('should handle files with no size or modified date', () => {
@@ -362,9 +508,13 @@ describe('FileBrowser - Simple Tests', () => {
 
       const choices = buildChoices(items, '/test');
 
-      expect(choices.some((choice: any) => choice.value === '/test/test.md')).toBe(true);
+      expect(
+        choices.some((choice: any) => choice.value === '/test/test.md'),
+      ).toBe(true);
       // Should handle undefined values gracefully in the display
-      const markdownChoice = choices.find((choice: any) => choice.value === '/test/test.md');
+      const markdownChoice = choices.find(
+        (choice: any) => choice.value === '/test/test.md',
+      );
       expect(markdownChoice).toBeDefined();
     });
   });
@@ -396,16 +546,30 @@ describe('FileBrowser - Simple Tests', () => {
 
       const choices = buildChoices(items, '/test');
       expect(choices.length).toBeGreaterThan(0);
-      expect(choices.some((choice: any) => choice.value === '/test/dir1')).toBe(true);
-      expect(choices.some((choice: any) => choice.value === '/test/file1.md')).toBe(true);
+      expect(choices.some((choice: any) => choice.value === '/test/dir1')).toBe(
+        true,
+      );
+      expect(
+        choices.some((choice: any) => choice.value === '/test/file1.md'),
+      ).toBe(true);
     });
 
     it('should test sortItems edge case with same names', () => {
       const sortItems = (fileBrowser as any).sortItems.bind(fileBrowser);
 
       const items = [
-        { name: 'same.md', type: 'file', modified: new Date('2023-01-01'), size: 1000 },
-        { name: 'same.md', type: 'file', modified: new Date('2023-01-01'), size: 1000 },
+        {
+          name: 'same.md',
+          type: 'file',
+          modified: new Date('2023-01-01'),
+          size: 1000,
+        },
+        {
+          name: 'same.md',
+          type: 'file',
+          modified: new Date('2023-01-01'),
+          size: 1000,
+        },
       ];
 
       const sorted = sortItems(items, 'name', 'asc');

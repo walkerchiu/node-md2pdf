@@ -105,7 +105,9 @@ describe('EnhancedPDFGeneratorService', () => {
         },
       };
 
-      return configs[key] !== undefined ? (configs[key] as unknown as T) : (defaultValue as T);
+      return configs[key] !== undefined
+        ? (configs[key] as unknown as T)
+        : (defaultValue as T);
     },
     set: (_key: string, _value: unknown) => {},
     has: (_key: string) => false,
@@ -193,7 +195,7 @@ describe('EnhancedPDFGeneratorService', () => {
             includePageNumbers: true,
             title: 'Table of Contents',
           },
-        }
+        },
       );
 
       expect(result).toEqual({

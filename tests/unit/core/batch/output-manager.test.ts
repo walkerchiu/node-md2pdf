@@ -87,8 +87,12 @@ describe('OutputManager', () => {
 
       await outputManager.prepareOutputDirectories(mockFiles);
 
-      expect(mockFs.promises.mkdir).toHaveBeenCalledWith('/output', { recursive: true });
-      expect(mockFs.promises.mkdir).toHaveBeenCalledWith('/output/subdir', { recursive: true });
+      expect(mockFs.promises.mkdir).toHaveBeenCalledWith('/output', {
+        recursive: true,
+      });
+      expect(mockFs.promises.mkdir).toHaveBeenCalledWith('/output/subdir', {
+        recursive: true,
+      });
       expect(mockFs.promises.mkdir).toHaveBeenCalledTimes(2);
     });
 
@@ -102,7 +106,9 @@ describe('OutputManager', () => {
 
       await outputManager.prepareOutputDirectories(singleDirFiles);
 
-      expect(mockFs.promises.mkdir).toHaveBeenCalledWith('/output', { recursive: true });
+      expect(mockFs.promises.mkdir).toHaveBeenCalledWith('/output', {
+        recursive: true,
+      });
       expect(mockFs.promises.mkdir).toHaveBeenCalledTimes(1);
     });
 
@@ -110,9 +116,9 @@ describe('OutputManager', () => {
       const error = new Error('Permission denied');
       mockFs.promises.mkdir.mockRejectedValue(error);
 
-      await expect(outputManager.prepareOutputDirectories(mockFiles)).rejects.toThrow(
-        'Failed to create directory: /output'
-      );
+      await expect(
+        outputManager.prepareOutputDirectories(mockFiles),
+      ).rejects.toThrow('Failed to create directory: /output');
     });
 
     it('should handle empty file list', async () => {
@@ -123,7 +129,7 @@ describe('OutputManager', () => {
 
   describe('resolveFileNameConflicts', () => {
     beforeEach(() => {
-      mockFs.promises.access.mockImplementation(filePath => {
+      mockFs.promises.access.mockImplementation((filePath) => {
         // Mock some files as existing
         if (filePath === '/output/doc1.pdf') {
           return Promise.resolve();
@@ -149,7 +155,8 @@ describe('OutputManager', () => {
 
       mockFs.promises.access.mockRejectedValue(new Error('File not found'));
 
-      const result = await outputManager.resolveFileNameConflicts(conflictFiles);
+      const result =
+        await outputManager.resolveFileNameConflicts(conflictFiles);
 
       expect(result).toHaveLength(3);
       expect(result[0].outputPath).toBe('/output/doc.pdf');
@@ -191,7 +198,9 @@ describe('OutputManager', () => {
       expect(result.valid).toHaveLength(1);
       expect(result.invalid).toHaveLength(1);
       expect(result.invalid[0].error.type).toBe(ErrorType.SYSTEM_ERROR);
-      expect(result.invalid[0].error.message).toContain('Cannot create output directory');
+      expect(result.invalid[0].error.message).toContain(
+        'Cannot create output directory',
+      );
     });
 
     it('should identify paths with invalid characters', async () => {
@@ -246,7 +255,10 @@ describe('OutputManager', () => {
         { ...mockFiles[1], outputPath: '/output/doc1.pdf' }, // Same path as first file
       ];
 
-      const result = outputManager.generateOutputReport(mockConfig, conflictFiles);
+      const result = outputManager.generateOutputReport(
+        mockConfig,
+        conflictFiles,
+      );
 
       expect(result.conflicts).toContain('/output/doc1.pdf');
       expect(result.conflicts).toHaveLength(1);
@@ -266,9 +278,15 @@ describe('OutputManager', () => {
         { ...mockFiles[1], outputPath: '/output/a-folder/doc2.pdf' },
       ];
 
-      const result = outputManager.generateOutputReport(mockConfig, multiDirFiles);
+      const result = outputManager.generateOutputReport(
+        mockConfig,
+        multiDirFiles,
+      );
 
-      expect(result.directories).toEqual(['/output/a-folder', '/output/z-folder']);
+      expect(result.directories).toEqual([
+        '/output/a-folder',
+        '/output/z-folder',
+      ]);
     });
   });
 
@@ -282,7 +300,9 @@ describe('OutputManager', () => {
       await outputManager.cleanupFailedFiles(failedFiles);
 
       expect(mockFs.promises.unlink).toHaveBeenCalledTimes(2);
-      expect(mockFs.promises.unlink).toHaveBeenCalledWith(expect.stringContaining('failed'));
+      expect(mockFs.promises.unlink).toHaveBeenCalledWith(
+        expect.stringContaining('failed'),
+      );
     });
 
     it('should skip non-existent files during cleanup', async () => {
@@ -305,7 +325,7 @@ describe('OutputManager', () => {
 
       expect(consoleSpy).toHaveBeenCalledWith(
         'Failed to cleanup file: /output/locked.pdf',
-        expect.any(Error)
+        expect.any(Error),
       );
     });
 
@@ -348,12 +368,12 @@ describe('OutputManager', () => {
       mockFs.promises.copyFile.mockRejectedValue(new Error('Disk full'));
 
       await expect(outputManager.createBackups([mockFiles[0]])).rejects.toThrow(
-        'Failed to create backup for /output/doc1.pdf'
+        'Failed to create backup for /output/doc1.pdf',
       );
     });
 
     it("should handle mixed scenarios (some exist, some don't)", async () => {
-      mockFs.promises.access.mockImplementation(filePath => {
+      mockFs.promises.access.mockImplementation((filePath) => {
         if (filePath === '/output/doc1.pdf') {
           return Promise.resolve(); // Exists
         }
@@ -389,7 +409,7 @@ describe('OutputManager', () => {
       // Verify correct restore operations
       expect(mockFs.promises.copyFile).toHaveBeenCalledWith(
         '/output/doc1_backup_2023-01-01T12-00-00.pdf',
-        '/output/doc1.pdf'
+        '/output/doc1.pdf',
       );
     });
 
@@ -405,7 +425,7 @@ describe('OutputManager', () => {
 
       expect(consoleSpy).toHaveBeenCalledWith(
         'Failed to restore backup: /output/doc1.pdf',
-        expect.any(Error)
+        expect.any(Error),
       );
     });
 
@@ -532,7 +552,9 @@ describe('OutputManager', () => {
 
       // Should complete within reasonable time (less than 1 second)
       expect(endTime - startTime).toBeLessThan(1000);
-      expect(mockFs.promises.mkdir).toHaveBeenCalledWith('/output', { recursive: true });
+      expect(mockFs.promises.mkdir).toHaveBeenCalledWith('/output', {
+        recursive: true,
+      });
     });
 
     it('should handle paths with complex directory structures', async () => {
@@ -549,7 +571,7 @@ describe('OutputManager', () => {
 
       expect(mockFs.promises.mkdir).toHaveBeenCalledWith(
         '/output/very/deep/nested/directory/structure',
-        { recursive: true }
+        { recursive: true },
       );
     });
   });

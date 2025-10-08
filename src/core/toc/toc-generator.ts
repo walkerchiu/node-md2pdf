@@ -4,7 +4,13 @@
  */
 
 import { Heading } from '../../types/index';
-import { TOCGeneratorOptions, TOCGenerationResult, TOCItemFlat, TOCItemNested } from './types';
+
+import {
+  TOCGeneratorOptions,
+  TOCGenerationResult,
+  TOCItemFlat,
+  TOCItemNested,
+} from './types';
 
 export class TOCGenerator {
   private options: Required<TOCGeneratorOptions>;
@@ -64,7 +70,7 @@ export class TOCGenerator {
    * Filter headings by maximum depth
    */
   private filterHeadingsByDepth(headings: Heading[]): Heading[] {
-    return headings.filter(heading => heading.level <= this.options.maxDepth);
+    return headings.filter((heading) => heading.level <= this.options.maxDepth);
   }
 
   /**
@@ -142,20 +148,22 @@ export class TOCGenerator {
    */
   private generateListHTML(
     items: TOCItemNested[],
-    cssClasses: Required<TOCGeneratorOptions>['cssClasses']
+    cssClasses: Required<TOCGeneratorOptions>['cssClasses'],
   ): string {
     if (items.length === 0) {
       return '';
     }
 
     const listItems = items
-      .map(item => {
+      .map((item) => {
         const pageNumberHtml = this.options.includePageNumbers
           ? ` <span class="${cssClasses.pageNumber}">${item.pageNumber || ''}</span>`
           : '';
 
         const childrenHtml =
-          item.children.length > 0 ? `\n${this.generateListHTML(item.children, cssClasses)}` : '';
+          item.children.length > 0
+            ? `\n${this.generateListHTML(item.children, cssClasses)}`
+            : '';
 
         return `<li class="${cssClasses.item}">
   <a href="${item.anchor}" class="${cssClasses.link}">
@@ -222,11 +230,16 @@ export class TOCGenerator {
   /**
    * Update page numbers in generated TOC items
    */
-  updatePageNumbers(items: TOCItemFlat[], pageNumbers: Record<string, number>): void {
+  updatePageNumbers(
+    items: TOCItemFlat[],
+    pageNumbers: Record<string, number>,
+  ): void {
     const usedKeys: Record<string, number> = {};
 
     for (const item of items) {
-      const anchor = item.anchor.startsWith('#') ? item.anchor.substring(1) : item.anchor;
+      const anchor = item.anchor.startsWith('#')
+        ? item.anchor.substring(1)
+        : item.anchor;
 
       // Try to find matching page number
       let pageNumber: number | undefined;
@@ -265,7 +278,7 @@ export class TOCGenerator {
    */
   generateTOCWithPageNumbers(
     headings: Heading[],
-    pageNumbers: Record<string, number>
+    pageNumbers: Record<string, number>,
   ): TOCGenerationResult {
     const result = this.generateTOC(headings);
 

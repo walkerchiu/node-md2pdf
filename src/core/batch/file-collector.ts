@@ -3,10 +3,11 @@
  * Handles file discovery, filtering, and validation
  */
 
-import * as path from 'path';
 import * as fs from 'fs';
-import { BatchFileInfo, BatchConversionConfig } from '../../types/batch';
+import * as path from 'path';
+
 import { ErrorType, MD2PDFError } from '../../types';
+import { BatchFileInfo, BatchConversionConfig } from '../../types/batch';
 
 export class FileCollector {
   /**
@@ -28,13 +29,16 @@ export class FileCollector {
           ErrorType.FILE_NOT_FOUND,
           `No files found matching pattern: ${config.inputPattern}`,
           { pattern: config.inputPattern },
-          ['Check if the pattern is correct', 'Ensure files exist in the specified location']
+          [
+            'Check if the pattern is correct',
+            'Ensure files exist in the specified location',
+          ],
         );
       }
       const fileInfos = await Promise.all(
-        files.map(filePath => this.createFileInfo(filePath, config))
+        files.map((filePath) => this.createFileInfo(filePath, config)),
       );
-      return fileInfos.filter(info => info !== null) as BatchFileInfo[];
+      return fileInfos.filter((info) => info !== null) as BatchFileInfo[];
     } catch (error) {
       if (error instanceof Error && 'type' in error) {
         throw error; // Re-throw custom errors
@@ -58,9 +62,9 @@ export class FileCollector {
     if (pattern.includes(',')) {
       const filePaths = pattern
         .split(',')
-        .map(p => p.trim())
-        .filter(p => p)
-        .map(p => this.cleanFilePath(p));
+        .map((p) => p.trim())
+        .filter((p) => p)
+        .map((p) => this.cleanFilePath(p));
       for (const filePath of filePaths) {
         if (await this.fileExists(filePath)) {
           files.push(path.resolve(filePath));
@@ -221,7 +225,11 @@ export class FileCollector {
           this.getBaseDirFromPattern(config.inputPattern) || process.cwd();
         relativeInputPath = path.relative(baseDir, inputPath);
       }
-      const outputPath = this.calculateOutputPath(inputPath, relativeInputPath, config);
+      const outputPath = this.calculateOutputPath(
+        inputPath,
+        relativeInputPath,
+        config,
+      );
 
       return {
         inputPath,
@@ -325,7 +333,10 @@ export class FileCollector {
             ErrorType.PERMISSION_DENIED,
             `Output directory is not writable: ${outputDir}`,
             { outputPath: file.outputPath },
-            ['Check directory permissions', 'Choose a different output directory']
+            [
+              'Check directory permissions',
+              'Choose a different output directory',
+            ],
           );
         }
         valid.push(file);
@@ -338,7 +349,7 @@ export class FileCollector {
               : this.createError(
                   ErrorType.SYSTEM_ERROR,
                   `File validation failed: ${error instanceof Error ? error.message : String(error)}`,
-                  { inputPath: file.inputPath }
+                  { inputPath: file.inputPath },
                 ),
         });
       }
@@ -361,7 +372,7 @@ export class FileCollector {
     type: ErrorType,
     message: string,
     details?: Record<string, unknown>,
-    suggestions?: string[]
+    suggestions?: string[],
   ): MD2PDFError {
     const error = new Error(message) as MD2PDFError;
     error.type = type;

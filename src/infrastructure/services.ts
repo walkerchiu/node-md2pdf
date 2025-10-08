@@ -2,12 +2,13 @@
  * Service registration utilities for the Infrastructure layer
  */
 
+import { ServiceContainer } from '../shared/container';
+
 import { ConfigManager } from './config';
 import { ErrorHandler } from './error';
 import { FileSystemManager } from './filesystem';
 import { TranslationManager } from './i18n';
 import { ConsoleLogger } from './logging';
-import { ServiceContainer } from '../shared/container';
 
 import type { IConfigManager } from './config';
 import type { IErrorHandler } from './error';

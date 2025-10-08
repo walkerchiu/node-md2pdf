@@ -7,10 +7,11 @@
 import chalk from 'chalk';
 import { Command } from 'commander';
 
+import { version } from '../package.json';
+
 import { ApplicationServices } from './application/container';
 import { MainInteractiveMode } from './cli/main-interactive';
 import { validateEnvironment } from './utils/validation';
-import { version } from '../package.json';
 
 import type { ILogger } from './infrastructure/logging/types';
 

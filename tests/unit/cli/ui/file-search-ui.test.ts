@@ -36,19 +36,27 @@ describe('FileSearchUI', () => {
   });
 
   test('shortenPath falls back to .../filename when parent+filename too long', () => {
-    const path = '/very/long/path/that/contains/many/folders/and/a/verylongfilename.md';
+    const path =
+      '/very/long/path/that/contains/many/folders/and/a/verylongfilename.md';
     const result = FileSearchUI.shortenPath(path, 10);
     expect(result).toBe('.../verylongfilename.md');
   });
 
   test('displayFiles writes expected lines to stdout', () => {
     const writes: string[] = [];
-    jest.spyOn(process.stdout, 'write').mockImplementation((s: string | Uint8Array) => {
-      writes.push(String(s));
-      return true as unknown as boolean;
-    });
+    jest
+      .spyOn(process.stdout, 'write')
+      .mockImplementation((s: string | Uint8Array) => {
+        writes.push(String(s));
+        return true as unknown as boolean;
+      });
 
-    const files = ['/path/to/one.md', '/path/to/two.md', '/path/to/three.md', '/path/to/four.md'];
+    const files = [
+      '/path/to/one.md',
+      '/path/to/two.md',
+      '/path/to/three.md',
+      '/path/to/four.md',
+    ];
     FileSearchUI.displayFiles(files, 2);
 
     const joined = writes.join('');

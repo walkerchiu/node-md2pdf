@@ -36,7 +36,7 @@ describe('CLI End-to-End Tests', () => {
       path.join(fixturesDir, 'with-metadata-e2e.pdf'),
     ];
 
-    pdfFiles.forEach(file => {
+    pdfFiles.forEach((file) => {
       if (existsSync(file)) {
         try {
           unlinkSync(file);
@@ -54,7 +54,7 @@ describe('CLI End-to-End Tests', () => {
       const validation = await Promise.race([
         pdfGenerator.validateEnvironment(),
         new Promise<{ isValid: boolean; errors: string[] }>((_, reject) =>
-          setTimeout(() => reject(new Error('Validation timeout')), 8000)
+          setTimeout(() => reject(new Error('Validation timeout')), 8000),
         ),
       ]);
       return validation.isValid;
@@ -81,9 +81,13 @@ describe('CLI End-to-End Tests', () => {
 
     if (canPDF) {
       // Step 3: Generate PDF (only if environment supports it)
-      const pdfResult = await pdfGenerator.generatePDF(parseResult.content, outputFile, {
-        title: 'E2E Test Sample Document',
-      });
+      const pdfResult = await pdfGenerator.generatePDF(
+        parseResult.content,
+        outputFile,
+        {
+          title: 'E2E Test Sample Document',
+        },
+      );
 
       expect(pdfResult.success).toBe(true);
       expect(existsSync(outputFile)).toBe(true);
@@ -97,7 +101,9 @@ describe('CLI End-to-End Tests', () => {
       console.log('✅ E2E: Sample file converted successfully');
     } else {
       // eslint-disable-next-line no-console
-      console.log('ℹ️  E2E: Skipping PDF generation (environment does not support Puppeteer)');
+      console.log(
+        'ℹ️  E2E: Skipping PDF generation (environment does not support Puppeteer)',
+      );
       expect(parseResult.content).toBeTruthy(); // At least verify parsing works
     }
   });
@@ -117,7 +123,7 @@ describe('CLI End-to-End Tests', () => {
 
     // Step 2: Test Chinese content processing
     const chineseHeadings = parseResult.headings.filter((h: Heading) =>
-      /[\u4e00-\u9fff]/.test(h.text)
+      /[\u4e00-\u9fff]/.test(h.text),
     );
     expect(chineseHeadings.length).toBeGreaterThan(0);
 
@@ -125,9 +131,13 @@ describe('CLI End-to-End Tests', () => {
     const canPDF = await canGeneratePDF();
 
     if (canPDF) {
-      const pdfResult = await pdfGenerator.generatePDF(parseResult.content, outputFile, {
-        title: '中文測試文件',
-      });
+      const pdfResult = await pdfGenerator.generatePDF(
+        parseResult.content,
+        outputFile,
+        {
+          title: '中文測試文件',
+        },
+      );
 
       expect(pdfResult.success).toBe(true);
       expect(existsSync(outputFile)).toBe(true);
@@ -140,7 +150,9 @@ describe('CLI End-to-End Tests', () => {
       console.log('✅ E2E: Chinese content processed successfully');
     } else {
       // eslint-disable-next-line no-console
-      console.log('ℹ️  E2E: Skipping Chinese PDF generation (environment limitation)');
+      console.log(
+        'ℹ️  E2E: Skipping Chinese PDF generation (environment limitation)',
+      );
       expect(chineseHeadings.length).toBeGreaterThan(0); // At least verify Chinese parsing works
     }
   });
@@ -161,7 +173,10 @@ describe('CLI End-to-End Tests', () => {
     // Create a temporary text file
     const txtFile = path.join(fixturesDir, 'test-e2e.txt');
     // eslint-disable-next-line @typescript-eslint/no-var-requires
-    require('fs').writeFileSync(txtFile, '# This is markdown content\n\nEven in a .txt file');
+    require('fs').writeFileSync(
+      txtFile,
+      '# This is markdown content\n\nEven in a .txt file',
+    );
 
     try {
       // Core parser should work regardless of file extension
@@ -200,9 +215,13 @@ describe('CLI End-to-End Tests', () => {
 
       if (canPDF) {
         // Step 3: Generate PDF with progress tracking
-        const pdfResult = await pdfGenerator.generatePDF(parseResult.content, outputFile, {
-          title: 'Progress Test Document',
-        });
+        const pdfResult = await pdfGenerator.generatePDF(
+          parseResult.content,
+          outputFile,
+          {
+            title: 'Progress Test Document',
+          },
+        );
 
         expect(pdfResult.success).toBe(true);
         expect(existsSync(outputFile)).toBe(true);
@@ -210,7 +229,9 @@ describe('CLI End-to-End Tests', () => {
         console.log('✅ Progress: PDF generation completed successfully');
       } else {
         // eslint-disable-next-line no-console
-        console.log('ℹ️  Progress: Skipping PDF generation (environment limitation)');
+        console.log(
+          'ℹ️  Progress: Skipping PDF generation (environment limitation)',
+        );
         expect(parseResult.content).toBeTruthy(); // At least verify parsing works
       }
 

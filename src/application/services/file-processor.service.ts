@@ -5,16 +5,17 @@
 
 import * as path from 'path';
 
-import { IMarkdownParserService } from './markdown-parser.service';
-import { ITOCGeneratorService } from './toc-generator.service';
-import { IPDFGeneratorService } from './pdf-generator.service';
 import { PDFGeneratorOptions, PDFGenerationResult } from '../../core/pdf/types';
 import { TOCGeneratorOptions } from '../../core/toc/types';
-import { ParsedMarkdown } from '../../types/index';
 import {
   MD2PDFError,
   FileNotFoundError,
 } from '../../infrastructure/error/errors';
+import { ParsedMarkdown } from '../../types/index';
+
+import { IMarkdownParserService } from './markdown-parser.service';
+import { IPDFGeneratorService } from './pdf-generator.service';
+import { ITOCGeneratorService } from './toc-generator.service';
 
 import type { IConfigManager } from '../../infrastructure/config/types';
 import type { IErrorHandler } from '../../infrastructure/error/types';

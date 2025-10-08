@@ -51,7 +51,9 @@ describe('Quick End-to-End Tests', () => {
         // eslint-disable-next-line no-console
         console.log('✅ All core components are working correctly');
         // eslint-disable-next-line no-console
-        console.log(`✅ Parsed ${parsed.headings.length} headings from ${inputFile}`);
+        console.log(
+          `✅ Parsed ${parsed.headings.length} headings from ${inputFile}`,
+        );
         // eslint-disable-next-line no-console
         console.log('✅ E2E validation completed successfully');
       } catch (error) {
@@ -60,7 +62,7 @@ describe('Quick End-to-End Tests', () => {
         throw error;
       }
     },
-    testTimeout
+    testTimeout,
   );
 
   test('should validate Chinese file can be parsed', () => {
@@ -82,7 +84,9 @@ describe('Quick End-to-End Tests', () => {
     expect(parsed.content).toMatch(/中文/);
 
     // eslint-disable-next-line no-console
-    console.log(`✅ Chinese file parsed successfully with ${parsed.headings.length} headings`);
+    console.log(
+      `✅ Chinese file parsed successfully with ${parsed.headings.length} headings`,
+    );
   });
 
   test('should verify file structure and dependencies are correct', () => {

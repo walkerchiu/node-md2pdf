@@ -89,14 +89,46 @@ export class SettingsMode {
         message: 'Select settings option:',
         choices: [
           { name: '0. Return to Main Menu', value: 'back', short: 'Back' },
-          { name: '1. Language & Localization', value: 'language', short: 'Language Settings' },
-          { name: '2. Default Preferences', value: 'defaults', short: 'Default Settings' },
-          { name: '3. Performance & Memory', value: 'performance', short: 'Performance Settings' },
-          { name: '4. Cache Management', value: 'cache', short: 'Cache Settings' },
-          { name: '5. Logging & Diagnostics', value: 'logging', short: 'Logging Settings' },
-          { name: '6. Reset to Factory Defaults', value: 'reset', short: 'Reset Settings' },
-          { name: '7. Export Configuration', value: 'export', short: 'Export Settings' },
-          { name: '8. Import Configuration', value: 'import', short: 'Import Settings' },
+          {
+            name: '1. Language & Localization',
+            value: 'language',
+            short: 'Language Settings',
+          },
+          {
+            name: '2. Default Preferences',
+            value: 'defaults',
+            short: 'Default Settings',
+          },
+          {
+            name: '3. Performance & Memory',
+            value: 'performance',
+            short: 'Performance Settings',
+          },
+          {
+            name: '4. Cache Management',
+            value: 'cache',
+            short: 'Cache Settings',
+          },
+          {
+            name: '5. Logging & Diagnostics',
+            value: 'logging',
+            short: 'Logging Settings',
+          },
+          {
+            name: '6. Reset to Factory Defaults',
+            value: 'reset',
+            short: 'Reset Settings',
+          },
+          {
+            name: '7. Export Configuration',
+            value: 'export',
+            short: 'Export Settings',
+          },
+          {
+            name: '8. Import Configuration',
+            value: 'import',
+            short: 'Import Settings',
+          },
         ],
         default: 'language',
         pageSize: 12,
@@ -123,7 +155,9 @@ export class SettingsMode {
   }
 
   private async performanceSettings(): Promise<void> {
-    console.log(chalk.yellow('⚡ Performance Settings features coming soon...'));
+    console.log(
+      chalk.yellow('⚡ Performance Settings features coming soon...'),
+    );
     await this.pressAnyKey();
   }
 

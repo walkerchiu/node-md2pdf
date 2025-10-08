@@ -25,7 +25,7 @@ export class TestCleanup {
     try {
       const files = readdirSync(directory);
 
-      files.forEach(file => {
+      files.forEach((file) => {
         const filePath = path.join(directory, file);
 
         try {
@@ -33,7 +33,9 @@ export class TestCleanup {
 
           // Only process files, not directories
           if (stats.isFile()) {
-            const shouldCleanup = this.testFilePatterns.some(pattern => pattern.test(file));
+            const shouldCleanup = this.testFilePatterns.some((pattern) =>
+              pattern.test(file),
+            );
 
             if (shouldCleanup) {
               unlinkSync(filePath);
@@ -57,7 +59,7 @@ export class TestCleanup {
    * Clean up specific files by pattern
    */
   static cleanupSpecificFiles(directory: string, patterns: string[]): void {
-    patterns.forEach(pattern => {
+    patterns.forEach((pattern) => {
       const filePath = path.join(directory, pattern);
       if (existsSync(filePath)) {
         try {
@@ -86,7 +88,10 @@ export class TestCleanup {
       console.log(`🧹 Cleaned up temp directory: ${directory}`);
     } catch (error) {
       // eslint-disable-next-line no-console
-      console.warn(`⚠️  Could not clean up temp directory ${directory}:`, error);
+      console.warn(
+        `⚠️  Could not clean up temp directory ${directory}:`,
+        error,
+      );
     }
   }
 
@@ -100,7 +105,9 @@ export class TestCleanup {
 
     try {
       const files = readdirSync(directory);
-      return files.filter(file => this.testFilePatterns.some(pattern => pattern.test(file)));
+      return files.filter((file) =>
+        this.testFilePatterns.some((pattern) => pattern.test(file)),
+      );
     } catch (error) {
       // eslint-disable-next-line no-console
       console.warn(`⚠️  Could not list files in ${directory}:`, error);

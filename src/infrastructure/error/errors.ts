@@ -26,10 +26,16 @@ export class MD2PDFError extends Error {
 export class FileNotFoundError extends MD2PDFError {
   public readonly filePath: string;
   constructor(filePath: string, context?: Record<string, unknown>) {
-    super(`File not found: ${filePath}`, 'FILE_NOT_FOUND', 'file_system', true, {
-      filePath,
-      ...context,
-    });
+    super(
+      `File not found: ${filePath}`,
+      'FILE_NOT_FOUND',
+      'file_system',
+      true,
+      {
+        filePath,
+        ...context,
+      },
+    );
     this.name = 'FileNotFoundError';
     this.filePath = filePath;
   }
@@ -37,7 +43,11 @@ export class FileNotFoundError extends MD2PDFError {
 
 export class FilePermissionError extends MD2PDFError {
   public readonly filePath: string;
-  constructor(filePath: string, operation: string, context?: Record<string, unknown>) {
+  constructor(
+    filePath: string,
+    operation: string,
+    context?: Record<string, unknown>,
+  ) {
     super(
       `Permission denied: cannot ${operation} file ${filePath}`,
       'FILE_PERMISSION_DENIED',
@@ -74,7 +84,11 @@ export class MarkdownParsingError extends MD2PDFError {
 
 export class PDFGenerationError extends MD2PDFError {
   public readonly stage: string;
-  constructor(message: string, stage: string, context?: Record<string, unknown>) {
+  constructor(
+    message: string,
+    stage: string,
+    context?: Record<string, unknown>,
+  ) {
     super(
       `PDF generation error at stage '${stage}': ${message}`,
       'PDF_GENERATION_ERROR',
@@ -89,7 +103,11 @@ export class PDFGenerationError extends MD2PDFError {
 
 export class ConfigurationError extends MD2PDFError {
   public readonly configKey: string;
-  constructor(message: string, configKey: string, context?: Record<string, unknown>) {
+  constructor(
+    message: string,
+    configKey: string,
+    context?: Record<string, unknown>,
+  ) {
     super(
       `Configuration error for key '${configKey}': ${message}`,
       'CONFIGURATION_ERROR',
@@ -105,7 +123,12 @@ export class ConfigurationError extends MD2PDFError {
 export class ValidationError extends MD2PDFError {
   public readonly field: string;
   public readonly value: unknown;
-  constructor(field: string, value: unknown, message?: string, context?: Record<string, unknown>) {
+  constructor(
+    field: string,
+    value: unknown,
+    message?: string,
+    context?: Record<string, unknown>,
+  ) {
     const defaultMessage = `Validation failed for field '${field}' with value: ${value}`;
     super(message || defaultMessage, 'VALIDATION_ERROR', 'validation', true, {
       field,
@@ -120,7 +143,13 @@ export class ValidationError extends MD2PDFError {
 
 export class PuppeteerError extends MD2PDFError {
   constructor(message: string, context?: Record<string, unknown>) {
-    super(`Puppeteer error: ${message}`, 'PUPPETEER_ERROR', 'pdf_generation', true, context);
+    super(
+      `Puppeteer error: ${message}`,
+      'PUPPETEER_ERROR',
+      'pdf_generation',
+      true,
+      context,
+    );
     this.name = 'PuppeteerError';
   }
 }
@@ -128,10 +157,16 @@ export class PuppeteerError extends MD2PDFError {
 export class ServiceNotAvailableError extends MD2PDFError {
   public readonly serviceName: string;
   constructor(serviceName: string, context?: Record<string, unknown>) {
-    super(`Service not available: ${serviceName}`, 'SERVICE_NOT_AVAILABLE', 'configuration', true, {
-      serviceName,
-      ...context,
-    });
+    super(
+      `Service not available: ${serviceName}`,
+      'SERVICE_NOT_AVAILABLE',
+      'configuration',
+      true,
+      {
+        serviceName,
+        ...context,
+      },
+    );
     this.name = 'ServiceNotAvailableError';
     this.serviceName = serviceName;
   }

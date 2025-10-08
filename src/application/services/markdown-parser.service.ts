@@ -7,12 +7,12 @@ import {
   MarkdownParser,
   MarkdownParserOptions,
 } from '../../core/parser/markdown-parser';
-import { ParsedMarkdown, Heading } from '../../types/index';
 import {
   MD2PDFError,
   FileNotFoundError,
   MarkdownParsingError,
 } from '../../infrastructure/error/errors';
+import { ParsedMarkdown, Heading } from '../../types/index';
 
 import type { IConfigManager } from '../../infrastructure/config/types';
 import type { IErrorHandler } from '../../infrastructure/error/types';

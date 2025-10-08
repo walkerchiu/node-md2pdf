@@ -2,10 +2,12 @@
  * File system manager implementation using fs-extra
  */
 
-import * as fs from 'fs-extra';
-import * as glob from 'glob';
 import * as os from 'os';
 import * as path from 'path';
+
+import * as fs from 'fs-extra';
+import * as glob from 'glob';
+
 import {
   FileNotFoundError,
   FilePermissionError,
@@ -342,7 +344,7 @@ export class FileSystemManager implements IFileSystemManager {
         'FILE_SEARCH_ERROR',
         'file_system',
         true,
-        { pattern, searchPath }
+        { pattern, searchPath },
       );
     }
   }

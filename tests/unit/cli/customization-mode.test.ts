@@ -82,10 +82,14 @@ describe('CustomizationMode', () => {
       await customizationMode.start();
 
       expect(console.log).toHaveBeenCalledWith(
-        expect.stringContaining('🎨 Customization Settings')
+        expect.stringContaining('🎨 Customization Settings'),
       );
-      expect(console.log).toHaveBeenCalledWith(expect.stringContaining('Advanced styling'));
-      expect(mockLogger.info).toHaveBeenCalledWith('Starting customization mode');
+      expect(console.log).toHaveBeenCalledWith(
+        expect.stringContaining('Advanced styling'),
+      );
+      expect(mockLogger.info).toHaveBeenCalledWith(
+        'Starting customization mode',
+      );
     });
 
     it('should handle cover design option', async () => {
@@ -96,8 +100,12 @@ describe('CustomizationMode', () => {
 
       await customizationMode.start();
 
-      expect(console.log).toHaveBeenCalledWith(expect.stringContaining('Cover Design'));
-      expect(console.log).toHaveBeenCalledWith(expect.stringContaining('coming soon'));
+      expect(console.log).toHaveBeenCalledWith(
+        expect.stringContaining('Cover Design'),
+      );
+      expect(console.log).toHaveBeenCalledWith(
+        expect.stringContaining('coming soon'),
+      );
     });
 
     it('should handle headers & footers option', async () => {
@@ -108,8 +116,12 @@ describe('CustomizationMode', () => {
 
       await customizationMode.start();
 
-      expect(console.log).toHaveBeenCalledWith(expect.stringContaining('Headers & Footers'));
-      expect(console.log).toHaveBeenCalledWith(expect.stringContaining('coming soon'));
+      expect(console.log).toHaveBeenCalledWith(
+        expect.stringContaining('Headers & Footers'),
+      );
+      expect(console.log).toHaveBeenCalledWith(
+        expect.stringContaining('coming soon'),
+      );
     });
 
     it('should handle document metadata option', async () => {
@@ -120,8 +132,12 @@ describe('CustomizationMode', () => {
 
       await customizationMode.start();
 
-      expect(console.log).toHaveBeenCalledWith(expect.stringContaining('Document Metadata'));
-      expect(console.log).toHaveBeenCalledWith(expect.stringContaining('coming soon'));
+      expect(console.log).toHaveBeenCalledWith(
+        expect.stringContaining('Document Metadata'),
+      );
+      expect(console.log).toHaveBeenCalledWith(
+        expect.stringContaining('coming soon'),
+      );
     });
 
     it('should handle security & watermarks option', async () => {
@@ -132,8 +148,12 @@ describe('CustomizationMode', () => {
 
       await customizationMode.start();
 
-      expect(console.log).toHaveBeenCalledWith(expect.stringContaining('Security & Watermarks'));
-      expect(console.log).toHaveBeenCalledWith(expect.stringContaining('coming soon'));
+      expect(console.log).toHaveBeenCalledWith(
+        expect.stringContaining('Security & Watermarks'),
+      );
+      expect(console.log).toHaveBeenCalledWith(
+        expect.stringContaining('coming soon'),
+      );
     });
 
     it('should handle template management option', async () => {
@@ -144,8 +164,12 @@ describe('CustomizationMode', () => {
 
       await customizationMode.start();
 
-      expect(console.log).toHaveBeenCalledWith(expect.stringContaining('Template Management'));
-      expect(console.log).toHaveBeenCalledWith(expect.stringContaining('coming soon'));
+      expect(console.log).toHaveBeenCalledWith(
+        expect.stringContaining('Template Management'),
+      );
+      expect(console.log).toHaveBeenCalledWith(
+        expect.stringContaining('coming soon'),
+      );
     });
 
     it('should handle back to main menu option', async () => {
@@ -153,7 +177,9 @@ describe('CustomizationMode', () => {
 
       await customizationMode.start();
 
-      expect(mockLogger.info).toHaveBeenCalledWith('Returning to main menu from customization');
+      expect(mockLogger.info).toHaveBeenCalledWith(
+        'Returning to main menu from customization',
+      );
     });
 
     it('should continue showing menu until back is selected', async () => {
@@ -167,7 +193,9 @@ describe('CustomizationMode', () => {
       await customizationMode.start();
 
       expect(mockPrompt).toHaveBeenCalledTimes(5); // 3 option selections + 2 pressAnyKey
-      expect(mockLogger.info).toHaveBeenCalledWith('Returning to main menu from customization');
+      expect(mockLogger.info).toHaveBeenCalledWith(
+        'Returning to main menu from customization',
+      );
     });
 
     it('should handle all menu options in correct order', async () => {
@@ -176,23 +204,32 @@ describe('CustomizationMode', () => {
       await customizationMode.start();
 
       const selectCustomizationOptionCall = mockPrompt.mock.calls.find(
-        call =>
-          call[0].some && call[0].some((q: any) => q.message === 'Select customization option:')
+        (call) =>
+          call[0].some &&
+          call[0].some(
+            (q: any) => q.message === 'Select customization option:',
+          ),
       );
 
       expect(selectCustomizationOptionCall).toBeDefined();
       type Question = { name: string; choices?: any[] };
       const choices = selectCustomizationOptionCall[0].find(
-        (q: Question) => q.name === 'option'
+        (q: Question) => q.name === 'option',
       ).choices;
 
       expect(choices).toHaveLength(6);
       expect(choices[0]).toEqual(expect.objectContaining({ value: 'back' }));
       expect(choices[1]).toEqual(expect.objectContaining({ value: 'cover' }));
       expect(choices[2]).toEqual(expect.objectContaining({ value: 'headers' }));
-      expect(choices[3]).toEqual(expect.objectContaining({ value: 'metadata' }));
-      expect(choices[4]).toEqual(expect.objectContaining({ value: 'security' }));
-      expect(choices[5]).toEqual(expect.objectContaining({ value: 'templates' }));
+      expect(choices[3]).toEqual(
+        expect.objectContaining({ value: 'metadata' }),
+      );
+      expect(choices[4]).toEqual(
+        expect.objectContaining({ value: 'security' }),
+      );
+      expect(choices[5]).toEqual(
+        expect.objectContaining({ value: 'templates' }),
+      );
     });
   });
 
@@ -201,22 +238,34 @@ describe('CustomizationMode', () => {
       const testError = new Error('Customization error');
       mockPrompt.mockRejectedValue(testError);
 
-      await expect(customizationMode.start()).rejects.toThrow('Customization error');
+      await expect(customizationMode.start()).rejects.toThrow(
+        'Customization error',
+      );
 
-      expect(mockLogger.error).toHaveBeenCalledWith('Customization mode error', testError);
+      expect(mockLogger.error).toHaveBeenCalledWith(
+        'Customization mode error',
+        testError,
+      );
       expect(console.error).toHaveBeenCalledWith(
         expect.stringContaining('❌ Customization error:'),
-        testError
+        testError,
       );
     });
 
     it('should handle specific option selection errors', async () => {
       const testError = new Error('Option selection failed');
-      mockPrompt.mockResolvedValueOnce({ option: 'cover' }).mockRejectedValueOnce(testError); // pressAnyKey fails
+      mockPrompt
+        .mockResolvedValueOnce({ option: 'cover' })
+        .mockRejectedValueOnce(testError); // pressAnyKey fails
 
-      await expect(customizationMode.start()).rejects.toThrow('Option selection failed');
+      await expect(customizationMode.start()).rejects.toThrow(
+        'Option selection failed',
+      );
 
-      expect(mockLogger.error).toHaveBeenCalledWith('Customization mode error', testError);
+      expect(mockLogger.error).toHaveBeenCalledWith(
+        'Customization mode error',
+        testError,
+      );
     });
   });
 
@@ -231,9 +280,11 @@ describe('CustomizationMode', () => {
 
       type PromptQuestion = { message?: string };
       const pressAnyKeyCall = mockPrompt.mock.calls.find(
-        call =>
+        (call) =>
           call[0].some &&
-          call[0].some((q: PromptQuestion) => q.message === 'Press Enter to continue...')
+          call[0].some(
+            (q: PromptQuestion) => q.message === 'Press Enter to continue...',
+          ),
       );
 
       expect(pressAnyKeyCall).toBeDefined();

@@ -70,7 +70,7 @@ describe('Environment Validation', () => {
 
       expect(result).toBe(true);
       expect(consoleSpy.log).toHaveBeenCalledWith(
-        expect.stringContaining('v18.0.0 (meets requirements)')
+        expect.stringContaining('v18.0.0 (meets requirements)'),
       );
     });
 
@@ -84,7 +84,7 @@ describe('Environment Validation', () => {
 
       expect(result).toBe(true);
       expect(consoleSpy.log).toHaveBeenCalledWith(
-        expect.stringContaining('v20.1.0 (meets requirements)')
+        expect.stringContaining('v20.1.0 (meets requirements)'),
       );
     });
 
@@ -98,7 +98,7 @@ describe('Environment Validation', () => {
 
       expect(result).toBe(false);
       expect(consoleSpy.error).toHaveBeenCalledWith(
-        expect.stringContaining('v16.14.0, requires >= 18.0.0')
+        expect.stringContaining('v16.14.0, requires >= 18.0.0'),
       );
     });
 
@@ -112,7 +112,7 @@ describe('Environment Validation', () => {
 
       expect(result).toBe(false);
       expect(consoleSpy.error).toHaveBeenCalledWith(
-        expect.stringContaining('v14.21.0, requires >= 18.0.0')
+        expect.stringContaining('v14.21.0, requires >= 18.0.0'),
       );
     });
   });
@@ -122,7 +122,9 @@ describe('Environment Validation', () => {
       const result = await validatePuppeteer();
 
       expect(result).toBe(true);
-      expect(consoleSpy.log).toHaveBeenCalledWith(expect.stringContaining('Puppeteer is ready'));
+      expect(consoleSpy.log).toHaveBeenCalledWith(
+        expect.stringContaining('Puppeteer is ready'),
+      );
     });
   });
 
@@ -134,7 +136,7 @@ describe('Environment Validation', () => {
       expect(result).toBe(true);
       // The actual function will call console.warn due to mock failing
       expect(consoleSpy.warn).toHaveBeenCalledWith(
-        expect.stringContaining('Unable to check system resources')
+        expect.stringContaining('Unable to check system resources'),
       );
     });
   });
@@ -168,7 +170,7 @@ describe('Environment Validation', () => {
       });
 
       await expect(validateEnvironment()).rejects.toThrow(
-        'Environment check failed (1 checks not passed)'
+        'Environment check failed (1 checks not passed)',
       );
     });
   });
@@ -195,15 +197,26 @@ describe('Environment Validation', () => {
     });
 
     it('should aggregate validation results correctly', () => {
-      const aggregateResults = (results: boolean[]): { passed: number; failed: number } => {
-        const passed = results.filter(r => r).length;
+      const aggregateResults = (
+        results: boolean[],
+      ): { passed: number; failed: number } => {
+        const passed = results.filter((r) => r).length;
         const failed = results.length - passed;
         return { passed, failed };
       };
 
-      expect(aggregateResults([true, true, true])).toEqual({ passed: 3, failed: 0 });
-      expect(aggregateResults([true, false, true])).toEqual({ passed: 2, failed: 1 });
-      expect(aggregateResults([false, false, false])).toEqual({ passed: 0, failed: 3 });
+      expect(aggregateResults([true, true, true])).toEqual({
+        passed: 3,
+        failed: 0,
+      });
+      expect(aggregateResults([true, false, true])).toEqual({
+        passed: 2,
+        failed: 1,
+      });
+      expect(aggregateResults([false, false, false])).toEqual({
+        passed: 0,
+        failed: 3,
+      });
     });
   });
 });

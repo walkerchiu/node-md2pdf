@@ -5,12 +5,13 @@
 
 import chalk from 'chalk';
 
-import FileSearchUI from '../ui/file-search-ui';
-import { CliRenderer } from '../utils/cli-renderer';
-import { BatchProgressUI } from './batch-progress-ui';
 import { APPLICATION_SERVICE_NAMES } from '../../application/container';
 import { FileCollector } from '../../core/batch/file-collector';
 import { BatchConversionConfig, BatchFilenameFormat } from '../../types/batch';
+import FileSearchUI from '../ui/file-search-ui';
+import { CliRenderer } from '../utils/cli-renderer';
+
+import { BatchProgressUI } from './batch-progress-ui';
 
 import type { IBatchProcessorService } from '../../application/services/batch-processor.service';
 import type { IErrorHandler } from '../../infrastructure/error/types';

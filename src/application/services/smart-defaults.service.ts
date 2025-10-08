@@ -3,7 +3,6 @@
  * Analyzes content and provides intelligent configuration recommendations
  */
 
-import type { ILogger } from '../../infrastructure/logging/types';
 import { ContentAnalyzer } from '../../core/analysis/content-analyzer';
 import {
   ContentAnalysis,
@@ -20,12 +19,20 @@ import {
   PotentialIssue,
 } from '../../core/analysis/types';
 
+import type { ILogger } from '../../infrastructure/logging/types';
+
 export interface ISmartDefaultsService {
-  analyzeContent(filePath: string, options?: SmartDefaultsOptions): Promise<ContentAnalysis>;
-  analyzeContentString(content: string, options?: SmartDefaultsOptions): Promise<ContentAnalysis>;
+  analyzeContent(
+    filePath: string,
+    options?: SmartDefaultsOptions,
+  ): Promise<ContentAnalysis>;
+  analyzeContentString(
+    content: string,
+    options?: SmartDefaultsOptions,
+  ): Promise<ContentAnalysis>;
   recommendSettings(
     analysis: ContentAnalysis,
-    options?: SmartDefaultsOptions
+    options?: SmartDefaultsOptions,
   ): Promise<RecommendedConfig>;
   getQuickConversionConfig(analysis: ContentAnalysis): Promise<QuickConfig>;
   getContentInsights(analysis: ContentAnalysis): Promise<ContentInsights>;
@@ -43,7 +50,10 @@ export class SmartDefaultsService implements ISmartDefaultsService {
 
   async analyzeContent(
     filePath: string,
-    _options: SmartDefaultsOptions = { analysisDepth: 'standard', learningMode: false }
+    _options: SmartDefaultsOptions = {
+      analysisDepth: 'standard',
+      learningMode: false,
+    },
   ): Promise<ContentAnalysis> {
     this.logger?.info(`Analyzing content: ${filePath}`);
 
@@ -51,7 +61,7 @@ export class SmartDefaultsService implements ISmartDefaultsService {
       const analysis = await this.contentAnalyzer.analyzeFile(filePath);
 
       this.logger?.info(
-        `Analysis completed: ${analysis.wordCount} words, ${analysis.estimatedPages} pages`
+        `Analysis completed: ${analysis.wordCount} words, ${analysis.estimatedPages} pages`,
       );
 
       return analysis;
@@ -63,15 +73,20 @@ export class SmartDefaultsService implements ISmartDefaultsService {
 
   async analyzeContentString(
     content: string,
-    _options: SmartDefaultsOptions = { analysisDepth: 'standard', learningMode: false }
+    _options: SmartDefaultsOptions = {
+      analysisDepth: 'standard',
+      learningMode: false,
+    },
   ): Promise<ContentAnalysis> {
-    this.logger?.info(`Analyzing content string (${content.length} characters)`);
+    this.logger?.info(
+      `Analyzing content string (${content.length} characters)`,
+    );
 
     try {
       const analysis = await this.contentAnalyzer.analyzeContent(content);
 
       this.logger?.info(
-        `Analysis completed: ${analysis.wordCount} words, ${analysis.estimatedPages} pages`
+        `Analysis completed: ${analysis.wordCount} words, ${analysis.estimatedPages} pages`,
       );
 
       return analysis;
@@ -83,7 +98,10 @@ export class SmartDefaultsService implements ISmartDefaultsService {
 
   async recommendSettings(
     analysis: ContentAnalysis,
-    _options: SmartDefaultsOptions = { analysisDepth: 'standard', learningMode: false }
+    _options: SmartDefaultsOptions = {
+      analysisDepth: 'standard',
+      learningMode: false,
+    },
   ): Promise<RecommendedConfig> {
     this.logger?.info('Generating configuration recommendations');
 
@@ -130,13 +148,15 @@ export class SmartDefaultsService implements ISmartDefaultsService {
     };
 
     this.logger?.info(
-      `Configuration recommended with ${(confidence * 100).toFixed(1)}% confidence`
+      `Configuration recommended with ${(confidence * 100).toFixed(1)}% confidence`,
     );
 
     return config;
   }
 
-  async getQuickConversionConfig(analysis: ContentAnalysis): Promise<QuickConfig> {
+  async getQuickConversionConfig(
+    analysis: ContentAnalysis,
+  ): Promise<QuickConfig> {
     // Select the most appropriate preset based on analysis
     const documentType = analysis.contentComplexity.documentType;
     const hasCode = analysis.codeBlocks.length > 0;
@@ -147,11 +167,16 @@ export class SmartDefaultsService implements ISmartDefaultsService {
 
     if (documentType === 'technical-manual' || hasCode) {
       selectedPreset =
-        this.presetConfigs.find(p => p.name === 'Technical Document') || selectedPreset;
+        this.presetConfigs.find((p) => p.name === 'Technical Document') ||
+        selectedPreset;
     } else if (documentType === 'academic-paper') {
-      selectedPreset = this.presetConfigs.find(p => p.name === 'Academic Paper') || selectedPreset;
+      selectedPreset =
+        this.presetConfigs.find((p) => p.name === 'Academic Paper') ||
+        selectedPreset;
     } else if (documentType === 'business-report') {
-      selectedPreset = this.presetConfigs.find(p => p.name === 'Business Report') || selectedPreset;
+      selectedPreset =
+        this.presetConfigs.find((p) => p.name === 'Business Report') ||
+        selectedPreset;
     }
 
     // Customize the preset based on analysis
@@ -162,7 +187,12 @@ export class SmartDefaultsService implements ISmartDefaultsService {
         ...customized.config.fonts,
         enableChineseSupport: true,
         primaryFont: 'Noto Sans CJK TC',
-        fallbackFonts: ['Microsoft JhengHei', 'PingFang TC', 'Helvetica Neue', 'Arial'],
+        fallbackFonts: [
+          'Microsoft JhengHei',
+          'PingFang TC',
+          'Helvetica Neue',
+          'Arial',
+        ],
         codeFont: 'JetBrains Mono',
         headingFont: 'Noto Sans CJK TC',
         reasoning: 'Chinese support enabled for mixed language content',
@@ -186,7 +216,9 @@ export class SmartDefaultsService implements ISmartDefaultsService {
     return customized;
   }
 
-  async getContentInsights(analysis: ContentAnalysis): Promise<ContentInsights> {
+  async getContentInsights(
+    analysis: ContentAnalysis,
+  ): Promise<ContentInsights> {
     const insights: ContentInsights = {
       documentTypeConfidence: this.calculateDocumentTypeConfidence(analysis),
       suggestedImprovements: this.generateImprovementSuggestions(analysis),
@@ -203,9 +235,9 @@ export class SmartDefaultsService implements ISmartDefaultsService {
 
   private recommendFormat(
     analysis: ContentAnalysis,
-    reasoning: ConfigReasoning[]
+    reasoning: ConfigReasoning[],
   ): 'A4' | 'A3' | 'Letter' {
-    const hasWideTables = analysis.tables.some(t => t.columns > 8);
+    const hasWideTables = analysis.tables.some((t) => t.columns > 8);
     const hasComplexDiagrams = analysis.mediaElements.hasDiagrams;
 
     if (hasWideTables || hasComplexDiagrams) {
@@ -227,10 +259,10 @@ export class SmartDefaultsService implements ISmartDefaultsService {
 
   private recommendOrientation(
     analysis: ContentAnalysis,
-    reasoning: ConfigReasoning[]
+    reasoning: ConfigReasoning[],
   ): 'portrait' | 'landscape' {
-    const hasWideTables = analysis.tables.some(t => t.columns > 6);
-    const hasWideCodeBlocks = analysis.codeBlocks.some(c => c.lineCount > 20);
+    const hasWideTables = analysis.tables.some((t) => t.columns > 6);
+    const hasWideCodeBlocks = analysis.codeBlocks.some((c) => c.lineCount > 20);
 
     if (hasWideTables || hasWideCodeBlocks) {
       reasoning.push({
@@ -249,9 +281,14 @@ export class SmartDefaultsService implements ISmartDefaultsService {
     return 'portrait';
   }
 
-  private recommendMargins(analysis: ContentAnalysis, reasoning: ConfigReasoning[]): MarginConfig {
-    const isAcademic = analysis.contentComplexity.documentType === 'academic-paper';
-    const isBusiness = analysis.contentComplexity.documentType === 'business-report';
+  private recommendMargins(
+    analysis: ContentAnalysis,
+    reasoning: ConfigReasoning[],
+  ): MarginConfig {
+    const isAcademic =
+      analysis.contentComplexity.documentType === 'academic-paper';
+    const isBusiness =
+      analysis.contentComplexity.documentType === 'business-report';
 
     if (isAcademic) {
       reasoning.push({
@@ -299,10 +336,11 @@ export class SmartDefaultsService implements ISmartDefaultsService {
 
   private recommendTocConfig(
     analysis: ContentAnalysis,
-    reasoning: ConfigReasoning[]
+    reasoning: ConfigReasoning[],
   ): RecommendedTocConfig {
     const shouldIncludeToc =
-      analysis.headingStructure.totalHeadings > 5 || analysis.estimatedPages > 3;
+      analysis.headingStructure.totalHeadings > 5 ||
+      analysis.estimatedPages > 3;
 
     if (!shouldIncludeToc) {
       reasoning.push({
@@ -320,10 +358,15 @@ export class SmartDefaultsService implements ISmartDefaultsService {
       };
     }
 
-    const maxDepth = Math.min(analysis.contentComplexity.recommendedTocDepth, 4);
+    const maxDepth = Math.min(
+      analysis.contentComplexity.recommendedTocDepth,
+      4,
+    );
 
     const style =
-      analysis.contentComplexity.documentType === 'technical-manual' ? 'detailed' : 'simple';
+      analysis.contentComplexity.documentType === 'technical-manual'
+        ? 'detailed'
+        : 'simple';
     const title = analysis.languageDetection.primary.startsWith('zh')
       ? '目錄'
       : 'Table of Contents';
@@ -344,7 +387,10 @@ export class SmartDefaultsService implements ISmartDefaultsService {
     };
   }
 
-  private recommendTheme(analysis: ContentAnalysis, reasoning: ConfigReasoning[]): string {
+  private recommendTheme(
+    analysis: ContentAnalysis,
+    reasoning: ConfigReasoning[],
+  ): string {
     const documentType = analysis.contentComplexity.documentType;
 
     switch (documentType) {
@@ -384,7 +430,7 @@ export class SmartDefaultsService implements ISmartDefaultsService {
 
   private recommendFonts(
     analysis: ContentAnalysis,
-    reasoning: ConfigReasoning[]
+    reasoning: ConfigReasoning[],
   ): FontRecommendation {
     const needsChinese = analysis.languageDetection.needsChineseSupport;
     const hasCode = analysis.codeBlocks.length > 0;
@@ -419,11 +465,11 @@ export class SmartDefaultsService implements ISmartDefaultsService {
 
   private recommendPageStructure(
     analysis: ContentAnalysis,
-    reasoning: ConfigReasoning[]
+    reasoning: ConfigReasoning[],
   ): PageStructureConfig {
     const isLongDocument = analysis.estimatedPages > 10;
     const isFormal = ['academic-paper', 'business-report'].includes(
-      analysis.contentComplexity.documentType
+      analysis.contentComplexity.documentType,
     );
     const includeCover = isFormal || isLongDocument;
     const includeHeader = isLongDocument;
@@ -465,7 +511,7 @@ export class SmartDefaultsService implements ISmartDefaultsService {
 
   private recommendOptimization(
     analysis: ContentAnalysis,
-    _reasoning: ConfigReasoning[]
+    _reasoning: ConfigReasoning[],
   ): OptimizationConfig {
     const hasImages = analysis.mediaElements.images > 0;
     const isLarge = analysis.fileSize > 1024 * 1024; // 1MB
@@ -491,7 +537,10 @@ export class SmartDefaultsService implements ISmartDefaultsService {
     };
   }
 
-  private calculateConfidence(analysis: ContentAnalysis, _reasoning: ConfigReasoning[]): number {
+  private calculateConfidence(
+    analysis: ContentAnalysis,
+    _reasoning: ConfigReasoning[],
+  ): number {
     let confidence = 0.8; // Base confidence
 
     // Increase confidence based on content analysis quality
@@ -525,16 +574,20 @@ export class SmartDefaultsService implements ISmartDefaultsService {
     const suggestions: string[] = [];
 
     if (analysis.headingStructure.totalHeadings === 0) {
-      suggestions.push('Consider adding headings to improve document structure');
+      suggestions.push(
+        'Consider adding headings to improve document structure',
+      );
     }
 
     if (analysis.headingStructure.maxDepth > 5) {
-      suggestions.push('Consider reducing heading depth for better readability');
+      suggestions.push(
+        'Consider reducing heading depth for better readability',
+      );
     }
 
-    if (analysis.tables.some(t => t.complexity === 'complex')) {
+    if (analysis.tables.some((t) => t.complexity === 'complex')) {
       suggestions.push(
-        'Consider simplifying complex tables or breaking them into smaller sections'
+        'Consider simplifying complex tables or breaking them into smaller sections',
       );
     }
 
@@ -566,7 +619,7 @@ export class SmartDefaultsService implements ISmartDefaultsService {
       });
     }
 
-    if (analysis.tables.some(t => t.columns > 15)) {
+    if (analysis.tables.some((t) => t.columns > 15)) {
       issues.push({
         type: 'formatting',
         severity: 'medium',
@@ -582,7 +635,9 @@ export class SmartDefaultsService implements ISmartDefaultsService {
     const warnings: string[] = [];
 
     if (analysis.estimatedPages > 100) {
-      warnings.push('Large document detected - processing may take several minutes');
+      warnings.push(
+        'Large document detected - processing may take several minutes',
+      );
     }
 
     if (analysis.languageDetection.needsChineseSupport) {
@@ -590,7 +645,9 @@ export class SmartDefaultsService implements ISmartDefaultsService {
     }
 
     if (analysis.contentComplexity.score > 8) {
-      warnings.push('Complex document structure - additional memory may be required');
+      warnings.push(
+        'Complex document structure - additional memory may be required',
+      );
     }
 
     return warnings;

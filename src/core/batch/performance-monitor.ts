@@ -134,9 +134,14 @@ export class PerformanceMonitor {
 
     // Check memory usage
     if (systemMetrics.memoryUsage.percentage > this.thresholds.maxMemoryUsage) {
-      reasons.push(`High system memory usage: ${systemMetrics.memoryUsage.percentage}%`);
+      reasons.push(
+        `High system memory usage: ${systemMetrics.memoryUsage.percentage}%`,
+      );
     }
-    if (systemMetrics.memoryUsage.free < this.thresholds.minFreeMemory * 1024 * 1024) {
+    if (
+      systemMetrics.memoryUsage.free <
+      this.thresholds.minFreeMemory * 1024 * 1024
+    ) {
       const freeMB = Math.round(systemMetrics.memoryUsage.free / (1024 * 1024));
       reasons.push(`Low free memory: ${freeMB}MB`);
     }
@@ -164,7 +169,7 @@ export class PerformanceMonitor {
    */
   optimizeBatchSettings(
     currentConcurrency: number,
-    totalFiles: number
+    totalFiles: number,
   ): {
     recommendedConcurrency: number;
     shouldPause: boolean;
@@ -179,8 +184,11 @@ export class PerformanceMonitor {
 
     if (stressCheck.underStress) {
       // Reduce concurrency if under stress
-      if (stressCheck.reasons.some(r => r.includes('memory'))) {
-        recommendedConcurrency = Math.max(1, Math.floor(currentConcurrency / 2));
+      if (stressCheck.reasons.some((r) => r.includes('memory'))) {
+        recommendedConcurrency = Math.max(
+          1,
+          Math.floor(currentConcurrency / 2),
+        );
         shouldReduce = true;
         optimizations.push('Reduced concurrency due to high memory usage');
         // Force garbage collection if available
@@ -189,7 +197,7 @@ export class PerformanceMonitor {
           optimizations.push('Triggered garbage collection');
         }
       }
-      if (stressCheck.reasons.some(r => r.includes('CPU'))) {
+      if (stressCheck.reasons.some((r) => r.includes('CPU'))) {
         recommendedConcurrency = Math.max(1, currentConcurrency - 1);
         shouldReduce = true;
         optimizations.push('Reduced concurrency due to high CPU usage');
@@ -201,13 +209,21 @@ export class PerformanceMonitor {
         stressCheck.processMetrics.heapPercentage > 95
       ) {
         shouldPause = true;
-        optimizations.push('Recommend pausing processing due to critical resource usage');
+        optimizations.push(
+          'Recommend pausing processing due to critical resource usage',
+        );
       }
     } else {
       // System is healthy, potentially increase concurrency
       const maxRecommended = Math.min(os.cpus().length, 4); // Cap at 4 for stability
-      if (currentConcurrency < maxRecommended && totalFiles > currentConcurrency * 2) {
-        recommendedConcurrency = Math.min(maxRecommended, currentConcurrency + 1);
+      if (
+        currentConcurrency < maxRecommended &&
+        totalFiles > currentConcurrency * 2
+      ) {
+        recommendedConcurrency = Math.min(
+          maxRecommended,
+          currentConcurrency + 1,
+        );
         optimizations.push('Increased concurrency due to available resources');
       }
     }
@@ -234,17 +250,23 @@ export class PerformanceMonitor {
       suggestions.push(`High heap usage detected: ${heapUsageMB}MB`);
       suggestions.push('Consider processing fewer files concurrently');
       if (global.gc) {
-        suggestions.push('Garbage collection available - will trigger automatically');
+        suggestions.push(
+          'Garbage collection available - will trigger automatically',
+        );
       }
     }
     if (externalMB > 500) {
       suggestions.push(`High external memory usage: ${externalMB}MB`);
-      suggestions.push('Large files detected - consider processing sequentially');
+      suggestions.push(
+        'Large files detected - consider processing sequentially',
+      );
     }
     if (systemMetrics.memoryUsage.percentage > 80) {
       const freeMB = Math.round(systemMetrics.memoryUsage.free / (1024 * 1024));
       suggestions.push(`System memory usage high, only ${freeMB}MB free`);
-      suggestions.push('Reduce concurrent processes or close other applications');
+      suggestions.push(
+        'Reduce concurrent processes or close other applications',
+      );
     }
     return suggestions;
   }
@@ -271,13 +293,17 @@ export class PerformanceMonitor {
       };
     }
 
-    const memoryUsages = this.metrics.map(m => m.memoryUsage.percentage);
-    const cpuUsages = this.metrics.map(m => m.cpuLoad.percentage);
+    const memoryUsages = this.metrics.map((m) => m.memoryUsage.percentage);
+    const cpuUsages = this.metrics.map((m) => m.cpuLoad.percentage);
 
     return {
-      averageMemoryUsage: Math.round(memoryUsages.reduce((a, b) => a + b, 0) / memoryUsages.length),
+      averageMemoryUsage: Math.round(
+        memoryUsages.reduce((a, b) => a + b, 0) / memoryUsages.length,
+      ),
       peakMemoryUsage: Math.max(...memoryUsages),
-      averageCpuUsage: Math.round(cpuUsages.reduce((a, b) => a + b, 0) / cpuUsages.length),
+      averageCpuUsage: Math.round(
+        cpuUsages.reduce((a, b) => a + b, 0) / cpuUsages.length,
+      ),
       peakCpuUsage: Math.max(...cpuUsages),
       totalWarnings: this.warnings.length,
       processingDuration: this.metrics.length * 5, // Assuming 5 second intervals
@@ -345,18 +371,25 @@ export class PerformanceMonitor {
   /**
    * Check for performance warnings
    */
-  private checkForWarnings(systemMetrics: SystemMetrics, processMetrics: ProcessMetrics): void {
+  private checkForWarnings(
+    systemMetrics: SystemMetrics,
+    processMetrics: ProcessMetrics,
+  ): void {
     const timestamp = new Date().toISOString();
     if (systemMetrics.memoryUsage.percentage > this.thresholds.maxMemoryUsage) {
       this.warnings.push(
-        `${timestamp}: High system memory usage: ${systemMetrics.memoryUsage.percentage}%`
+        `${timestamp}: High system memory usage: ${systemMetrics.memoryUsage.percentage}%`,
       );
     }
     if (systemMetrics.cpuLoad.percentage > this.thresholds.maxCpuUsage) {
-      this.warnings.push(`${timestamp}: High CPU usage: ${systemMetrics.cpuLoad.percentage}%`);
+      this.warnings.push(
+        `${timestamp}: High CPU usage: ${systemMetrics.cpuLoad.percentage}%`,
+      );
     }
     if (processMetrics.heapPercentage > this.thresholds.maxHeapUsage) {
-      this.warnings.push(`${timestamp}: High heap usage: ${processMetrics.heapPercentage}%`);
+      this.warnings.push(
+        `${timestamp}: High heap usage: ${processMetrics.heapPercentage}%`,
+      );
     }
 
     // Keep only last 50 warnings

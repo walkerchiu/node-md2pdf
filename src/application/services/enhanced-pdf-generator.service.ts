@@ -136,7 +136,10 @@ export class EnhancedPDFGeneratorService
   private createSelectionStrategy(
     config: PDFEngineManagerConfig,
   ): IEngineSelectionStrategy {
-    const strategyType = this.configManager.get('pdfEngine.selectionStrategy', 'health-first') as | 'health-first' | 'primary-first';
+    const strategyType = this.configManager.get(
+      'pdfEngine.selectionStrategy',
+      'health-first',
+    ) as 'health-first' | 'primary-first';
 
     switch (strategyType) {
       case 'primary-first':
@@ -162,7 +165,7 @@ export class EnhancedPDFGeneratorService
         includePageNumbers: boolean;
         title?: string;
       };
-    } = {}
+    } = {},
   ): Promise<PDFGenerationResult> {
     if (!this.isInitialized || !this.engineManager) {
       await this.initialize();

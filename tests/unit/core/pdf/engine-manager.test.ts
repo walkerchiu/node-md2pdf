@@ -11,7 +11,11 @@ import {
 // Create lightweight mock engines
 function makeEngine(
   name: string,
-  behavior: { healthy?: boolean; canHandle?: boolean; generateSucceeds?: boolean }
+  behavior: {
+    healthy?: boolean;
+    canHandle?: boolean;
+    generateSucceeds?: boolean;
+  },
 ): IPDFEngine {
   let initialized = false;
 
@@ -32,7 +36,7 @@ function makeEngine(
     },
     generatePDF: async (
       context: PDFGenerationContext,
-      _options?: PDFEngineOptions
+      _options?: PDFEngineOptions,
     ): Promise<PDFEngineResult> => {
       if (!initialized) throw new Error('not-initialized');
       if (behavior.generateSucceeds === false) {
@@ -42,7 +46,12 @@ function makeEngine(
       return {
         success: true,
         outputPath: context.outputPath,
-        metadata: { pages: 1, fileSize: 1, generationTime: 1, engineUsed: name },
+        metadata: {
+          pages: 1,
+          fileSize: 1,
+          generationTime: 1,
+          engineUsed: name,
+        },
       };
     },
     healthCheck: async () => ({
@@ -52,7 +61,11 @@ function makeEngine(
       errors: [],
       performance: { averageGenerationTime: 0, successRate: 1, memoryUsage: 0 },
     }),
-    getResourceUsage: async () => ({ memoryUsage: 0, activeTasks: 0, averageTaskTime: 0 }),
+    getResourceUsage: async () => ({
+      memoryUsage: 0,
+      activeTasks: 0,
+      averageTaskTime: 0,
+    }),
     cleanup: async (): Promise<void> => {},
     canHandle: async () => behavior.canHandle !== false,
   } as IPDFEngine;
@@ -99,22 +112,32 @@ describe('PDFEngineManager', () => {
   });
 
   it('generatePDF uses selection strategy and retries with fallback', async () => {
-    const primary = makeEngine('primary', { healthy: true, generateSucceeds: false });
-    const fallback = makeEngine('fallback', { healthy: true, generateSucceeds: true });
+    const primary = makeEngine('primary', {
+      healthy: true,
+      generateSucceeds: false,
+    });
+    const fallback = makeEngine('fallback', {
+      healthy: true,
+      generateSucceeds: true,
+    });
 
     const factory: {
       createEngine(name: string): Promise<IPDFEngine>;
       getAvailableEngines(): string[];
       registerEngine(name: string, cls: unknown): void;
     } = {
-      createEngine: async (name: string) => (name === 'primary' ? primary : fallback),
+      createEngine: async (name: string) =>
+        name === 'primary' ? primary : fallback,
       getAvailableEngines: () => ['primary', 'fallback'],
       registerEngine: () => {},
     };
 
     const selectionStrategy: IEngineSelectionStrategy = {
-      selectEngine: async (_context: PDFGenerationContext, availableEngines: IPDFEngine[]) => {
-        return availableEngines.find(e => e.name === 'primary') || null;
+      selectEngine: async (
+        _context: PDFGenerationContext,
+        availableEngines: IPDFEngine[],
+      ) => {
+        return availableEngines.find((e) => e.name === 'primary') || null;
       },
     };
 
@@ -123,7 +146,7 @@ describe('PDFEngineManager', () => {
 
     const result = await manager.generatePDF(
       { htmlContent: '<p>hi</p>', outputPath: '/tmp/out.pdf' },
-      {} as PDFEngineOptions
+      {} as PDFEngineOptions,
     );
 
     expect(result.success).toBe(true);
@@ -166,7 +189,9 @@ describe('PDFEngineManager', () => {
       registerEngine: () => {},
     };
 
-    const selectionStrategy: IEngineSelectionStrategy = { selectEngine: async () => primary };
+    const selectionStrategy: IEngineSelectionStrategy = {
+      selectEngine: async () => primary,
+    };
     const manager = new PDFEngineManager(config, factory, selectionStrategy);
     await manager.initialize();
 
@@ -192,11 +217,13 @@ describe('PDFEngineManager', () => {
       registerEngine: () => {},
     };
 
-    const selectionStrategy: IEngineSelectionStrategy = { selectEngine: async () => primary };
+    const selectionStrategy: IEngineSelectionStrategy = {
+      selectEngine: async () => primary,
+    };
     const manager = new PDFEngineManager(
       { ...config, healthCheckInterval: 10 },
       factory,
-      selectionStrategy
+      selectionStrategy,
     );
     await manager.initialize();
 
@@ -240,8 +267,14 @@ describe('PDFEngineManager', () => {
     });
 
     it('should retry with fallback engine when primary fails', async () => {
-      const primaryEngine = makeEngine('primary', { healthy: true, generateSucceeds: false });
-      const fallbackEngine = makeEngine('fallback', { healthy: true, generateSucceeds: true });
+      const primaryEngine = makeEngine('primary', {
+        healthy: true,
+        generateSucceeds: false,
+      });
+      const fallbackEngine = makeEngine('fallback', {
+        healthy: true,
+        generateSucceeds: true,
+      });
 
       const factory: {
         createEngine(name: string): Promise<IPDFEngine>;
@@ -264,7 +297,7 @@ describe('PDFEngineManager', () => {
 
       const result = await manager.generatePDF(
         { htmlContent: '<p>test</p>', outputPath: '/tmp/fallback.pdf' },
-        {} as PDFEngineOptions
+        {} as PDFEngineOptions,
       );
 
       expect(result.success).toBe(true);
@@ -273,13 +306,19 @@ describe('PDFEngineManager', () => {
     });
 
     it('should respect maxRetries configuration', async () => {
-      const failingEngine = makeEngine('failing', { healthy: true, generateSucceeds: false });
+      const failingEngine = makeEngine('failing', {
+        healthy: true,
+        generateSucceeds: false,
+      });
       let generationAttempts = 0;
 
       // Override to count attempts
       failingEngine.generatePDF = async () => {
         generationAttempts++;
-        return { success: false, error: `Attempt ${generationAttempts} failed` };
+        return {
+          success: false,
+          error: `Attempt ${generationAttempts} failed`,
+        };
       };
 
       const factory: {
@@ -299,14 +338,14 @@ describe('PDFEngineManager', () => {
       const manager = new PDFEngineManager(
         { ...config, maxRetries: 3, fallbackEngines: [] },
         factory,
-        selectionStrategy
+        selectionStrategy,
       );
 
       await manager.initialize();
 
       const result = await manager.generatePDF(
         { htmlContent: '<p>test</p>', outputPath: '/tmp/retry.pdf' },
-        {} as PDFEngineOptions
+        {} as PDFEngineOptions,
       );
 
       expect(result.success).toBe(false);
@@ -315,8 +354,14 @@ describe('PDFEngineManager', () => {
     });
 
     it('should handle engine canHandle checks correctly', async () => {
-      const selectiveEngine = makeEngine('selective', { healthy: true, canHandle: false });
-      const generalEngine = makeEngine('general', { healthy: true, canHandle: true });
+      const selectiveEngine = makeEngine('selective', {
+        healthy: true,
+        canHandle: false,
+      });
+      const generalEngine = makeEngine('general', {
+        healthy: true,
+        canHandle: true,
+      });
 
       const factory: {
         createEngine(name: string): Promise<IPDFEngine>;
@@ -340,7 +385,12 @@ describe('PDFEngineManager', () => {
       const context: PDFGenerationContext = {
         htmlContent: '<p>test</p>',
         outputPath: '/tmp/selective.pdf',
-        toc: { enabled: true, maxDepth: 2, includePageNumbers: true, title: 'Table of Contents' },
+        toc: {
+          enabled: true,
+          maxDepth: 2,
+          includePageNumbers: true,
+          title: 'Table of Contents',
+        },
       };
 
       const result = await manager.generatePDF(context, {} as PDFEngineOptions);
@@ -383,7 +433,7 @@ describe('PDFEngineManager', () => {
       const manager = new PDFEngineManager(
         { ...config, enableMetrics: true },
         factory,
-        selectionStrategy
+        selectionStrategy,
       );
 
       await manager.initialize();
@@ -421,7 +471,7 @@ describe('PDFEngineManager', () => {
       const manager = new PDFEngineManager(
         { ...config, enableMetrics: true },
         factory,
-        selectionStrategy
+        selectionStrategy,
       );
 
       await manager.initialize();

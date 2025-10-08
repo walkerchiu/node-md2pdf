@@ -8,8 +8,14 @@ import { IPDFGeneratorService } from '../../../src/application/services/pdf-gene
 import { ILogger } from '../../../src/infrastructure/logging/types';
 import { IErrorHandler } from '../../../src/infrastructure/error/types';
 import { IConfigManager } from '../../../src/infrastructure/config/types';
-import { IFileSystemManager, FileStats } from '../../../src/infrastructure/filesystem/types';
-import { MD2PDFError, FileNotFoundError } from '../../../src/infrastructure/error/errors';
+import {
+  IFileSystemManager,
+  FileStats,
+} from '../../../src/infrastructure/filesystem/types';
+import {
+  MD2PDFError,
+  FileNotFoundError,
+} from '../../../src/infrastructure/error/errors';
 import { ParsedMarkdown, Heading } from '../../../src/types/index';
 import { PDFGenerationResult } from '../../../src/core/pdf/types';
 import { TOCGenerationResult } from '../../../src/core/toc/types';
@@ -26,7 +32,9 @@ describe('FileProcessorService', () => {
 
   const mockParsedContent: ParsedMarkdown = {
     content: '<h1>Test Document</h1><p>This is a test document.</p>',
-    headings: [{ level: 1, text: 'Test Document', id: 'test-document' } as Heading],
+    headings: [
+      { level: 1, text: 'Test Document', id: 'test-document' } as Heading,
+    ],
     metadata: { title: 'Test Document' },
   };
 
@@ -155,7 +163,7 @@ describe('FileProcessorService', () => {
       mockFileSystemManager,
       mockMarkdownParserService,
       mockTOCGeneratorService,
-      mockPDFGeneratorService
+      mockPDFGeneratorService,
     );
   });
 
@@ -166,7 +174,9 @@ describe('FileProcessorService', () => {
     beforeEach(() => {
       mockFileSystemManager.exists.mockResolvedValue(true);
       mockFileSystemManager.getStats.mockResolvedValue(mockFileStats);
-      mockMarkdownParserService.parseMarkdownFile.mockResolvedValue(mockParsedContent);
+      mockMarkdownParserService.parseMarkdownFile.mockResolvedValue(
+        mockParsedContent,
+      );
       mockPDFGeneratorService.generatePDF.mockResolvedValue(mockPDFResult);
     });
 
@@ -177,10 +187,12 @@ describe('FileProcessorService', () => {
       };
 
       // Add a small delay to mock processing time
-      mockMarkdownParserService.parseMarkdownFile.mockImplementation(async () => {
-        await new Promise(resolve => setTimeout(resolve, 1));
-        return mockParsedContent;
-      });
+      mockMarkdownParserService.parseMarkdownFile.mockImplementation(
+        async () => {
+          await new Promise((resolve) => setTimeout(resolve, 1));
+          return mockParsedContent;
+        },
+      );
 
       const result = await service.processFile(inputPath, options);
 
@@ -192,12 +204,16 @@ describe('FileProcessorService', () => {
       expect(result.processingTime).toBeGreaterThanOrEqual(0);
       expect(result.fileSize).toBe(mockFileStats.size);
 
-      expect(mockLogger.info).toHaveBeenCalledWith(`Starting file processing: ${inputPath}`);
-      expect(mockMarkdownParserService.parseMarkdownFile).toHaveBeenCalledWith(inputPath);
+      expect(mockLogger.info).toHaveBeenCalledWith(
+        `Starting file processing: ${inputPath}`,
+      );
+      expect(mockMarkdownParserService.parseMarkdownFile).toHaveBeenCalledWith(
+        inputPath,
+      );
       expect(mockPDFGeneratorService.generatePDF).toHaveBeenCalledWith(
         mockParsedContent.content,
         outputPath,
-        undefined
+        undefined,
       );
     });
 
@@ -212,17 +228,22 @@ describe('FileProcessorService', () => {
 
       await service.processFile(inputPath, options);
 
-      expect(mockTOCGeneratorService.generateTOC).toHaveBeenCalledWith(mockParsedContent.headings, {
-        maxDepth: 2,
-      });
+      expect(mockTOCGeneratorService.generateTOC).toHaveBeenCalledWith(
+        mockParsedContent.headings,
+        {
+          maxDepth: 2,
+        },
+      );
 
       // The actual implementation injects TOC after the first H1 heading
       const expectedContent =
-        '<h1>Test Document</h1>\n\n' + mockTOCResult.html + '\n\n<p>This is a test document.</p>';
+        '<h1>Test Document</h1>\n\n' +
+        mockTOCResult.html +
+        '\n\n<p>This is a test document.</p>';
       expect(mockPDFGeneratorService.generatePDF).toHaveBeenCalledWith(
         expectedContent,
         outputPath,
-        undefined
+        undefined,
       );
     });
 
@@ -239,7 +260,7 @@ describe('FileProcessorService', () => {
       expect(mockPDFGeneratorService.generatePDF).toHaveBeenCalledWith(
         expectedContent,
         outputPath,
-        undefined
+        undefined,
       );
     });
 
@@ -251,7 +272,7 @@ describe('FileProcessorService', () => {
       expect(mockPDFGeneratorService.generatePDF).toHaveBeenCalledWith(
         mockParsedContent.content,
         '/test/input.pdf',
-        undefined
+        undefined,
       );
     });
 
@@ -266,7 +287,9 @@ describe('FileProcessorService', () => {
       const error = new Error('Parsing failed');
       mockMarkdownParserService.parseMarkdownFile.mockRejectedValue(error);
 
-      await expect(service.processFile(inputPath, { outputPath })).rejects.toThrow(MD2PDFError);
+      await expect(
+        service.processFile(inputPath, { outputPath }),
+      ).rejects.toThrow(MD2PDFError);
       expect(mockErrorHandler.handleError).toHaveBeenCalled();
     });
 
@@ -274,7 +297,9 @@ describe('FileProcessorService', () => {
       const error = new Error('PDF generation failed');
       mockPDFGeneratorService.generatePDF.mockRejectedValue(error);
 
-      await expect(service.processFile(inputPath, { outputPath })).rejects.toThrow(MD2PDFError);
+      await expect(
+        service.processFile(inputPath, { outputPath }),
+      ).rejects.toThrow(MD2PDFError);
       expect(mockErrorHandler.handleError).toHaveBeenCalled();
     });
   });
@@ -289,13 +314,17 @@ describe('FileProcessorService', () => {
       const result = await service.validateInputFile(inputPath);
 
       expect(result).toBe(true);
-      expect(mockLogger.info).toHaveBeenCalledWith(`Input file validation passed: ${inputPath}`);
+      expect(mockLogger.info).toHaveBeenCalledWith(
+        `Input file validation passed: ${inputPath}`,
+      );
     });
 
     it('should throw FileNotFoundError for non-existent file', async () => {
       mockFileSystemManager.exists.mockResolvedValue(false);
 
-      await expect(service.validateInputFile(inputPath)).rejects.toThrow(FileNotFoundError);
+      await expect(service.validateInputFile(inputPath)).rejects.toThrow(
+        FileNotFoundError,
+      );
       expect(mockErrorHandler.handleError).toHaveBeenCalled();
     });
 
@@ -303,7 +332,9 @@ describe('FileProcessorService', () => {
       const txtPath = '/test/input.txt';
       mockFileSystemManager.exists.mockResolvedValue(true);
 
-      await expect(service.validateInputFile(txtPath)).rejects.toThrow(MD2PDFError);
+      await expect(service.validateInputFile(txtPath)).rejects.toThrow(
+        MD2PDFError,
+      );
       expect(mockErrorHandler.handleError).toHaveBeenCalled();
     });
 
@@ -315,7 +346,9 @@ describe('FileProcessorService', () => {
       mockFileSystemManager.exists.mockResolvedValue(true);
       mockFileSystemManager.getStats.mockResolvedValue(nonReadableFileStats);
 
-      await expect(service.validateInputFile(inputPath)).rejects.toThrow(MD2PDFError);
+      await expect(service.validateInputFile(inputPath)).rejects.toThrow(
+        MD2PDFError,
+      );
       expect(mockErrorHandler.handleError).toHaveBeenCalled();
     });
 
@@ -323,7 +356,9 @@ describe('FileProcessorService', () => {
       const error = new Error('Unexpected error');
       mockFileSystemManager.exists.mockRejectedValue(error);
 
-      await expect(service.validateInputFile(inputPath)).rejects.toThrow(MD2PDFError);
+      await expect(service.validateInputFile(inputPath)).rejects.toThrow(
+        MD2PDFError,
+      );
       expect(mockErrorHandler.handleError).toHaveBeenCalled();
     });
   });
@@ -335,7 +370,7 @@ describe('FileProcessorService', () => {
 
       expect(result).toBe('/path/to/document.pdf');
       expect(mockLogger.debug).toHaveBeenCalledWith(
-        `Generated output path: ${inputPath} -> /path/to/document.pdf`
+        `Generated output path: ${inputPath} -> /path/to/document.pdf`,
       );
     });
 
@@ -346,7 +381,9 @@ describe('FileProcessorService', () => {
       const result = await service.generateOutputPath(inputPath, outputDir);
 
       expect(result).toBe('/output/document.pdf');
-      expect(mockFileSystemManager.createDirectory).toHaveBeenCalledWith(outputDir);
+      expect(mockFileSystemManager.createDirectory).toHaveBeenCalledWith(
+        outputDir,
+      );
     });
 
     it('should handle markdown extension', async () => {
@@ -362,7 +399,9 @@ describe('FileProcessorService', () => {
       const error = new Error('Cannot create directory');
       mockFileSystemManager.createDirectory.mockRejectedValue(error);
 
-      await expect(service.generateOutputPath(inputPath, outputDir)).rejects.toThrow(MD2PDFError);
+      await expect(
+        service.generateOutputPath(inputPath, outputDir),
+      ).rejects.toThrow(MD2PDFError);
       expect(mockErrorHandler.handleError).toHaveBeenCalled();
     });
   });
@@ -375,10 +414,14 @@ describe('FileProcessorService', () => {
 
         // Access private method via type assertion
         const result = (
-          service as unknown as { injectTOC: (html: string, toc: string) => string }
+          service as unknown as {
+            injectTOC: (html: string, toc: string) => string;
+          }
         ).injectTOC(htmlContent, tocHtml);
 
-        expect(result).toBe('<h1>Title</h1><div class="toc">TOC</div><p>Content</p>');
+        expect(result).toBe(
+          '<h1>Title</h1><div class="toc">TOC</div><p>Content</p>',
+        );
       });
 
       it('should inject TOC after first H1 heading', () => {
@@ -386,10 +429,14 @@ describe('FileProcessorService', () => {
         const tocHtml = '<div class="toc">TOC</div>';
 
         const result = (
-          service as unknown as { injectTOC: (html: string, toc: string) => string }
+          service as unknown as {
+            injectTOC: (html: string, toc: string) => string;
+          }
         ).injectTOC(htmlContent, tocHtml);
 
-        expect(result).toBe('<h1>Title</h1>\n\n<div class="toc">TOC</div>\n\n<p>Content</p>');
+        expect(result).toBe(
+          '<h1>Title</h1>\n\n<div class="toc">TOC</div>\n\n<p>Content</p>',
+        );
       });
 
       it('should inject TOC after body tag as fallback', () => {
@@ -397,11 +444,13 @@ describe('FileProcessorService', () => {
         const tocHtml = '<div class="toc">TOC</div>';
 
         const result = (
-          service as unknown as { injectTOC: (html: string, toc: string) => string }
+          service as unknown as {
+            injectTOC: (html: string, toc: string) => string;
+          }
         ).injectTOC(htmlContent, tocHtml);
 
         expect(result).toBe(
-          '<html><body>\n\n<div class="toc">TOC</div>\n\n<p>Content</p></body></html>'
+          '<html><body>\n\n<div class="toc">TOC</div>\n\n<p>Content</p></body></html>',
         );
       });
 
@@ -410,26 +459,31 @@ describe('FileProcessorService', () => {
         const tocHtml = '<div class="toc">TOC</div>';
 
         const result = (
-          service as unknown as { injectTOC: (html: string, toc: string) => string }
+          service as unknown as {
+            injectTOC: (html: string, toc: string) => string;
+          }
         ).injectTOC(htmlContent, tocHtml);
 
         expect(result).toBe(
-          '<div class="toc">TOC</div>\n\n<p>Content without proper structure</p>'
+          '<div class="toc">TOC</div>\n\n<p>Content without proper structure</p>',
         );
       });
     });
 
     describe('injectStyles', () => {
       it('should inject styles in head tag', () => {
-        const htmlContent = '<html><head></head><body><p>Content</p></body></html>';
+        const htmlContent =
+          '<html><head></head><body><p>Content</p></body></html>';
         const customStyles = 'body { font-size: 12px; }';
 
         const result = (
-          service as unknown as { injectStyles: (html: string, styles: string) => string }
+          service as unknown as {
+            injectStyles: (html: string, styles: string) => string;
+          }
         ).injectStyles(htmlContent, customStyles);
 
         expect(result).toBe(
-          '<html><head>\n<style>\nbody { font-size: 12px; }\n</style>\n</head><body><p>Content</p></body></html>'
+          '<html><head>\n<style>\nbody { font-size: 12px; }\n</style>\n</head><body><p>Content</p></body></html>',
         );
       });
 
@@ -438,11 +492,13 @@ describe('FileProcessorService', () => {
         const customStyles = 'body { font-size: 12px; }';
 
         const result = (
-          service as unknown as { injectStyles: (html: string, styles: string) => string }
+          service as unknown as {
+            injectStyles: (html: string, styles: string) => string;
+          }
         ).injectStyles(htmlContent, customStyles);
 
         expect(result).toBe(
-          '<!DOCTYPE html><html><head><style>\nbody { font-size: 12px; }\n</style></head><body>\n<p>Simple content</p>\n</body></html>'
+          '<!DOCTYPE html><html><head><style>\nbody { font-size: 12px; }\n</style></head><body>\n<p>Simple content</p>\n</body></html>',
         );
       });
     });

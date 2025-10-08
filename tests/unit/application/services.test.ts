@@ -1,4 +1,7 @@
-import { ApplicationServices, APPLICATION_SERVICE_NAMES } from '../../../src/application/container';
+import {
+  ApplicationServices,
+  APPLICATION_SERVICE_NAMES,
+} from '../../../src/application/container';
 
 describe('ApplicationServices Integration', () => {
   describe('Service Container Creation', () => {
@@ -6,11 +9,21 @@ describe('ApplicationServices Integration', () => {
       const container = ApplicationServices.createContainer();
 
       // Check that all application services are registered
-      expect(container.isRegistered(APPLICATION_SERVICE_NAMES.PDF_GENERATOR)).toBe(true);
-      expect(container.isRegistered(APPLICATION_SERVICE_NAMES.MARKDOWN_PARSER)).toBe(true);
-      expect(container.isRegistered(APPLICATION_SERVICE_NAMES.TOC_GENERATOR)).toBe(true);
-      expect(container.isRegistered(APPLICATION_SERVICE_NAMES.FILE_PROCESSOR)).toBe(true);
-      expect(container.isRegistered(APPLICATION_SERVICE_NAMES.BATCH_PROCESSOR)).toBe(true);
+      expect(
+        container.isRegistered(APPLICATION_SERVICE_NAMES.PDF_GENERATOR),
+      ).toBe(true);
+      expect(
+        container.isRegistered(APPLICATION_SERVICE_NAMES.MARKDOWN_PARSER),
+      ).toBe(true);
+      expect(
+        container.isRegistered(APPLICATION_SERVICE_NAMES.TOC_GENERATOR),
+      ).toBe(true);
+      expect(
+        container.isRegistered(APPLICATION_SERVICE_NAMES.FILE_PROCESSOR),
+      ).toBe(true);
+      expect(
+        container.isRegistered(APPLICATION_SERVICE_NAMES.BATCH_PROCESSOR),
+      ).toBe(true);
 
       // Check that infrastructure services are also registered
       expect(container.isRegistered('logger')).toBe(true);
@@ -23,18 +36,32 @@ describe('ApplicationServices Integration', () => {
     it('should resolve application services successfully', () => {
       const container = ApplicationServices.createContainer();
 
-      expect(() => container.resolve(APPLICATION_SERVICE_NAMES.PDF_GENERATOR)).not.toThrow();
-      expect(() => container.resolve(APPLICATION_SERVICE_NAMES.MARKDOWN_PARSER)).not.toThrow();
-      expect(() => container.resolve(APPLICATION_SERVICE_NAMES.TOC_GENERATOR)).not.toThrow();
-      expect(() => container.resolve(APPLICATION_SERVICE_NAMES.FILE_PROCESSOR)).not.toThrow();
-      expect(() => container.resolve(APPLICATION_SERVICE_NAMES.BATCH_PROCESSOR)).not.toThrow();
+      expect(() =>
+        container.resolve(APPLICATION_SERVICE_NAMES.PDF_GENERATOR),
+      ).not.toThrow();
+      expect(() =>
+        container.resolve(APPLICATION_SERVICE_NAMES.MARKDOWN_PARSER),
+      ).not.toThrow();
+      expect(() =>
+        container.resolve(APPLICATION_SERVICE_NAMES.TOC_GENERATOR),
+      ).not.toThrow();
+      expect(() =>
+        container.resolve(APPLICATION_SERVICE_NAMES.FILE_PROCESSOR),
+      ).not.toThrow();
+      expect(() =>
+        container.resolve(APPLICATION_SERVICE_NAMES.BATCH_PROCESSOR),
+      ).not.toThrow();
     });
 
     it('should create services as singletons', () => {
       const container = ApplicationServices.createContainer();
 
-      const service1 = container.resolve(APPLICATION_SERVICE_NAMES.PDF_GENERATOR);
-      const service2 = container.resolve(APPLICATION_SERVICE_NAMES.PDF_GENERATOR);
+      const service1 = container.resolve(
+        APPLICATION_SERVICE_NAMES.PDF_GENERATOR,
+      );
+      const service2 = container.resolve(
+        APPLICATION_SERVICE_NAMES.PDF_GENERATOR,
+      );
 
       expect(service1).toBe(service2);
     });
@@ -102,17 +129,22 @@ describe('ApplicationServices Integration', () => {
         toc: { maxDepth: 2 },
       };
 
-      const container = ApplicationServices.createConfiguredContainer(customConfig);
+      const container =
+        ApplicationServices.createConfiguredContainer(customConfig);
 
       expect(container.isRegistered('config')).toBe(true);
-      expect(container.isRegistered(APPLICATION_SERVICE_NAMES.PDF_GENERATOR)).toBe(true);
+      expect(
+        container.isRegistered(APPLICATION_SERVICE_NAMES.PDF_GENERATOR),
+      ).toBe(true);
     });
 
     it('should create configured container without custom config', () => {
       const container = ApplicationServices.createConfiguredContainer();
 
       expect(container.isRegistered('config')).toBe(true);
-      expect(container.isRegistered(APPLICATION_SERVICE_NAMES.PDF_GENERATOR)).toBe(true);
+      expect(
+        container.isRegistered(APPLICATION_SERVICE_NAMES.PDF_GENERATOR),
+      ).toBe(true);
     });
   });
 });

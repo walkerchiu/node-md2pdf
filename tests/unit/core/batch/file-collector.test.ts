@@ -3,7 +3,10 @@
  */
 
 import { FileCollector } from '../../../../src/core/batch/file-collector';
-import { BatchConversionConfig, BatchFilenameFormat } from '../../../../src/types/batch';
+import {
+  BatchConversionConfig,
+  BatchFilenameFormat,
+} from '../../../../src/types/batch';
 import * as fs from 'fs';
 import * as path from 'path';
 
@@ -19,21 +22,30 @@ describe('FileCollector', () => {
     // Create test directory and files
     await fs.promises.mkdir(testDir, { recursive: true });
     // Create test markdown files
-    await fs.promises.writeFile(path.join(testDir, 'test1.md'), '# Test 1\n\nThis is test file 1');
-    await fs.promises.writeFile(path.join(testDir, 'test2.md'), '# Test 2\n\nThis is test file 2');
+    await fs.promises.writeFile(
+      path.join(testDir, 'test1.md'),
+      '# Test 1\n\nThis is test file 1',
+    );
+    await fs.promises.writeFile(
+      path.join(testDir, 'test2.md'),
+      '# Test 2\n\nThis is test file 2',
+    );
     await fs.promises.writeFile(
       path.join(testDir, 'README.md'),
-      '# README\n\nThis should be ignored'
+      '# README\n\nThis should be ignored',
     );
     // Create subdirectory with files
     const subDir = path.join(testDir, 'subdir');
     await fs.promises.mkdir(subDir, { recursive: true });
     await fs.promises.writeFile(
       path.join(subDir, 'subtest.md'),
-      '# Subtest\n\nThis is a file in subdirectory'
+      '# Subtest\n\nThis is a file in subdirectory',
     );
     // Create non-markdown file (should be ignored)
-    await fs.promises.writeFile(path.join(testDir, 'test.txt'), 'This is not a markdown file');
+    await fs.promises.writeFile(
+      path.join(testDir, 'test.txt'),
+      'This is not a markdown file',
+    );
     config = {
       inputPattern: path.join(testDir, '*.md'),
       outputDirectory: path.join(testDir, 'output'),
@@ -61,7 +73,7 @@ describe('FileCollector', () => {
       const files = await fileCollector.collectFiles(config);
       expect(files.length).toBeGreaterThan(0);
       // Should find test1.md and test2.md, but not README.md
-      const filenames = files.map(f => path.basename(f.inputPath));
+      const filenames = files.map((f) => path.basename(f.inputPath));
       expect(filenames).toContain('test1.md');
       expect(filenames).toContain('test2.md');
       expect(filenames).not.toContain('README.md'); // Should be ignored
@@ -74,12 +86,12 @@ describe('FileCollector', () => {
       };
       const files = await fileCollector.collectFiles(recursiveConfig);
       expect(files.length).toBeGreaterThan(2);
-      const filenames = files.map(f => path.basename(f.inputPath));
+      const filenames = files.map((f) => path.basename(f.inputPath));
       expect(filenames).toContain('subtest.md');
     });
     test('should generate correct output paths', async () => {
       const files = await fileCollector.collectFiles(config);
-      files.forEach(file => {
+      files.forEach((file) => {
         expect(file.outputPath).toContain('.pdf');
         expect(file.outputPath).toContain(config.outputDirectory);
         expect(path.dirname(file.outputPath)).toBe(config.outputDirectory);
@@ -92,7 +104,7 @@ describe('FileCollector', () => {
         preserveDirectoryStructure: true,
       };
       const files = await fileCollector.collectFiles(preserveConfig);
-      const subdirFile = files.find(f => f.inputPath.includes('subtest.md'));
+      const subdirFile = files.find((f) => f.inputPath.includes('subtest.md'));
       expect(subdirFile).toBeDefined();
       expect(subdirFile!.outputPath).toContain('subdir');
     });
@@ -102,7 +114,7 @@ describe('FileCollector', () => {
         filenameFormat: BatchFilenameFormat.WITH_TIMESTAMP,
       };
       const files = await fileCollector.collectFiles(timestampConfig);
-      files.forEach(file => {
+      files.forEach((file) => {
         const filename = path.basename(file.outputPath);
         expect(filename).toMatch(/test\d+_\d+\.pdf/);
       });
@@ -187,7 +199,9 @@ describe('FileCollector', () => {
         ...config,
         inputPattern: path.join(testDir, 'nonexistent.md'),
       };
-      await expect(fileCollector.collectFiles(nonExistentConfig)).rejects.toThrow();
+      await expect(
+        fileCollector.collectFiles(nonExistentConfig),
+      ).rejects.toThrow();
     });
     test('should handle custom filename format', async () => {
       const customConfig = {
@@ -197,7 +211,7 @@ describe('FileCollector', () => {
       };
       const files = await fileCollector.collectFiles(customConfig);
       expect(files.length).toBeGreaterThan(0);
-      files.forEach(file => {
+      files.forEach((file) => {
         const filename = path.basename(file.outputPath);
         expect(filename).toMatch(/.*_custom_\d{4}-\d{2}-\d{2}\.pdf$/);
       });
@@ -210,7 +224,7 @@ describe('FileCollector', () => {
       };
       const files = await fileCollector.collectFiles(customConfig);
       expect(files.length).toBeGreaterThan(0);
-      files.forEach(file => {
+      files.forEach((file) => {
         const filename = path.basename(file.outputPath);
         expect(filename).toMatch(/.*\.pdf$/);
       });
@@ -231,10 +245,10 @@ describe('FileCollector', () => {
       // Create a .markdown file
       await fs.promises.writeFile(
         path.join(testDir, 'test.markdown'),
-        '# Markdown Test\n\nThis is a .markdown file'
+        '# Markdown Test\n\nThis is a .markdown file',
       );
       const files = await fileCollector.collectFiles(config);
-      const markdownFile = files.find(f => f.inputPath.endsWith('.markdown'));
+      const markdownFile = files.find((f) => f.inputPath.endsWith('.markdown'));
       expect(markdownFile).toBeDefined();
     });
     test('should ignore system directories', async () => {
@@ -245,7 +259,7 @@ describe('FileCollector', () => {
         await fs.promises.mkdir(sysDir, { recursive: true });
         await fs.promises.writeFile(
           path.join(sysDir, 'test.md'),
-          '# System File\n\nThis should be ignored'
+          '# System File\n\nThis should be ignored',
         );
       }
       const recursiveConfig = {
@@ -254,8 +268,8 @@ describe('FileCollector', () => {
       };
       const files = await fileCollector.collectFiles(recursiveConfig);
       // Should not include files from system directories
-      files.forEach(file => {
-        systemDirs.forEach(sysDir => {
+      files.forEach((file) => {
+        systemDirs.forEach((sysDir) => {
           expect(file.inputPath).not.toContain(`/${sysDir}/`);
           expect(file.inputPath).not.toContain(`\\${sysDir}\\`);
         });
@@ -266,7 +280,7 @@ describe('FileCollector', () => {
       const files = await fileCollector.collectFiles(config);
       expect(files.length).toBeGreaterThan(0);
       // All returned files should be valid BatchFileInfo objects
-      files.forEach(file => {
+      files.forEach((file) => {
         expect(file.inputPath).toBeDefined();
         expect(file.outputPath).toBeDefined();
         expect(file.relativeInputPath).toBeDefined();
@@ -280,8 +294,11 @@ describe('FileCollector', () => {
       await fs.promises.mkdir(subDir, { recursive: true });
       const files = await fileCollector.collectFiles(config);
       // Should only find markdown files, not directories
-      files.forEach(file => {
-        expect(file.inputPath.endsWith('.md') || file.inputPath.endsWith('.markdown')).toBe(true);
+      files.forEach((file) => {
+        expect(
+          file.inputPath.endsWith('.md') ||
+            file.inputPath.endsWith('.markdown'),
+        ).toBe(true);
       });
     });
     test('should handle non-markdown files in createFileInfo', async () => {
@@ -290,7 +307,7 @@ describe('FileCollector', () => {
       await fs.promises.writeFile(txtFile, 'This is not markdown');
       const files = await fileCollector.collectFiles(config);
       // Should not include non-markdown files
-      const txtFiles = files.filter(f => f.inputPath.endsWith('.txt'));
+      const txtFiles = files.filter((f) => f.inputPath.endsWith('.txt'));
       expect(txtFiles.length).toBe(0);
     });
     test('should handle system error in collectFiles', async () => {
@@ -315,7 +332,7 @@ describe('FileCollector', () => {
       };
       const files = await fileCollector.collectFiles(dateConfig);
       expect(files.length).toBeGreaterThan(0);
-      files.forEach(file => {
+      files.forEach((file) => {
         const filename = path.basename(file.outputPath);
         expect(filename).toMatch(/.*_\d{4}-\d{2}-\d{2}\.pdf$/);
       });
@@ -345,7 +362,7 @@ describe('FileCollector', () => {
         };
         // This should trigger the || process.cwd() fallback in findFiles and throw due to no files found
         await expect(fileCollector.collectFiles(simpleConfig)).rejects.toThrow(
-          'No files found matching pattern'
+          'No files found matching pattern',
         );
       } finally {
         // Restore original directory and cleanup
@@ -364,13 +381,19 @@ describe('FileCollector', () => {
       };
       const files = await fileCollector.collectFiles(testConfig);
       // Should only return actual files, directories should be filtered out
-      files.forEach(file => {
-        expect(file.inputPath.endsWith('.md') || file.inputPath.endsWith('.markdown')).toBe(true);
+      files.forEach((file) => {
+        expect(
+          file.inputPath.endsWith('.md') ||
+            file.inputPath.endsWith('.markdown'),
+        ).toBe(true);
       });
     });
     test('should handle getBaseDirFromPattern with current directory', async () => {
       // Create a unique temporary directory to test from
-      const tempDir = path.join(__dirname, '../../../fixtures/temp-current-dir');
+      const tempDir = path.join(
+        __dirname,
+        '../../../fixtures/temp-current-dir',
+      );
       await fs.promises.mkdir(tempDir, { recursive: true });
       // Change to empty directory for this test
       const originalCwd = process.cwd();
@@ -381,9 +404,9 @@ describe('FileCollector', () => {
           inputPattern: './test*.md', // Pattern that would result in '.' as base directory
         };
         // This should trigger the baseDir !== '.' ? baseDir : undefined branch and throw due to no files found
-        await expect(fileCollector.collectFiles(currentDirConfig)).rejects.toThrow(
-          'No files found matching pattern'
-        );
+        await expect(
+          fileCollector.collectFiles(currentDirConfig),
+        ).rejects.toThrow('No files found matching pattern');
       } finally {
         // Restore original directory and cleanup
         process.chdir(originalCwd);
@@ -401,19 +424,27 @@ describe('FileCollector', () => {
         // Store original method
         const originalAccess = fs.promises.access;
         // Mock fs.promises.access to throw for write permission
-        jest.spyOn(fs.promises, 'access').mockImplementation(async (filePath, mode) => {
-          if (
-            typeof filePath === 'string' &&
-            filePath.includes('restricted-test') &&
-            mode === fs.constants.W_OK
-          ) {
-            throw new Error('Permission denied');
-          }
-          // Use original implementation for other calls to avoid recursion
-          return originalAccess.call(fs.promises, filePath, mode || fs.constants.F_OK);
-        });
+        jest
+          .spyOn(fs.promises, 'access')
+          .mockImplementation(async (filePath, mode) => {
+            if (
+              typeof filePath === 'string' &&
+              filePath.includes('restricted-test') &&
+              mode === fs.constants.W_OK
+            ) {
+              throw new Error('Permission denied');
+            }
+            // Use original implementation for other calls to avoid recursion
+            return originalAccess.call(
+              fs.promises,
+              filePath,
+              mode || fs.constants.F_OK,
+            );
+          });
         try {
-          const { invalid } = await fileCollector.validateFiles([restrictedFile]);
+          const { invalid } = await fileCollector.validateFiles([
+            restrictedFile,
+          ]);
           expect(invalid.length).toBe(1);
           expect(invalid[0].error.type).toBe('PERMISSION_DENIED');
         } finally {
@@ -456,15 +487,21 @@ describe('FileCollector', () => {
     });
     test('should handle comma-separated file patterns', async () => {
       // Create specific test files
-      await fs.promises.writeFile(path.join(testDir, 'file1.md'), '# File 1\n\nContent of file 1');
-      await fs.promises.writeFile(path.join(testDir, 'file2.md'), '# File 2\n\nContent of file 2');
+      await fs.promises.writeFile(
+        path.join(testDir, 'file1.md'),
+        '# File 1\n\nContent of file 1',
+      );
+      await fs.promises.writeFile(
+        path.join(testDir, 'file2.md'),
+        '# File 2\n\nContent of file 2',
+      );
       const commaSeparatedConfig = {
         ...config,
         inputPattern: `${path.join(testDir, 'file1.md')}, ${path.join(testDir, 'file2.md')}, ${path.join(testDir, 'test1.md')}`,
       };
       const files = await fileCollector.collectFiles(commaSeparatedConfig);
       expect(files.length).toBe(3);
-      const filenames = files.map(f => path.basename(f.inputPath));
+      const filenames = files.map((f) => path.basename(f.inputPath));
       expect(filenames).toContain('file1.md');
       expect(filenames).toContain('file2.md');
       expect(filenames).toContain('test1.md');
@@ -477,7 +514,7 @@ describe('FileCollector', () => {
       const files = await fileCollector.collectFiles(commaSeparatedConfig);
       // Should only find the existing files
       expect(files.length).toBe(2);
-      const filenames = files.map(f => path.basename(f.inputPath));
+      const filenames = files.map((f) => path.basename(f.inputPath));
       expect(filenames).toContain('test1.md');
       expect(filenames).toContain('test2.md');
       expect(filenames).not.toContain('nonexistent.md');
@@ -489,7 +526,7 @@ describe('FileCollector', () => {
       };
       const files = await fileCollector.collectFiles(commaSeparatedConfig);
       expect(files.length).toBe(2);
-      const filenames = files.map(f => path.basename(f.inputPath));
+      const filenames = files.map((f) => path.basename(f.inputPath));
       expect(filenames).toContain('test1.md');
       expect(filenames).toContain('test2.md');
     });
@@ -500,7 +537,7 @@ describe('FileCollector', () => {
       };
       const files = await fileCollector.collectFiles(commaSeparatedConfig);
       expect(files.length).toBe(2);
-      const filenames = files.map(f => path.basename(f.inputPath));
+      const filenames = files.map((f) => path.basename(f.inputPath));
       expect(filenames).toContain('test1.md');
       expect(filenames).toContain('test2.md');
     });
@@ -511,7 +548,7 @@ describe('FileCollector', () => {
       };
       const files = await fileCollector.collectFiles(commaSeparatedConfig);
       expect(files.length).toBe(2);
-      const filenames = files.map(f => path.basename(f.inputPath));
+      const filenames = files.map((f) => path.basename(f.inputPath));
       expect(filenames).toContain('test1.md');
       expect(filenames).toContain('test2.md');
     });
@@ -522,7 +559,7 @@ describe('FileCollector', () => {
       };
       const files = await fileCollector.collectFiles(commaSeparatedConfig);
       expect(files.length).toBe(2);
-      const filenames = files.map(f => path.basename(f.inputPath));
+      const filenames = files.map((f) => path.basename(f.inputPath));
       expect(filenames).toContain('test1.md');
       expect(filenames).toContain('test2.md');
     });
@@ -533,7 +570,7 @@ describe('FileCollector', () => {
       };
       const files = await fileCollector.collectFiles(relativeOutputConfig);
       expect(files.length).toBeGreaterThan(0);
-      files.forEach(file => {
+      files.forEach((file) => {
         expect(path.isAbsolute(file.outputPath)).toBe(true);
         expect(file.outputPath).toContain('/output/');
         expect(file.outputPath.endsWith('.pdf')).toBe(true);
@@ -549,7 +586,7 @@ describe('FileCollector', () => {
       const files = await fileCollector.collectFiles(preserveStructureConfig);
       expect(files.length).toBeGreaterThan(0);
       // Find a file in a subdirectory
-      const subdirFile = files.find(f => f.inputPath.includes('subdir'));
+      const subdirFile = files.find((f) => f.inputPath.includes('subdir'));
       if (subdirFile) {
         expect(path.isAbsolute(subdirFile.outputPath)).toBe(true);
         expect(subdirFile.outputPath).toContain('/output/');

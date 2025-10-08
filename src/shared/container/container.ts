@@ -119,7 +119,9 @@ export class ServiceContainer implements IServiceContainer {
     return serviceInfo;
   }
 
-  private extractDependencies(registration: ServiceRegistration): string[] | undefined {
+  private extractDependencies(
+    registration: ServiceRegistration,
+  ): string[] | undefined {
     if (!registration.factory) {
       return undefined;
     }

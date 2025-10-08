@@ -10,8 +10,8 @@ import {
   PDFEngineAlert,
 } from './types';
 
-import type { ILogger } from '../logging/types';
 import type { PDFEngineManager } from '../../core/pdf/engines/engine-manager';
+import type { ILogger } from '../../infrastructure/logging/types';
 
 export class PDFEngineMonitoringService implements IEngineMonitoringService {
   private isRunning = false;

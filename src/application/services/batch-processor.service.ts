@@ -4,19 +4,20 @@
 
 import * as path from 'path';
 
-import {
-  IFileProcessorService,
-  FileProcessingOptions,
-  FileProcessingResult,
-} from './file-processor.service';
+import { FileCollector } from '../../core/batch/file-collector';
+import { MD2PDFError } from '../../infrastructure/error/errors';
 import {
   BatchConversionConfig,
   BatchConversionResult,
   BatchError,
   BatchProcessingOptions,
 } from '../../types/batch';
-import { FileCollector } from '../../core/batch/file-collector';
-import { MD2PDFError } from '../../infrastructure/error/errors';
+
+import {
+  IFileProcessorService,
+  FileProcessingOptions,
+  FileProcessingResult,
+} from './file-processor.service';
 
 import type { IConfigManager } from '../../infrastructure/config/types';
 import type { IErrorHandler } from '../../infrastructure/error/types';
@@ -56,7 +57,7 @@ export class BatchProcessorService implements IBatchProcessorService {
     private readonly _configManager: IConfigManager,
     private readonly fileSystemManager: IFileSystemManager,
     private readonly fileProcessorService: IFileProcessorService,
-    private readonly fileCollectorParam?: FileCollector
+    private readonly fileCollectorParam?: FileCollector,
   ) {
     void this._configManager;
     this.fileCollector = this.fileCollectorParam ?? new FileCollector();
@@ -76,7 +77,7 @@ export class BatchProcessorService implements IBatchProcessorService {
 
       // Collect files
       const fileInfos = await this.fileCollector.collectFiles(config);
-      const files = fileInfos.map(info => info.inputPath);
+      const files = fileInfos.map((info) => info.inputPath);
 
       if (files.length === 0) {
         this.logger.warn(

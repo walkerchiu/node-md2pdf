@@ -31,14 +31,15 @@ jest.mock('../../../../../src/core/pdf/templates', () => ({
   PDFTemplates: {
     getFullHTML: jest.fn(
       (content, title, css, _chinese) =>
-        `<html><head><title>${title || ''}</title><style>${css || ''}</style></head><body>${content}</body></html>`
+        `<html><head><title>${title || ''}</title><style>${css || ''}</style></head><body>${content}</body></html>`,
     ),
   },
 }));
 
 // require engine
 const engineMod = require('../../../../../src/core/pdf/engines/puppeteer-engine');
-const PuppeteerPDFEngineCtor = engineMod.PuppeteerPDFEngine || engineMod.default || engineMod;
+const PuppeteerPDFEngineCtor =
+  engineMod.PuppeteerPDFEngine || engineMod.default || engineMod;
 
 describe('PuppeteerPDFEngine - Comprehensive Tests', () => {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -98,7 +99,9 @@ describe('PuppeteerPDFEngine - Comprehensive Tests', () => {
     it('should throw error when all configs fail', async () => {
       mockLaunch.mockRejectedValue(new Error('All configs failed'));
 
-      await expect(engine.initialize()).rejects.toThrow('Failed to initialize Puppeteer engine');
+      await expect(engine.initialize()).rejects.toThrow(
+        'Failed to initialize Puppeteer engine',
+      );
     });
 
     it('should clean up browser on failed initialization', async () => {
@@ -107,7 +110,9 @@ describe('PuppeteerPDFEngine - Comprehensive Tests', () => {
         newPage: jest.fn().mockRejectedValue(new Error('Page creation failed')),
       };
 
-      mockLaunch.mockResolvedValueOnce(mockFailedBrowser).mockResolvedValueOnce(mockBrowser);
+      mockLaunch
+        .mockResolvedValueOnce(mockFailedBrowser)
+        .mockResolvedValueOnce(mockBrowser);
 
       await engine.initialize();
 
@@ -132,7 +137,9 @@ describe('PuppeteerPDFEngine - Comprehensive Tests', () => {
       const health = await engine.healthCheck();
 
       expect(health.isHealthy).toBe(false);
-      expect(health.errors).toContainEqual(expect.stringContaining('Page operation failed'));
+      expect(health.errors).toContainEqual(
+        expect.stringContaining('Page operation failed'),
+      );
     });
 
     it('should return unhealthy when browser initialization fails', async () => {
@@ -141,7 +148,9 @@ describe('PuppeteerPDFEngine - Comprehensive Tests', () => {
       const health = await engine.healthCheck();
 
       expect(health.isHealthy).toBe(false);
-      expect(health.errors).toContainEqual(expect.stringContaining('Health check failed'));
+      expect(health.errors).toContainEqual(
+        expect.stringContaining('Health check failed'),
+      );
     });
   });
 
@@ -184,7 +193,9 @@ describe('PuppeteerPDFEngine - Comprehensive Tests', () => {
 
       await engine.generatePDF(mockContext, mockOptions);
 
-      expect(mockMkdirSync).toHaveBeenCalledWith('/mock/dir', { recursive: true });
+      expect(mockMkdirSync).toHaveBeenCalledWith('/mock/dir', {
+        recursive: true,
+      });
     });
 
     it('should handle PDF generation errors', async () => {
@@ -202,7 +213,9 @@ describe('PuppeteerPDFEngine - Comprehensive Tests', () => {
       const result = await engine.generatePDF(invalidContext, mockOptions);
 
       expect(result.success).toBe(false);
-      expect(result.error).toContain('Output path must end with .pdf extension');
+      expect(result.error).toContain(
+        'Output path must end with .pdf extension',
+      );
     });
 
     it('should initialize browser if not initialized', async () => {
@@ -257,7 +270,7 @@ describe('PuppeteerPDFEngine - Comprehensive Tests', () => {
           displayHeaderFooter: true,
           headerTemplate: '<div>Header</div>',
           footerTemplate: '<div>Footer</div>',
-        })
+        }),
       );
     });
   });
@@ -281,7 +294,7 @@ describe('PuppeteerPDFEngine - Comprehensive Tests', () => {
 
       // Delay PDF generation to check active tasks
       let resolvePdf: () => void;
-      const pdfPromise = new Promise<Buffer>(resolve => {
+      const pdfPromise = new Promise<Buffer>((resolve) => {
         resolvePdf = () => resolve(Buffer.from('pdf'));
       });
       mockPage.pdf.mockReturnValue(pdfPromise);
@@ -409,7 +422,9 @@ describe('PuppeteerPDFEngine - Comprehensive Tests', () => {
     it('should handle browser initialization with null browser', async () => {
       mockLaunch.mockResolvedValue(null);
 
-      await expect(engine.initialize()).rejects.toThrow('Failed to initialize Puppeteer engine');
+      await expect(engine.initialize()).rejects.toThrow(
+        'Failed to initialize Puppeteer engine',
+      );
     });
 
     it('should preserve task counts on error', async () => {

@@ -20,7 +20,9 @@ describe('TranslationManager', () => {
     });
 
     it('should throw error for unsupported locale', () => {
-      expect(() => translator.setLocale('fr' as never)).toThrow('Unsupported locale: fr');
+      expect(() => translator.setLocale('fr' as never)).toThrow(
+        'Unsupported locale: fr',
+      );
     });
   });
 
@@ -81,7 +83,9 @@ describe('TranslationManager', () => {
       // Set environment variable for testing
       const originalLang = process.env.LANG;
       process.env.LANG = 'zh_TW.UTF-8';
-      const envTranslator = new TranslationManager({ useEnvironmentLocale: true });
+      const envTranslator = new TranslationManager({
+        useEnvironmentLocale: true,
+      });
       expect(envTranslator.getCurrentLocale()).toBe('zh-TW');
 
       // Restore original environment
@@ -95,7 +99,9 @@ describe('TranslationManager', () => {
     it('should fallback to English for unknown environment locale', () => {
       const originalLang = process.env.LANG;
       process.env.LANG = 'fr_FR.UTF-8';
-      const envTranslator = new TranslationManager({ useEnvironmentLocale: true });
+      const envTranslator = new TranslationManager({
+        useEnvironmentLocale: true,
+      });
       expect(envTranslator.getCurrentLocale()).toBe('en');
 
       // Restore original environment

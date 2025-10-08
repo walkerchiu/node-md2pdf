@@ -51,7 +51,9 @@ export class ServiceNotFoundError extends Error {
 
 export class CircularDependencyError extends Error {
   constructor(serviceName: string, chain: string[]) {
-    super(`Circular dependency detected: ${chain.join(' -> ')} -> ${serviceName}`);
+    super(
+      `Circular dependency detected: ${chain.join(' -> ')} -> ${serviceName}`,
+    );
     this.name = 'CircularDependencyError';
   }
 }

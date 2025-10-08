@@ -185,7 +185,7 @@ describe('PerformanceMonitor', () => {
       const result = performanceMonitor.isSystemUnderStress();
 
       expect(result.underStress).toBe(true);
-      expect(result.reasons.some(r => r.includes('memory'))).toBe(true);
+      expect(result.reasons.some((r) => r.includes('memory'))).toBe(true);
     });
 
     it('should detect high CPU load stress', () => {
@@ -196,7 +196,7 @@ describe('PerformanceMonitor', () => {
       const result = performanceMonitor.isSystemUnderStress();
 
       expect(result.underStress).toBe(true);
-      expect(result.reasons.some(r => r.includes('CPU'))).toBe(true);
+      expect(result.reasons.some((r) => r.includes('CPU'))).toBe(true);
     });
   });
 
@@ -224,7 +224,9 @@ describe('PerformanceMonitor', () => {
 
       expect(result.shouldReduce).toBe(true);
       expect(result.recommendedConcurrency).toBeLessThan(4);
-      expect(result.optimizations.some(opt => opt.includes('memory'))).toBe(true);
+      expect(result.optimizations.some((opt) => opt.includes('memory'))).toBe(
+        true,
+      );
     });
 
     it('should recommend reducing concurrency under CPU stress', () => {
@@ -236,7 +238,9 @@ describe('PerformanceMonitor', () => {
 
       expect(result.shouldReduce).toBe(true);
       expect(result.recommendedConcurrency).toBeLessThan(4);
-      expect(result.optimizations.some(opt => opt.includes('CPU'))).toBe(true);
+      expect(result.optimizations.some((opt) => opt.includes('CPU'))).toBe(
+        true,
+      );
     });
 
     it('should recommend pausing under extreme stress', () => {
@@ -247,7 +251,9 @@ describe('PerformanceMonitor', () => {
       const result = performanceMonitor.optimizeBatchSettings(4, 100);
 
       expect(result.shouldPause).toBe(true);
-      expect(result.optimizations.some(opt => opt.includes('pausing'))).toBe(true);
+      expect(result.optimizations.some((opt) => opt.includes('pausing'))).toBe(
+        true,
+      );
     });
 
     it('should recommend increasing concurrency when resources available', () => {
@@ -260,7 +266,9 @@ describe('PerformanceMonitor', () => {
       const result = performanceMonitor.optimizeBatchSettings(2, 100);
 
       expect(result.recommendedConcurrency).toBeGreaterThan(2);
-      expect(result.optimizations.some(opt => opt.includes('Increased'))).toBe(true);
+      expect(
+        result.optimizations.some((opt) => opt.includes('Increased')),
+      ).toBe(true);
     });
   });
 

@@ -54,7 +54,11 @@ export function createDefaultEngineManager(): {
 
   const factory = new PDFEngineFactory();
   const selectionStrategy = new HealthFirstSelectionStrategy();
-  const manager = new PDFEngineManager(DEFAULT_ENGINE_CONFIG, factory, selectionStrategy);
+  const manager = new PDFEngineManager(
+    DEFAULT_ENGINE_CONFIG,
+    factory,
+    selectionStrategy,
+  );
 
   return { manager, factory };
 }

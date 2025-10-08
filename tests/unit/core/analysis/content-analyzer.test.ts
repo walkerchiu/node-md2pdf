@@ -63,7 +63,9 @@ print("你好世界")
 
       expect(analysis.languageDetection.primary).toBe('mixed');
       expect(analysis.languageDetection.needsChineseSupport).toBe(true);
-      expect(analysis.languageDetection.chineseCharacterRatio).toBeGreaterThan(0.1);
+      expect(analysis.languageDetection.chineseCharacterRatio).toBeGreaterThan(
+        0.1,
+      );
       expect(analysis.languageDetection.detectedLanguages).toHaveLength(2);
     });
 
@@ -112,8 +114,12 @@ async function fetchData() {
       const analysis = await analyzer.analyzeContent(content);
 
       expect(analysis.codeBlocks).toHaveLength(3);
-      expect(analysis.codeBlocks.some(block => block.language === 'typescript')).toBe(true);
-      expect(analysis.codeBlocks.some(block => block.language === 'json')).toBe(true);
+      expect(
+        analysis.codeBlocks.some((block) => block.language === 'typescript'),
+      ).toBe(true);
+      expect(
+        analysis.codeBlocks.some((block) => block.language === 'json'),
+      ).toBe(true);
       expect(analysis.contentComplexity.documentType).toBe('technical-manual');
       expect(analysis.contentComplexity.score).toBeGreaterThanOrEqual(1);
     });
@@ -165,7 +171,9 @@ In conclusion, this study demonstrates...
       expect(analysis.contentComplexity.documentType).toBe('academic-paper');
       expect(analysis.headingStructure.maxDepth).toBe(3);
       expect(analysis.tables).toHaveLength(1);
-      expect(analysis.contentComplexity.recommendedTocDepth).toBeGreaterThanOrEqual(2);
+      expect(
+        analysis.contentComplexity.recommendedTocDepth,
+      ).toBeGreaterThanOrEqual(2);
     });
 
     it('should estimate pages correctly', async () => {

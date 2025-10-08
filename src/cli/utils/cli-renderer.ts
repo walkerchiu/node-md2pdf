@@ -38,16 +38,16 @@ export class CliRenderer {
 
     // Split long messages into multiple lines
     const messageLines = this.wrapText(message, 35);
-    messageLines.forEach(line => {
+    messageLines.forEach((line) => {
       lines.push(`│  ${line.padEnd(37)} │`);
     });
 
     if (suggestions && suggestions.length > 0) {
       lines.push('├─────────────────────────────────────────┤');
       lines.push(`│  💡 Suggestions:                        │`);
-      suggestions.forEach(suggestion => {
+      suggestions.forEach((suggestion) => {
         const suggestionLines = this.wrapText(`• ${suggestion}`, 35);
-        suggestionLines.forEach(line => {
+        suggestionLines.forEach((line) => {
           lines.push(`│  ${line.padEnd(37)} │`);
         });
       });
@@ -55,7 +55,7 @@ export class CliRenderer {
 
     lines.push('└─────────────────────────────────────────┘');
 
-    lines.forEach(line => console.error(chalk.red(line)));
+    lines.forEach((line) => console.error(chalk.red(line)));
   }
 
   successBox(title: string, message: string): void {
@@ -66,13 +66,13 @@ export class CliRenderer {
     ];
 
     const messageLines = this.wrapText(message, 35);
-    messageLines.forEach(line => {
+    messageLines.forEach((line) => {
       lines.push(`│  ${line.padEnd(37)} │`);
     });
 
     lines.push('└─────────────────────────────────────────┘');
-    
-    lines.forEach(line => console.log(chalk.green(line)));
+
+    lines.forEach((line) => console.log(chalk.green(line)));
   }
 
   private wrapText(text: string, maxLength: number): string[] {
@@ -80,7 +80,7 @@ export class CliRenderer {
     const lines: string[] = [];
     let currentLine = '';
 
-    words.forEach(word => {
+    words.forEach((word) => {
       if (currentLine.length + word.length + 1 <= maxLength) {
         currentLine += (currentLine ? ' ' : '') + word;
       } else {

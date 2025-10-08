@@ -52,7 +52,12 @@ describe('PageEstimator', () => {
     const mockHeadings: Heading[] = [
       { level: 1, text: '第一章', id: 'chapter-1', anchor: '#chapter-1' },
       { level: 2, text: '1.1 小節', id: 'section-1-1', anchor: '#section-1-1' },
-      { level: 2, text: '1.2 另一小節', id: 'section-1-2', anchor: '#section-1-2' },
+      {
+        level: 2,
+        text: '1.2 另一小節',
+        id: 'section-1-2',
+        anchor: '#section-1-2',
+      },
       { level: 1, text: '第二章', id: 'chapter-2', anchor: '#chapter-2' },
     ];
 
@@ -73,7 +78,10 @@ describe('PageEstimator', () => {
 
 第二章的內容。`;
 
-      const pageNumbers = estimator.estimatePageNumbers(mockHeadings, markdownContent);
+      const pageNumbers = estimator.estimatePageNumbers(
+        mockHeadings,
+        markdownContent,
+      );
 
       expect(pageNumbers['chapter-1']).toBeDefined();
       expect(pageNumbers['section-1-1']).toBeDefined();
@@ -81,14 +89,16 @@ describe('PageEstimator', () => {
       expect(pageNumbers['chapter-2']).toBeDefined();
 
       // All headings should be on page 2 or later (after TOC)
-      Object.values(pageNumbers).forEach(pageNum => {
+      Object.values(pageNumbers).forEach((pageNum) => {
         expect(pageNum).toBeGreaterThanOrEqual(2);
       });
     });
 
     it('should handle long content with multiple pages', () => {
       // Create content that would span multiple pages
-      const longContent = Array(200).fill('這是一行很長的內容，用來測試多頁面的情況。').join('\n');
+      const longContent = Array(200)
+        .fill('這是一行很長的內容，用來測試多頁面的情況。')
+        .join('\n');
       const markdownWithLongContent = `# 第一章
 
 ${longContent}
@@ -102,7 +112,10 @@ ${longContent}`;
         { level: 1, text: '第二章', id: 'chapter-2', anchor: '#chapter-2' },
       ];
 
-      const pageNumbers = estimator.estimatePageNumbers(headings, markdownWithLongContent);
+      const pageNumbers = estimator.estimatePageNumbers(
+        headings,
+        markdownWithLongContent,
+      );
 
       expect(pageNumbers['chapter-1']).toBe(2); // First content page
       expect(pageNumbers['chapter-2']).toBeGreaterThan(2); // Should be on a later page
@@ -119,7 +132,7 @@ ${longContent}`;
       const pageNumbers = estimator.estimatePageNumbers(mockHeadings, '');
 
       // Should still return page numbers starting from content start page
-      Object.values(pageNumbers).forEach(pageNum => {
+      Object.values(pageNumbers).forEach((pageNum) => {
         expect(pageNum).toBeGreaterThanOrEqual(2);
       });
     });
@@ -132,25 +145,38 @@ ${longContent}`;
       ];
 
       const markdownContent = '# 測試標題\n\n內容';
-      const pageNumbers = estimator.estimatePageNumbers(headings, markdownContent);
+      const pageNumbers = estimator.estimatePageNumbers(
+        headings,
+        markdownContent,
+      );
 
       expect(pageNumbers['test-heading']).toBeDefined();
     });
 
     it('should fallback to id when anchor is not available', () => {
-      const headings: Heading[] = [{ level: 1, text: '測試標題', id: 'test-id', anchor: '' }];
+      const headings: Heading[] = [
+        { level: 1, text: '測試標題', id: 'test-id', anchor: '' },
+      ];
 
       const markdownContent = '# 測試標題\n\n內容';
-      const pageNumbers = estimator.estimatePageNumbers(headings, markdownContent);
+      const pageNumbers = estimator.estimatePageNumbers(
+        headings,
+        markdownContent,
+      );
 
       expect(pageNumbers['test-id']).toBeDefined();
     });
 
     it('should create slug from text when anchor and id are not available', () => {
-      const headings: Heading[] = [{ level: 1, text: '測試 標題！', id: '', anchor: '' }];
+      const headings: Heading[] = [
+        { level: 1, text: '測試 標題！', id: '', anchor: '' },
+      ];
 
       const markdownContent = '# 測試 標題！\n\n內容';
-      const pageNumbers = estimator.estimatePageNumbers(headings, markdownContent);
+      const pageNumbers = estimator.estimatePageNumbers(
+        headings,
+        markdownContent,
+      );
 
       // Should create a slug-like key
       const keys = Object.keys(pageNumbers);
@@ -173,7 +199,10 @@ ${longContent}`;
         { level: 1, text: '第一章', id: 'chapter-1', anchor: '#chapter-1' },
       ];
 
-      const pageNumbers = estimator.estimatePageNumbers(headings, contentWithIntro);
+      const pageNumbers = estimator.estimatePageNumbers(
+        headings,
+        contentWithIntro,
+      );
 
       expect(pageNumbers['chapter-1']).toBeDefined();
       expect(pageNumbers['chapter-1']).toBeGreaterThanOrEqual(2);
@@ -184,7 +213,10 @@ ${longContent}`;
 
 沒有標題的文件。`;
 
-      const pageNumbers = estimator.estimatePageNumbers([], contentWithoutHeadings);
+      const pageNumbers = estimator.estimatePageNumbers(
+        [],
+        contentWithoutHeadings,
+      );
 
       expect(Object.keys(pageNumbers)).toHaveLength(0);
     });
@@ -201,21 +233,34 @@ ${longContent}`;
 更多中文內容。`;
 
       const headings: Heading[] = [
-        { level: 1, text: '中文標題', id: 'chinese-title', anchor: '#chinese-title' },
+        {
+          level: 1,
+          text: '中文標題',
+          id: 'chinese-title',
+          anchor: '#chinese-title',
+        },
         { level: 2, text: '子標題', id: 'sub-title', anchor: '#sub-title' },
       ];
 
-      const pageNumbers = estimator.estimatePageNumbers(headings, chineseContent);
+      const pageNumbers = estimator.estimatePageNumbers(
+        headings,
+        chineseContent,
+      );
 
       expect(pageNumbers['chinese-title']).toBeDefined();
       expect(pageNumbers['sub-title']).toBeDefined();
     });
 
     it('should create proper slugs for Chinese text', () => {
-      const headings: Heading[] = [{ level: 1, text: '系統架構 & 設計', id: '', anchor: '' }];
+      const headings: Heading[] = [
+        { level: 1, text: '系統架構 & 設計', id: '', anchor: '' },
+      ];
 
       const markdownContent = '# 系統架構 & 設計\n\n內容';
-      const pageNumbers = estimator.estimatePageNumbers(headings, markdownContent);
+      const pageNumbers = estimator.estimatePageNumbers(
+        headings,
+        markdownContent,
+      );
 
       const keys = Object.keys(pageNumbers);
       expect(keys.length).toBe(1);
@@ -227,11 +272,19 @@ ${longContent}`;
   describe('Edge cases', () => {
     it('should handle headings not found in content', () => {
       const headings: Heading[] = [
-        { level: 1, text: '不存在的標題', id: 'non-existent', anchor: '#non-existent' },
+        {
+          level: 1,
+          text: '不存在的標題',
+          id: 'non-existent',
+          anchor: '#non-existent',
+        },
       ];
 
       const markdownContent = '# 實際標題\n\n內容';
-      const pageNumbers = estimator.estimatePageNumbers(headings, markdownContent);
+      const pageNumbers = estimator.estimatePageNumbers(
+        headings,
+        markdownContent,
+      );
 
       // Should still provide page numbers even if heading is not found
       expect(pageNumbers['non-existent']).toBeDefined();
@@ -240,8 +293,18 @@ ${longContent}`;
 
     it('should handle duplicate heading text', () => {
       const headings: Heading[] = [
-        { level: 1, text: '重複標題', id: 'duplicate-1', anchor: '#duplicate-1' },
-        { level: 2, text: '重複標題', id: 'duplicate-2', anchor: '#duplicate-2' },
+        {
+          level: 1,
+          text: '重複標題',
+          id: 'duplicate-1',
+          anchor: '#duplicate-1',
+        },
+        {
+          level: 2,
+          text: '重複標題',
+          id: 'duplicate-2',
+          anchor: '#duplicate-2',
+        },
       ];
 
       const markdownContent = `# 重複標題
@@ -252,7 +315,10 @@ ${longContent}`;
 
 第二個`;
 
-      const pageNumbers = estimator.estimatePageNumbers(headings, markdownContent);
+      const pageNumbers = estimator.estimatePageNumbers(
+        headings,
+        markdownContent,
+      );
 
       expect(pageNumbers['duplicate-1']).toBeDefined();
       expect(pageNumbers['duplicate-2']).toBeDefined();
@@ -267,9 +333,14 @@ ${longContent}`;
         anchor: `#heading-${i + 1}`,
       }));
 
-      const markdownContent = manyHeadings.map(h => `# ${h.text}\n\n一些內容。`).join('\n\n');
+      const markdownContent = manyHeadings
+        .map((h) => `# ${h.text}\n\n一些內容。`)
+        .join('\n\n');
 
-      const pageNumbers = estimator.estimatePageNumbers(manyHeadings, markdownContent);
+      const pageNumbers = estimator.estimatePageNumbers(
+        manyHeadings,
+        markdownContent,
+      );
 
       expect(Object.keys(pageNumbers)).toHaveLength(100);
 

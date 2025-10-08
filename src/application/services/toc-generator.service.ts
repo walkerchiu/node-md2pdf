@@ -3,11 +3,11 @@
  * Integrates core TOC functionality with infrastructure services
  */
 
-import { TOCGenerator } from '../../core/toc/toc-generator';
 import { PageEstimator } from '../../core/toc/page-estimator';
+import { TOCGenerator } from '../../core/toc/toc-generator';
 import { TOCGeneratorOptions, TOCGenerationResult } from '../../core/toc/types';
-import { Heading } from '../../types/index';
 import { MD2PDFError } from '../../infrastructure/error/errors';
+import { Heading } from '../../types/index';
 
 import type { IConfigManager } from '../../infrastructure/config/types';
 import type { IErrorHandler } from '../../infrastructure/error/types';

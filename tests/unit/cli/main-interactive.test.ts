@@ -89,8 +89,12 @@ describe('MainInteractiveMode', () => {
 
       await mainMode.start();
 
-      expect(mockLogger.info).toHaveBeenCalledWith('Starting main interactive mode');
-      expect(mockLogger.info).toHaveBeenCalledWith('User selected single file mode');
+      expect(mockLogger.info).toHaveBeenCalledWith(
+        'Starting main interactive mode',
+      );
+      expect(mockLogger.info).toHaveBeenCalledWith(
+        'User selected single file mode',
+      );
       expect(mockLogger.info).toHaveBeenCalledWith('User selected exit');
       expect(consoleSpy).toHaveBeenCalled(); // Welcome message displayed
     });
@@ -104,7 +108,9 @@ describe('MainInteractiveMode', () => {
 
       await mainMode.start();
 
-      expect(mockLogger.info).toHaveBeenCalledWith('Starting main interactive mode');
+      expect(mockLogger.info).toHaveBeenCalledWith(
+        'Starting main interactive mode',
+      );
       expect(mockLogger.info).toHaveBeenCalledWith('User selected batch mode');
       expect(mockLogger.info).toHaveBeenCalledWith('User selected exit');
     });
@@ -130,8 +136,14 @@ describe('MainInteractiveMode', () => {
 
       await expect(mainMode.start()).rejects.toThrow('Test error');
 
-      expect(mockLogger.error).toHaveBeenCalledWith('Main interactive mode error', testError);
-      expect(consoleErrorSpy).toHaveBeenCalledWith('❌ Main interactive mode error:', testError);
+      expect(mockLogger.error).toHaveBeenCalledWith(
+        'Main interactive mode error',
+        testError,
+      );
+      expect(consoleErrorSpy).toHaveBeenCalledWith(
+        '❌ Main interactive mode error:',
+        testError,
+      );
     });
   });
 
@@ -143,12 +155,24 @@ describe('MainInteractiveMode', () => {
       ).showWelcomeMessage!.bind(mainMode);
       showWelcomeMessage();
 
-      expect(consoleSpy).toHaveBeenCalledWith('┌──────────────────────────────────────────┐');
-      expect(consoleSpy).toHaveBeenCalledWith('│           MD2PDF Main Menu               │');
-      expect(consoleSpy).toHaveBeenCalledWith('├──────────────────────────────────────────┤');
-      expect(consoleSpy).toHaveBeenCalledWith('│  Convert Markdown files to professional  │');
-      expect(consoleSpy).toHaveBeenCalledWith('│  PDF documents with table of contents    │');
-      expect(consoleSpy).toHaveBeenCalledWith('└──────────────────────────────────────────┘');
+      expect(consoleSpy).toHaveBeenCalledWith(
+        '┌──────────────────────────────────────────┐',
+      );
+      expect(consoleSpy).toHaveBeenCalledWith(
+        '│           MD2PDF Main Menu               │',
+      );
+      expect(consoleSpy).toHaveBeenCalledWith(
+        '├──────────────────────────────────────────┤',
+      );
+      expect(consoleSpy).toHaveBeenCalledWith(
+        '│  Convert Markdown files to professional  │',
+      );
+      expect(consoleSpy).toHaveBeenCalledWith(
+        '│  PDF documents with table of contents    │',
+      );
+      expect(consoleSpy).toHaveBeenCalledWith(
+        '└──────────────────────────────────────────┘',
+      );
     });
   });
 
@@ -160,7 +184,9 @@ describe('MainInteractiveMode', () => {
         .spyOn(mainMode as unknown as PrivateMainInteractive, 'selectMode')
         .mockResolvedValue('single');
 
-      const selectMode = (mainMode as unknown as PrivateMainInteractive).selectMode.bind(mainMode);
+      const selectMode = (
+        mainMode as unknown as PrivateMainInteractive
+      ).selectMode.bind(mainMode);
       const result = await selectMode();
 
       expect(result).toBe('single');
@@ -172,7 +198,9 @@ describe('MainInteractiveMode', () => {
         .spyOn(mainMode as unknown as PrivateMainInteractive, 'selectMode')
         .mockResolvedValue('batch');
 
-      const selectMode = (mainMode as unknown as PrivateMainInteractive).selectMode.bind(mainMode);
+      const selectMode = (
+        mainMode as unknown as PrivateMainInteractive
+      ).selectMode.bind(mainMode);
       const result = await selectMode();
 
       expect(result).toBe('batch');
@@ -200,7 +228,9 @@ describe('MainInteractiveMode', () => {
       await mainMode.start();
 
       expect(selectModeSpy).toHaveBeenCalledTimes(2);
-      expect(mockLogger.info).toHaveBeenCalledWith('User selected single file mode');
+      expect(mockLogger.info).toHaveBeenCalledWith(
+        'User selected single file mode',
+      );
       expect(mockLogger.info).toHaveBeenCalledWith('User selected exit');
     });
 

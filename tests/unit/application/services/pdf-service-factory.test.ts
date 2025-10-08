@@ -11,7 +11,9 @@ import type { IConfigManager } from '../../../../src/infrastructure/config/types
 
 // Mock the service classes
 jest.mock('../../../../src/application/services/pdf-generator.service');
-jest.mock('../../../../src/application/services/enhanced-pdf-generator.service');
+jest.mock(
+  '../../../../src/application/services/enhanced-pdf-generator.service',
+);
 
 describe('PDFServiceFactory', () => {
   let factory: PDFServiceFactory;
@@ -50,27 +52,33 @@ describe('PDFServiceFactory', () => {
     mockPDFGeneratorService = new PDFGeneratorService(
       mockLogger,
       mockErrorHandler,
-      mockConfigManager
+      mockConfigManager,
     ) as jest.Mocked<PDFGeneratorService>;
 
     mockEnhancedPDFGeneratorService = new EnhancedPDFGeneratorService(
       mockLogger,
       mockErrorHandler,
-      mockConfigManager
+      mockConfigManager,
     ) as jest.Mocked<EnhancedPDFGeneratorService>;
 
     mockEnhancedPDFGeneratorService.initialize = jest.fn();
 
     // Mock constructors
-    (PDFGeneratorService as jest.MockedClass<typeof PDFGeneratorService>).mockImplementation(
-      () => mockPDFGeneratorService
-    );
+    (
+      PDFGeneratorService as jest.MockedClass<typeof PDFGeneratorService>
+    ).mockImplementation(() => mockPDFGeneratorService);
 
     (
-      EnhancedPDFGeneratorService as jest.MockedClass<typeof EnhancedPDFGeneratorService>
+      EnhancedPDFGeneratorService as jest.MockedClass<
+        typeof EnhancedPDFGeneratorService
+      >
     ).mockImplementation(() => mockEnhancedPDFGeneratorService);
 
-    factory = new PDFServiceFactory(mockLogger, mockErrorHandler, mockConfigManager);
+    factory = new PDFServiceFactory(
+      mockLogger,
+      mockErrorHandler,
+      mockConfigManager,
+    );
   });
 
   describe('constructor', () => {
@@ -85,13 +93,18 @@ describe('PDFServiceFactory', () => {
 
       const result = await factory.createPDFGenerator();
 
-      expect(mockConfigManager.get).toHaveBeenCalledWith('pdf.useEnhancedEngine', false);
-      expect(mockLogger.info).toHaveBeenCalledWith('Creating Legacy PDF Generator Service');
+      expect(mockConfigManager.get).toHaveBeenCalledWith(
+        'pdf.useEnhancedEngine',
+        false,
+      );
+      expect(mockLogger.info).toHaveBeenCalledWith(
+        'Creating Legacy PDF Generator Service',
+      );
       expect(result).toBe(mockPDFGeneratorService);
       expect(PDFGeneratorService).toHaveBeenCalledWith(
         mockLogger,
         mockErrorHandler,
-        mockConfigManager
+        mockConfigManager,
       );
     });
 
@@ -101,14 +114,17 @@ describe('PDFServiceFactory', () => {
 
       const result = await factory.createPDFGenerator();
 
-      expect(mockConfigManager.get).toHaveBeenCalledWith('pdf.useEnhancedEngine', false);
+      expect(mockConfigManager.get).toHaveBeenCalledWith(
+        'pdf.useEnhancedEngine',
+        false,
+      );
       expect(mockLogger.info).toHaveBeenCalledWith(
-        'Creating Enhanced PDF Generator Service with engine abstraction layer'
+        'Creating Enhanced PDF Generator Service with engine abstraction layer',
       );
       expect(EnhancedPDFGeneratorService).toHaveBeenCalledWith(
         mockLogger,
         mockErrorHandler,
-        mockConfigManager
+        mockConfigManager,
       );
       expect(mockEnhancedPDFGeneratorService.initialize).toHaveBeenCalled();
       expect(result).toBe(mockEnhancedPDFGeneratorService);
@@ -122,14 +138,16 @@ describe('PDFServiceFactory', () => {
       const result = await factory.createPDFGenerator();
 
       expect(mockLogger.info).toHaveBeenCalledWith(
-        'Creating Enhanced PDF Generator Service with engine abstraction layer'
+        'Creating Enhanced PDF Generator Service with engine abstraction layer',
       );
       expect(mockEnhancedPDFGeneratorService.initialize).toHaveBeenCalled();
       expect(mockLogger.warn).toHaveBeenCalledWith(
         'Failed to initialize Enhanced PDF Generator Service, falling back to legacy',
-        { error: initError }
+        { error: initError },
       );
-      expect(mockLogger.info).toHaveBeenCalledWith('Creating Legacy PDF Generator Service');
+      expect(mockLogger.info).toHaveBeenCalledWith(
+        'Creating Legacy PDF Generator Service',
+      );
       expect(result).toBe(mockPDFGeneratorService);
     });
 
@@ -139,7 +157,9 @@ describe('PDFServiceFactory', () => {
       const result = await factory.createPDFGenerator();
 
       expect(result).toBe(mockPDFGeneratorService);
-      expect(mockLogger.info).toHaveBeenCalledWith('Creating Legacy PDF Generator Service');
+      expect(mockLogger.info).toHaveBeenCalledWith(
+        'Creating Legacy PDF Generator Service',
+      );
     });
   });
 
@@ -149,7 +169,10 @@ describe('PDFServiceFactory', () => {
 
       const result = factory.getEngineType();
 
-      expect(mockConfigManager.get).toHaveBeenCalledWith('pdf.useEnhancedEngine', false);
+      expect(mockConfigManager.get).toHaveBeenCalledWith(
+        'pdf.useEnhancedEngine',
+        false,
+      );
       expect(result).toBe('enhanced');
     });
 
@@ -158,7 +181,10 @@ describe('PDFServiceFactory', () => {
 
       const result = factory.getEngineType();
 
-      expect(mockConfigManager.get).toHaveBeenCalledWith('pdf.useEnhancedEngine', false);
+      expect(mockConfigManager.get).toHaveBeenCalledWith(
+        'pdf.useEnhancedEngine',
+        false,
+      );
       expect(result).toBe('legacy');
     });
 
@@ -180,16 +206,20 @@ describe('PDFServiceFactory', () => {
       expect(PDFGeneratorService).toHaveBeenCalledWith(
         mockLogger,
         mockErrorHandler,
-        mockConfigManager
+        mockConfigManager,
       );
-      expect(mockLogger.info).toHaveBeenCalledWith('Creating Legacy PDF Generator Service');
+      expect(mockLogger.info).toHaveBeenCalledWith(
+        'Creating Legacy PDF Generator Service',
+      );
     });
   });
 
   describe('integration scenarios', () => {
     it('should handle multiple service creation calls independently', async () => {
       // Reset the constructor call count for this specific test
-      (PDFGeneratorService as jest.MockedClass<typeof PDFGeneratorService>).mockClear();
+      (
+        PDFGeneratorService as jest.MockedClass<typeof PDFGeneratorService>
+      ).mockClear();
       mockConfigManager.get = jest.fn().mockReturnValue(false);
 
       const result1 = await factory.createPDFGenerator();

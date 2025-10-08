@@ -21,11 +21,11 @@ jest.mock('inquirer', () => ({
 
 // Mock chalk
 jest.mock('chalk', () => ({
-  cyan: jest.fn(text => text),
-  red: jest.fn(text => text),
-  yellow: jest.fn(text => text),
-  green: jest.fn(text => text),
-  gray: jest.fn(text => text),
+  cyan: jest.fn((text) => text),
+  red: jest.fn((text) => text),
+  yellow: jest.fn((text) => text),
+  green: jest.fn((text) => text),
+  gray: jest.fn((text) => text),
 }));
 
 // Mock console methods
@@ -97,7 +97,10 @@ describe('BatchInteractiveMode Integration Tests', () => {
     // Register services
     container.register('logger', () => mockLogger);
     container.register('errorHandler', () => mockErrorHandler);
-    container.register(APPLICATION_SERVICE_NAMES.BATCH_PROCESSOR, () => mockBatchProcessor);
+    container.register(
+      APPLICATION_SERVICE_NAMES.BATCH_PROCESSOR,
+      () => mockBatchProcessor,
+    );
 
     batchInteractive = new BatchInteractiveMode(container);
 
@@ -126,10 +129,10 @@ describe('BatchInteractiveMode Integration Tests', () => {
       }
 
       expect(mockConsoleLog).toHaveBeenCalledWith(
-        expect.stringContaining('📚 Batch Conversion Mode')
+        expect.stringContaining('📚 Batch Conversion Mode'),
       );
       expect(mockConsoleLog).toHaveBeenCalledWith(
-        expect.stringContaining('Process multiple Markdown files at once')
+        expect.stringContaining('Process multiple Markdown files at once'),
       );
     });
 
@@ -144,7 +147,9 @@ describe('BatchInteractiveMode Integration Tests', () => {
         // Expected
       }
 
-      expect(mockLogger.info).toHaveBeenCalledWith('Starting batch interactive mode');
+      expect(mockLogger.info).toHaveBeenCalledWith(
+        'Starting batch interactive mode',
+      );
     });
   });
 
@@ -201,13 +206,15 @@ describe('BatchInteractiveMode Integration Tests', () => {
       expect(mockBatchProcessor.estimateBatchSize).toHaveBeenCalledWith(
         expect.objectContaining({
           inputPattern: 'docs/**/*.md',
-        })
+        }),
       );
 
       expect(mockConsoleLog).toHaveBeenCalledWith(
-        expect.stringContaining('📁 File pattern will be processed:')
+        expect.stringContaining('📁 File pattern will be processed:'),
       );
-      expect(mockConsoleLog).toHaveBeenCalledWith(expect.stringContaining('Pattern: docs/**/*.md'));
+      expect(mockConsoleLog).toHaveBeenCalledWith(
+        expect.stringContaining('Pattern: docs/**/*.md'),
+      );
     });
 
     it('should handle pattern confirmation', async () => {
@@ -264,7 +271,9 @@ describe('BatchInteractiveMode Integration Tests', () => {
             name: 'filenameFormat',
             choices: expect.arrayContaining([
               expect.objectContaining({ value: BatchFilenameFormat.ORIGINAL }),
-              expect.objectContaining({ value: BatchFilenameFormat.WITH_TIMESTAMP }),
+              expect.objectContaining({
+                value: BatchFilenameFormat.WITH_TIMESTAMP,
+              }),
               expect.objectContaining({ value: BatchFilenameFormat.WITH_DATE }),
               expect.objectContaining({ value: BatchFilenameFormat.CUSTOM }),
             ]),
@@ -277,7 +286,7 @@ describe('BatchInteractiveMode Integration Tests', () => {
               { name: '3 levels (H1-H3)', value: 3 },
             ]),
           }),
-        ])
+        ]),
       );
     });
 
@@ -295,14 +304,22 @@ describe('BatchInteractiveMode Integration Tests', () => {
       await batchInteractive.start();
 
       const customPatternPrompt = mockInquirer.prompt.mock.calls[2][0].find(
-        (prompt: { name: string; when?: (answers: { filenameFormat: string }) => boolean }) =>
-          prompt.name === 'customFilenamePattern'
+        (prompt: {
+          name: string;
+          when?: (answers: { filenameFormat: string }) => boolean;
+        }) => prompt.name === 'customFilenamePattern',
       );
       expect(customPatternPrompt).toBeDefined();
-      expect(customPatternPrompt.when({ filenameFormat: BatchFilenameFormat.CUSTOM })).toBe(true);
-      expect(customPatternPrompt.when({ filenameFormat: BatchFilenameFormat.ORIGINAL })).toBe(
-        false
-      );
+      expect(
+        customPatternPrompt.when({
+          filenameFormat: BatchFilenameFormat.CUSTOM,
+        }),
+      ).toBe(true);
+      expect(
+        customPatternPrompt.when({
+          filenameFormat: BatchFilenameFormat.ORIGINAL,
+        }),
+      ).toBe(false);
     });
 
     it('should validate custom filename pattern includes name placeholder', async () => {
@@ -315,12 +332,16 @@ describe('BatchInteractiveMode Integration Tests', () => {
       await batchInteractive.start();
 
       const customPatternPrompt = mockInquirer.prompt.mock.calls[2][0].find(
-        (prompt: { name: string; when?: (answers: { filenameFormat: string }) => boolean }) =>
-          prompt.name === 'customFilenamePattern'
+        (prompt: {
+          name: string;
+          when?: (answers: { filenameFormat: string }) => boolean;
+        }) => prompt.name === 'customFilenamePattern',
       );
       const validateFn = customPatternPrompt.validate;
 
-      expect(validateFn('invalid_pattern.pdf')).toBe('Pattern must include {name} placeholder');
+      expect(validateFn('invalid_pattern.pdf')).toBe(
+        'Pattern must include {name} placeholder',
+      );
       expect(validateFn('{name}_custom.pdf')).toBe(true);
     });
   });
@@ -348,16 +369,16 @@ describe('BatchInteractiveMode Integration Tests', () => {
       await batchInteractive.start();
 
       expect(mockConsoleLog).toHaveBeenCalledWith(
-        expect.stringContaining('📋 Configuration Summary')
+        expect.stringContaining('📋 Configuration Summary'),
       );
       expect(mockConsoleLog).toHaveBeenCalledWith(
-        expect.stringContaining('📁 Input pattern: *.md')
+        expect.stringContaining('📁 Input pattern: *.md'),
       );
       expect(mockConsoleLog).toHaveBeenCalledWith(
-        expect.stringContaining('📂 Output directory: ./output')
+        expect.stringContaining('📂 Output directory: ./output'),
       );
       expect(mockConsoleLog).toHaveBeenCalledWith(
-        expect.stringContaining('📖 Table of contents: 3 levels')
+        expect.stringContaining('📖 Table of contents: 3 levels'),
       );
     });
 
@@ -380,10 +401,10 @@ describe('BatchInteractiveMode Integration Tests', () => {
       ]);
 
       expect(mockConsoleLog).toHaveBeenCalledWith(
-        expect.stringContaining('⚠️  Final Confirmation:')
+        expect.stringContaining('⚠️  Final Confirmation:'),
       );
       expect(mockConsoleLog).toHaveBeenCalledWith(
-        expect.stringContaining('This operation may take several minutes')
+        expect.stringContaining('This operation may take several minutes'),
       );
     });
 
@@ -397,9 +418,11 @@ describe('BatchInteractiveMode Integration Tests', () => {
       await batchInteractive.start();
 
       expect(mockBatchProcessor.processBatch).not.toHaveBeenCalled();
-      expect(mockLogger.info).toHaveBeenCalledWith('User cancelled batch processing');
+      expect(mockLogger.info).toHaveBeenCalledWith(
+        'User cancelled batch processing',
+      );
       expect(mockConsoleLog).toHaveBeenCalledWith(
-        expect.stringContaining('❌ Batch processing cancelled')
+        expect.stringContaining('❌ Batch processing cancelled'),
       );
     });
   });
@@ -441,7 +464,7 @@ describe('BatchInteractiveMode Integration Tests', () => {
           maxConcurrency: 3,
           continueOnError: true,
           generateReport: true,
-        })
+        }),
       );
     });
 
@@ -467,9 +490,11 @@ describe('BatchInteractiveMode Integration Tests', () => {
 
       await batchInteractive.start();
 
-      expect(mockProgressUI.displayResults).toHaveBeenCalledWith(mockBatchResult);
+      expect(mockProgressUI.displayResults).toHaveBeenCalledWith(
+        mockBatchResult,
+      );
       expect(mockConsoleLog).toHaveBeenCalledWith(
-        expect.stringContaining('🎉 All files processed successfully!')
+        expect.stringContaining('🎉 All files processed successfully!'),
       );
     });
 
@@ -498,7 +523,7 @@ describe('BatchInteractiveMode Integration Tests', () => {
       await batchInteractive.start();
 
       expect(mockConsoleLog).toHaveBeenCalledWith(
-        expect.stringContaining('⚠️  Processed 3 out of 5 files successfully.')
+        expect.stringContaining('⚠️  Processed 3 out of 5 files successfully.'),
       );
       expect(mockInquirer.prompt).toHaveBeenCalledWith([
         {
@@ -522,12 +547,17 @@ describe('BatchInteractiveMode Integration Tests', () => {
         .mockResolvedValueOnce({})
         .mockResolvedValueOnce({ finalConfirm: true });
 
-      await expect(batchInteractive.start()).rejects.toThrow('Batch processing error');
+      await expect(batchInteractive.start()).rejects.toThrow(
+        'Batch processing error',
+      );
 
-      expect(mockLogger.error).toHaveBeenCalledWith('Batch interactive mode error', testError);
+      expect(mockLogger.error).toHaveBeenCalledWith(
+        'Batch interactive mode error',
+        testError,
+      );
       expect(mockErrorHandler.handleError).toHaveBeenCalledWith(
         testError,
-        'BatchInteractiveMode.start'
+        'BatchInteractiveMode.start',
       );
     });
 
@@ -545,7 +575,7 @@ describe('BatchInteractiveMode Integration Tests', () => {
       await batchInteractive.start();
 
       expect(mockConsoleError).toHaveBeenCalledWith(
-        expect.stringContaining('❌ Error searching for files:')
+        expect.stringContaining('❌ Error searching for files:'),
       );
       expect(mockInquirer.prompt).toHaveBeenCalledWith([
         {
@@ -597,7 +627,9 @@ describe('BatchInteractiveMode Integration Tests', () => {
       await batchInteractive.start();
 
       expect(mockBatchProcessor.processBatch).toHaveBeenCalled();
-      expect(mockLogger.info).toHaveBeenCalledWith('Starting batch interactive mode');
+      expect(mockLogger.info).toHaveBeenCalledWith(
+        'Starting batch interactive mode',
+      );
     });
   });
 });

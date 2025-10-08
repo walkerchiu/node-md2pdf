@@ -5,8 +5,9 @@
 import * as fs from 'fs';
 import * as os from 'os';
 import * as path from 'path';
-import { BatchError, BatchConversionConfig } from '../../types/batch';
+
 import { ErrorType } from '../../types';
+import { BatchError, BatchConversionConfig } from '../../types/batch';
 
 export interface RecoveryStrategy {
   maxRetries: number;
@@ -41,7 +42,7 @@ export class ErrorRecoveryManager {
   async recoverFromErrors(
     errors: BatchError[],
     _config: BatchConversionConfig,
-    strategy: Partial<RecoveryStrategy> = {}
+    strategy: Partial<RecoveryStrategy> = {},
   ): Promise<RecoveryResult> {
     const recoveryStrategy = { ...this.defaultStrategy, ...strategy };
     const recoveredFiles: string[] = [];
@@ -84,6 +85,7 @@ export class ErrorRecoveryManager {
     const immediate: string[] = [];
     const longTerm: string[] = [];
     const systemLevel: string[] = [];
+
     const errorTypes = new Set(errors.map((e) => e.error.type));
     if (errorTypes.has(ErrorType.FILE_NOT_FOUND)) {
       immediate.push('Check if input files still exist');
@@ -145,7 +147,9 @@ export class ErrorRecoveryManager {
     // System resource related recommendations
     if (errorsByType[ErrorType.SYSTEM_ERROR] > 0) {
       if (config.maxConcurrentProcesses > 2) {
-        recommendations.push('Reduce concurrent processes to improve stability');
+        recommendations.push(
+          'Reduce concurrent processes to improve stability',
+        );
       }
       recommendations.push('Monitor system resources during processing');
     }
@@ -162,7 +166,9 @@ export class ErrorRecoveryManager {
     if (errorsByType[ErrorType.PDF_GENERATION_ERROR] > 0) {
       recommendations.push('Consider processing problematic files separately');
       if (config.chineseFontSupport) {
-        recommendations.push('Try disabling Chinese font support for faster processing');
+        recommendations.push(
+          'Try disabling Chinese font support for faster processing',
+        );
       }
     }
 
@@ -212,7 +218,6 @@ export class ErrorRecoveryManager {
       retryableFiles.length *
       avgProcessingTime *
       this.defaultStrategy.maxRetries;
-      retryableFiles.length * avgProcessingTime * this.defaultStrategy.maxRetries;
 
     return {
       retryableFiles,
@@ -235,7 +240,7 @@ export class ErrorRecoveryManager {
       return;
     }
 
-    const cleanupPromises = failedFiles.map(async inputPath => {
+    const cleanupPromises = failedFiles.map(async (inputPath) => {
       try {
         // Determine expected output path
         const fileName = path.basename(inputPath, path.extname(inputPath));
@@ -320,8 +325,13 @@ export class ErrorRecoveryManager {
   /**
    * Check if an error is recoverable
    */
-  private isRecoverable(error: BatchError, strategy: RecoveryStrategy): boolean {
-    return error.canRetry && strategy.recoverableErrors.includes(error.error.type);
+  private isRecoverable(
+    error: BatchError,
+    strategy: RecoveryStrategy,
+  ): boolean {
+    return (
+      error.canRetry && strategy.recoverableErrors.includes(error.error.type)
+    );
   }
 
   /**
@@ -330,7 +340,7 @@ export class ErrorRecoveryManager {
   private async retryFileProcessing(
     inputPath: string,
     _config: BatchConversionConfig,
-    strategy: RecoveryStrategy
+    strategy: RecoveryStrategy,
   ): Promise<boolean> {
     for (let attempt = 1; attempt <= strategy.maxRetries; attempt++) {
       try {
@@ -343,14 +353,18 @@ export class ErrorRecoveryManager {
         const healthCheck = await this.validateSystemHealth();
         if (!healthCheck.healthy) {
           // eslint-disable-next-line no-console
-          console.warn(`System health issues detected, skipping retry for ${inputPath}`);
+          console.warn(
+            `System health issues detected, skipping retry for ${inputPath}`,
+          );
           return false;
         }
 
         // Here you would call the actual file processing logic
         // For now, we'll simulate success for recoverable errors
         // eslint-disable-next-line no-console
-        console.log(`Retrying ${inputPath} (attempt ${attempt}/${strategy.maxRetries})`);
+        console.log(
+          `Retrying ${inputPath} (attempt ${attempt}/${strategy.maxRetries})`,
+        );
 
         // In a real implementation, you'd call the actual processor here
         // const result = await this.processFile(inputPath, config);
@@ -378,7 +392,7 @@ export class ErrorRecoveryManager {
         acc[type] = (acc[type] || 0) + 1;
         return acc;
       },
-      {} as Record<string, number>
+      {} as Record<string, number>,
     );
   }
 
@@ -409,7 +423,7 @@ export class ErrorRecoveryManager {
             file.includes(baseName) &&
             (file.includes('.tmp') || file.includes('.temp')),
         )
-        .map(file => path.join(directory, file));
+        .map((file) => path.join(directory, file));
     } catch {
       return [];
     }
@@ -419,6 +433,6 @@ export class ErrorRecoveryManager {
    * Sleep for specified milliseconds
    */
   private sleep(ms: number): Promise<void> {
-    return new Promise(resolve => setTimeout(resolve, ms));
+    return new Promise((resolve) => setTimeout(resolve, ms));
   }
 }

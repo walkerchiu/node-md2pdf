@@ -64,16 +64,25 @@ export class ErrorHandler implements IErrorHandler {
     }
 
     // Try to categorize common Node.js errors
-    if (error.message.includes('ENOENT') || error.message.includes('no such file')) {
+    if (
+      error.message.includes('ENOENT') ||
+      error.message.includes('no such file')
+    ) {
       return 'file_system';
     }
-    if (error.message.includes('EACCES') || error.message.includes('permission denied')) {
+    if (
+      error.message.includes('EACCES') ||
+      error.message.includes('permission denied')
+    ) {
       return 'file_system';
     }
     if (error.message.includes('JSON') || error.message.includes('parse')) {
       return 'configuration';
     }
-    if (error.message.includes('timeout') || error.message.includes('network')) {
+    if (
+      error.message.includes('timeout') ||
+      error.message.includes('network')
+    ) {
       return 'network';
     }
 

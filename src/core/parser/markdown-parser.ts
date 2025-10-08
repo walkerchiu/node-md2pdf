@@ -3,10 +3,12 @@
  * Handles parsing of Markdown content to HTML with support for various plugins
  */
 
+import { readFileSync } from 'fs';
+
 import MarkdownIt from 'markdown-it';
 import anchor from 'markdown-it-anchor';
-import { readFileSync } from 'fs';
-import { ParsedMarkdown, Heading } from '@/types/index';
+
+import { ParsedMarkdown, Heading } from '../../types/index';
 
 export interface MarkdownParserOptions {
   html: boolean;
@@ -74,7 +76,10 @@ export class MarkdownParser {
   /**
    * Generate unique ID for headings, handling duplicates
    */
-  private generateUniqueId(baseId: string, usedIds: Record<string, number>): string {
+  private generateUniqueId(
+    baseId: string,
+    usedIds: Record<string, number>,
+  ): string {
     if (usedIds[baseId]) {
       usedIds[baseId]++;
       return `${baseId}-${usedIds[baseId]}`;
@@ -130,7 +135,7 @@ export class MarkdownParser {
       };
     } catch (error) {
       throw new Error(
-        `Failed to parse markdown: ${error instanceof Error ? error.message : 'Unknown error'}`
+        `Failed to parse markdown: ${error instanceof Error ? error.message : 'Unknown error'}`,
       );
     }
   }
@@ -247,7 +252,7 @@ export class MarkdownParser {
       .replace(/^---[\s\S]*?---/, '') // Remove frontmatter
       .replace(/[#*_`[\]()]/g, '') // Remove markdown syntax
       .split(/\s+/)
-      .filter(word => word.length > 0).length;
+      .filter((word) => word.length > 0).length;
 
     const characterCount = content.length;
     const lineCount = content.split('\n').length;
@@ -276,7 +281,9 @@ export class MarkdownParser {
 
       return { isValid: errors.length === 0, errors };
     } catch (error) {
-      errors.push(error instanceof Error ? error.message : 'Unknown parsing error');
+      errors.push(
+        error instanceof Error ? error.message : 'Unknown parsing error',
+      );
       return { isValid: false, errors };
     }
   }

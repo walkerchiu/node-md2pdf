@@ -28,7 +28,11 @@ export interface ITranslationManager {
   /**
    * Translate a key to a specific locale
    */
-  translate(key: string, locale: SupportedLocale, params?: Record<string, string | number>): string;
+  translate(
+    key: string,
+    locale: SupportedLocale,
+    params?: Record<string, string | number>,
+  ): string;
   /**
    * Check if a translation key exists
    */

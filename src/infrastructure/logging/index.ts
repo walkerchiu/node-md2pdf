@@ -7,8 +7,8 @@ export { ConsoleLogger } from './logger';
 
 export type {
   ILogger,
-  LogLevel,
-  LoggerOptions,
-  LogFormat,
   LogEntry,
+  LogFormat,
+  LoggerOptions,
+  LogLevel,
 } from './types';

@@ -88,23 +88,31 @@ describe('FileSystemManager', () => {
     });
 
     it('should throw FileNotFoundError when file does not exist', async () => {
-      const error = new Error('ENOENT: no such file or directory') as NodeJS.ErrnoException;
+      const error = new Error(
+        'ENOENT: no such file or directory',
+      ) as NodeJS.ErrnoException;
       error.code = 'ENOENT';
       mockFs.readFile.mockRejectedValue(error);
 
-      await expect(fileSystemManager.readFile('/missing/file.md')).rejects.toThrow(
-        'Failed to read file: ENOENT: no such file or directory'
+      await expect(
+        fileSystemManager.readFile('/missing/file.md'),
+      ).rejects.toThrow(
+        'Failed to read file: ENOENT: no such file or directory',
       );
     });
 
     it('should handle permission errors', async () => {
-      const error = new Error('EACCES: permission denied') as NodeJS.ErrnoException;
+      const error = new Error(
+        'EACCES: permission denied',
+      ) as NodeJS.ErrnoException;
       error.code = 'EACCES';
       mockFs.access.mockResolvedValue(undefined); // 檔案存在但沒有權限
       mockFs.readFile.mockRejectedValue(error);
 
-      await expect(fileSystemManager.readFile('/restricted/file.md')).rejects.toThrow(
-        'Permission denied: cannot read file /restricted/file.md'
+      await expect(
+        fileSystemManager.readFile('/restricted/file.md'),
+      ).rejects.toThrow(
+        'Permission denied: cannot read file /restricted/file.md',
       );
     });
   });
@@ -117,17 +125,23 @@ describe('FileSystemManager', () => {
 
       await fileSystemManager.writeFile('/test/output.md', content);
 
-      expect(mockFs.writeFile).toHaveBeenCalledWith('/test/output.md', content, undefined);
+      expect(mockFs.writeFile).toHaveBeenCalledWith(
+        '/test/output.md',
+        content,
+        undefined,
+      );
     });
 
     it('should handle write errors', async () => {
-      const error = new Error('ENOSPC: no space left on device') as NodeJS.ErrnoException;
+      const error = new Error(
+        'ENOSPC: no space left on device',
+      ) as NodeJS.ErrnoException;
       error.code = 'ENOSPC';
       mockFs.writeFile.mockRejectedValue(error);
 
-      await expect(fileSystemManager.writeFile('/test/file.md', 'content')).rejects.toThrow(
-        'ENOSPC: no space left on device'
-      );
+      await expect(
+        fileSystemManager.writeFile('/test/file.md', 'content'),
+      ).rejects.toThrow('ENOSPC: no space left on device');
     });
   });
 
@@ -163,9 +177,9 @@ describe('FileSystemManager', () => {
       error.code = 'ENOENT';
       mockFs.stat.mockRejectedValue(error);
 
-      await expect(fileSystemManager.getStats('/missing/file.md')).rejects.toThrow(
-        FileNotFoundError
-      );
+      await expect(
+        fileSystemManager.getStats('/missing/file.md'),
+      ).rejects.toThrow(FileNotFoundError);
     });
   });
 
@@ -189,13 +203,15 @@ describe('FileSystemManager', () => {
     });
 
     it('should handle permission errors when creating directory', async () => {
-      const error = new Error('EACCES: permission denied') as NodeJS.ErrnoException;
+      const error = new Error(
+        'EACCES: permission denied',
+      ) as NodeJS.ErrnoException;
       error.code = 'EACCES';
       mockFs.ensureDir.mockRejectedValue(error);
 
-      await expect(fileSystemManager.createDirectory('/restricted/dir')).rejects.toThrow(
-        'EACCES: permission denied'
-      );
+      await expect(
+        fileSystemManager.createDirectory('/restricted/dir'),
+      ).rejects.toThrow('EACCES: permission denied');
     });
   });
 
@@ -228,16 +244,21 @@ describe('FileSystemManager', () => {
 
       await fileSystemManager.copyFile('/source/file.md', '/dest/file.md');
 
-      expect(mockFs.copy).toHaveBeenCalledWith('/source/file.md', '/dest/file.md');
+      expect(mockFs.copy).toHaveBeenCalledWith(
+        '/source/file.md',
+        '/dest/file.md',
+      );
     });
 
     it('should handle copy errors', async () => {
-      const error = new Error('ENOENT: source file not found') as NodeJS.ErrnoException;
+      const error = new Error(
+        'ENOENT: source file not found',
+      ) as NodeJS.ErrnoException;
       error.code = 'ENOENT';
       mockFs.access.mockRejectedValue(error);
 
       await expect(
-        fileSystemManager.copyFile('/missing/source.md', '/dest/file.md')
+        fileSystemManager.copyFile('/missing/source.md', '/dest/file.md'),
       ).rejects.toThrow('File not found: /missing/source.md');
     });
   });
@@ -270,9 +291,9 @@ describe('FileSystemManager', () => {
       // Mock directory doesn't exist (exists() returns false)
       mockFs.access.mockRejectedValue(new Error('Directory not found'));
 
-      await expect(fileSystemManager.listDirectory('/missing/dir')).rejects.toThrow(
-        FileNotFoundError
-      );
+      await expect(
+        fileSystemManager.listDirectory('/missing/dir'),
+      ).rejects.toThrow(FileNotFoundError);
     });
   });
 
@@ -280,7 +301,9 @@ describe('FileSystemManager', () => {
     it('should resolve path correctly', async () => {
       mockPath.resolve.mockReturnValue('/resolved/path/file.md');
 
-      const result = await fileSystemManager.resolvePath('./relative/path/file.md');
+      const result = await fileSystemManager.resolvePath(
+        './relative/path/file.md',
+      );
 
       expect(result).toBe('/resolved/path/file.md');
       expect(mockPath.resolve).toHaveBeenCalledWith('./relative/path/file.md');
@@ -289,7 +312,8 @@ describe('FileSystemManager', () => {
     it('should get absolute path correctly', async () => {
       mockPath.resolve.mockReturnValue('/absolute/path/file.md');
 
-      const result = await fileSystemManager.getAbsolutePath('relative/file.md');
+      const result =
+        await fileSystemManager.getAbsolutePath('relative/file.md');
 
       expect(result).toBe('/absolute/path/file.md');
     });
@@ -300,7 +324,10 @@ describe('FileSystemManager', () => {
       const result = await fileSystemManager.getBaseName('/path/to/file.md');
 
       expect(result).toBe('file.md');
-      expect(mockPath.basename).toHaveBeenCalledWith('/path/to/file.md', undefined);
+      expect(mockPath.basename).toHaveBeenCalledWith(
+        '/path/to/file.md',
+        undefined,
+      );
     });
 
     it('should get directory name correctly', async () => {
@@ -363,20 +390,24 @@ describe('FileSystemManager', () => {
       // Mock file doesn't exist (access check fails)
       mockFs.access.mockRejectedValue(new Error('File not found'));
 
-      await expect(fileSystemManager.readFile('/missing/file.md')).rejects.toBeInstanceOf(
-        FileNotFoundError
-      );
+      await expect(
+        fileSystemManager.readFile('/missing/file.md'),
+      ).rejects.toBeInstanceOf(FileNotFoundError);
     });
 
     it('should preserve other error types', async () => {
-      const error = new Error('EACCES: permission denied') as NodeJS.ErrnoException;
+      const error = new Error(
+        'EACCES: permission denied',
+      ) as NodeJS.ErrnoException;
       error.code = 'EACCES';
       // Mock file exists but readFile fails with permission error
       mockFs.access.mockResolvedValue(undefined);
       mockFs.readFile.mockRejectedValue(error);
 
-      await expect(fileSystemManager.readFile('/restricted/file.md')).rejects.toThrow(
-        'Permission denied: cannot read file /restricted/file.md'
+      await expect(
+        fileSystemManager.readFile('/restricted/file.md'),
+      ).rejects.toThrow(
+        'Permission denied: cannot read file /restricted/file.md',
       );
     });
 
@@ -385,7 +416,7 @@ describe('FileSystemManager', () => {
       mockFs.readFile.mockRejectedValue(error);
 
       await expect(fileSystemManager.readFile('/test/file.md')).rejects.toThrow(
-        'Unknown file system error'
+        'Unknown file system error',
       );
     });
   });
@@ -430,7 +461,9 @@ describe('FileSystemManager', () => {
       it('should not throw when directory does not exist', async () => {
         mockFs.access.mockRejectedValue(new Error('Not found'));
 
-        await expect(fileSystemManager.deleteDirectory('/missing/dir')).resolves.toBeUndefined();
+        await expect(
+          fileSystemManager.deleteDirectory('/missing/dir'),
+        ).resolves.toBeUndefined();
       });
     });
 
@@ -448,9 +481,9 @@ describe('FileSystemManager', () => {
         err.code = 'EACCES';
         mockFs.appendFile.mockRejectedValue(err);
 
-        await expect(fileSystemManager.appendFile('/tmp/file.md', 'more')).rejects.toThrow(
-          'Permission denied: cannot append file /tmp/file.md'
-        );
+        await expect(
+          fileSystemManager.appendFile('/tmp/file.md', 'more'),
+        ).rejects.toThrow('Permission denied: cannot append file /tmp/file.md');
       });
 
       it('should move file successfully', async () => {
@@ -460,7 +493,10 @@ describe('FileSystemManager', () => {
 
         await fileSystemManager.moveFile('/src/file.md', '/dest/file.md');
 
-        expect(mockFs.move).toHaveBeenCalledWith('/src/file.md', '/dest/file.md');
+        expect(mockFs.move).toHaveBeenCalledWith(
+          '/src/file.md',
+          '/dest/file.md',
+        );
       });
 
       it('should throw when moving missing source', async () => {
@@ -469,7 +505,7 @@ describe('FileSystemManager', () => {
         mockFs.access.mockRejectedValue(err);
 
         await expect(
-          fileSystemManager.moveFile('/missing/source.md', '/dest/file.md')
+          fileSystemManager.moveFile('/missing/source.md', '/dest/file.md'),
         ).rejects.toThrow('File not found: /missing/source.md');
       });
     });
@@ -479,9 +515,14 @@ describe('FileSystemManager', () => {
         // Mock writeFile and ensureDir used by temp creators
         mockFs.writeFile.mockResolvedValue(undefined);
         mockFs.ensureDir.mockResolvedValue(undefined);
-        mockPath.join.mockImplementation((...parts: string[]) => parts.join('/'));
+        mockPath.join.mockImplementation((...parts: string[]) =>
+          parts.join('/'),
+        );
 
-        const tempFile = await fileSystemManager.createTempFile('pref-', '.tmp');
+        const tempFile = await fileSystemManager.createTempFile(
+          'pref-',
+          '.tmp',
+        );
         expect(tempFile).toContain('pref-');
 
         const tempDir = await fileSystemManager.createTempDirectory('dir-');
@@ -494,7 +535,10 @@ describe('FileSystemManager', () => {
         const files = await fileSystemManager.findFiles('**/*.md', '/project');
 
         expect(files).toHaveLength(2);
-        expect(mockGlob.sync).toHaveBeenCalledWith('**/*.md', { cwd: '/project', absolute: true });
+        expect(mockGlob.sync).toHaveBeenCalledWith('**/*.md', {
+          cwd: '/project',
+          absolute: true,
+        });
       });
 
       it('should throw when glob fails', async () => {
@@ -502,7 +546,9 @@ describe('FileSystemManager', () => {
           throw new Error('glob failure');
         });
 
-        await expect(fileSystemManager.findFiles('**/*.md')).rejects.toThrow('glob failure');
+        await expect(fileSystemManager.findFiles('**/*.md')).rejects.toThrow(
+          'glob failure',
+        );
       });
 
       it('should return file size and modification time via getStats', async () => {
@@ -521,7 +567,8 @@ describe('FileSystemManager', () => {
         const size = await fileSystemManager.getFileSize('/some/file.md');
         expect(size).toBe(2048);
 
-        const mod = await fileSystemManager.getModificationTime('/some/file.md');
+        const mod =
+          await fileSystemManager.getModificationTime('/some/file.md');
         expect(mod).toEqual(new Date('2023-02-02'));
       });
 
@@ -530,7 +577,7 @@ describe('FileSystemManager', () => {
         mockFs.stat.mockRejectedValue(err);
 
         await expect(fileSystemManager.getStats('/file')).rejects.toThrow(
-          'Failed to get file stats: unknown stat error'
+          'Failed to get file stats: unknown stat error',
         );
       });
     });

@@ -74,8 +74,12 @@ describe('SettingsMode', () => {
       await settingsMode.start();
 
       expect(mockLogger.info).toHaveBeenCalledWith('Starting settings mode');
-      expect(mockLogger.info).toHaveBeenCalledWith('Returning to main menu from settings');
-      expect(console.log).toHaveBeenCalledWith(expect.stringContaining('Settings & Preferences'));
+      expect(mockLogger.info).toHaveBeenCalledWith(
+        'Returning to main menu from settings',
+      );
+      expect(console.log).toHaveBeenCalledWith(
+        expect.stringContaining('Settings & Preferences'),
+      );
     });
 
     it('should handle language settings option', async () => {
@@ -86,8 +90,12 @@ describe('SettingsMode', () => {
 
       await settingsMode.start();
 
-      expect(console.log).toHaveBeenCalledWith(expect.stringContaining('Language Settings'));
-      expect(console.log).toHaveBeenCalledWith('Current language: English (en-US)');
+      expect(console.log).toHaveBeenCalledWith(
+        expect.stringContaining('Language Settings'),
+      );
+      expect(console.log).toHaveBeenCalledWith(
+        'Current language: English (en-US)',
+      );
       expect(console.log).toHaveBeenCalledWith('Available languages:');
     });
 
@@ -100,7 +108,7 @@ describe('SettingsMode', () => {
       await settingsMode.start();
 
       expect(console.log).toHaveBeenCalledWith(
-        expect.stringContaining('Default Settings features coming soon')
+        expect.stringContaining('Default Settings features coming soon'),
       );
     });
 
@@ -113,7 +121,7 @@ describe('SettingsMode', () => {
       await settingsMode.start();
 
       expect(console.log).toHaveBeenCalledWith(
-        expect.stringContaining('Performance Settings features coming soon')
+        expect.stringContaining('Performance Settings features coming soon'),
       );
     });
 
@@ -126,7 +134,7 @@ describe('SettingsMode', () => {
       await settingsMode.start();
 
       expect(console.log).toHaveBeenCalledWith(
-        expect.stringContaining('Cache Settings features coming soon')
+        expect.stringContaining('Cache Settings features coming soon'),
       );
     });
 
@@ -139,7 +147,7 @@ describe('SettingsMode', () => {
       await settingsMode.start();
 
       expect(console.log).toHaveBeenCalledWith(
-        expect.stringContaining('Logging Settings features coming soon')
+        expect.stringContaining('Logging Settings features coming soon'),
       );
     });
 
@@ -152,7 +160,7 @@ describe('SettingsMode', () => {
       await settingsMode.start();
 
       expect(console.log).toHaveBeenCalledWith(
-        expect.stringContaining('Reset Settings features coming soon')
+        expect.stringContaining('Reset Settings features coming soon'),
       );
     });
 
@@ -165,7 +173,7 @@ describe('SettingsMode', () => {
       await settingsMode.start();
 
       expect(console.log).toHaveBeenCalledWith(
-        expect.stringContaining('Export Settings features coming soon')
+        expect.stringContaining('Export Settings features coming soon'),
       );
     });
 
@@ -178,7 +186,7 @@ describe('SettingsMode', () => {
       await settingsMode.start();
 
       expect(console.log).toHaveBeenCalledWith(
-        expect.stringContaining('Import Settings features coming soon')
+        expect.stringContaining('Import Settings features coming soon'),
       );
     });
 
@@ -187,8 +195,14 @@ describe('SettingsMode', () => {
       mockInquirer.prompt.mockRejectedValue(error);
 
       await expect(settingsMode.start()).rejects.toThrow('Test error');
-      expect(mockLogger.error).toHaveBeenCalledWith('Settings mode error', error);
-      expect(console.error).toHaveBeenCalledWith(expect.stringContaining('Settings error:'), error);
+      expect(mockLogger.error).toHaveBeenCalledWith(
+        'Settings mode error',
+        error,
+      );
+      expect(console.error).toHaveBeenCalledWith(
+        expect.stringContaining('Settings error:'),
+        error,
+      );
     });
   });
 
@@ -197,7 +211,9 @@ describe('SettingsMode', () => {
       mockInquirer.prompt.mockResolvedValue({ option: 'language' });
 
       // Access private method for testing
-      const selectMethod = (settingsMode as any).selectSettingsOption.bind(settingsMode);
+      const selectMethod = (settingsMode as any).selectSettingsOption.bind(
+        settingsMode,
+      );
       const result = await selectMethod();
 
       expect(result).toBe('language');
@@ -208,18 +224,46 @@ describe('SettingsMode', () => {
           message: 'Select settings option:',
           choices: expect.arrayContaining([
             { name: '0. Return to Main Menu', value: 'back', short: 'Back' },
-            { name: '1. Language & Localization', value: 'language', short: 'Language Settings' },
-            { name: '2. Default Preferences', value: 'defaults', short: 'Default Settings' },
+            {
+              name: '1. Language & Localization',
+              value: 'language',
+              short: 'Language Settings',
+            },
+            {
+              name: '2. Default Preferences',
+              value: 'defaults',
+              short: 'Default Settings',
+            },
             {
               name: '3. Performance & Memory',
               value: 'performance',
               short: 'Performance Settings',
             },
-            { name: '4. Cache Management', value: 'cache', short: 'Cache Settings' },
-            { name: '5. Logging & Diagnostics', value: 'logging', short: 'Logging Settings' },
-            { name: '6. Reset to Factory Defaults', value: 'reset', short: 'Reset Settings' },
-            { name: '7. Export Configuration', value: 'export', short: 'Export Settings' },
-            { name: '8. Import Configuration', value: 'import', short: 'Import Settings' },
+            {
+              name: '4. Cache Management',
+              value: 'cache',
+              short: 'Cache Settings',
+            },
+            {
+              name: '5. Logging & Diagnostics',
+              value: 'logging',
+              short: 'Logging Settings',
+            },
+            {
+              name: '6. Reset to Factory Defaults',
+              value: 'reset',
+              short: 'Reset Settings',
+            },
+            {
+              name: '7. Export Configuration',
+              value: 'export',
+              short: 'Export Settings',
+            },
+            {
+              name: '8. Import Configuration',
+              value: 'import',
+              short: 'Import Settings',
+            },
           ]),
           default: 'language',
           pageSize: 12,
@@ -230,12 +274,16 @@ describe('SettingsMode', () => {
 
   describe('showSettingsHeader', () => {
     it('should display settings header', () => {
-      const showHeaderMethod = (settingsMode as any).showSettingsHeader.bind(settingsMode);
+      const showHeaderMethod = (settingsMode as any).showSettingsHeader.bind(
+        settingsMode,
+      );
       showHeaderMethod();
 
-      expect(console.log).toHaveBeenCalledWith(expect.stringContaining('Settings & Preferences'));
       expect(console.log).toHaveBeenCalledWith(
-        expect.stringContaining('Language, defaults, and system config')
+        expect.stringContaining('Settings & Preferences'),
+      );
+      expect(console.log).toHaveBeenCalledWith(
+        expect.stringContaining('Language, defaults, and system config'),
       );
     });
   });
@@ -244,7 +292,9 @@ describe('SettingsMode', () => {
     it('should prompt user to press any key', async () => {
       mockInquirer.prompt.mockResolvedValue({ continue: '' });
 
-      const pressAnyKeyMethod = (settingsMode as any).pressAnyKey.bind(settingsMode);
+      const pressAnyKeyMethod = (settingsMode as any).pressAnyKey.bind(
+        settingsMode,
+      );
       await pressAnyKeyMethod();
 
       expect(mockInquirer.prompt).toHaveBeenCalledWith([

@@ -67,7 +67,8 @@ describe('RecentFilesManager', () => {
     });
 
     it('should truncate long paths correctly', () => {
-      const longPath = '/very/long/path/to/some/nested/directory/structure/file.md';
+      const longPath =
+        '/very/long/path/to/some/nested/directory/structure/file.md';
       const result = recentFilesManager.formatFilePath(longPath, 30);
       expect(result).toBe('.../structure/file.md');
     });
@@ -111,11 +112,15 @@ describe('RecentFilesManager', () => {
 
       // Just now (30 seconds ago)
       const thirtySecondsAgo = new Date(now.getTime() - 30 * 1000);
-      expect(recentFilesManager.formatLastUsed(thirtySecondsAgo)).toBe('Just now');
+      expect(recentFilesManager.formatLastUsed(thirtySecondsAgo)).toBe(
+        'Just now',
+      );
 
       // 30 minutes ago
       const thirtyMinutesAgo = new Date(now.getTime() - 30 * 60 * 1000);
-      expect(recentFilesManager.formatLastUsed(thirtyMinutesAgo)).toBe('30m ago');
+      expect(recentFilesManager.formatLastUsed(thirtyMinutesAgo)).toBe(
+        '30m ago',
+      );
 
       // 5 hours ago
       const fiveHoursAgo = new Date(now.getTime() - 5 * 60 * 60 * 1000);
@@ -131,7 +136,9 @@ describe('RecentFilesManager', () => {
 
       // 2 months ago (should use date format)
       const twoMonthsAgo = new Date(now.getTime() - 60 * 24 * 60 * 60 * 1000);
-      expect(recentFilesManager.formatLastUsed(twoMonthsAgo)).toMatch(/\d+\/\d+\/\d+/);
+      expect(recentFilesManager.formatLastUsed(twoMonthsAgo)).toMatch(
+        /\d+\/\d+\/\d+/,
+      );
     });
 
     it('should handle edge cases for time formatting', () => {
@@ -139,7 +146,9 @@ describe('RecentFilesManager', () => {
 
       // Less than 1 minute (59 seconds)
       const almostOneMinute = new Date(now.getTime() - 59 * 1000);
-      expect(recentFilesManager.formatLastUsed(almostOneMinute)).toBe('Just now');
+      expect(recentFilesManager.formatLastUsed(almostOneMinute)).toBe(
+        'Just now',
+      );
 
       // Exactly 1 minute
       const oneMinute = new Date(now.getTime() - 60 * 1000);
@@ -170,11 +179,13 @@ describe('RecentFilesManager', () => {
 
       await recentFilesManager.addFile(testPath);
 
-      expect(mockFs.mkdir).toHaveBeenCalledWith('/home/user/.md2pdf', { recursive: true });
+      expect(mockFs.mkdir).toHaveBeenCalledWith('/home/user/.md2pdf', {
+        recursive: true,
+      });
       expect(mockFs.writeFile).toHaveBeenCalledWith(
         '/home/user/.md2pdf/recent-files.json',
         expect.stringContaining(testPath),
-        'utf-8'
+        'utf-8',
       );
     });
 
@@ -199,7 +210,7 @@ describe('RecentFilesManager', () => {
 
       // The actual error message comes from saveConfig, not addFile
       expect(consoleSpy).toHaveBeenCalledWith(
-        expect.stringContaining('Failed to save recent files config')
+        expect.stringContaining('Failed to save recent files config'),
       );
     });
 
@@ -208,7 +219,11 @@ describe('RecentFilesManager', () => {
       const existingConfig = {
         maxFiles: 10,
         files: [
-          { path: '/other/file.md', lastUsed: '2023-01-01T09:00:00Z', size: 500 },
+          {
+            path: '/other/file.md',
+            lastUsed: '2023-01-01T09:00:00Z',
+            size: 500,
+          },
           { path: testPath, lastUsed: '2023-01-01T08:00:00Z', size: 800 },
         ],
       };
@@ -288,9 +303,21 @@ describe('RecentFilesManager', () => {
       const configContent = {
         maxFiles: 10,
         files: [
-          { path: '/valid/file1.md', lastUsed: '2023-01-01T10:00:00Z', size: 1000 },
-          { path: '/invalid/file2.md', lastUsed: '2023-01-01T09:00:00Z', size: 2000 },
-          { path: '/valid/file3.md', lastUsed: '2023-01-01T08:00:00Z', size: 1500 },
+          {
+            path: '/valid/file1.md',
+            lastUsed: '2023-01-01T10:00:00Z',
+            size: 1000,
+          },
+          {
+            path: '/invalid/file2.md',
+            lastUsed: '2023-01-01T09:00:00Z',
+            size: 2000,
+          },
+          {
+            path: '/valid/file3.md',
+            lastUsed: '2023-01-01T08:00:00Z',
+            size: 1500,
+          },
         ],
       };
 
@@ -326,7 +353,13 @@ describe('RecentFilesManager', () => {
     it('should convert date strings to Date objects', async () => {
       const configContent = {
         maxFiles: 10,
-        files: [{ path: '/test/file.md', lastUsed: '2023-01-01T10:00:00Z', size: 1000 }],
+        files: [
+          {
+            path: '/test/file.md',
+            lastUsed: '2023-01-01T10:00:00Z',
+            size: 1000,
+          },
+        ],
       };
 
       mockFs.mkdir.mockResolvedValue(undefined);
@@ -344,8 +377,16 @@ describe('RecentFilesManager', () => {
       const configContent = {
         maxFiles: 10,
         files: [
-          { path: '/exists/file.md', lastUsed: '2023-01-01T10:00:00Z', size: 1000 },
-          { path: '/missing/file.md', lastUsed: '2023-01-01T09:00:00Z', size: 2000 },
+          {
+            path: '/exists/file.md',
+            lastUsed: '2023-01-01T10:00:00Z',
+            size: 1000,
+          },
+          {
+            path: '/missing/file.md',
+            lastUsed: '2023-01-01T09:00:00Z',
+            size: 2000,
+          },
         ],
       };
 
@@ -354,7 +395,9 @@ describe('RecentFilesManager', () => {
       mockFs.writeFile.mockResolvedValue(undefined);
 
       // Mock access - first file exists, second doesn't
-      mockFs.access.mockResolvedValueOnce(undefined).mockRejectedValueOnce(new Error('Not found'));
+      mockFs.access
+        .mockResolvedValueOnce(undefined)
+        .mockRejectedValueOnce(new Error('Not found'));
 
       const result = await recentFilesManager.getRecentFiles();
 
@@ -362,7 +405,7 @@ describe('RecentFilesManager', () => {
       expect(mockFs.writeFile).toHaveBeenCalledWith(
         '/home/user/.md2pdf/recent-files.json',
         expect.stringContaining('/exists/file.md'),
-        'utf-8'
+        'utf-8',
       );
     });
   });
@@ -377,7 +420,7 @@ describe('RecentFilesManager', () => {
       expect(mockFs.writeFile).toHaveBeenCalledWith(
         '/home/user/.md2pdf/recent-files.json',
         expect.stringContaining('"files": []'),
-        'utf-8'
+        'utf-8',
       );
     });
 
@@ -388,7 +431,7 @@ describe('RecentFilesManager', () => {
 
       // The actual error message comes from saveConfig, not clearRecentFiles
       expect(consoleSpy).toHaveBeenCalledWith(
-        expect.stringContaining('Failed to save recent files config')
+        expect.stringContaining('Failed to save recent files config'),
       );
     });
 
@@ -445,8 +488,13 @@ describe('RecentFilesManager', () => {
 
       await recentFilesManager.addFile('/test/file.md');
 
-      expect(mockFs.mkdir).toHaveBeenCalledWith('/home/user/.md2pdf', { recursive: true });
-      expect(mockFs.readFile).toHaveBeenCalledWith('/home/user/.md2pdf/recent-files.json', 'utf-8');
+      expect(mockFs.mkdir).toHaveBeenCalledWith('/home/user/.md2pdf', {
+        recursive: true,
+      });
+      expect(mockFs.readFile).toHaveBeenCalledWith(
+        '/home/user/.md2pdf/recent-files.json',
+        'utf-8',
+      );
     });
 
     it('should handle invalid JSON in config file', async () => {
@@ -472,7 +520,7 @@ describe('RecentFilesManager', () => {
 
       // Should still work with fallback empty config, but fail on saveConfig
       expect(consoleSpy).toHaveBeenCalledWith(
-        expect.stringContaining('Failed to save recent files config')
+        expect.stringContaining('Failed to save recent files config'),
       );
     });
   });

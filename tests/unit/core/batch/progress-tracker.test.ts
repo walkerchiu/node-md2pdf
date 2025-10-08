@@ -114,10 +114,10 @@ describe('ProgressTracker', () => {
         processingTime: 2000,
       };
       progressTracker.startFile(result1.inputPath);
-      await new Promise(resolve => setTimeout(resolve, 10)); // Small delay
+      await new Promise((resolve) => setTimeout(resolve, 10)); // Small delay
       progressTracker.completeFile(result1);
       progressTracker.startFile(result2.inputPath);
-      await new Promise(resolve => setTimeout(resolve, 10)); // Small delay
+      await new Promise((resolve) => setTimeout(resolve, 10)); // Small delay
       progressTracker.completeFile(result2);
       const progress = progressTracker.getProgress();
       expect(progress.averageProcessingTime).toBeGreaterThan(0);
@@ -130,7 +130,7 @@ describe('ProgressTracker', () => {
         processingTime: 1000,
       };
       progressTracker.startFile(result.inputPath);
-      await new Promise(resolve => setTimeout(resolve, 10)); // Small delay
+      await new Promise((resolve) => setTimeout(resolve, 10)); // Small delay
       progressTracker.completeFile(result);
       const progress = progressTracker.getProgress();
       expect(progress.estimatedTimeRemaining).toBeGreaterThan(0);
@@ -183,9 +183,9 @@ describe('ProgressTracker', () => {
   });
 
   describe('event emission', () => {
-    test('should emit progress events', done => {
+    test('should emit progress events', (done) => {
       let eventCount = 0;
-      progressTracker.on('progress', event => {
+      progressTracker.on('progress', (event) => {
         eventCount++;
         expect(event.type).toBeDefined();
         expect(event.data).toBeDefined();
@@ -219,7 +219,7 @@ describe('ProgressTracker', () => {
         processingTime: 1000,
       };
       progressTracker.startFile(result1.inputPath);
-      await new Promise(resolve => setTimeout(resolve, 50)); // Small delay
+      await new Promise((resolve) => setTimeout(resolve, 50)); // Small delay
       progressTracker.completeFile(result1);
       const result2: SingleBatchResult = {
         inputPath: '/test/file2.md',
@@ -228,7 +228,7 @@ describe('ProgressTracker', () => {
         processingTime: 1500,
       };
       progressTracker.startFile(result2.inputPath);
-      await new Promise(resolve => setTimeout(resolve, 50)); // Small delay
+      await new Promise((resolve) => setTimeout(resolve, 50)); // Small delay
       progressTracker.completeFile(result2);
       // Should now have a positive processing rate
       const rate = progressTracker.getProcessingRate();

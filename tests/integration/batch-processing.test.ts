@@ -5,7 +5,10 @@
 import { BatchProcessor } from '../../src/core/batch';
 import { FileCollector } from '../../src/core/batch/file-collector';
 import { OutputManager } from '../../src/core/batch/output-manager';
-import { BatchConversionConfig, BatchFilenameFormat } from '../../src/types/batch';
+import {
+  BatchConversionConfig,
+  BatchFilenameFormat,
+} from '../../src/types/batch';
 import type { BatchProgressEvent } from '../../src/types/batch';
 import * as fs from 'fs';
 import * as path from 'path';
@@ -17,7 +20,10 @@ describe('Batch Processing Integration', () => {
   let config: BatchConversionConfig;
 
   beforeEach(async () => {
-    batchProcessor = new BatchProcessor(new FileCollector(), new OutputManager());
+    batchProcessor = new BatchProcessor(
+      new FileCollector(),
+      new OutputManager(),
+    );
     testDir = path.join(__dirname, '../temp/batch-integration-test');
     outputDir = path.join(testDir, 'output');
     // Create test directory structure
@@ -55,14 +61,17 @@ Just a simple markdown file for testing.`,
     ];
     // Write test files
     for (const testFile of testFiles) {
-      await fs.promises.writeFile(path.join(testDir, testFile.name), testFile.content);
+      await fs.promises.writeFile(
+        path.join(testDir, testFile.name),
+        testFile.content,
+      );
     }
     // Create subdirectory with file
     const subDir = path.join(testDir, 'sub');
     await fs.promises.mkdir(subDir, { recursive: true });
     await fs.promises.writeFile(
       path.join(subDir, 'subdoc.md'),
-      `# Subdirectory Document\n\nA document in a subdirectory.`
+      `# Subdirectory Document\n\nA document in a subdirectory.`,
     );
     config = {
       inputPattern: path.join(testDir, '*.md'),
@@ -97,7 +106,7 @@ Just a simple markdown file for testing.`,
       expect(result.errors.length).toBe(0);
       // Check that PDF files were created
       const outputFiles = await fs.promises.readdir(outputDir);
-      const pdfFiles = outputFiles.filter(f => f.endsWith('.pdf'));
+      const pdfFiles = outputFiles.filter((f) => f.endsWith('.pdf'));
       expect(pdfFiles.length).toBeGreaterThan(0);
     }, 90000); // Extended timeout for batch PDF generation
     test('should handle recursive file discovery', async () => {
@@ -124,7 +133,7 @@ Just a simple markdown file for testing.`,
       // Create a problematic file
       await fs.promises.writeFile(
         path.join(testDir, 'problematic.md'),
-        '# Problematic\n\n[Invalid link](missing-file.pdf)'
+        '# Problematic\n\n[Invalid link](missing-file.pdf)',
       );
       const result = await batchProcessor.processBatch({
         ...config,
@@ -155,9 +164,9 @@ Just a simple markdown file for testing.`,
       const result = await batchProcessor.processBatch(timestampConfig);
       expect(result.success).toBe(true);
       const outputFiles = await fs.promises.readdir(outputDir);
-      const pdfFiles = outputFiles.filter(f => f.endsWith('.pdf'));
+      const pdfFiles = outputFiles.filter((f) => f.endsWith('.pdf'));
       // Check that timestamps are included in filenames
-      pdfFiles.forEach(filename => {
+      pdfFiles.forEach((filename) => {
         expect(filename).toMatch(/.*_\d+\.pdf$/);
       });
     }, 60000);
@@ -169,9 +178,9 @@ Just a simple markdown file for testing.`,
       const result = await batchProcessor.processBatch(dateConfig);
       expect(result.success).toBe(true);
       const outputFiles = await fs.promises.readdir(outputDir);
-      const pdfFiles = outputFiles.filter(f => f.endsWith('.pdf'));
+      const pdfFiles = outputFiles.filter((f) => f.endsWith('.pdf'));
       // Check that dates are included in filenames
-      pdfFiles.forEach(filename => {
+      pdfFiles.forEach((filename) => {
         expect(filename).toMatch(/.*_\d{4}-\d{2}-\d{2}\.pdf$/);
       });
     }, 60000);
@@ -181,21 +190,21 @@ Just a simple markdown file for testing.`,
     test('should provide progress updates during processing', async () => {
       const progressEvents: BatchProgressEvent[] = [];
       const result = await batchProcessor.processBatch(config, {
-        onProgress: event => {
+        onProgress: (event) => {
           progressEvents.push(event);
         },
       });
       expect(result.success).toBe(true);
       expect(progressEvents.length).toBeGreaterThan(0);
       // Should have start and complete events at minimum
-      const eventTypes = progressEvents.map(e => e.type);
+      const eventTypes = progressEvents.map((e) => e.type);
       expect(eventTypes).toContain('start');
       expect(eventTypes).toContain('complete');
     }, 60000);
     test('should track individual file completion', async () => {
       const completedFiles: string[] = [];
       const result = await batchProcessor.processBatch(config, {
-        onFileComplete: result => {
+        onFileComplete: (result) => {
           if (result.success) {
             completedFiles.push(result.inputPath);
           }
@@ -231,7 +240,7 @@ Just a simple markdown file for testing.`,
       // Copy a file to create potential naming conflict
       await fs.promises.copyFile(
         path.join(testDir, 'document1.md'),
-        path.join(subDir, 'document1.md')
+        path.join(subDir, 'document1.md'),
       );
       const result = await batchProcessor.processBatch({
         ...config,
@@ -241,7 +250,7 @@ Just a simple markdown file for testing.`,
       expect(result.success).toBe(true);
       // Check that files were processed without overwriting
       const outputFiles = await fs.promises.readdir(outputDir);
-      const pdfFiles = outputFiles.filter(f => f.endsWith('.pdf'));
+      const pdfFiles = outputFiles.filter((f) => f.endsWith('.pdf'));
       expect(pdfFiles.length).toBeGreaterThan(1);
     }, 60000);
   });

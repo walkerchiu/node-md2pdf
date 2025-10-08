@@ -64,7 +64,9 @@ describe('SmartConversionMode', () => {
     jest.spyOn(process.stdout, 'write').mockImplementation(() => true);
 
     // Mock timers to prevent spinner from running in tests
-    jest.spyOn(global, 'setInterval').mockImplementation((() => 'fake-interval-id') as any);
+    jest
+      .spyOn(global, 'setInterval')
+      .mockImplementation((() => 'fake-interval-id') as any);
     jest.spyOn(global, 'clearInterval').mockImplementation(() => {});
 
     // Create mock analysis object
@@ -165,13 +167,22 @@ describe('SmartConversionMode', () => {
       // Mock user selecting quick conversion and confirming
       mockPrompt
         .mockResolvedValueOnce({ selectedIndex: 0 }) // Select quick conversion
-        .mockResolvedValueOnce({ confirmed: true, finalOutputPath: '/test/output.pdf' }); // Confirm conversion
+        .mockResolvedValueOnce({
+          confirmed: true,
+          finalOutputPath: '/test/output.pdf',
+        }); // Confirm conversion
 
       await smartConversionMode.start(testFilePath);
 
-      expect(mockSmartDefaultsService.analyzeContent).toHaveBeenCalledWith(testFilePath);
-      expect(console.log).toHaveBeenCalledWith(expect.stringContaining('Smart Conversion Mode'));
-      expect(console.log).toHaveBeenCalledWith(expect.stringContaining('Content Analysis Results'));
+      expect(mockSmartDefaultsService.analyzeContent).toHaveBeenCalledWith(
+        testFilePath,
+      );
+      expect(console.log).toHaveBeenCalledWith(
+        expect.stringContaining('Smart Conversion Mode'),
+      );
+      expect(console.log).toHaveBeenCalledWith(
+        expect.stringContaining('Content Analysis Results'),
+      );
     });
 
     it('should handle user cancellation', async () => {
@@ -179,12 +190,17 @@ describe('SmartConversionMode', () => {
 
       mockPrompt
         .mockResolvedValueOnce({ selectedIndex: 0 }) // Select quick conversion
-        .mockResolvedValueOnce({ confirmed: false, finalOutputPath: '/test/output.pdf' }); // Cancel conversion
+        .mockResolvedValueOnce({
+          confirmed: false,
+          finalOutputPath: '/test/output.pdf',
+        }); // Cancel conversion
 
       await smartConversionMode.start(testFilePath);
 
       expect(mockFileProcessorService.processFile).not.toHaveBeenCalled();
-      expect(console.warn).toHaveBeenCalledWith(expect.stringContaining('Conversion cancelled'));
+      expect(console.warn).toHaveBeenCalledWith(
+        expect.stringContaining('Conversion cancelled'),
+      );
     });
 
     it('should handle file selection when no path provided', async () => {
@@ -193,13 +209,18 @@ describe('SmartConversionMode', () => {
       mockPrompt
         .mockResolvedValueOnce({ method: 'browse' }) // Select browse
         .mockResolvedValueOnce({ selectedIndex: 0 }) // Select conversion mode
-        .mockResolvedValueOnce({ confirmed: false, finalOutputPath: '/manual/test.pdf' }); // Cancel
+        .mockResolvedValueOnce({
+          confirmed: false,
+          finalOutputPath: '/manual/test.pdf',
+        }); // Cancel
 
       await smartConversionMode.start();
 
       expect(mockPrompt).toHaveBeenCalledWith([
         expect.objectContaining({
-          message: expect.stringContaining('How would you like to select a file?'),
+          message: expect.stringContaining(
+            'How would you like to select a file?',
+          ),
         }),
       ]);
     });
@@ -210,7 +231,10 @@ describe('SmartConversionMode', () => {
       mockPrompt
         .mockResolvedValueOnce({ method: 'browse' }) // Select browse
         .mockResolvedValueOnce({ selectedIndex: 0 }) // Select conversion mode
-        .mockResolvedValueOnce({ confirmed: false, finalOutputPath: '/browse/test.pdf' }); // Cancel
+        .mockResolvedValueOnce({
+          confirmed: false,
+          finalOutputPath: '/browse/test.pdf',
+        }); // Cancel
 
       await smartConversionMode.start();
 
@@ -224,7 +248,9 @@ describe('SmartConversionMode', () => {
       await smartConversionMode.start();
 
       expect(mockBrowseDirectory).toHaveBeenCalled();
-      expect(console.log).toHaveBeenCalledWith(expect.stringContaining('Returning to main menu'));
+      expect(console.log).toHaveBeenCalledWith(
+        expect.stringContaining('Returning to main menu'),
+      );
     });
 
     it('should complete successful conversion', async () => {
@@ -236,17 +262,20 @@ describe('SmartConversionMode', () => {
 
       mockPrompt
         .mockResolvedValueOnce({ selectedIndex: 0 }) // Select quick conversion
-        .mockResolvedValueOnce({ confirmed: true, finalOutputPath: '/test/output.pdf' }); // Confirm conversion
+        .mockResolvedValueOnce({
+          confirmed: true,
+          finalOutputPath: '/test/output.pdf',
+        }); // Confirm conversion
 
       await smartConversionMode.start(testFilePath);
 
       expect(mockFileProcessorService.processFile).toHaveBeenCalledWith(
         testFilePath,
-        expect.objectContaining({ outputPath: '/test/output.pdf' })
+        expect.objectContaining({ outputPath: '/test/output.pdf' }),
       );
 
       expect(console.log).toHaveBeenCalledWith(
-        expect.stringContaining('Conversion completed successfully')
+        expect.stringContaining('Conversion completed successfully'),
       );
     });
 
@@ -255,14 +284,23 @@ describe('SmartConversionMode', () => {
 
       mockPrompt
         .mockResolvedValueOnce({ selectedIndex: 0 })
-        .mockResolvedValueOnce({ confirmed: false, finalOutputPath: '/test/output.pdf' });
+        .mockResolvedValueOnce({
+          confirmed: false,
+          finalOutputPath: '/test/output.pdf',
+        });
 
       await smartConversionMode.start(testFilePath);
 
-      expect(console.log).toHaveBeenCalledWith(expect.stringContaining('Content Analysis Results'));
-      expect(console.log).toHaveBeenCalledWith(expect.stringContaining('1,000')); // Word count with formatting
+      expect(console.log).toHaveBeenCalledWith(
+        expect.stringContaining('Content Analysis Results'),
+      );
+      expect(console.log).toHaveBeenCalledWith(
+        expect.stringContaining('1,000'),
+      ); // Word count with formatting
       expect(console.log).toHaveBeenCalledWith(expect.stringContaining('5')); // Estimated pages
-      expect(console.log).toHaveBeenCalledWith(expect.stringContaining('English')); // Language
+      expect(console.log).toHaveBeenCalledWith(
+        expect.stringContaining('English'),
+      ); // Language
     });
 
     it('should handle manual file path entry', async () => {
@@ -278,12 +316,17 @@ describe('SmartConversionMode', () => {
         .mockResolvedValueOnce({ method: 'manual' }) // Select manual entry
         .mockResolvedValueOnce({ filePath: testFilePath }) // Enter file path
         .mockResolvedValueOnce({ selectedIndex: 0 }) // Select conversion mode
-        .mockResolvedValueOnce({ confirmed: false, finalOutputPath: '/test/manual-output.pdf' }); // Cancel
+        .mockResolvedValueOnce({
+          confirmed: false,
+          finalOutputPath: '/test/manual-output.pdf',
+        }); // Cancel
 
       await smartConversionMode.start();
 
       expect(mockPrompt).toHaveBeenCalledWith(
-        expect.objectContaining({ message: expect.stringContaining('Enter the full path') })
+        expect.objectContaining({
+          message: expect.stringContaining('Enter the full path'),
+        }),
       );
     });
 
@@ -293,14 +336,17 @@ describe('SmartConversionMode', () => {
       mockPrompt
         .mockResolvedValueOnce({ selectedIndex: 2 }) // Select "Choose from Presets"
         .mockResolvedValueOnce({ presetName: 'Academic' }) // Select Academic preset
-        .mockResolvedValueOnce({ confirmed: false, finalOutputPath: '/test/output.pdf' }); // Cancel
+        .mockResolvedValueOnce({
+          confirmed: false,
+          finalOutputPath: '/test/output.pdf',
+        }); // Cancel
 
       await smartConversionMode.start(testFilePath);
 
       expect(mockPrompt).toHaveBeenCalledWith(
         expect.objectContaining({
           message: expect.stringContaining('Select a preset configuration'),
-        })
+        }),
       );
     });
   });
@@ -313,7 +359,9 @@ describe('SmartConversionMode', () => {
       await smartConversionMode.start('/test/file.md');
 
       expect(mockLogger.error).toHaveBeenCalledWith(
-        expect.stringContaining('Smart conversion failed: Error: Analysis failed')
+        expect.stringContaining(
+          'Smart conversion failed: Error: Analysis failed',
+        ),
       );
     });
 
@@ -323,11 +371,16 @@ describe('SmartConversionMode', () => {
 
       mockPrompt
         .mockResolvedValueOnce({ selectedIndex: 0 })
-        .mockResolvedValueOnce({ confirmed: true, finalOutputPath: '/test/output.pdf' });
+        .mockResolvedValueOnce({
+          confirmed: true,
+          finalOutputPath: '/test/output.pdf',
+        });
 
       await smartConversionMode.start('/test/file.md');
 
-      expect(console.error).toHaveBeenCalledWith(expect.stringContaining('Conversion failed'));
+      expect(console.error).toHaveBeenCalledWith(
+        expect.stringContaining('Conversion failed'),
+      );
     });
 
     it('should handle file browser errors gracefully', async () => {
@@ -338,15 +391,18 @@ describe('SmartConversionMode', () => {
         .mockResolvedValueOnce({ method: 'browse' }) // Select browse
         .mockResolvedValueOnce({ filePath: '/fallback/test.md' }) // Manual fallback
         .mockResolvedValueOnce({ selectedIndex: 0 })
-        .mockResolvedValueOnce({ confirmed: false, finalOutputPath: '/fallback/test.pdf' });
+        .mockResolvedValueOnce({
+          confirmed: false,
+          finalOutputPath: '/fallback/test.pdf',
+        });
 
       await smartConversionMode.start();
 
       expect(mockLogger.error).toHaveBeenCalledWith(
-        expect.stringContaining('File browsing failed: Error: Browser error')
+        expect.stringContaining('File browsing failed: Error: Browser error'),
       );
       expect(console.warn).toHaveBeenCalledWith(
-        expect.stringContaining('File browser unavailable')
+        expect.stringContaining('File browser unavailable'),
       );
     });
   });

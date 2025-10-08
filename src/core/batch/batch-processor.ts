@@ -3,13 +3,11 @@
  * Orchestrates the entire batch conversion workflow
  */
 
-import * as path from 'path';
 import * as fs from 'fs';
-import { MarkdownParser } from '../parser';
-import { PDFGenerator } from '../pdf';
-import { FileCollector } from './file-collector';
-import { ProgressTracker } from './progress-tracker';
-import { OutputManager } from './output-manager';
+import * as path from 'path';
+
+import { ErrorType, MD2PDFError } from '../../types';
+import { Heading } from '../../types';
 import {
   BatchConversionConfig,
   BatchConversionResult,
@@ -18,9 +16,13 @@ import {
   BatchFileInfo,
   BatchProcessingOptions,
 } from '../../types/batch';
-import { ErrorType, MD2PDFError } from '../../types';
-import { Heading } from '../../types';
+import { MarkdownParser } from '../parser';
+import { PDFGenerator } from '../pdf';
 import { StyleOptions } from '../pdf/types';
+
+import { FileCollector } from './file-collector';
+import { OutputManager } from './output-manager';
+import { ProgressTracker } from './progress-tracker';
 
 export class BatchProcessor {
   private fileCollector: FileCollector;
@@ -95,9 +97,9 @@ export class BatchProcessor {
       return {
         success: results.results.length > 0,
         totalFiles: allFiles.length,
-        successfulFiles: results.results.filter(r => r.success).length,
+        successfulFiles: results.results.filter((r) => r.success).length,
         failedFiles:
-          results.results.filter(r => !r.success).length +
+          results.results.filter((r) => !r.success).length +
           invalidFiles.length +
           outputInvalidFiles.length,
         skippedFiles: 0,
@@ -121,7 +123,7 @@ export class BatchProcessor {
             error: this.createError(
               ErrorType.SYSTEM_ERROR,
               `Batch processing failed: ${error instanceof Error ? error.message : String(error)}`,
-              { config }
+              { config },
             ),
             canRetry: true,
           },
@@ -225,7 +227,10 @@ export class BatchProcessor {
       const parser = new MarkdownParser();
       const parsed = parser.parseFile(file.inputPath);
       // Read original content for processing
-      const originalContent = await fs.promises.readFile(file.inputPath, 'utf-8');
+      const originalContent = await fs.promises.readFile(
+        file.inputPath,
+        'utf-8',
+      );
       // Generate PDF
       const pdfGenerator = new PDFGenerator({
         margin: {
@@ -264,11 +269,17 @@ export class BatchProcessor {
           fontFamily: 'Noto Sans CJK SC, Arial, sans-serif',
         };
       }
-      const result = await pdfGenerator.generatePDF(parsed.content, file.outputPath, pdfOptions);
+      const result = await pdfGenerator.generatePDF(
+        parsed.content,
+        file.outputPath,
+        pdfOptions,
+      );
       await pdfGenerator.close();
       const processingTime = Date.now() - startTime;
       const stats = await fs.promises.stat(file.inputPath);
-      const outputStats = result.success ? await fs.promises.stat(file.outputPath) : null;
+      const outputStats = result.success
+        ? await fs.promises.stat(file.outputPath)
+        : null;
       const singleResult: SingleBatchResult = {
         inputPath: file.inputPath,
         outputPath: file.outputPath,
@@ -278,7 +289,7 @@ export class BatchProcessor {
           : this.createError(
               ErrorType.PDF_GENERATION_ERROR,
               result.error || 'PDF generation failed',
-              { inputPath: file.inputPath, outputPath: file.outputPath }
+              { inputPath: file.inputPath, outputPath: file.outputPath },
             ),
         processingTime,
         stats:
@@ -306,7 +317,7 @@ export class BatchProcessor {
       const conversionError = this.createError(
         ErrorType.SYSTEM_ERROR,
         `File processing failed: ${error instanceof Error ? error.message : String(error)}`,
-        { inputPath: file.inputPath, outputPath: file.outputPath }
+        { inputPath: file.inputPath, outputPath: file.outputPath },
       );
       const singleResult: SingleBatchResult = {
         inputPath: file.inputPath,
@@ -350,7 +361,7 @@ export class BatchProcessor {
     type: ErrorType,
     message: string,
     details?: Record<string, unknown>,
-    suggestions?: string[]
+    suggestions?: string[],
   ): MD2PDFError {
     const error = new Error(message) as MD2PDFError;
     error.type = type;

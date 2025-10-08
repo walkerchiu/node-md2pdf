@@ -40,13 +40,17 @@ describe('ServiceContainer', () => {
 
   describe('Service Resolution', () => {
     it('should resolve factory services', () => {
-      container.register('factory', (): { type: string } => ({ type: 'factory' }));
+      container.register('factory', (): { type: string } => ({
+        type: 'factory',
+      }));
       const result = container.resolve('factory');
       expect(result).toEqual({ type: 'factory' });
     });
 
     it('should throw error for non-existent service', () => {
-      expect(() => container.resolve('nonexistent')).toThrow(ServiceNotFoundError);
+      expect(() => container.resolve('nonexistent')).toThrow(
+        ServiceNotFoundError,
+      );
     });
 
     it('should return undefined for tryResolve with non-existent service', () => {
@@ -55,8 +59,8 @@ describe('ServiceContainer', () => {
     });
 
     it('should detect circular dependencies', () => {
-      container.register('a', c => ({ b: c.resolve('b') }));
-      container.register('b', c => ({ a: c.resolve('a') }));
+      container.register('a', (c) => ({ b: c.resolve('b') }));
+      container.register('b', (c) => ({ a: c.resolve('a') }));
       expect(() => container.resolve('a')).toThrow(CircularDependencyError);
     });
   });

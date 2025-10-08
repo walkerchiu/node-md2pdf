@@ -27,15 +27,19 @@ describe('ChromeHeadlessPDFEngine', () => {
     stderr: EventEmitter;
     kill: jest.Mock;
   };
-  const sampleOptions = { timeout: 30000, retries: 3, concurrent: false } as unknown as any;
+  const sampleOptions = {
+    timeout: 30000,
+    retries: 3,
+    concurrent: false,
+  } as unknown as any;
 
   beforeEach(() => {
     jest.clearAllMocks();
 
     // Setup default mocks
     mockTmpdir.mockReturnValue('/tmp');
-    mockPath.dirname.mockImplementation(_filePath => '/output/dir');
-    mockPath.resolve.mockImplementation(filePath => `/resolved${filePath}`);
+    mockPath.dirname.mockImplementation((_filePath) => '/output/dir');
+    mockPath.resolve.mockImplementation((filePath) => `/resolved${filePath}`);
     mockPath.join.mockImplementation((...paths) => paths.join('/'));
 
     // Mock child process
@@ -43,7 +47,11 @@ describe('ChromeHeadlessPDFEngine', () => {
       stdout: new EventEmitter(),
       stderr: new EventEmitter(),
       kill: jest.fn(),
-    }) as unknown as ChildProcess & { stdout: EventEmitter; stderr: EventEmitter; kill: jest.Mock };
+    }) as unknown as ChildProcess & {
+      stdout: EventEmitter;
+      stderr: EventEmitter;
+      kill: jest.Mock;
+    };
     mockSpawn.mockReturnValue(mockChildProcess as any);
 
     // Mock filesystem operations
@@ -87,7 +95,7 @@ describe('ChromeHeadlessPDFEngine', () => {
 
       // Verify Chrome executable search
       expect(mockExistsSync).toHaveBeenCalledWith(
-        '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome'
+        '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
       );
     });
 
@@ -95,7 +103,7 @@ describe('ChromeHeadlessPDFEngine', () => {
       mockExistsSync.mockReturnValue(false);
 
       await expect(engine.initialize()).rejects.toThrow(
-        'Chrome executable not found. Please install Google Chrome or Chromium.'
+        'Chrome executable not found. Please install Google Chrome or Chromium.',
       );
     });
 
@@ -144,7 +152,7 @@ describe('ChromeHeadlessPDFEngine', () => {
 
       expect(health.isHealthy).toBe(false);
       expect(health.errors).toContain(
-        'Health check failed: Chrome executable not found. Please install Google Chrome or Chromium.'
+        'Health check failed: Chrome executable not found. Please install Google Chrome or Chromium.',
       );
     });
 
@@ -170,7 +178,8 @@ describe('ChromeHeadlessPDFEngine', () => {
 
   describe('PDF Generation', () => {
     const sampleContext: PDFGenerationContext = {
-      htmlContent: '<html><body><h1>Test Document</h1><p>Content here</p></body></html>',
+      htmlContent:
+        '<html><body><h1>Test Document</h1><p>Content here</p></body></html>',
       outputPath: '/output/test.pdf',
       title: 'Test Document',
     };
@@ -242,7 +251,9 @@ describe('ChromeHeadlessPDFEngine', () => {
 
       await generatePromise;
 
-      expect(mockMkdirSync).toHaveBeenCalledWith('/output/dir', { recursive: true });
+      expect(mockMkdirSync).toHaveBeenCalledWith('/output/dir', {
+        recursive: true,
+      });
     });
 
     it('should validate PDF output path extension', async () => {
@@ -256,12 +267,17 @@ describe('ChromeHeadlessPDFEngine', () => {
         return mockChildProcess;
       });
 
-      const invalidContext = { ...sampleContext, outputPath: '/output/test.txt' };
+      const invalidContext = {
+        ...sampleContext,
+        outputPath: '/output/test.txt',
+      };
 
       const result = await engine.generatePDF(invalidContext, sampleOptions);
 
       expect(result.success).toBe(false);
-      expect(result.error).toContain('Output path must end with .pdf extension');
+      expect(result.error).toContain(
+        'Output path must end with .pdf extension',
+      );
     });
 
     it('should pass correct Chrome arguments for PDF generation', async () => {
@@ -320,7 +336,12 @@ describe('ChromeHeadlessPDFEngine', () => {
       const contextWithTOC: PDFGenerationContext = {
         htmlContent: '<html><body>Test</body></html>',
         outputPath: '/output/test.pdf',
-        toc: { enabled: true, maxDepth: 3, includePageNumbers: true, title: 'Table of Contents' },
+        toc: {
+          enabled: true,
+          maxDepth: 3,
+          includePageNumbers: true,
+          title: 'Table of Contents',
+        },
       };
 
       const canHandle = await engine.canHandle(contextWithTOC);
@@ -369,7 +390,7 @@ describe('ChromeHeadlessPDFEngine', () => {
       });
     });
 
-    it('should track uptime correctly', done => {
+    it('should track uptime correctly', (done) => {
       const initialMetrics = engine.getMetrics();
       const initialUptime = initialMetrics.uptime;
 
