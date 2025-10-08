@@ -123,7 +123,12 @@ describe('PDFTemplates', () => {
 
     it('should include Chinese CSS when enableChineseSupport is true', () => {
       const content = '<h1>Test</h1>';
-      const html = PDFTemplates.getFullHTML(content, undefined, undefined, true);
+      const html = PDFTemplates.getFullHTML(
+        content,
+        undefined,
+        undefined,
+        true,
+      );
 
       expect(html).toContain('font-family: system-ui');
       expect(html).toContain('Noto Sans CJK SC');
@@ -172,7 +177,7 @@ describe('PDFTemplates', () => {
       const html = PDFTemplates.getFullHTML('<h1>Test</h1>');
 
       expect(html).toContain(
-        '<meta name="viewport" content="width=device-width, initial-scale=1.0">'
+        '<meta name="viewport" content="width=device-width, initial-scale=1.0">',
       );
     });
 
@@ -187,7 +192,12 @@ describe('PDFTemplates', () => {
   describe('CSS Integration', () => {
     it('should properly combine default and Chinese CSS', () => {
       const content = '<h1>測試</h1>';
-      const html = PDFTemplates.getFullHTML(content, undefined, undefined, true);
+      const html = PDFTemplates.getFullHTML(
+        content,
+        undefined,
+        undefined,
+        true,
+      );
 
       // Should contain both default styles and Chinese styles when enableChineseSupport is true
       expect(html).toContain('font-family: system-ui'); // Default CSS
@@ -221,7 +231,11 @@ describe('PDFTemplates', () => {
       const tocHTML =
         '<div class="toc-container"><h2>目錄</h2><ul><li><a href="#heading1">Test Heading</a></li></ul></div>';
       const content = '<h1 id="heading1">Test Heading</h1><p>Content</p>';
-      const html = PDFTemplates.getFullHTMLWithTOC(tocHTML, content, 'Test Document');
+      const html = PDFTemplates.getFullHTMLWithTOC(
+        tocHTML,
+        content,
+        'Test Document',
+      );
 
       expect(html).toContain('<!DOCTYPE html>');
       expect(html).toContain('<title>Test Document</title>');
@@ -244,7 +258,13 @@ describe('PDFTemplates', () => {
       const tocHTML = '<div class="toc-container">TOC</div>';
       const content = '<h1>Test</h1>';
       const customCSS = '.custom { color: red; }';
-      const html = PDFTemplates.getFullHTMLWithTOC(tocHTML, content, 'Title', customCSS, true);
+      const html = PDFTemplates.getFullHTMLWithTOC(
+        tocHTML,
+        content,
+        'Title',
+        customCSS,
+        true,
+      );
 
       expect(html).toContain(customCSS);
       expect(html).toContain('toc-container'); // TOC CSS should be included
@@ -256,7 +276,13 @@ describe('PDFTemplates', () => {
       const tocHTML = '<div class="toc-container">TOC</div>';
       const content = '<h1>Test</h1>';
       const customCSS = '.custom { color: red; }';
-      const html = PDFTemplates.getFullHTMLWithTOC(tocHTML, content, 'Title', customCSS, false);
+      const html = PDFTemplates.getFullHTMLWithTOC(
+        tocHTML,
+        content,
+        'Title',
+        customCSS,
+        false,
+      );
 
       expect(html).toContain(customCSS);
       expect(html).toContain('toc-container'); // TOC CSS should be included
@@ -266,7 +292,10 @@ describe('PDFTemplates', () => {
 
     it('should handle null TOC HTML', () => {
       const content = '<h1>Test</h1>';
-      const html = PDFTemplates.getFullHTMLWithTOC(null as unknown as string, content);
+      const html = PDFTemplates.getFullHTMLWithTOC(
+        null as unknown as string,
+        content,
+      );
 
       expect(html).toContain(content);
       expect(html).toContain('<!DOCTYPE html>');

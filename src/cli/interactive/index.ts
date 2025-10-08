@@ -49,16 +49,14 @@ export class InteractiveMode {
       );
       console.log(chalk.cyan('📋 Interactive Markdown to PDF Configuration'));
       this.logger.info(
-        chalk.cyan('📋 Interactive Markdown to PDF Configuration'),
-      );
-      this.logger.info(
         chalk.gray(
           'Please answer the following questions to complete the conversion setup:',
         ),
       );
       console.log(
-        // eslint-disable-next-line prettier/prettier
-        chalk.gray('Please answer the following questions to complete the conversion setup:')
+        chalk.gray(
+          'Please answer the following questions to complete the conversion setup:',
+        ),
       );
       this.logger.info('');
       console.log('');
@@ -154,7 +152,9 @@ export class InteractiveMode {
           } else {
             FileSearchUI.displayFiles(matches);
             const inquirer = await import('inquirer');
-            const { chosen } = await (inquirer as InquirerModule).default.prompt<{
+            const { chosen } = await (
+              inquirer as InquirerModule
+            ).default.prompt<{
               chosen: string;
             }>([
               {
@@ -168,21 +168,32 @@ export class InteractiveMode {
             selectedInputPath = chosen;
           }
         } else {
-          console.log(chalk.red('❌ Invalid Markdown file path. Please check:'));
+          console.log(
+            chalk.red('❌ Invalid Markdown file path. Please check:'),
+          );
           console.log(chalk.red('   • File exists'));
-          console.log(chalk.red('   • File has .md, .markdown, .mdown, or .mkd extension'));
+          console.log(
+            chalk.red(
+              '   • File has .md, .markdown, .mdown, or .mkd extension',
+            ),
+          );
 
           // Ask user to retry or exit
           const inquirer2 = await import('inquirer');
-          const { action } = await inquirer2.default.prompt<{ action: string }>({
-            type: 'list',
-            name: 'action',
-            message: 'What would you like to do?',
-            choices: [
-              { name: '✏️  Try entering a different file path', value: 'retry' },
-              { name: '↩️  Return to Main Menu', value: 'exit' },
-            ],
-          });
+          const { action } = await inquirer2.default.prompt<{ action: string }>(
+            {
+              type: 'list',
+              name: 'action',
+              message: 'What would you like to do?',
+              choices: [
+                {
+                  name: '✏️  Try entering a different file path',
+                  value: 'retry',
+                },
+                { name: '↩️  Return to Main Menu', value: 'exit' },
+              ],
+            },
+          );
 
           if (action === 'exit') {
             this.logger.info('User chose to Return to Main Menu');
@@ -207,7 +218,9 @@ export class InteractiveMode {
     }
 
     // Then prompt remaining options, using the provided inputPath to compute defaults
-    const remaining = await (inquirer as InquirerModule).default.prompt<ConversionConfig>([
+    const remaining = await (
+      inquirer as InquirerModule
+    ).default.prompt<ConversionConfig>([
       {
         type: 'input',
         name: 'outputPath',
@@ -215,7 +228,8 @@ export class InteractiveMode {
         // Accept answers parameter so tests can call the default function with an answers object
         default: (answers: { inputPath?: string } = {}): string => {
           // Prefer explicit answers.inputPath (used in tests) before falling back to selectedInputPath
-          const input = answers.inputPath || selectedInputPath || inputPath || '';
+          const input =
+            answers.inputPath || selectedInputPath || inputPath || '';
           return input.replace(/\.(md|markdown)$/, '.pdf');
         },
       },
@@ -250,7 +264,7 @@ export class InteractiveMode {
 
     const combined = Object.assign(
       { inputPath: selectedInputPath },
-      remaining as Partial<ConversionConfig>
+      remaining as Partial<ConversionConfig>,
     );
     return combined as ConversionConfig;
   }
@@ -285,16 +299,16 @@ export class InteractiveMode {
     console.log('');
 
     const inquirer = await import('inquirer');
-    const { confirmed } = await (inquirer as InquirerModule).default.prompt<{ confirmed: boolean }>(
-      [
-        {
-          type: 'confirm',
-          name: 'confirmed',
-          message: 'Confirm and start conversion?',
-          default: true,
-        },
-      ]
-    );
+    const { confirmed } = await (inquirer as InquirerModule).default.prompt<{
+      confirmed: boolean;
+    }>([
+      {
+        type: 'confirm',
+        name: 'confirmed',
+        message: 'Confirm and start conversion?',
+        default: true,
+      },
+    ]);
 
     return confirmed;
   }

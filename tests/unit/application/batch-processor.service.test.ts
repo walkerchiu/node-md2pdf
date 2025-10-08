@@ -11,7 +11,10 @@ import {
   IFileProcessorService,
   FileProcessingOptions,
 } from '../../../src/application/services/file-processor.service';
-import { BatchConversionConfig, BatchFilenameFormat } from '../../../src/types/batch';
+import {
+  BatchConversionConfig,
+  BatchFilenameFormat,
+} from '../../../src/types/batch';
 import type { ILogger } from '../../../src/infrastructure/logging/types';
 import type { IErrorHandler } from '../../../src/infrastructure/error/types';
 import type { IConfigManager } from '../../../src/infrastructure/config/types';
@@ -184,7 +187,7 @@ describe('BatchProcessorService', () => {
       mockConfigManager,
       mockFileSystemManager,
       mockFileProcessorService,
-      defaultMockCollector
+      defaultMockCollector,
     );
   });
 
@@ -195,7 +198,7 @@ describe('BatchProcessorService', () => {
   describe('processBatch', () => {
     it('should process batch successfully with default options', async () => {
       const result = (await service.processBatch(
-        sampleBatchConfig
+        sampleBatchConfig,
       )) as unknown as TestBatchProcessingResult;
 
       expect(result).toMatchObject({
@@ -211,10 +214,10 @@ describe('BatchProcessorService', () => {
       expect(result.processingTime).toBeGreaterThanOrEqual(0);
 
       expect(mockLogger.info).toHaveBeenCalledWith(
-        `Starting batch processing: ${sampleBatchConfig.inputPattern}`
+        `Starting batch processing: ${sampleBatchConfig.inputPattern}`,
       );
       expect(mockLogger.info).toHaveBeenCalledWith(
-        expect.stringContaining('Batch processing completed:')
+        expect.stringContaining('Batch processing completed:'),
       );
     });
 
@@ -222,20 +225,24 @@ describe('BatchProcessorService', () => {
       const result = (await service.processBatch(
         sampleBatchConfig,
         sampleFileOptions,
-        sampleBatchOptions
+        sampleBatchOptions,
       )) as unknown as TestBatchProcessingResult;
 
       expect(result.success).toBe(true);
       expect(mockLogger.info).toHaveBeenCalledWith(
-        `Starting batch processing: ${sampleBatchConfig.inputPattern}`
+        `Starting batch processing: ${sampleBatchConfig.inputPattern}`,
       );
     });
 
     it('should validate batch configuration before processing', async () => {
       await service.processBatch(sampleBatchConfig);
 
-      expect(mockLogger.debug).toHaveBeenCalledWith('Validating batch configuration');
-      expect(mockLogger.info).toHaveBeenCalledWith('Batch configuration validation passed');
+      expect(mockLogger.debug).toHaveBeenCalledWith(
+        'Validating batch configuration',
+      );
+      expect(mockLogger.info).toHaveBeenCalledWith(
+        'Batch configuration validation passed',
+      );
     });
 
     it('should handle batch processing errors', async () => {
@@ -245,11 +252,13 @@ describe('BatchProcessorService', () => {
         inputPattern: '', // Empty pattern should cause validation failure
       };
 
-      await expect(service.processBatch(invalidConfig)).rejects.toThrow(MD2PDFError);
+      await expect(service.processBatch(invalidConfig)).rejects.toThrow(
+        MD2PDFError,
+      );
 
       expect(mockErrorHandler.handleError).toHaveBeenCalledWith(
         expect.any(MD2PDFError),
-        'BatchProcessorService.validateBatchConfig'
+        'BatchProcessorService.validateBatchConfig',
       );
     });
 
@@ -259,7 +268,7 @@ describe('BatchProcessorService', () => {
       await service.processBatch(sampleBatchConfig);
 
       expect(mockFileSystemManager.createDirectory).toHaveBeenCalledWith(
-        sampleBatchConfig.outputDirectory
+        sampleBatchConfig.outputDirectory,
       );
     });
 
@@ -270,7 +279,7 @@ describe('BatchProcessorService', () => {
       mockDateNow.mockReturnValueOnce(1050); // End time
 
       const result = (await service.processBatch(
-        sampleBatchConfig
+        sampleBatchConfig,
       )) as unknown as TestBatchProcessingResult;
 
       expect(result.processingTime).toBe(50);
@@ -285,7 +294,11 @@ describe('BatchProcessorService', () => {
       };
 
       try {
-        await service.processBatch(errorConfig, sampleFileOptions, sampleBatchOptions);
+        await service.processBatch(
+          errorConfig,
+          sampleFileOptions,
+          sampleBatchOptions,
+        );
       } catch (error) {
         expect(error).toBeInstanceOf(MD2PDFError);
         const wrappedError = error as MD2PDFError;
@@ -308,7 +321,8 @@ describe('BatchProcessorService', () => {
           },
         ]),
       };
-      (service as unknown as ServiceWithCollector).fileCollector = mockFileCollector;
+      (service as unknown as ServiceWithCollector).fileCollector =
+        mockFileCollector;
 
       // Make fileProcessorService return a successful result for the file
       const mockResult: TestFileProcessingResult = {
@@ -322,17 +336,19 @@ describe('BatchProcessorService', () => {
       };
 
       mockFileProcessorService.processFile.mockResolvedValueOnce(
-        JSON.parse(JSON.stringify(mockResult)) as unknown as ProcessFileReturn
+        JSON.parse(JSON.stringify(mockResult)) as unknown as ProcessFileReturn,
       );
 
       // Spy on FileCollector prototype to return our found files to avoid fs.existsSync checks
       // Ensure the injected collector returns our found files
       (service as unknown as ServiceWithCollector).fileCollector = {
-        collectFiles: jest.fn().mockResolvedValue(foundFiles as unknown as BatchFileInfo[]),
+        collectFiles: jest
+          .fn()
+          .mockResolvedValue(foundFiles as unknown as BatchFileInfo[]),
       };
 
       const result = (await service.processBatch(
-        sampleBatchConfig
+        sampleBatchConfig,
       )) as unknown as TestBatchProcessingResult;
 
       expect(result.totalFiles).toBe(1);
@@ -354,9 +370,12 @@ describe('BatchProcessorService', () => {
           },
         ]),
       };
-      (service as unknown as ServiceWithCollector).fileCollector = mockFileCollector;
+      (service as unknown as ServiceWithCollector).fileCollector =
+        mockFileCollector;
 
-      mockFileProcessorService.processFile.mockRejectedValue(new Error('processing failed'));
+      mockFileProcessorService.processFile.mockRejectedValue(
+        new Error('processing failed'),
+      );
 
       const result = (await service.processBatch(sampleBatchConfig, undefined, {
         continueOnError: false,
@@ -384,7 +403,10 @@ describe('BatchProcessorService', () => {
         .spyOn(fs, 'existsSync')
         .mockImplementation((...args: unknown[]) => {
           const filePath = args[0] as string;
-          return inputFiles.includes(filePath) || inputFiles.some(f => filePath.endsWith(f));
+          return (
+            inputFiles.includes(filePath) ||
+            inputFiles.some((f) => filePath.endsWith(f))
+          );
         });
 
       // Mock file processor for both files
@@ -397,7 +419,7 @@ describe('BatchProcessorService', () => {
       };
 
       // Make the FileCollector return BatchFileInfo entries for the provided inputFiles
-      const collected: BatchFileInfo[] = inputFiles.map(f => ({
+      const collected: BatchFileInfo[] = inputFiles.map((f) => ({
         inputPath: f,
         outputPath: `/output/${f.split('/').pop()!.replace(/\.md$/, '.pdf')}`,
         relativeInputPath: f.split('/').pop()!,
@@ -411,7 +433,9 @@ describe('BatchProcessorService', () => {
 
       mockFileProcessorService.processFile
         .mockResolvedValueOnce(
-          JSON.parse(JSON.stringify(mockResult)) as unknown as ProcessFileReturn
+          JSON.parse(
+            JSON.stringify(mockResult),
+          ) as unknown as ProcessFileReturn,
         )
         .mockResolvedValueOnce({
           ...mockResult,
@@ -420,7 +444,7 @@ describe('BatchProcessorService', () => {
         } as unknown as ProcessFileReturn);
 
       const result = (await service.processBatch(
-        configWithInputFiles
+        configWithInputFiles,
       )) as unknown as TestBatchProcessingResult;
 
       expect(result.totalFiles).toBe(2);
@@ -431,11 +455,11 @@ describe('BatchProcessorService', () => {
       expect(mockFileProcessorService.processFile).toHaveBeenCalledTimes(2);
       expect(mockFileProcessorService.processFile).toHaveBeenCalledWith(
         '/project/file1.md',
-        expect.any(Object)
+        expect.any(Object),
       );
       expect(mockFileProcessorService.processFile).toHaveBeenCalledWith(
         '/project/file2.md',
-        expect.any(Object)
+        expect.any(Object),
       );
 
       // Verify the file collector was used for the provided inputFiles
@@ -451,8 +475,12 @@ describe('BatchProcessorService', () => {
       const result = await service.validateBatchConfig(sampleBatchConfig);
 
       expect(result).toBe(true);
-      expect(mockLogger.debug).toHaveBeenCalledWith('Validating batch configuration');
-      expect(mockLogger.info).toHaveBeenCalledWith('Batch configuration validation passed');
+      expect(mockLogger.debug).toHaveBeenCalledWith(
+        'Validating batch configuration',
+      );
+      expect(mockLogger.info).toHaveBeenCalledWith(
+        'Batch configuration validation passed',
+      );
     });
 
     it('should reject configuration with empty input pattern', async () => {
@@ -461,11 +489,13 @@ describe('BatchProcessorService', () => {
         inputPattern: '',
       };
 
-      await expect(service.validateBatchConfig(invalidConfig)).rejects.toThrow(MD2PDFError);
+      await expect(service.validateBatchConfig(invalidConfig)).rejects.toThrow(
+        MD2PDFError,
+      );
 
       expect(mockErrorHandler.handleError).toHaveBeenCalledWith(
         expect.any(MD2PDFError),
-        'BatchProcessorService.validateBatchConfig'
+        'BatchProcessorService.validateBatchConfig',
       );
     });
 
@@ -474,9 +504,11 @@ describe('BatchProcessorService', () => {
 
       await service.validateBatchConfig(sampleBatchConfig);
 
-      expect(mockFileSystemManager.exists).toHaveBeenCalledWith(sampleBatchConfig.outputDirectory);
+      expect(mockFileSystemManager.exists).toHaveBeenCalledWith(
+        sampleBatchConfig.outputDirectory,
+      );
       expect(mockFileSystemManager.createDirectory).toHaveBeenCalledWith(
-        sampleBatchConfig.outputDirectory
+        sampleBatchConfig.outputDirectory,
       );
     });
 
@@ -485,19 +517,25 @@ describe('BatchProcessorService', () => {
 
       await service.validateBatchConfig(sampleBatchConfig);
 
-      expect(mockFileSystemManager.exists).toHaveBeenCalledWith(sampleBatchConfig.outputDirectory);
+      expect(mockFileSystemManager.exists).toHaveBeenCalledWith(
+        sampleBatchConfig.outputDirectory,
+      );
       expect(mockFileSystemManager.createDirectory).not.toHaveBeenCalled();
     });
 
     it('should handle directory creation errors', async () => {
       mockFileSystemManager.exists.mockResolvedValue(false);
-      mockFileSystemManager.createDirectory.mockRejectedValue(new Error('Permission denied'));
+      mockFileSystemManager.createDirectory.mockRejectedValue(
+        new Error('Permission denied'),
+      );
 
-      await expect(service.validateBatchConfig(sampleBatchConfig)).rejects.toThrow(MD2PDFError);
+      await expect(
+        service.validateBatchConfig(sampleBatchConfig),
+      ).rejects.toThrow(MD2PDFError);
 
       expect(mockErrorHandler.handleError).toHaveBeenCalledWith(
         expect.any(MD2PDFError),
-        'BatchProcessorService.validateBatchConfig'
+        'BatchProcessorService.validateBatchConfig',
       );
     });
 
@@ -521,13 +559,16 @@ describe('BatchProcessorService', () => {
       const mockFileCollector = {
         collectFiles: jest.fn().mockResolvedValue([]),
       };
-      (service as unknown as ServiceWithCollector).fileCollector = mockFileCollector;
+      (service as unknown as ServiceWithCollector).fileCollector =
+        mockFileCollector;
 
       const size = await service.estimateBatchSize(sampleBatchConfig);
 
       expect(size).toBe(0); // Current implementation returns 0
       expect(mockLogger.debug).toHaveBeenCalledWith('Estimating batch size');
-      expect(mockLogger.info).toHaveBeenCalledWith('Estimated batch size: 0 files');
+      expect(mockLogger.info).toHaveBeenCalledWith(
+        'Estimated batch size: 0 files',
+      );
     });
 
     it('should handle estimation errors gracefully', async () => {
@@ -540,7 +581,7 @@ describe('BatchProcessorService', () => {
 
       expect(size).toBe(0);
       expect(mockLogger.warn).toHaveBeenCalledWith(
-        'Failed to estimate batch size: Estimation error'
+        'Failed to estimate batch size: Estimation error',
       );
 
       jest.restoreAllMocks();
@@ -555,7 +596,9 @@ describe('BatchProcessorService', () => {
       const size = await service.estimateBatchSize(sampleBatchConfig);
 
       expect(size).toBe(0);
-      expect(mockLogger.warn).toHaveBeenCalledWith('Failed to estimate batch size: Logging error');
+      expect(mockLogger.warn).toHaveBeenCalledWith(
+        'Failed to estimate batch size: Logging error',
+      );
     });
   });
 
@@ -568,7 +611,9 @@ describe('BatchProcessorService', () => {
       // Test the callback
       callback(50.5, 'test.md');
 
-      expect(mockLogger.debug).toHaveBeenCalledWith('Batch progress: 50.5% - test.md');
+      expect(mockLogger.debug).toHaveBeenCalledWith(
+        'Batch progress: 50.5% - test.md',
+      );
     });
 
     it('should generate progress callback with custom handler', () => {
@@ -580,7 +625,9 @@ describe('BatchProcessorService', () => {
       // Test the callback
       callback(75.2, 'document.md');
 
-      expect(mockLogger.debug).toHaveBeenCalledWith('Batch progress: 75.2% - document.md');
+      expect(mockLogger.debug).toHaveBeenCalledWith(
+        'Batch progress: 75.2% - document.md',
+      );
       expect(customHandler).toHaveBeenCalledWith(75.2, 'document.md');
     });
 
@@ -590,7 +637,9 @@ describe('BatchProcessorService', () => {
 
       callback(0, 'start.md');
 
-      expect(mockLogger.debug).toHaveBeenCalledWith('Batch progress: 0.0% - start.md');
+      expect(mockLogger.debug).toHaveBeenCalledWith(
+        'Batch progress: 0.0% - start.md',
+      );
       expect(customHandler).toHaveBeenCalledWith(0, 'start.md');
     });
 
@@ -600,7 +649,9 @@ describe('BatchProcessorService', () => {
 
       callback(100, 'final.md');
 
-      expect(mockLogger.debug).toHaveBeenCalledWith('Batch progress: 100.0% - final.md');
+      expect(mockLogger.debug).toHaveBeenCalledWith(
+        'Batch progress: 100.0% - final.md',
+      );
       expect(customHandler).toHaveBeenCalledWith(100, 'final.md');
     });
 
@@ -609,7 +660,9 @@ describe('BatchProcessorService', () => {
 
       callback(33.333333, 'test.md');
 
-      expect(mockLogger.debug).toHaveBeenCalledWith('Batch progress: 33.3% - test.md');
+      expect(mockLogger.debug).toHaveBeenCalledWith(
+        'Batch progress: 33.3% - test.md',
+      );
     });
   });
 
@@ -617,7 +670,10 @@ describe('BatchProcessorService', () => {
     it('should handle different batch filename formats', async () => {
       const configs = [
         { ...sampleBatchConfig, filenameFormat: BatchFilenameFormat.ORIGINAL },
-        { ...sampleBatchConfig, filenameFormat: BatchFilenameFormat.WITH_TIMESTAMP },
+        {
+          ...sampleBatchConfig,
+          filenameFormat: BatchFilenameFormat.WITH_TIMESTAMP,
+        },
         { ...sampleBatchConfig, filenameFormat: BatchFilenameFormat.WITH_DATE },
         {
           ...sampleBatchConfig,
@@ -627,7 +683,9 @@ describe('BatchProcessorService', () => {
       ];
 
       for (const config of configs) {
-        const result = (await service.processBatch(config)) as unknown as TestBatchProcessingResult;
+        const result = (await service.processBatch(
+          config,
+        )) as unknown as TestBatchProcessingResult;
         expect(result.success).toBe(true);
       }
     });
@@ -637,7 +695,9 @@ describe('BatchProcessorService', () => {
 
       for (const maxConcurrentProcesses of concurrencySettings) {
         const config = { ...sampleBatchConfig, maxConcurrentProcesses };
-        const result = (await service.processBatch(config)) as unknown as TestBatchProcessingResult;
+        const result = (await service.processBatch(
+          config,
+        )) as unknown as TestBatchProcessingResult;
         expect(result.success).toBe(true);
       }
     });
@@ -649,7 +709,9 @@ describe('BatchProcessorService', () => {
       ];
 
       for (const config of configs) {
-        const result = (await service.processBatch(config)) as unknown as TestBatchProcessingResult;
+        const result = (await service.processBatch(
+          config,
+        )) as unknown as TestBatchProcessingResult;
         expect(result.success).toBe(true);
       }
     });
@@ -658,13 +720,17 @@ describe('BatchProcessorService', () => {
   describe('error handling', () => {
     it('should properly wrap and handle processing errors', async () => {
       // Force an error during processing
-      jest.spyOn(service, 'validateBatchConfig').mockRejectedValue(new Error('Validation failed'));
+      jest
+        .spyOn(service, 'validateBatchConfig')
+        .mockRejectedValue(new Error('Validation failed'));
 
-      await expect(service.processBatch(sampleBatchConfig)).rejects.toThrow(MD2PDFError);
+      await expect(service.processBatch(sampleBatchConfig)).rejects.toThrow(
+        MD2PDFError,
+      );
 
       expect(mockErrorHandler.handleError).toHaveBeenCalledWith(
         expect.any(MD2PDFError),
-        'BatchProcessorService.processBatch'
+        'BatchProcessorService.processBatch',
       );
     });
 
@@ -672,22 +738,32 @@ describe('BatchProcessorService', () => {
       const originalError = new MD2PDFError(
         'Custom validation error',
         'VALIDATION_ERROR',
-        'validation'
+        'validation',
       );
-      jest.spyOn(service, 'validateBatchConfig').mockRejectedValue(originalError);
+      jest
+        .spyOn(service, 'validateBatchConfig')
+        .mockRejectedValue(originalError);
 
       // The service wraps all errors including MD2PDFError, so we check the wrapped error
-      await expect(service.processBatch(sampleBatchConfig)).rejects.toThrow(MD2PDFError);
       await expect(service.processBatch(sampleBatchConfig)).rejects.toThrow(
-        'Batch processing failed: Custom validation error'
+        MD2PDFError,
+      );
+      await expect(service.processBatch(sampleBatchConfig)).rejects.toThrow(
+        'Batch processing failed: Custom validation error',
       );
     });
 
     it('should include processing time in error context', async () => {
-      jest.spyOn(service, 'validateBatchConfig').mockRejectedValue(new Error('Test error'));
+      jest
+        .spyOn(service, 'validateBatchConfig')
+        .mockRejectedValue(new Error('Test error'));
 
       try {
-        await service.processBatch(sampleBatchConfig, sampleFileOptions, sampleBatchOptions);
+        await service.processBatch(
+          sampleBatchConfig,
+          sampleFileOptions,
+          sampleBatchOptions,
+        );
       } catch (error) {
         expect(error).toBeInstanceOf(MD2PDFError);
         const wrappedError = error as MD2PDFError;
@@ -703,7 +779,7 @@ describe('BatchProcessorService', () => {
     it('should handle unused service references without errors', async () => {
       // This tests that the service properly handles the reserved parameters
       const result = (await service.processBatch(
-        sampleBatchConfig
+        sampleBatchConfig,
       )) as unknown as TestBatchProcessingResult;
 
       expect(result.success).toBe(true);
@@ -715,14 +791,16 @@ describe('BatchProcessorService', () => {
       const mockFileCollector = {
         collectFiles: jest.fn().mockResolvedValue([]),
       };
-      (service as unknown as ServiceWithCollector).fileCollector = mockFileCollector;
+      (service as unknown as ServiceWithCollector).fileCollector =
+        mockFileCollector;
 
       // Test all interface methods
-      const validateResult = await service.validateBatchConfig(sampleBatchConfig);
+      const validateResult =
+        await service.validateBatchConfig(sampleBatchConfig);
       const estimateResult = await service.estimateBatchSize(sampleBatchConfig);
       const callbackResult = service.generateProgressCallback();
       const processResult = (await service.processBatch(
-        sampleBatchConfig
+        sampleBatchConfig,
       )) as unknown as TestBatchProcessingResult;
 
       expect(validateResult).toBe(true);

@@ -6,7 +6,7 @@
 
 ### 段落和文字格式
 
-這是一個普通段落。支援**粗體**、*斜體*、~~刪除線~~和`行內程式碼`。
+這是一個普通段落。支援**粗體**、_斜體_、~~刪除線~~和`行內程式碼`。
 
 這是另一個段落，包含[連結](https://example.com)和自動連結 https://github.com。
 
@@ -41,14 +41,14 @@ console.log(greet('World'));
 
 ```javascript
 const numbers = [1, 2, 3, 4, 5];
-const doubled = numbers.map(n => n * 2);
+const doubled = numbers.map((n) => n * 2);
 console.log(doubled);
 ```
 
 ### 表格
 
 | 欄位 1 | 欄位 2 | 欄位 3 |
-|--------|--------|--------|
+| ------ | ------ | ------ |
 | 資料 A | 資料 B | 資料 C |
 | 數值 1 | 數值 2 | 數值 3 |
 | 測試   | 內容   | 示例   |
@@ -56,7 +56,7 @@ console.log(doubled);
 ### 引用
 
 > 這是一個引用段落。
-> 
+>
 > 可以包含多行內容。
 >
 > > 這是巢狀引用。
@@ -79,7 +79,7 @@ This paragraph mixes English and 中文內容 to test the parsing capability.
 
 ### 圖片
 
-![測試圖片](https://via.placeholder.com/300x200 "這是圖片標題")
+![測試圖片](https://via.placeholder.com/300x200 '這是圖片標題')
 
 ### HTML 標籤
 

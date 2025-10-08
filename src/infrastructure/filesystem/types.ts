@@ -4,8 +4,15 @@
 
 export interface IFileSystemManager {
   // File operations
-  readFile(filePath: string, encoding?: BufferEncoding): Promise<string | Buffer>;
-  writeFile(filePath: string, content: string | Buffer, options?: WriteFileOptions): Promise<void>;
+  readFile(
+    filePath: string,
+    encoding?: BufferEncoding,
+  ): Promise<string | Buffer>;
+  writeFile(
+    filePath: string,
+    content: string | Buffer,
+    options?: WriteFileOptions,
+  ): Promise<void>;
   appendFile(filePath: string, content: string | Buffer): Promise<void>;
   copyFile(source: string, destination: string): Promise<void>;
   moveFile(source: string, destination: string): Promise<void>;

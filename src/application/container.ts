@@ -3,8 +3,10 @@
  * Provides registration and factory methods for all application layer services
  */
 
-import { ServiceContainer, IServiceContainer } from '../shared/container';
+import { FileCollector } from '../core/batch/file-collector';
 import { InfrastructureServices } from '../infrastructure/services';
+import { ServiceContainer, IServiceContainer } from '../shared/container';
+
 import {
   PDFGeneratorService,
   EnhancedPDFGeneratorService,
@@ -21,7 +23,6 @@ import {
   type IBatchProcessorService,
   type ISmartDefaultsService,
 } from './services';
-import { FileCollector } from '@/core/batch/file-collector';
 
 import type { IConfigManager } from '../infrastructure/config/types';
 import type { ILogger } from '../infrastructure/logging/types';
@@ -79,7 +80,7 @@ export class ApplicationServices {
     // Register Markdown Parser Service
     container.registerSingleton(
       APPLICATION_SERVICE_NAMES.MARKDOWN_PARSER,
-      c =>
+      (c) =>
         new MarkdownParserService(
           c.resolve('logger'),
           c.resolve('errorHandler'),

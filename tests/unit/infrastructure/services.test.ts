@@ -21,7 +21,9 @@ describe('InfrastructureServices', () => {
       // Should resolve all services
       expect(() => container.resolve(SERVICE_NAMES.CONFIG)).not.toThrow();
       expect(() => container.resolve(SERVICE_NAMES.LOGGER)).not.toThrow();
-      expect(() => container.resolve(SERVICE_NAMES.ERROR_HANDLER)).not.toThrow();
+      expect(() =>
+        container.resolve(SERVICE_NAMES.ERROR_HANDLER),
+      ).not.toThrow();
       expect(() => container.resolve(SERVICE_NAMES.FILE_SYSTEM)).not.toThrow();
       expect(() => container.resolve(SERVICE_NAMES.TRANSLATOR)).not.toThrow();
     });
@@ -71,7 +73,9 @@ describe('EnhancedServices', () => {
       const consoleSpy = jest.spyOn(console, 'log').mockImplementation();
       logger.info('test message');
       // Should include context in log output
-      expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('[TEST] test message'));
+      expect(consoleSpy).toHaveBeenCalledWith(
+        expect.stringContaining('[TEST] test message'),
+      );
       consoleSpy.mockRestore();
     });
 
@@ -90,7 +94,8 @@ describe('EnhancedServices', () => {
     });
 
     it('should create enhanced translation manager', () => {
-      const translationManager = EnhancedServices.createTranslationManager('en');
+      const translationManager =
+        EnhancedServices.createTranslationManager('en');
       expect(translationManager).toBeDefined();
       expect(typeof translationManager.t).toBe('function');
       expect(translationManager.getCurrentLocale()).toBe('en');
@@ -107,10 +112,14 @@ describe('EnhancedServices', () => {
     it('should handle factory creation errors gracefully', () => {
       // These should not throw errors even if there are issues
       expect(() => EnhancedServices.createConfigManager()).not.toThrow();
-      expect(() => EnhancedServices.createLogger('invalid' as never)).not.toThrow();
+      expect(() =>
+        EnhancedServices.createLogger('invalid' as never),
+      ).not.toThrow();
       expect(() => EnhancedServices.createErrorHandler()).not.toThrow();
       expect(() => EnhancedServices.createFileSystemManager()).not.toThrow();
-      expect(() => EnhancedServices.createTranslationManager('invalid' as never)).not.toThrow();
+      expect(() =>
+        EnhancedServices.createTranslationManager('invalid' as never),
+      ).not.toThrow();
     });
   });
 });

@@ -39,7 +39,13 @@ export interface ContentComplexity {
 }
 
 export interface ComplexityFactor {
-  type: 'code-heavy' | 'table-heavy' | 'media-rich' | 'technical' | 'academic' | 'business';
+  type:
+    | 'code-heavy'
+    | 'table-heavy'
+    | 'media-rich'
+    | 'technical'
+    | 'academic'
+    | 'business';
   weight: number;
   description: string;
 }

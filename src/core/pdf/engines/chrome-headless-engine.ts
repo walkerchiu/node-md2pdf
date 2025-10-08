@@ -234,24 +234,24 @@ export class ChromeHeadlessPDFEngine implements IPDFEngine {
     <meta charset="utf-8">
     <title>${context.title || 'Document'}</title>
     <style>
-        body { 
-            font-family: Arial, sans-serif; 
-            margin: 1in; 
-            line-height: 1.6; 
+        body {
+            font-family: Arial, sans-serif;
+            margin: 1in;
+            line-height: 1.6;
         }
-        h1, h2, h3, h4, h5, h6 { 
-            color: #333; 
-            margin-top: 1em; 
-            margin-bottom: 0.5em; 
+        h1, h2, h3, h4, h5, h6 {
+            color: #333;
+            margin-top: 1em;
+            margin-bottom: 0.5em;
         }
-        pre, code { 
-            background: #f5f5f5; 
-            border-radius: 3px; 
-            padding: 0.2em 0.4em; 
+        pre, code {
+            background: #f5f5f5;
+            border-radius: 3px;
+            padding: 0.2em 0.4em;
         }
-        pre { 
-            padding: 1em; 
-            overflow-x: auto; 
+        pre {
+            padding: 1em;
+            overflow-x: auto;
         }
     `;
 

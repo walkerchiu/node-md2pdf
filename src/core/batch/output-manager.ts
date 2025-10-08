@@ -3,10 +3,11 @@
  * Handles output directory structure and file naming
  */
 
-import * as path from 'path';
 import * as fs from 'fs';
-import { BatchConversionConfig, BatchFileInfo } from '../../types/batch';
+import * as path from 'path';
+
 import { ErrorType, MD2PDFError } from '../../types';
+import { BatchConversionConfig, BatchFileInfo } from '../../types/batch';
 
 export class OutputManager {
   /**
@@ -16,20 +17,24 @@ export class OutputManager {
     const directories = new Set<string>();
 
     // Collect all unique output directories
-    files.forEach(file => {
+    files.forEach((file) => {
       const outputDir = path.dirname(file.outputPath);
       directories.add(outputDir);
     });
 
     // Create directories in parallel
-    const createPromises = Array.from(directories).map(dir => this.ensureDirectoryExists(dir));
+    const createPromises = Array.from(directories).map((dir) =>
+      this.ensureDirectoryExists(dir),
+    );
     await Promise.all(createPromises);
   }
 
   /**
    * Handle file name conflicts
    */
-  async resolveFileNameConflicts(files: BatchFileInfo[]): Promise<BatchFileInfo[]> {
+  async resolveFileNameConflicts(
+    files: BatchFileInfo[],
+  ): Promise<BatchFileInfo[]> {
     const resolvedFiles: BatchFileInfo[] = [];
     const pathCounts = new Map<string, number>();
     for (const file of files) {
@@ -75,7 +80,7 @@ export class OutputManager {
    */
   generateOutputReport(
     config: BatchConversionConfig,
-    files: BatchFileInfo[]
+    files: BatchFileInfo[],
   ): {
     summary: {
       totalFiles: number;
@@ -89,7 +94,7 @@ export class OutputManager {
     const directories = new Set<string>();
     const filePaths = new Set<string>();
     const conflicts: string[] = [];
-    files.forEach(file => {
+    files.forEach((file) => {
       const outputDir = path.dirname(file.outputPath);
       directories.add(outputDir);
       if (filePaths.has(file.outputPath)) {
@@ -114,7 +119,7 @@ export class OutputManager {
    * Clean up failed conversions
    */
   async cleanupFailedFiles(files: string[]): Promise<void> {
-    const cleanupPromises = files.map(async filePath => {
+    const cleanupPromises = files.map(async (filePath) => {
       try {
         if (await this.fileExists(filePath)) {
           await fs.promises.unlink(filePath);
@@ -144,7 +149,7 @@ export class OutputManager {
             ErrorType.SYSTEM_ERROR,
             `Failed to create backup for ${file.outputPath}`,
             { originalPath: file.outputPath, backupPath },
-            ['Check disk space', 'Verify write permissions']
+            ['Check disk space', 'Verify write permissions'],
           );
         }
       }
@@ -177,8 +182,11 @@ export class OutputManager {
       throw this.createError(
         ErrorType.SYSTEM_ERROR,
         `Failed to create directory: ${dirPath}`,
-        { dirPath, error: error instanceof Error ? error.message : String(error) },
-        ['Check permissions', 'Verify disk space']
+        {
+          dirPath,
+          error: error instanceof Error ? error.message : String(error),
+        },
+        ['Check permissions', 'Verify disk space'],
       );
     }
   }
@@ -188,7 +196,7 @@ export class OutputManager {
    */
   private async generateUniqueFileName(
     originalPath: string,
-    pathCounts: Map<string, number>
+    pathCounts: Map<string, number>,
   ): Promise<string> {
     const dir = path.dirname(originalPath);
     const ext = path.extname(originalPath);
@@ -226,7 +234,7 @@ export class OutputManager {
         ErrorType.SYSTEM_ERROR,
         `Cannot create output directory: ${outputDir}`,
         { outputPath, outputDir },
-        ['Check parent directory permissions', 'Verify disk space']
+        ['Check parent directory permissions', 'Verify disk space'],
       );
     }
     // Check if output directory is writable
@@ -237,7 +245,7 @@ export class OutputManager {
         ErrorType.PERMISSION_DENIED,
         `Output directory is not writable: ${outputDir}`,
         { outputPath, outputDir },
-        ['Check directory permissions', 'Use a different output directory']
+        ['Check directory permissions', 'Use a different output directory'],
       );
     }
     // Check if filename is valid
@@ -247,7 +255,10 @@ export class OutputManager {
         ErrorType.INVALID_FORMAT,
         `Invalid output filename: ${fileName}`,
         { outputPath, fileName },
-        ['Use only alphanumeric characters, hyphens, and underscores', 'Avoid special characters']
+        [
+          'Use only alphanumeric characters, hyphens, and underscores',
+          'Avoid special characters',
+        ],
       );
     }
   }
@@ -300,7 +311,7 @@ export class OutputManager {
     type: ErrorType,
     message: string,
     details?: Record<string, unknown>,
-    suggestions?: string[]
+    suggestions?: string[],
   ): MD2PDFError {
     const error = new Error(message) as MD2PDFError;
     error.type = type;

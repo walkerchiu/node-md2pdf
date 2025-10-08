@@ -27,10 +27,10 @@ describe('TOCGenerator', () => {
 
     it('should validate maxDepth range', () => {
       expect(() => new TOCGenerator({ maxDepth: 0 })).toThrow(
-        'TOC maxDepth must be between 1 and 6'
+        'TOC maxDepth must be between 1 and 6',
       );
       expect(() => new TOCGenerator({ maxDepth: 7 })).toThrow(
-        'TOC maxDepth must be between 1 and 6'
+        'TOC maxDepth must be between 1 and 6',
       );
     });
 
@@ -52,12 +52,42 @@ describe('TOCGenerator', () => {
 
   describe('generateTOC', () => {
     const sampleHeadings: Heading[] = [
-      { level: 1, text: 'Introduction', id: 'introduction', anchor: '#introduction' },
-      { level: 2, text: 'Getting Started', id: 'getting-started', anchor: '#getting-started' },
-      { level: 3, text: 'Installation', id: 'installation', anchor: '#installation' },
-      { level: 3, text: 'Configuration', id: 'configuration', anchor: '#configuration' },
-      { level: 2, text: 'Advanced Topics', id: 'advanced-topics', anchor: '#advanced-topics' },
-      { level: 4, text: 'Deep Nesting', id: 'deep-nesting', anchor: '#deep-nesting' },
+      {
+        level: 1,
+        text: 'Introduction',
+        id: 'introduction',
+        anchor: '#introduction',
+      },
+      {
+        level: 2,
+        text: 'Getting Started',
+        id: 'getting-started',
+        anchor: '#getting-started',
+      },
+      {
+        level: 3,
+        text: 'Installation',
+        id: 'installation',
+        anchor: '#installation',
+      },
+      {
+        level: 3,
+        text: 'Configuration',
+        id: 'configuration',
+        anchor: '#configuration',
+      },
+      {
+        level: 2,
+        text: 'Advanced Topics',
+        id: 'advanced-topics',
+        anchor: '#advanced-topics',
+      },
+      {
+        level: 4,
+        text: 'Deep Nesting',
+        id: 'deep-nesting',
+        anchor: '#deep-nesting',
+      },
       { level: 1, text: 'Conclusion', id: 'conclusion', anchor: '#conclusion' },
     ];
 
@@ -75,7 +105,7 @@ describe('TOCGenerator', () => {
       const result = generator.generateTOC(sampleHeadings);
 
       expect(result.items).toHaveLength(4); // Only H1 and H2
-      expect(result.items.every(item => item.level <= 2)).toBe(true);
+      expect(result.items.every((item) => item.level <= 2)).toBe(true);
       expect(result.stats.maxDepth).toBe(2);
     });
 
@@ -117,8 +147,18 @@ describe('TOCGenerator', () => {
 
     it('should escape HTML in titles', () => {
       const headingsWithHtml: Heading[] = [
-        { level: 1, text: '<script>alert("xss")</script>', id: 'unsafe', anchor: '#unsafe' },
-        { level: 2, text: 'Title with "quotes" & ampersand', id: 'quotes', anchor: '#quotes' },
+        {
+          level: 1,
+          text: '<script>alert("xss")</script>',
+          id: 'unsafe',
+          anchor: '#unsafe',
+        },
+        {
+          level: 2,
+          text: 'Title with "quotes" & ampersand',
+          id: 'quotes',
+          anchor: '#quotes',
+        },
       ];
 
       const result = tocGenerator.generateTOC(headingsWithHtml);
@@ -145,7 +185,12 @@ describe('TOCGenerator', () => {
   describe('page number handling', () => {
     const headings: Heading[] = [
       { level: 1, text: 'Chapter 1', id: 'chapter-1', anchor: '#chapter-1' },
-      { level: 2, text: 'Section 1.1', id: 'section-1-1', anchor: '#section-1-1' },
+      {
+        level: 2,
+        text: 'Section 1.1',
+        id: 'section-1-1',
+        anchor: '#section-1-1',
+      },
     ];
 
     it('should handle page numbers when enabled', () => {
@@ -171,7 +216,10 @@ describe('TOCGenerator', () => {
     it('should generate TOC with page numbers', () => {
       const pageNumbers = { 'chapter-1': 5, 'section-1-1': 8 };
 
-      const result = tocGenerator.generateTOCWithPageNumbers(headings, pageNumbers);
+      const result = tocGenerator.generateTOCWithPageNumbers(
+        headings,
+        pageNumbers,
+      );
 
       expect(result.items[0].pageNumber).toBe(5);
       expect(result.items[1].pageNumber).toBe(8);
@@ -186,8 +234,18 @@ describe('TOCGenerator', () => {
   describe('Chinese content handling', () => {
     const chineseHeadings: Heading[] = [
       { level: 1, text: '第一章：簡介', id: 'chapter-1', anchor: '#chapter-1' },
-      { level: 2, text: '1.1 專案概述', id: 'section-1-1', anchor: '#section-1-1' },
-      { level: 3, text: '技術架構與實現', id: 'architecture', anchor: '#architecture' },
+      {
+        level: 2,
+        text: '1.1 專案概述',
+        id: 'section-1-1',
+        anchor: '#section-1-1',
+      },
+      {
+        level: 3,
+        text: '技術架構與實現',
+        id: 'architecture',
+        anchor: '#architecture',
+      },
     ];
 
     it('should handle Chinese headings correctly', () => {
@@ -204,7 +262,9 @@ describe('TOCGenerator', () => {
 
       expect(result.tree[0].title).toBe('第一章：簡介');
       expect(result.tree[0].children[0].title).toBe('1.1 專案概述');
-      expect(result.tree[0].children[0].children[0].title).toBe('技術架構與實現');
+      expect(result.tree[0].children[0].children[0].title).toBe(
+        '技術架構與實現',
+      );
     });
   });
 
@@ -269,7 +329,9 @@ describe('TOCGenerator', () => {
     });
 
     it('should handle missing anchors', () => {
-      const headings: Heading[] = [{ level: 1, text: 'Title', id: '', anchor: '' }];
+      const headings: Heading[] = [
+        { level: 1, text: 'Title', id: '', anchor: '' },
+      ];
 
       const result = tocGenerator.generateTOC(headings);
 

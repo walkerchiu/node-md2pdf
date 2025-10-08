@@ -2,7 +2,9 @@
   "compilerOptions": {
     "target": "ES2022",
     "module": "CommonJS",
-    "lib": ["ES2022"],
+    "lib": [
+      "ES2022"
+    ],
     "outDir": "./dist",
     "rootDir": "./src",
     "strict": true,
@@ -24,14 +26,30 @@
     "moduleResolution": "node",
     "baseUrl": ".",
     "paths": {
-      "@/application/*": ["src/application/*"],
-      "@/cli/*": ["src/cli/*"],
-      "@/core/*": ["src/core/*"],
-      "@/infrastructure/*": ["src/infrastructure/*"],
-      "@/shared/*": ["src/shared/*"],
-      "@/types/*": ["src/types/*"],
-      "@/types": ["src/types/index.ts"],
-      "@/utils/*": ["src/utils/*"]
+      "@/application/*": [
+        "src/application/*"
+      ],
+      "@/cli/*": [
+        "src/cli/*"
+      ],
+      "@/core/*": [
+        "src/core/*"
+      ],
+      "@/infrastructure/*": [
+        "src/infrastructure/*"
+      ],
+      "@/shared/*": [
+        "src/shared/*"
+      ],
+      "@/types/*": [
+        "src/types/*"
+      ],
+      "@/types": [
+        "src/types/index.ts"
+      ],
+      "@/utils/*": [
+        "src/utils/*"
+      ]
     }
   },
   "include": [

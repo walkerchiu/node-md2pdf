@@ -28,7 +28,10 @@ export class PageEstimator {
   /**
    * Estimate page numbers for headings based on content position
    */
-  estimatePageNumbers(headings: Heading[], markdownContent: string): Record<string, number> {
+  estimatePageNumbers(
+    headings: Heading[],
+    markdownContent: string,
+  ): Record<string, number> {
     const result: Record<string, number> = {};
     const keyUsageCount: Record<string, number> = {};
 
@@ -53,12 +56,16 @@ export class PageEstimator {
     // Add TOC title and spacing
     const tocTitleLines = 3;
     const totalTocLines = tocTitleLines + tocEntryLines;
-    const tocPages = Math.max(1, Math.ceil(totalTocLines / this.options.linesPerPage));
+    const tocPages = Math.max(
+      1,
+      Math.ceil(totalTocLines / this.options.linesPerPage),
+    );
 
     const contentStartPage = tocPages + 1;
 
     // Find all heading positions in content first
-    const headingPositions: { line: number; level: number; text: string }[] = [];
+    const headingPositions: { line: number; level: number; text: string }[] =
+      [];
     for (let i = 0; i < contentLines.length; i++) {
       const line = contentLines[i].trim();
       if (line.startsWith('#')) {
@@ -79,7 +86,10 @@ export class PageEstimator {
       let headingLine = -1;
       for (let j = contentHeadingIndex; j < headingPositions.length; j++) {
         const contentHeading = headingPositions[j];
-        if (contentHeading.level === heading.level && contentHeading.text === heading.text.trim()) {
+        if (
+          contentHeading.level === heading.level &&
+          contentHeading.text === heading.text.trim()
+        ) {
           headingLine = contentHeading.line;
           contentHeadingIndex = j + 1; // Start from next position for subsequent headings
           break;
@@ -95,7 +105,11 @@ export class PageEstimator {
             // Weight different types of content
             if (line.startsWith('#')) {
               meaningfulLines += 1.5; // Headings take more visual space
-            } else if (line.startsWith('*') || line.startsWith('-') || line.startsWith('+')) {
+            } else if (
+              line.startsWith('*') ||
+              line.startsWith('-') ||
+              line.startsWith('+')
+            ) {
               meaningfulLines += 1.2; // List items are slightly more dense
             } else if (line.startsWith('```') || line.startsWith('    ')) {
               meaningfulLines += 0.8; // Code blocks are typically more compact
@@ -112,7 +126,8 @@ export class PageEstimator {
         // Convert meaningful lines to pages with more realistic estimation
         const effectiveLinesPerPage = this.options.linesPerPage * 0.8; // Account for margins and spacing
         const estimatedPage =
-          contentStartPage + Math.floor(meaningfulLines / effectiveLinesPerPage);
+          contentStartPage +
+          Math.floor(meaningfulLines / effectiveLinesPerPage);
 
         // Ensure page is at least the content start page
         finalPage = Math.max(contentStartPage, estimatedPage);

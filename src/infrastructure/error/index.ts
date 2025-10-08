@@ -16,4 +16,9 @@ export {
   ServiceNotAvailableError,
 } from './errors';
 
-export type { IErrorHandler, ErrorCategory, ErrorContext, ErrorRecoveryOptions } from './types';
+export type {
+  IErrorHandler,
+  ErrorCategory,
+  ErrorContext,
+  ErrorRecoveryOptions,
+} from './types';

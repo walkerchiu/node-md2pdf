@@ -7,7 +7,9 @@ import { readFileSync } from 'fs';
 
 // Mock file system for error testing
 jest.mock('fs');
-const mockReadFileSync = readFileSync as jest.MockedFunction<typeof readFileSync>;
+const mockReadFileSync = readFileSync as jest.MockedFunction<
+  typeof readFileSync
+>;
 
 describe('MarkdownParser', () => {
   let parser: MarkdownParser;
@@ -158,11 +160,16 @@ Heading 2
     });
 
     it('should parse links', () => {
-      const markdown = '[Example](https://example.com) and https://auto-link.com';
+      const markdown =
+        '[Example](https://example.com) and https://auto-link.com';
       const result = parser.parse(markdown);
 
-      expect(result.content).toContain('<a href="https://example.com">Example</a>');
-      expect(result.content).toContain('<a href="https://auto-link.com">https://auto-link.com</a>');
+      expect(result.content).toContain(
+        '<a href="https://example.com">Example</a>',
+      );
+      expect(result.content).toContain(
+        '<a href="https://auto-link.com">https://auto-link.com</a>',
+      );
     });
 
     it('should parse tables', () => {
@@ -187,8 +194,11 @@ Heading 2
         throw 'String error'; // Non-Error exception
       });
 
-      (parser as unknown as { md: { render: jest.MockedFunction<() => string> } }).md.render =
-        mockRender;
+      (
+        parser as unknown as {
+          md: { render: jest.MockedFunction<() => string> };
+        }
+      ).md.render = mockRender;
 
       expect(() => {
         parser.parse('# Test');
@@ -252,7 +262,10 @@ More content here.`;
 
       const result = parser.parseFile('/fake/path/test.md');
 
-      expect(mockReadFileSync).toHaveBeenCalledWith('/fake/path/test.md', 'utf-8');
+      expect(mockReadFileSync).toHaveBeenCalledWith(
+        '/fake/path/test.md',
+        'utf-8',
+      );
       expect(result.content).toContain('Test File');
       expect(result.headings).toHaveLength(1);
     });
@@ -264,7 +277,7 @@ More content here.`;
       });
 
       expect(() => parser.parseFile('/nonexistent/file.md')).toThrow(
-        'File not found: /nonexistent/file.md'
+        'File not found: /nonexistent/file.md',
       );
     });
 
@@ -275,7 +288,7 @@ More content here.`;
       });
 
       expect(() => parser.parseFile('/restricted/file.md')).toThrow(
-        'Failed to read file /restricted/file.md: Permission denied'
+        'Failed to read file /restricted/file.md: Permission denied',
       );
     });
   });
@@ -320,7 +333,9 @@ More content here.`;
       testCases.forEach(([input, expected]) => {
         // We need to access the private slugify method for testing
         // This is a bit hacky but necessary for thorough testing
-        const result = (parser as unknown as { slugify: (input: string) => string }).slugify(input);
+        const result = (
+          parser as unknown as { slugify: (input: string) => string }
+        ).slugify(input);
         expect(result).toBe(expected);
       });
     });

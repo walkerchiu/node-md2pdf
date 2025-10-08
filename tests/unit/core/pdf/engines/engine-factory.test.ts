@@ -81,7 +81,9 @@ describe('PDFEngineFactory', () => {
     });
 
     it('should throw error for unknown engine', async () => {
-      await expect(factory.createEngine('unknown')).rejects.toThrow('Unknown PDF engine: unknown');
+      await expect(factory.createEngine('unknown')).rejects.toThrow(
+        'Unknown PDF engine: unknown',
+      );
     });
 
     it('should pass options to engine constructor', async () => {
@@ -89,7 +91,9 @@ describe('PDFEngineFactory', () => {
 
       // This test would need a mock engine that accepts options
       // For now, just verify it doesn't throw
-      await expect(factory.createEngine('puppeteer', options)).resolves.toBeDefined();
+      await expect(
+        factory.createEngine('puppeteer', options),
+      ).resolves.toBeDefined();
     });
   });
 
@@ -105,7 +109,7 @@ describe('PDFEngineFactory', () => {
       factory.registerEngine('failing', FailingEngine as any);
 
       await expect(factory.createEngine('failing')).rejects.toThrow(
-        'Failed to create failing engine: Constructor failure'
+        'Failed to create failing engine: Constructor failure',
       );
     });
   });

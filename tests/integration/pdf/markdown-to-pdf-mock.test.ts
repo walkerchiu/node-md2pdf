@@ -10,12 +10,16 @@ import { join } from 'path';
 // Mock PDFGenerator for integration testing
 jest.mock('../../../src/core/pdf/pdf-generator');
 
-const MockedPDFGenerator = PDFGenerator as jest.MockedClass<typeof PDFGenerator>;
+const MockedPDFGenerator = PDFGenerator as jest.MockedClass<
+  typeof PDFGenerator
+>;
 
 describe('Markdown to PDF Integration (Mocked)', () => {
   let parser: MarkdownParser;
   let pdfGenerator: PDFGenerator;
-  let mockGeneratePDF: jest.MockedFunction<typeof PDFGenerator.prototype.generatePDF>;
+  let mockGeneratePDF: jest.MockedFunction<
+    typeof PDFGenerator.prototype.generatePDF
+  >;
   let mockValidateEnvironment: jest.MockedFunction<
     typeof PDFGenerator.prototype.validateEnvironment
   >;
@@ -42,7 +46,7 @@ describe('Markdown to PDF Integration (Mocked)', () => {
           generatePDFFromFile: jest.fn(),
           updateOptions: jest.fn(),
           getOptions: jest.fn(),
-        }) as unknown as PDFGenerator
+        }) as unknown as PDFGenerator,
     );
 
     pdfGenerator = new PDFGenerator();
@@ -69,14 +73,22 @@ describe('Markdown to PDF Integration (Mocked)', () => {
       expect(parseResult.headings).toHaveLength(4);
 
       // Step 2: Generate PDF
-      const pdfResult = await pdfGenerator.generatePDF(parseResult.content, '/mock/output.pdf', {
-        title: 'Simple Test Document',
-      });
+      const pdfResult = await pdfGenerator.generatePDF(
+        parseResult.content,
+        '/mock/output.pdf',
+        {
+          title: 'Simple Test Document',
+        },
+      );
 
       // Verify integration
-      expect(mockGeneratePDF).toHaveBeenCalledWith(parseResult.content, '/mock/output.pdf', {
-        title: 'Simple Test Document',
-      });
+      expect(mockGeneratePDF).toHaveBeenCalledWith(
+        parseResult.content,
+        '/mock/output.pdf',
+        {
+          title: 'Simple Test Document',
+        },
+      );
 
       expect(pdfResult.success).toBe(true);
       expect(pdfResult.outputPath).toBe('/mock/output/path.pdf');
@@ -103,16 +115,20 @@ describe('Markdown to PDF Integration (Mocked)', () => {
       expect(parseResult.content).toContain('中文測試');
 
       // Generate PDF with Chinese content
-      const pdfResult = await pdfGenerator.generatePDF(parseResult.content, '/mock/chinese.pdf', {
-        title: '中文測試文件',
-      });
+      const pdfResult = await pdfGenerator.generatePDF(
+        parseResult.content,
+        '/mock/chinese.pdf',
+        {
+          title: '中文測試文件',
+        },
+      );
 
       expect(mockGeneratePDF).toHaveBeenCalledWith(
         expect.stringContaining('測試文件標題'),
         '/mock/chinese.pdf',
         expect.objectContaining({
           title: '中文測試文件',
-        })
+        }),
       );
 
       expect(pdfResult.success).toBe(true);
@@ -143,7 +159,7 @@ describe('Markdown to PDF Integration (Mocked)', () => {
         {
           title: parseResult.metadata?.title as string,
           customCSS: 'body { font-family: serif; }',
-        }
+        },
       );
 
       expect(mockGeneratePDF).toHaveBeenCalledWith(
@@ -152,7 +168,7 @@ describe('Markdown to PDF Integration (Mocked)', () => {
         expect.objectContaining({
           title: 'Test Document with Metadata',
           customCSS: expect.stringContaining('serif'),
-        })
+        }),
       );
 
       expect(pdfResult.success).toBe(true);
@@ -176,7 +192,10 @@ describe('Markdown to PDF Integration (Mocked)', () => {
       });
 
       const parseResult = parser.parse('# Simple Test');
-      const pdfResult = await pdfGenerator.generatePDF(parseResult.content, '/invalid/path.pdf');
+      const pdfResult = await pdfGenerator.generatePDF(
+        parseResult.content,
+        '/invalid/path.pdf',
+      );
 
       expect(pdfResult.success).toBe(false);
       expect(pdfResult.error).toBe('Mock PDF generation error');
@@ -214,7 +233,10 @@ describe('Markdown to PDF Integration (Mocked)', () => {
 
       // Complete pipeline
       const parseResult = parser.parseFile(join(fixturesPath, 'simple.md'));
-      const pdfResult = await pdfGenerator.generatePDF(parseResult.content, '/mock.pdf');
+      const pdfResult = await pdfGenerator.generatePDF(
+        parseResult.content,
+        '/mock.pdf',
+      );
 
       const totalTime = Date.now() - startTime;
 

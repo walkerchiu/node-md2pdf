@@ -267,7 +267,7 @@ export class PDFTemplates {
     content: string,
     title?: string,
     customCSS?: string,
-    enableChineseSupport: boolean = false
+    enableChineseSupport: boolean = false,
   ): string {
     const baseCSS = this.getDefaultCSS();
     const chineseCSS = enableChineseSupport ? this.getChineseCSS() : '';
@@ -299,7 +299,7 @@ export class PDFTemplates {
     content: string,
     title?: string,
     customCSS?: string,
-    enableChineseSupport: boolean = false
+    enableChineseSupport: boolean = false,
   ): string {
     const baseCSS = this.getDefaultCSS();
     const chineseCSS = enableChineseSupport ? this.getChineseCSS() : '';

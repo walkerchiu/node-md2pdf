@@ -85,32 +85,34 @@ describe('ErrorRecoveryManager', () => {
 
     mockOs.totalmem.mockReturnValue(8 * 1024 * 1024 * 1024); // 8GB
     mockOs.tmpdir.mockReturnValue('/tmp');
-  mockOs.loadavg.mockReturnValue([1, 1, 1]);
-  mockOs.cpus.mockReturnValue([
-        {
-          model: 'Intel',
-          speed: 2400,
-          times: { user: 0, nice: 0, sys: 0, idle: 0, irq: 0 },
-        },
-        {
-          model: 'Intel',
-          speed: 2400,
-          times: { user: 0, nice: 0, sys: 0, idle: 0, irq: 0 },
-        },
-        {
-          model: 'Intel',
-          speed: 2400,
-          times: { user: 0, nice: 0, sys: 0, idle: 0, irq: 0 },
-        },
-        {
-          model: 'Intel',
-          speed: 2400,
-          times: { user: 0, nice: 0, sys: 0, idle: 0, irq: 0 },
-        },
-  ] as unknown as os.CpuInfo[]);
+    mockOs.loadavg.mockReturnValue([1, 1, 1]);
+    mockOs.cpus.mockReturnValue([
+      {
+        model: 'Intel',
+        speed: 2400,
+        times: { user: 0, nice: 0, sys: 0, idle: 0, irq: 0 },
+      },
+      {
+        model: 'Intel',
+        speed: 2400,
+        times: { user: 0, nice: 0, sys: 0, idle: 0, irq: 0 },
+      },
+      {
+        model: 'Intel',
+        speed: 2400,
+        times: { user: 0, nice: 0, sys: 0, idle: 0, irq: 0 },
+      },
+      {
+        model: 'Intel',
+        speed: 2400,
+        times: { user: 0, nice: 0, sys: 0, idle: 0, irq: 0 },
+      },
+    ] as unknown as os.CpuInfo[]);
 
-  // Setup process.memoryUsage mock
-  (process as unknown as { memoryUsage: () => NodeJS.MemoryUsage }).memoryUsage = (): NodeJS.MemoryUsage => ({
+    // Setup process.memoryUsage mock
+    (
+      process as unknown as { memoryUsage: () => NodeJS.MemoryUsage }
+    ).memoryUsage = (): NodeJS.MemoryUsage => ({
       rss: 100 * 1024 * 1024,
       heapTotal: 50 * 1024 * 1024,
       heapUsed: 30 * 1024 * 1024,
@@ -132,7 +134,10 @@ describe('ErrorRecoveryManager', () => {
 
   describe('recoverFromErrors', () => {
     it('should handle empty error list', async () => {
-      const result = await errorRecoveryManager.recoverFromErrors([], mockConfig);
+      const result = await errorRecoveryManager.recoverFromErrors(
+        [],
+        mockConfig,
+      );
 
       expect(result.recoveredFiles).toEqual([]);
       expect(result.permanentFailures).toEqual([]);
@@ -143,17 +148,28 @@ describe('ErrorRecoveryManager', () => {
       const errors: BatchError[] = [
         {
           inputPath: '/test/recoverable.md',
-          error: { type: ErrorType.SYSTEM_ERROR, message: 'System error', name: 'MD2PDFError' } as MD2PDFError,
+          error: {
+            type: ErrorType.SYSTEM_ERROR,
+            message: 'System error',
+            name: 'MD2PDFError',
+          } as MD2PDFError,
           canRetry: true,
         },
         {
           inputPath: '/test/non-recoverable.md',
-          error: { type: ErrorType.INVALID_FORMAT, message: 'Invalid format', name: 'MD2PDFError' } as MD2PDFError,
+          error: {
+            type: ErrorType.INVALID_FORMAT,
+            message: 'Invalid format',
+            name: 'MD2PDFError',
+          } as MD2PDFError,
           canRetry: false,
         },
       ];
 
-      const result = await errorRecoveryManager.recoverFromErrors(errors, mockConfig);
+      const result = await errorRecoveryManager.recoverFromErrors(
+        errors,
+        mockConfig,
+      );
 
       expect(result.totalAttempts).toBe(2);
       expect(result.permanentFailures).toHaveLength(2); // Both fail in mock
@@ -168,12 +184,20 @@ describe('ErrorRecoveryManager', () => {
       const errors: BatchError[] = [
         {
           inputPath: '/test/file.md',
-          error: { type: ErrorType.SYSTEM_ERROR, message: 'System error', name: 'MD2PDFError' } as MD2PDFError,
+          error: {
+            type: ErrorType.SYSTEM_ERROR,
+            message: 'System error',
+            name: 'MD2PDFError',
+          } as MD2PDFError,
           canRetry: true,
         },
       ];
 
-      const result = await errorRecoveryManager.recoverFromErrors(errors, mockConfig, customStrategy);
+      const result = await errorRecoveryManager.recoverFromErrors(
+        errors,
+        mockConfig,
+        customStrategy,
+      );
 
       expect(result.totalAttempts).toBe(1);
       expect(result.recoveredFiles).toHaveLength(1); // Should succeed with maxRetries=1
@@ -183,12 +207,19 @@ describe('ErrorRecoveryManager', () => {
       const errors: BatchError[] = [
         {
           inputPath: '/test/file.md',
-          error: { type: ErrorType.PARSE_ERROR, message: 'Parse error', name: 'MD2PDFError' } as MD2PDFError,
+          error: {
+            type: ErrorType.PARSE_ERROR,
+            message: 'Parse error',
+            name: 'MD2PDFError',
+          } as MD2PDFError,
           canRetry: false,
         },
       ];
 
-      const result = await errorRecoveryManager.recoverFromErrors(errors, mockConfig);
+      const result = await errorRecoveryManager.recoverFromErrors(
+        errors,
+        mockConfig,
+      );
 
       expect(result.permanentFailures).toHaveLength(1);
       expect(result.recoveredFiles).toHaveLength(0);
@@ -201,14 +232,21 @@ describe('ErrorRecoveryManager', () => {
       const errors: BatchError[] = [
         {
           inputPath: '/test/missing.md',
-          error: { type: ErrorType.FILE_NOT_FOUND, message: 'File not found', name: 'MD2PDFError' } as MD2PDFError,
+          error: {
+            type: ErrorType.FILE_NOT_FOUND,
+            message: 'File not found',
+            name: 'MD2PDFError',
+          } as MD2PDFError,
           canRetry: true,
         },
       ];
 
-      const suggestions = errorRecoveryManager.generateRecoverySuggestions(errors);
+      const suggestions =
+        errorRecoveryManager.generateRecoverySuggestions(errors);
 
-      expect(suggestions.immediate).toContain('Check if input files still exist');
+      expect(suggestions.immediate).toContain(
+        'Check if input files still exist',
+      );
       expect(suggestions.immediate).toContain('Verify file paths are correct');
     });
 
@@ -216,31 +254,49 @@ describe('ErrorRecoveryManager', () => {
       const errors: BatchError[] = [
         {
           inputPath: '/test/protected.md',
-          error: { type: ErrorType.PERMISSION_DENIED, message: 'Permission denied', name: 'MD2PDFError' } as MD2PDFError,
+          error: {
+            type: ErrorType.PERMISSION_DENIED,
+            message: 'Permission denied',
+            name: 'MD2PDFError',
+          } as MD2PDFError,
           canRetry: true,
         },
       ];
 
-      const suggestions = errorRecoveryManager.generateRecoverySuggestions(errors);
+      const suggestions =
+        errorRecoveryManager.generateRecoverySuggestions(errors);
 
-      expect(suggestions.immediate).toContain('Check file and directory permissions');
-      expect(suggestions.systemLevel).toContain('Run with appropriate user permissions');
+      expect(suggestions.immediate).toContain(
+        'Check file and directory permissions',
+      );
+      expect(suggestions.systemLevel).toContain(
+        'Run with appropriate user permissions',
+      );
     });
 
     it('should generate suggestions for SYSTEM_ERROR errors', () => {
       const errors: BatchError[] = [
         {
           inputPath: '/test/file.md',
-          error: { type: ErrorType.SYSTEM_ERROR, message: 'System error', name: 'MD2PDFError' } as MD2PDFError,
+          error: {
+            type: ErrorType.SYSTEM_ERROR,
+            message: 'System error',
+            name: 'MD2PDFError',
+          } as MD2PDFError,
           canRetry: true,
         },
       ];
 
-      const suggestions = errorRecoveryManager.generateRecoverySuggestions(errors);
+      const suggestions =
+        errorRecoveryManager.generateRecoverySuggestions(errors);
 
       expect(suggestions.immediate).toContain('Check available disk space');
-      expect(suggestions.immediate).toContain('Ensure system resources are available');
-      expect(suggestions.longTerm).toContain('Consider processing fewer files concurrently');
+      expect(suggestions.immediate).toContain(
+        'Ensure system resources are available',
+      );
+      expect(suggestions.longTerm).toContain(
+        'Consider processing fewer files concurrently',
+      );
     });
 
     it('should generate suggestions for PDF_GENERATION_ERROR', () => {
@@ -256,31 +312,51 @@ describe('ErrorRecoveryManager', () => {
         },
       ];
 
-      const suggestions = errorRecoveryManager.generateRecoverySuggestions(errors);
+      const suggestions =
+        errorRecoveryManager.generateRecoverySuggestions(errors);
 
-      expect(suggestions.immediate).toContain('Try processing files individually');
-      expect(suggestions.longTerm).toContain('Check for corrupted or very large input files');
-      expect(suggestions.systemLevel).toContain('Increase system memory if processing large files');
+      expect(suggestions.immediate).toContain(
+        'Try processing files individually',
+      );
+      expect(suggestions.longTerm).toContain(
+        'Check for corrupted or very large input files',
+      );
+      expect(suggestions.systemLevel).toContain(
+        'Increase system memory if processing large files',
+      );
     });
 
     it('should handle multiple error types', () => {
       const errors: BatchError[] = [
         {
           inputPath: '/test/file1.md',
-          error: { type: ErrorType.PARSE_ERROR, message: 'Parse error', name: 'MD2PDFError' } as MD2PDFError,
+          error: {
+            type: ErrorType.PARSE_ERROR,
+            message: 'Parse error',
+            name: 'MD2PDFError',
+          } as MD2PDFError,
           canRetry: true,
         },
         {
           inputPath: '/test/file2.md',
-          error: { type: ErrorType.INVALID_FORMAT, message: 'Invalid format', name: 'MD2PDFError' } as MD2PDFError,
+          error: {
+            type: ErrorType.INVALID_FORMAT,
+            message: 'Invalid format',
+            name: 'MD2PDFError',
+          } as MD2PDFError,
           canRetry: true,
         },
       ];
 
-      const suggestions = errorRecoveryManager.generateRecoverySuggestions(errors);
+      const suggestions =
+        errorRecoveryManager.generateRecoverySuggestions(errors);
 
-      expect(suggestions.immediate).toContain('Validate Markdown syntax in failed files');
-      expect(suggestions.immediate).toContain('Check file extensions and formats');
+      expect(suggestions.immediate).toContain(
+        'Validate Markdown syntax in failed files',
+      );
+      expect(suggestions.immediate).toContain(
+        'Check file extensions and formats',
+      );
     });
   });
 
@@ -289,21 +365,38 @@ describe('ErrorRecoveryManager', () => {
       const errors: BatchError[] = [
         {
           inputPath: '/test/file1.md',
-          error: { type: ErrorType.SYSTEM_ERROR, message: 'System error', name: 'MD2PDFError' } as MD2PDFError,
+          error: {
+            type: ErrorType.SYSTEM_ERROR,
+            message: 'System error',
+            name: 'MD2PDFError',
+          } as MD2PDFError,
           canRetry: true,
         },
         {
           inputPath: '/test/file2.md',
-          error: { type: ErrorType.SYSTEM_ERROR, message: 'System error', name: 'MD2PDFError' } as MD2PDFError,
+          error: {
+            type: ErrorType.SYSTEM_ERROR,
+            message: 'System error',
+            name: 'MD2PDFError',
+          } as MD2PDFError,
           canRetry: true,
         },
       ];
 
-      const analysis = errorRecoveryManager.analyzeErrorPatterns(errors, mockConfig);
+      const analysis = errorRecoveryManager.analyzeErrorPatterns(
+        errors,
+        mockConfig,
+      );
 
-      expect(analysis.patterns).toContain('High failure rate detected: 2 errors');
-      expect(analysis.patterns).toContain('Multiple SYSTEM_ERROR errors: 2 occurrences');
-      expect(analysis.recommendations).toContain('Monitor system resources during processing');
+      expect(analysis.patterns).toContain(
+        'High failure rate detected: 2 errors',
+      );
+      expect(analysis.patterns).toContain(
+        'Multiple SYSTEM_ERROR errors: 2 occurrences',
+      );
+      expect(analysis.recommendations).toContain(
+        'Monitor system resources during processing',
+      );
     });
 
     it('should recommend reducing concurrent processes for system errors', () => {
@@ -315,14 +408,23 @@ describe('ErrorRecoveryManager', () => {
       const errors: BatchError[] = [
         {
           inputPath: '/test/file.md',
-          error: { type: ErrorType.SYSTEM_ERROR, message: 'System error', name: 'MD2PDFError' } as MD2PDFError,
+          error: {
+            type: ErrorType.SYSTEM_ERROR,
+            message: 'System error',
+            name: 'MD2PDFError',
+          } as MD2PDFError,
           canRetry: true,
         },
       ];
 
-      const analysis = errorRecoveryManager.analyzeErrorPatterns(errors, highConcurrencyConfig);
+      const analysis = errorRecoveryManager.analyzeErrorPatterns(
+        errors,
+        highConcurrencyConfig,
+      );
 
-      expect(analysis.recommendations).toContain('Reduce concurrent processes to improve stability');
+      expect(analysis.recommendations).toContain(
+        'Reduce concurrent processes to improve stability',
+      );
     });
 
     it('should provide file permission recommendations', () => {
@@ -338,9 +440,14 @@ describe('ErrorRecoveryManager', () => {
         },
       ];
 
-      const analysis = errorRecoveryManager.analyzeErrorPatterns(errors, mockConfig);
+      const analysis = errorRecoveryManager.analyzeErrorPatterns(
+        errors,
+        mockConfig,
+      );
 
-      expect(analysis.recommendations).toContain('Verify file system permissions and paths');
+      expect(analysis.recommendations).toContain(
+        'Verify file system permissions and paths',
+      );
     });
 
     it('should suggest Chinese font optimization for PDF errors', () => {
@@ -352,14 +459,23 @@ describe('ErrorRecoveryManager', () => {
       const errors: BatchError[] = [
         {
           inputPath: '/test/chinese.md',
-          error: { type: ErrorType.PDF_GENERATION_ERROR, message: 'PDF generation failed', name: 'MD2PDFError' } as MD2PDFError,
+          error: {
+            type: ErrorType.PDF_GENERATION_ERROR,
+            message: 'PDF generation failed',
+            name: 'MD2PDFError',
+          } as MD2PDFError,
           canRetry: true,
         },
       ];
 
-      const analysis = errorRecoveryManager.analyzeErrorPatterns(errors, configWithChinese);
+      const analysis = errorRecoveryManager.analyzeErrorPatterns(
+        errors,
+        configWithChinese,
+      );
 
-      expect(analysis.recommendations).toContain('Try disabling Chinese font support for faster processing');
+      expect(analysis.recommendations).toContain(
+        'Try disabling Chinese font support for faster processing',
+      );
     });
   });
 
@@ -386,7 +502,7 @@ describe('ErrorRecoveryManager', () => {
         },
       ];
 
-  const plan = errorRecoveryManager.createRecoveryPlan(errors, mockConfig);
+      const plan = errorRecoveryManager.createRecoveryPlan(errors, mockConfig);
 
       expect(plan.retryableFiles).toContain('/test/recoverable.md');
       expect(plan.manualReviewFiles).toContain('/test/manual.md');
@@ -434,9 +550,13 @@ describe('ErrorRecoveryManager', () => {
     it('should clean up output files and temp files', async () => {
       mockFs.promises.access.mockResolvedValue(undefined); // Files exist
       mockFs.promises.unlink.mockResolvedValue(undefined);
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  mockFs.promises.readdir.mockResolvedValue(['file.tmp', 'file.temp', 'other.pdf'] as any);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      mockFs.promises.readdir.mockResolvedValue([
+        'file.tmp',
+        'file.temp',
+        'other.pdf',
+      ] as any);
 
       const failedFiles = ['/input/file.md'];
 
@@ -451,7 +571,11 @@ describe('ErrorRecoveryManager', () => {
       const strategy = { cleanupOnFailure: false };
       const failedFiles = ['/input/file.md'];
 
-      await errorRecoveryManager.cleanupAfterFailure(failedFiles, '/output', strategy);
+      await errorRecoveryManager.cleanupAfterFailure(
+        failedFiles,
+        '/output',
+        strategy,
+      );
 
       expect(mockFs.promises.unlink).not.toHaveBeenCalled();
     });
@@ -464,24 +588,26 @@ describe('ErrorRecoveryManager', () => {
       const failedFiles = ['/input/file.md'];
 
       await expect(
-        errorRecoveryManager.cleanupAfterFailure(failedFiles, '/output')
+        errorRecoveryManager.cleanupAfterFailure(failedFiles, '/output'),
       ).resolves.not.toThrow();
 
       expect(consoleWarnSpy).toHaveBeenCalledWith(
         'Cleanup warning for /input/file.md:',
-        expect.any(Error)
+        expect.any(Error),
       );
     });
 
     it('should handle temp file discovery errors', async () => {
       mockFs.promises.access.mockResolvedValue(undefined);
       mockFs.promises.unlink.mockResolvedValue(undefined);
-      mockFs.promises.readdir.mockRejectedValue(new Error('Cannot read directory'));
+      mockFs.promises.readdir.mockRejectedValue(
+        new Error('Cannot read directory'),
+      );
 
       const failedFiles = ['/input/file.md'];
 
       await expect(
-        errorRecoveryManager.cleanupAfterFailure(failedFiles, '/output')
+        errorRecoveryManager.cleanupAfterFailure(failedFiles, '/output'),
       ).resolves.not.toThrow();
     });
   });
@@ -504,7 +630,7 @@ describe('ErrorRecoveryManager', () => {
 
     it('should detect high memory usage', async () => {
       // Mock high memory usage
-  (process as any).memoryUsage = (): NodeJS.MemoryUsage => ({
+      (process as any).memoryUsage = (): NodeJS.MemoryUsage => ({
         rss: 100 * 1024 * 1024,
         heapTotal: 50 * 1024 * 1024,
         heapUsed: 7 * 1024 * 1024 * 1024, // 7GB used
@@ -519,7 +645,7 @@ describe('ErrorRecoveryManager', () => {
     });
 
     it('should detect elevated memory usage warning', async () => {
-  (process as any).memoryUsage = (): NodeJS.MemoryUsage => ({
+      (process as any).memoryUsage = (): NodeJS.MemoryUsage => ({
         rss: 100 * 1024 * 1024,
         heapTotal: 50 * 1024 * 1024,
         heapUsed: 5 * 1024 * 1024 * 1024, // 5GB used (62.5%)
@@ -548,13 +674,29 @@ describe('ErrorRecoveryManager', () => {
 
     it('should detect high CPU load', async () => {
       mockOs.loadavg.mockReturnValue([4, 3, 2]); // Load of 4 on 4 cores = 100%
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  mockOs.cpus.mockReturnValue([
-    { model: 'Intel', speed: 2400, times: { user: 0, nice: 0, sys: 0, idle: 0, irq: 0 } },
-    { model: 'Intel', speed: 2400, times: { user: 0, nice: 0, sys: 0, idle: 0, irq: 0 } },
-    { model: 'Intel', speed: 2400, times: { user: 0, nice: 0, sys: 0, idle: 0, irq: 0 } },
-    { model: 'Intel', speed: 2400, times: { user: 0, nice: 0, sys: 0, idle: 0, irq: 0 } },
-  ] as unknown as os.CpuInfo[]);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      mockOs.cpus.mockReturnValue([
+        {
+          model: 'Intel',
+          speed: 2400,
+          times: { user: 0, nice: 0, sys: 0, idle: 0, irq: 0 },
+        },
+        {
+          model: 'Intel',
+          speed: 2400,
+          times: { user: 0, nice: 0, sys: 0, idle: 0, irq: 0 },
+        },
+        {
+          model: 'Intel',
+          speed: 2400,
+          times: { user: 0, nice: 0, sys: 0, idle: 0, irq: 0 },
+        },
+        {
+          model: 'Intel',
+          speed: 2400,
+          times: { user: 0, nice: 0, sys: 0, idle: 0, irq: 0 },
+        },
+      ] as unknown as os.CpuInfo[]);
 
       const health = await errorRecoveryManager.validateSystemHealth();
 
@@ -603,8 +745,14 @@ describe('ErrorRecoveryManager', () => {
         canRetry: false,
       };
 
-      const result1 = await errorRecoveryManager.recoverFromErrors([recoverableError], mockConfig);
-      const result2 = await errorRecoveryManager.recoverFromErrors([nonRecoverableError], mockConfig);
+      const result1 = await errorRecoveryManager.recoverFromErrors(
+        [recoverableError],
+        mockConfig,
+      );
+      const result2 = await errorRecoveryManager.recoverFromErrors(
+        [nonRecoverableError],
+        mockConfig,
+      );
 
       expect(result1.permanentFailures).toHaveLength(1); // Still fails in mock environment
       expect(result2.permanentFailures).toHaveLength(1); // Should fail immediately
@@ -613,13 +761,15 @@ describe('ErrorRecoveryManager', () => {
     it('should handle retry with system health validation', async () => {
       // Mock unhealthy system
       mockOs.totalmem.mockReturnValue(1024 * 1024 * 1024); // 1GB
-  (process.memoryUsage as unknown as () => NodeJS.MemoryUsage) = (jest.fn().mockReturnValue({
-        rss: 100 * 1024 * 1024,
-        heapTotal: 50 * 1024 * 1024,
-        heapUsed: 900 * 1024 * 1024, // 90% of 1GB
-        external: 5 * 1024 * 1024,
-        arrayBuffers: 1 * 1024 * 1024,
-  }) as unknown) as () => NodeJS.MemoryUsage;
+      (process.memoryUsage as unknown as () => NodeJS.MemoryUsage) = jest
+        .fn()
+        .mockReturnValue({
+          rss: 100 * 1024 * 1024,
+          heapTotal: 50 * 1024 * 1024,
+          heapUsed: 900 * 1024 * 1024, // 90% of 1GB
+          external: 5 * 1024 * 1024,
+          arrayBuffers: 1 * 1024 * 1024,
+        }) as unknown as () => NodeJS.MemoryUsage;
 
       const error: BatchError = {
         inputPath: '/test/file.md',
@@ -631,11 +781,16 @@ describe('ErrorRecoveryManager', () => {
         canRetry: true,
       };
 
-      const result = await errorRecoveryManager.recoverFromErrors([error], mockConfig);
+      const result = await errorRecoveryManager.recoverFromErrors(
+        [error],
+        mockConfig,
+      );
 
       expect(result.permanentFailures).toHaveLength(1);
       expect(consoleWarnSpy).toHaveBeenCalledWith(
-        expect.stringContaining('System health issues detected, skipping retry for /test/file.md')
+        expect.stringContaining(
+          'System health issues detected, skipping retry for /test/file.md',
+        ),
       );
     });
 
@@ -643,24 +798,41 @@ describe('ErrorRecoveryManager', () => {
       const errors: BatchError[] = [
         {
           inputPath: '/test/file1.md',
-          error: { type: ErrorType.SYSTEM_ERROR, message: 'System error', name: 'MD2PDFError' } as MD2PDFError,
+          error: {
+            type: ErrorType.SYSTEM_ERROR,
+            message: 'System error',
+            name: 'MD2PDFError',
+          } as MD2PDFError,
           canRetry: true,
         },
         {
           inputPath: '/test/file2.md',
-          error: { type: ErrorType.SYSTEM_ERROR, message: 'System error', name: 'MD2PDFError' } as MD2PDFError,
+          error: {
+            type: ErrorType.SYSTEM_ERROR,
+            message: 'System error',
+            name: 'MD2PDFError',
+          } as MD2PDFError,
           canRetry: true,
         },
         {
           inputPath: '/test/file3.md',
-          error: { type: ErrorType.PARSE_ERROR, message: 'Parse error', name: 'MD2PDFError' } as MD2PDFError,
+          error: {
+            type: ErrorType.PARSE_ERROR,
+            message: 'Parse error',
+            name: 'MD2PDFError',
+          } as MD2PDFError,
           canRetry: true,
         },
       ];
 
-      const analysis = errorRecoveryManager.analyzeErrorPatterns(errors, mockConfig);
+      const analysis = errorRecoveryManager.analyzeErrorPatterns(
+        errors,
+        mockConfig,
+      );
 
-      expect(analysis.patterns).toContain('Multiple SYSTEM_ERROR errors: 2 occurrences');
+      expect(analysis.patterns).toContain(
+        'Multiple SYSTEM_ERROR errors: 2 occurrences',
+      );
     });
 
     it('should handle file existence check', async () => {
@@ -669,7 +841,10 @@ describe('ErrorRecoveryManager', () => {
 
       await errorRecoveryManager.cleanupAfterFailure(failedFiles, '/output');
 
-      expect(mockFs.promises.access).toHaveBeenCalledWith('/output/existing.pdf', 0);
+      expect(mockFs.promises.access).toHaveBeenCalledWith(
+        '/output/existing.pdf',
+        0,
+      );
     });
   });
 });

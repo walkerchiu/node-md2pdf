@@ -26,7 +26,9 @@ describe('ConfigManager', () => {
 
   describe('initialization', () => {
     it('should initialize with default configuration', () => {
-      expect(configManager.get('pdf.margin.top')).toBe(defaultConfig.pdf.margin.top);
+      expect(configManager.get('pdf.margin.top')).toBe(
+        defaultConfig.pdf.margin.top,
+      );
       expect(configManager.get('toc.depth')).toBe(defaultConfig.toc.depth);
       expect(configManager.get('pdf.format')).toBe(defaultConfig.pdf.format);
     });
@@ -36,7 +38,9 @@ describe('ConfigManager', () => {
         configPath: '/custom/path/config.json',
       });
 
-      expect(customConfigManager.get('pdf.margin.top')).toBe(defaultConfig.pdf.margin.top);
+      expect(customConfigManager.get('pdf.margin.top')).toBe(
+        defaultConfig.pdf.margin.top,
+      );
     });
 
     it('should disable environment variables when configured', () => {
@@ -44,7 +48,9 @@ describe('ConfigManager', () => {
         useEnvironmentVariables: false,
       });
 
-      expect(noEnvConfigManager.get('pdf.margin.top')).toBe(defaultConfig.pdf.margin.top);
+      expect(noEnvConfigManager.get('pdf.margin.top')).toBe(
+        defaultConfig.pdf.margin.top,
+      );
     });
   });
 
@@ -196,7 +202,9 @@ describe('ConfigManager', () => {
       const allConfig = configManager.getAll();
 
       expect(allConfig).toHaveProperty('test');
-      expect((allConfig as { test: { key: string } }).test.key).toBe('test.value');
+      expect((allConfig as { test: { key: string } }).test.key).toBe(
+        'test.value',
+      );
     });
   });
 
@@ -208,9 +216,13 @@ describe('ConfigManager', () => {
       await configManager.save();
 
       expect(mockFs.ensureDir).toHaveBeenCalled();
-      expect(mockFs.writeJson).toHaveBeenCalledWith('/test/config.json', expect.any(Object), {
-        spaces: 2,
-      });
+      expect(mockFs.writeJson).toHaveBeenCalledWith(
+        '/test/config.json',
+        expect.any(Object),
+        {
+          spaces: 2,
+        },
+      );
     });
 
     it('should handle save errors gracefully', async () => {
@@ -253,7 +265,9 @@ describe('ConfigManager', () => {
       await configManager.load();
 
       // Should maintain existing config
-      expect(configManager.get('pdf.margin.top')).toBe(defaultConfig.pdf.margin.top);
+      expect(configManager.get('pdf.margin.top')).toBe(
+        defaultConfig.pdf.margin.top,
+      );
     });
 
     it('should handle file read errors', async () => {
@@ -281,7 +295,9 @@ describe('ConfigManager', () => {
       // Should override existing setting
       expect(configManager.get('pdf.margin.top')).toBe('2in');
       // Should keep other existing settings
-      expect(configManager.get('pdf.margin.right')).toBe(defaultConfig.pdf.margin.right);
+      expect(configManager.get('pdf.margin.right')).toBe(
+        defaultConfig.pdf.margin.right,
+      );
       // Should add new settings
       expect(configManager.get('custom.newSetting')).toBe('value');
     });

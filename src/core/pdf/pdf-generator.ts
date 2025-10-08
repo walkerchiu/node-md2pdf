@@ -1,10 +1,17 @@
-import puppeteer, { Browser, Page, PDFOptions } from 'puppeteer';
 import { existsSync, mkdirSync } from 'fs';
 import { dirname, resolve } from 'path';
-import { PDFGeneratorOptions, PDFGenerationResult, StyleOptions } from './types';
-import { PDFTemplates } from './templates';
-import { TOCGenerator, PageEstimator } from '../toc';
+
+import puppeteer, { Browser, Page, PDFOptions } from 'puppeteer';
+
 import { Heading } from '../../types/index';
+import { TOCGenerator, PageEstimator } from '../toc';
+
+import { PDFTemplates } from './templates';
+import {
+  PDFGeneratorOptions,
+  PDFGenerationResult,
+  StyleOptions,
+} from './types';
 
 export class PDFGenerator {
   private browser: Browser | null = null;
@@ -52,7 +59,8 @@ export class PDFGenerator {
       },
       // Fallback to system Chrome on macOS/Unix systems
       {
-        executablePath: '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
+        executablePath:
+          '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
         headless: 'new' as const,
         timeout: 10000,
         args: ['--no-sandbox'],
@@ -101,7 +109,10 @@ export class PDFGenerator {
         // Only log in development/debug mode
         if (process.env.NODE_ENV === 'development' || process.env.DEBUG) {
           // eslint-disable-next-line no-console
-          console.warn('Puppeteer config failed, trying next:', config.executablePath || 'bundled');
+          console.warn(
+            'Puppeteer config failed, trying next:',
+            config.executablePath || 'bundled',
+          );
         }
       }
     }
@@ -121,7 +132,7 @@ export class PDFGenerator {
       headings?: Heading[];
       markdownContent?: string;
       enableChineseSupport?: boolean;
-    } = {}
+    } = {},
   ): Promise<PDFGenerationResult> {
     const startTime = Date.now();
 
@@ -144,7 +155,11 @@ export class PDFGenerator {
 
       // Generate TOC if enabled and headings provided
       let fullHTML: string;
-      if (this.options.toc?.enabled && options.headings && options.headings.length > 0) {
+      if (
+        this.options.toc?.enabled &&
+        options.headings &&
+        options.headings.length > 0
+      ) {
         const tocGenerator = new TOCGenerator({
           maxDepth: this.options.toc.maxDepth || 3,
           includePageNumbers: this.options.toc.includePageNumbers || false,
@@ -164,9 +179,12 @@ export class PDFGenerator {
           const pageEstimator = new PageEstimator();
           const pageNumbers = pageEstimator.estimatePageNumbers(
             options.headings,
-            options.markdownContent
+            options.markdownContent,
           );
-          tocResult = tocGenerator.generateTOCWithPageNumbers(options.headings, pageNumbers);
+          tocResult = tocGenerator.generateTOCWithPageNumbers(
+            options.headings,
+            pageNumbers,
+          );
         } else {
           tocResult = tocGenerator.generateTOC(options.headings);
         }
@@ -176,14 +194,14 @@ export class PDFGenerator {
           htmlContent,
           options.title,
           options.customCSS,
-          options.enableChineseSupport || false
+          options.enableChineseSupport || false,
         );
       } else {
         fullHTML = PDFTemplates.getFullHTML(
           htmlContent,
           options.title,
           options.customCSS,
-          options.enableChineseSupport || false
+          options.enableChineseSupport || false,
         );
       }
 
@@ -197,9 +215,20 @@ export class PDFGenerator {
 
         const pdfOptions: PDFOptions = {
           path: resolvedOutputPath,
-          format: this.options.format as 'A4' | 'A3' | 'A5' | 'Legal' | 'Letter' | 'Tabloid',
+          format: this.options.format as
+            | 'A4'
+            | 'A3'
+            | 'A5'
+            | 'Legal'
+            | 'Letter'
+            | 'Tabloid',
           landscape: this.options.orientation === 'landscape',
-          margin: this.options.margin || { top: '1in', right: '1in', bottom: '1in', left: '1in' },
+          margin: this.options.margin || {
+            top: '1in',
+            right: '1in',
+            bottom: '1in',
+            left: '1in',
+          },
           displayHeaderFooter: this.options.displayHeaderFooter || false,
           headerTemplate: this.options.headerTemplate || '',
           footerTemplate: this.options.footerTemplate || '',
@@ -244,7 +273,7 @@ export class PDFGenerator {
       markdownContent?: string;
       headings?: Heading[];
       enableChineseSupport?: boolean;
-    } = {}
+    } = {},
   ): Promise<PDFGenerationResult> {
     try {
       if (!existsSync(inputPath)) {
@@ -296,7 +325,7 @@ export class PDFGenerator {
       }
     } catch (error) {
       errors.push(
-        `Puppeteer initialization failed: ${error instanceof Error ? error.message : String(error)}`
+        `Puppeteer initialization failed: ${error instanceof Error ? error.message : String(error)}`,
       );
     }
 
@@ -312,7 +341,10 @@ export class PDFGenerator {
         // Add timeout to prevent hanging with proper cleanup
         let timeoutId: NodeJS.Timeout | null = null;
         const timeoutPromise = new Promise<void>((_, reject) => {
-          timeoutId = setTimeout(() => reject(new Error('Browser close timeout')), 3000);
+          timeoutId = setTimeout(
+            () => reject(new Error('Browser close timeout')),
+            3000,
+          );
           // Ensure timeout doesn't keep the process alive
           if (timeoutId.unref) {
             timeoutId.unref();

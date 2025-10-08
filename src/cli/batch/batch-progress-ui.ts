@@ -7,6 +7,7 @@
 
 import chalk from 'chalk';
 import ora, { Ora } from 'ora';
+
 import {
   BatchProgressEvent,
   BatchProgressInfo,
@@ -29,7 +30,9 @@ export class BatchProgressUI {
    * Start progress display
    */
   start(totalFiles: number): void {
-    this.spinner.start(chalk.cyan(`🚀 Starting batch conversion of ${totalFiles} files...`));
+    this.spinner.start(
+      chalk.cyan(`🚀 Starting batch conversion of ${totalFiles} files...`),
+    );
   }
 
   /**
@@ -39,7 +42,10 @@ export class BatchProgressUI {
     const now = Date.now();
 
     // Throttle updates to avoid overwhelming the console
-    if (now - this.lastUpdateTime < this.updateInterval && event.type !== 'complete') {
+    if (
+      now - this.lastUpdateTime < this.updateInterval &&
+      event.type !== 'complete'
+    ) {
       return;
     }
     this.lastUpdateTime = now;
@@ -97,10 +103,14 @@ export class BatchProgressUI {
     console.log(`${chalk.bold('Input Pattern:')} ${config.inputPattern}`);
     console.log(`${chalk.bold('Output Directory:')} ${config.outputDirectory}`);
     console.log(
-      `${chalk.bold('Preserve Structure:')} ${config.preserveDirectoryStructure ? 'Yes' : 'No'}`
+      `${chalk.bold('Preserve Structure:')} ${config.preserveDirectoryStructure ? 'Yes' : 'No'}`,
     );
-    console.log(`${chalk.bold('Concurrent Processes:')} ${config.maxConcurrentProcesses}`);
-    console.log(`${chalk.bold('Continue on Error:')} ${config.continueOnError ? 'Yes' : 'No'}`);
+    console.log(
+      `${chalk.bold('Concurrent Processes:')} ${config.maxConcurrentProcesses}`,
+    );
+    console.log(
+      `${chalk.bold('Continue on Error:')} ${config.continueOnError ? 'Yes' : 'No'}`,
+    );
     console.log(chalk.gray('─'.repeat(60)));
   }
 
@@ -119,9 +129,13 @@ export class BatchProgressUI {
   }): void {
     console.log();
     if (result.success && result.failedFiles === 0) {
-      this.spinner.succeed(chalk.green('✅ Batch conversion completed successfully!'));
+      this.spinner.succeed(
+        chalk.green('✅ Batch conversion completed successfully!'),
+      );
     } else if (result.successfulFiles > 0) {
-      this.spinner.warn(chalk.yellow('⚠️  Batch conversion completed with some failures'));
+      this.spinner.warn(
+        chalk.yellow('⚠️  Batch conversion completed with some failures'),
+      );
     } else {
       this.spinner.fail(chalk.red('❌ Batch conversion failed'));
     }
@@ -130,19 +144,27 @@ export class BatchProgressUI {
     console.log(chalk.cyan('📊 Batch Processing Results:'));
     console.log(chalk.gray('─'.repeat(60)));
     console.log(`${chalk.bold('Total files:')} ${result.totalFiles}`);
-    console.log(`${chalk.bold('Successful:')} ${chalk.green(result.successfulFiles.toString())}`);
+    console.log(
+      `${chalk.bold('Successful:')} ${chalk.green(result.successfulFiles.toString())}`,
+    );
 
     if (result.failedFiles > 0) {
-      console.log(`${chalk.bold('Failed:')} ${chalk.red(result.failedFiles.toString())}`);
+      console.log(
+        `${chalk.bold('Failed:')} ${chalk.red(result.failedFiles.toString())}`,
+      );
     }
     if (result.skippedFiles > 0) {
-      console.log(`${chalk.bold('Skipped:')} ${chalk.yellow(result.skippedFiles.toString())}`);
+      console.log(
+        `${chalk.bold('Skipped:')} ${chalk.yellow(result.skippedFiles.toString())}`,
+      );
     }
     const processingTimeText = this.formatDuration(result.processingTime);
     console.log(`${chalk.bold('Processing time:')} ${processingTimeText}`);
     if (result.successfulFiles > 0) {
       const avgTime = result.processingTime / result.successfulFiles;
-      console.log(`${chalk.bold('Average per file:')} ${this.formatDuration(avgTime)}`);
+      console.log(
+        `${chalk.bold('Average per file:')} ${this.formatDuration(avgTime)}`,
+      );
     }
     console.log(chalk.gray('─'.repeat(60)));
 
@@ -152,8 +174,8 @@ export class BatchProgressUI {
     }
 
     // Show successful files summary
-    if (result.results.some(r => r.success)) {
-      this.displaySuccessfulFiles(result.results.filter(r => r.success));
+    if (result.results.some((r) => r.success)) {
+      this.displaySuccessfulFiles(result.results.filter((r) => r.success));
     }
   }
 
@@ -175,7 +197,7 @@ export class BatchProgressUI {
         }
         if (Array.isArray(e.suggestions) && e.suggestions.length > 0) {
           console.log(chalk.gray('     Suggestions:'));
-          e.suggestions.forEach(suggestion => {
+          e.suggestions.forEach((suggestion) => {
             console.log(chalk.gray(`     • ${suggestion}`));
           });
         }
@@ -202,7 +224,11 @@ export class BatchProgressUI {
         const outputSize = this.formatBytes(result.stats.outputSize);
         const pages = result.stats.pageCount;
         const time = this.formatDuration(result.processingTime);
-        console.log(chalk.gray(`     ${inputSize} → ${outputSize}, ${pages} pages, ${time}`));
+        console.log(
+          chalk.gray(
+            `     ${inputSize} → ${outputSize}, ${pages} pages, ${time}`,
+          ),
+        );
       }
     });
     console.log(chalk.gray('─'.repeat(60)));
@@ -212,14 +238,18 @@ export class BatchProgressUI {
    * Handle start event
    */
   private handleStart(data: BatchProgressInfo): void {
-    this.spinner.text = chalk.cyan(`🚀 Batch processing started (${data.totalFiles} files)`);
+    this.spinner.text = chalk.cyan(
+      `🚀 Batch processing started (${data.totalFiles} files)`,
+    );
   }
 
   /**
    * Handle progress event
    */
   private handleProgress(data: BatchProgressInfo): void {
-    const percentage = Math.round((data.processedFiles / data.totalFiles) * 100);
+    const percentage = Math.round(
+      (data.processedFiles / data.totalFiles) * 100,
+    );
     const progress = this.generateProgressBar(percentage);
     let text = `${progress} ${percentage}% (${data.processedFiles}/${data.totalFiles})`;
     if (data.currentFile) {
@@ -236,7 +266,10 @@ export class BatchProgressUI {
   /**
    * Handle file completion
    */
-  private handleFileComplete(_data: BatchProgressInfo, _currentFile?: string): void {
+  private handleFileComplete(
+    _data: BatchProgressInfo,
+    _currentFile?: string,
+  ): void {
     // Progress update will be handled by handleProgress
     // This is mainly for logging purposes if needed
   }
@@ -244,7 +277,11 @@ export class BatchProgressUI {
   /**
    * Handle file error
    */
-  private handleFileError(_data: BatchProgressInfo, currentFile?: string, error?: unknown): void {
+  private handleFileError(
+    _data: BatchProgressInfo,
+    currentFile?: string,
+    error?: unknown,
+  ): void {
     if (currentFile) {
       const shortPath = this.shortenPath(currentFile);
       console.log(chalk.red(`\n❌ Failed: ${shortPath}`));
@@ -261,14 +298,18 @@ export class BatchProgressUI {
    * Handle completion
    */
   private handleComplete(data: BatchProgressInfo): void {
-    const successRate = Math.round((data.successfulFiles / data.totalFiles) * 100);
+    const successRate = Math.round(
+      (data.successfulFiles / data.totalFiles) * 100,
+    );
     if (successRate === 100) {
-      this.spinner.succeed(chalk.green(`✅ All ${data.totalFiles} files processed successfully!`));
+      this.spinner.succeed(
+        chalk.green(`✅ All ${data.totalFiles} files processed successfully!`),
+      );
     } else if (data.successfulFiles > 0) {
       this.spinner.warn(
         chalk.yellow(
-          `⚠️  Processed ${data.successfulFiles}/${data.totalFiles} files (${successRate}% success rate)`
-        )
+          `⚠️  Processed ${data.successfulFiles}/${data.totalFiles} files (${successRate}% success rate)`,
+        ),
       );
     } else {
       this.spinner.fail(chalk.red(`❌ Failed to process any files`));

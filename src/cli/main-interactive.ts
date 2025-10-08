@@ -3,8 +3,6 @@
  * Presents options for single file or batch processing
  */
 
-/* eslint-disable prettier/prettier */
-
 import chalk from 'chalk';
 
 import { BatchInteractiveMode } from './batch';
@@ -58,12 +56,20 @@ export class MainInteractiveMode {
                 await singleMode.start();
                 break; // Success, exit retry loop
               } catch (error) {
-                if (error instanceof Error && error.message === 'USER_CANCELLED') {
+                if (
+                  error instanceof Error &&
+                  error.message === 'USER_CANCELLED'
+                ) {
                   this.logger.info('Single file mode cancelled by user');
                   break; // User cancelled, exit retry loop and continue to main menu
-                } else if (error instanceof Error && error.message === 'USER_RETRY') {
+                } else if (
+                  error instanceof Error &&
+                  error.message === 'USER_RETRY'
+                ) {
                   retryCount++;
-                  this.logger.info(`User requested retry (attempt ${retryCount}/${maxRetries})`);
+                  this.logger.info(
+                    `User requested retry (attempt ${retryCount}/${maxRetries})`,
+                  );
                   if (retryCount >= maxRetries) {
                     this.logger.warn('Max retry attempts reached');
                     break; // Exit retry loop after max attempts

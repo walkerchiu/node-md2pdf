@@ -10,14 +10,14 @@ import { TestCleanup } from '../tests/utils/test-cleanup';
 
 const directories = [
   path.join(__dirname, '../tests/fixtures/markdown'),
-  path.join(__dirname, '../tests/temp')
+  path.join(__dirname, '../tests/temp'),
 ];
 
 // eslint-disable-next-line no-console
 console.log('🧹 Cleaning up test-generated files...');
 
 let totalFiles = 0;
-directories.forEach(dir => {
+directories.forEach((dir) => {
   // eslint-disable-next-line no-console
   console.log(`📁 Checking directory: ${dir}`);
 
@@ -27,7 +27,7 @@ directories.forEach(dir => {
     // eslint-disable-next-line no-console
     console.log('🗂️ Found test files to clean up:');
     // eslint-disable-next-line no-console
-    testFiles.forEach(file => console.log(`   - ${file}`));
+    testFiles.forEach((file) => console.log(`   - ${file}`));
     totalFiles += testFiles.length;
   }
 

@@ -3,9 +3,12 @@
  * Wraps existing PDFGenerator with the new engine interface
  */
 
-import puppeteer, { Browser, Page, PDFOptions } from 'puppeteer';
 import { existsSync, mkdirSync } from 'fs';
 import { dirname, resolve } from 'path';
+
+import puppeteer, { Browser, Page, PDFOptions } from 'puppeteer';
+
+import { PDFTemplates } from '../templates';
 
 import {
   IPDFEngine,
@@ -16,7 +19,6 @@ import {
   PDFEngineCapabilities,
   PDFEngineMetrics,
 } from './types';
-import { PDFTemplates } from '../templates';
 
 export class PuppeteerPDFEngine implements IPDFEngine {
   public readonly name = 'puppeteer';

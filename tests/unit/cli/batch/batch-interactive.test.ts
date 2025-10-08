@@ -134,7 +134,9 @@ describe('BatchInteractiveMode', () => {
         files: [{ inputPath: 'test1.md' }, { inputPath: 'test2.md' }],
       });
 
-      (batchMode as any).getBatchConfig = jest.fn().mockResolvedValue(mockBatchConfig);
+      (batchMode as any).getBatchConfig = jest
+        .fn()
+        .mockResolvedValue(mockBatchConfig);
       (batchMode as any).finalConfirmation = jest.fn().mockResolvedValue(true);
       (batchMode as any).processBatch = jest.fn().mockResolvedValue(undefined);
     });
@@ -161,11 +163,16 @@ describe('BatchInteractiveMode', () => {
 
     it('should handle errors during workflow', async () => {
       const error = new Error('Workflow error');
-      (batchMode as any).getInputPatternAndFiles = jest.fn().mockRejectedValue(error);
+      (batchMode as any).getInputPatternAndFiles = jest
+        .fn()
+        .mockRejectedValue(error);
 
       await expect(batchMode.start()).rejects.toThrow('Workflow error');
 
-      expect(mockLogger.error).toHaveBeenCalledWith('Batch interactive mode error', error);
+      expect(mockLogger.error).toHaveBeenCalledWith(
+        'Batch interactive mode error',
+        error,
+      );
     });
   });
 
@@ -175,13 +182,16 @@ describe('BatchInteractiveMode', () => {
       // Test the pattern parsing logic directly
       const parsePattern = (pattern: string) => {
         if (pattern.includes(',')) {
-          return pattern.split(',').map(p => p.trim().replace(/['"]/g, ''));
+          return pattern.split(',').map((p) => p.trim().replace(/['"]/g, ''));
         }
         return [pattern];
       };
 
       expect(parsePattern('*.md')).toEqual(['*.md']);
-      expect(parsePattern('file1.md, file2.md')).toEqual(['file1.md', 'file2.md']);
+      expect(parsePattern('file1.md, file2.md')).toEqual([
+        'file1.md',
+        'file2.md',
+      ]);
       expect(parsePattern('"file with spaces.md", "another.md"')).toEqual([
         'file with spaces.md',
         'another.md',
@@ -191,7 +201,9 @@ describe('BatchInteractiveMode', () => {
     it('should test markdown file detection logic', () => {
       const isMarkdownFile = (filename: string) => {
         const markdownExtensions = ['.md', '.markdown', '.mdown', '.mkd'];
-        return markdownExtensions.some(ext => filename.toLowerCase().endsWith(ext));
+        return markdownExtensions.some((ext) =>
+          filename.toLowerCase().endsWith(ext),
+        );
       };
 
       expect(isMarkdownFile('test.md')).toBe(true);
@@ -218,10 +230,18 @@ describe('BatchInteractiveMode', () => {
         }
       };
 
-      expect(getFormatDescription(BatchFilenameFormat.ORIGINAL)).toBe('Keep original names');
-      expect(getFormatDescription(BatchFilenameFormat.WITH_DATE)).toBe('Add date suffix');
-      expect(getFormatDescription(BatchFilenameFormat.WITH_TIMESTAMP)).toBe('Add timestamp suffix');
-      expect(getFormatDescription(BatchFilenameFormat.CUSTOM)).toBe('Custom format');
+      expect(getFormatDescription(BatchFilenameFormat.ORIGINAL)).toBe(
+        'Keep original names',
+      );
+      expect(getFormatDescription(BatchFilenameFormat.WITH_DATE)).toBe(
+        'Add date suffix',
+      );
+      expect(getFormatDescription(BatchFilenameFormat.WITH_TIMESTAMP)).toBe(
+        'Add timestamp suffix',
+      );
+      expect(getFormatDescription(BatchFilenameFormat.CUSTOM)).toBe(
+        'Custom format',
+      );
     });
 
     it('should test configuration validation', () => {
@@ -232,7 +252,10 @@ describe('BatchInteractiveMode', () => {
           errors.push('Output directory is required');
         }
 
-        if (config.maxConcurrentProcesses < 1 || config.maxConcurrentProcesses > 10) {
+        if (
+          config.maxConcurrentProcesses < 1 ||
+          config.maxConcurrentProcesses > 10
+        ) {
           errors.push('Concurrent processes must be between 1 and 10');
         }
 
@@ -261,13 +284,21 @@ describe('BatchInteractiveMode', () => {
   // Test conditional logic branches
   describe('conditional logic tests', () => {
     it('should test getBatchConfig when condition logic', () => {
-      const whenCondition = (answers: { filenameFormat: BatchFilenameFormat }): boolean => {
+      const whenCondition = (answers: {
+        filenameFormat: BatchFilenameFormat;
+      }): boolean => {
         return answers.filenameFormat === BatchFilenameFormat.CUSTOM;
       };
 
-      expect(whenCondition({ filenameFormat: BatchFilenameFormat.CUSTOM })).toBe(true);
-      expect(whenCondition({ filenameFormat: BatchFilenameFormat.ORIGINAL })).toBe(false);
-      expect(whenCondition({ filenameFormat: BatchFilenameFormat.WITH_DATE })).toBe(false);
+      expect(
+        whenCondition({ filenameFormat: BatchFilenameFormat.CUSTOM }),
+      ).toBe(true);
+      expect(
+        whenCondition({ filenameFormat: BatchFilenameFormat.ORIGINAL }),
+      ).toBe(false);
+      expect(
+        whenCondition({ filenameFormat: BatchFilenameFormat.WITH_DATE }),
+      ).toBe(false);
     });
 
     it('should test custom filename pattern validation', () => {
@@ -278,7 +309,9 @@ describe('BatchInteractiveMode', () => {
         return true;
       };
 
-      expect(validateCustomPattern('invalid')).toBe('Pattern must include {name} placeholder');
+      expect(validateCustomPattern('invalid')).toBe(
+        'Pattern must include {name} placeholder',
+      );
       expect(validateCustomPattern('{name}_{date}.pdf')).toBe(true);
       expect(validateCustomPattern('{name}-{timestamp}.pdf')).toBe(true);
     });
@@ -292,7 +325,9 @@ describe('BatchInteractiveMode', () => {
         return { displayFiles, hasMore, remaining };
       };
 
-      const files = Array.from({ length: 8 }, (_, i) => ({ path: `test${i + 1}.md` }));
+      const files = Array.from({ length: 8 }, (_, i) => ({
+        path: `test${i + 1}.md`,
+      }));
       const result = getDisplayFiles(files);
 
       expect(result.displayFiles).toHaveLength(3);
@@ -318,11 +353,17 @@ describe('BatchInteractiveMode', () => {
       });
 
       await expect(processBatch()).rejects.toThrow('Processing error');
-      expect(consoleErrorSpy).toHaveBeenCalledWith('❌ Batch processing failed:', error);
+      expect(consoleErrorSpy).toHaveBeenCalledWith(
+        '❌ Batch processing failed:',
+        error,
+      );
     });
 
     it('should test file path resolution logic', () => {
-      const resolveFilePath = (inputPath: string, basePath: string = process.cwd()) => {
+      const resolveFilePath = (
+        inputPath: string,
+        basePath: string = process.cwd(),
+      ) => {
         if (inputPath.startsWith('./')) {
           return inputPath.replace('./', basePath + '/');
         }
@@ -345,9 +386,15 @@ describe('BatchInteractiveMode', () => {
         const lines: string[] = [];
         lines.push(`📁 Files to process: ${config.inputFiles?.length || 0}`);
         lines.push(`📂 Output directory: ${config.outputDirectory}`);
-        lines.push(`🗂️  Preserve structure: ${config.preserveDirectoryStructure ? 'Yes' : 'No'}`);
-        lines.push(`📄 Page numbers: ${config.includePageNumbers ? 'Yes' : 'No'}`);
-        lines.push(`🈳 Chinese support: ${config.chineseFontSupport ? 'Enabled' : 'Disabled'}`);
+        lines.push(
+          `🗂️  Preserve structure: ${config.preserveDirectoryStructure ? 'Yes' : 'No'}`,
+        );
+        lines.push(
+          `📄 Page numbers: ${config.includePageNumbers ? 'Yes' : 'No'}`,
+        );
+        lines.push(
+          `🈳 Chinese support: ${config.chineseFontSupport ? 'Enabled' : 'Disabled'}`,
+        );
         return lines;
       };
 
@@ -382,10 +429,15 @@ describe('BatchInteractiveMode', () => {
       const batchModePrivate = batchMode as any;
 
       // Mock getInputPatternAndFiles to return fixed data
-      jest.spyOn(batchModePrivate, 'getInputPatternAndFiles').mockResolvedValue({
-        inputPattern: '*.md',
-        files: [{ inputPath: '/test/file1.md' }, { inputPath: '/test/file2.md' }],
-      });
+      jest
+        .spyOn(batchModePrivate, 'getInputPatternAndFiles')
+        .mockResolvedValue({
+          inputPattern: '*.md',
+          files: [
+            { inputPath: '/test/file1.md' },
+            { inputPath: '/test/file2.md' },
+          ],
+        });
 
       // Mock getBatchConfig to return configuration
       jest.spyOn(batchModePrivate, 'getBatchConfig').mockResolvedValue({
@@ -418,10 +470,12 @@ describe('BatchInteractiveMode', () => {
     it('should test start workflow with user cancellation', async () => {
       const batchModePrivate = batchMode as any;
 
-      jest.spyOn(batchModePrivate, 'getInputPatternAndFiles').mockResolvedValue({
-        inputPattern: '*.md',
-        files: [{ inputPath: '/test/file1.md' }],
-      });
+      jest
+        .spyOn(batchModePrivate, 'getInputPatternAndFiles')
+        .mockResolvedValue({
+          inputPattern: '*.md',
+          files: [{ inputPath: '/test/file1.md' }],
+        });
 
       jest.spyOn(batchModePrivate, 'getBatchConfig').mockResolvedValue({
         inputPattern: '*.md',
@@ -430,7 +484,9 @@ describe('BatchInteractiveMode', () => {
       });
 
       // User cancels at final confirmation
-      jest.spyOn(batchModePrivate, 'finalConfirmation').mockResolvedValue(false);
+      jest
+        .spyOn(batchModePrivate, 'finalConfirmation')
+        .mockResolvedValue(false);
 
       const processSpyNotCalled = jest.spyOn(batchModePrivate, 'processBatch');
 
@@ -441,9 +497,11 @@ describe('BatchInteractiveMode', () => {
     });
 
     it('should handle process.exit scenarios in file selection', () => {
-      const processExitMock = jest.spyOn(process, 'exit').mockImplementation(() => {
-        throw new Error('process.exit called');
-      });
+      const processExitMock = jest
+        .spyOn(process, 'exit')
+        .mockImplementation(() => {
+          throw new Error('process.exit called');
+        });
 
       // Test utility function that simulates exit behavior
       const simulateUserCancelation = () => {
@@ -505,17 +563,23 @@ describe('BatchInteractiveMode', () => {
         if (pattern === '*.md' || pattern === '**/*.md') {
           const files = ['test1.md', 'test2.md', 'notmd.txt'];
           fileList = files
-            .filter(file => file.endsWith('.md') || file.endsWith('.markdown'))
-            .map(file => `${process.cwd()}/${file}`);
+            .filter(
+              (file) => file.endsWith('.md') || file.endsWith('.markdown'),
+            )
+            .map((file) => `${process.cwd()}/${file}`);
         } else if (pattern.includes(',')) {
-          fileList = pattern.split(',').map((f: string) => f.trim().replace(/"/g, ''));
+          fileList = pattern
+            .split(',')
+            .map((f: string) => f.trim().replace(/"/g, ''));
         } else {
           if (pattern.endsWith('.md') || pattern.endsWith('.markdown')) {
             fileList = [pattern];
           }
         }
 
-        return fileList.map(filePath => ({ inputPath: mockPath.resolve(filePath) }));
+        return fileList.map((filePath) => ({
+          inputPath: mockPath.resolve(filePath),
+        }));
       };
 
       const result1 = testFileCollection('*.md');
@@ -551,7 +615,9 @@ describe('BatchInteractiveMode', () => {
         return true;
       };
 
-      expect(validateOutputDirectory('')).toBe('Please enter an output directory');
+      expect(validateOutputDirectory('')).toBe(
+        'Please enter an output directory',
+      );
       expect(validateOutputDirectory('./output')).toBe(true);
 
       // Test custom filename pattern validation
@@ -563,7 +629,7 @@ describe('BatchInteractiveMode', () => {
       };
 
       expect(validateCustomPattern('custom_pattern')).toBe(
-        'Pattern must include {name} placeholder'
+        'Pattern must include {name} placeholder',
       );
       expect(validateCustomPattern('{name}_{date}')).toBe(true);
     });
@@ -597,7 +663,7 @@ describe('BatchInteractiveMode', () => {
       };
 
       const config = buildConfig('**/*.md', mockAnswers);
-      
+
       expect(config.inputPattern).toBe('**/*.md');
       expect(config.outputDirectory).toBe('./test-output');
       expect(config.preserveDirectoryStructure).toBe(false);
@@ -617,15 +683,19 @@ describe('BatchInteractiveMode', () => {
       expect(createRelativePath(fullPath, testCwd)).toBe('./docs/readme.md');
 
       // Test file list truncation logic
-      const createFileDisplayList = (files: Array<{ inputPath: string }>, maxDisplay = 3) => {
-        const shortFileList = files.slice(0, maxDisplay).map(f => {
+      const createFileDisplayList = (
+        files: Array<{ inputPath: string }>,
+        maxDisplay = 3,
+      ) => {
+        const shortFileList = files.slice(0, maxDisplay).map((f) => {
           return f.inputPath.replace(process.cwd() + '/', './');
         });
 
         return {
           displayFiles: shortFileList,
           hasMore: files.length > maxDisplay,
-          additionalCount: files.length > maxDisplay ? files.length - maxDisplay : 0,
+          additionalCount:
+            files.length > maxDisplay ? files.length - maxDisplay : 0,
         };
       };
 
@@ -694,18 +764,29 @@ describe('BatchInteractiveMode', () => {
       expect(options.customStyles).toContain('Noto Sans CJK SC');
 
       // Test without Chinese support
-      const optionsNoChineseTest = buildFileOptions({ ...testConfig, chineseFontSupport: false });
+      const optionsNoChineseTest = buildFileOptions({
+        ...testConfig,
+        chineseFontSupport: false,
+      });
       expect(optionsNoChineseTest.customStyles).toBeUndefined();
 
       // Test without page numbers
-      const optionsNoPageNumbers = buildFileOptions({ ...testConfig, includePageNumbers: false });
-      expect((optionsNoPageNumbers.pdfOptions as any).displayHeaderFooter).toBe(false);
+      const optionsNoPageNumbers = buildFileOptions({
+        ...testConfig,
+        includePageNumbers: false,
+      });
+      expect((optionsNoPageNumbers.pdfOptions as any).displayHeaderFooter).toBe(
+        false,
+      );
       expect((optionsNoPageNumbers.pdfOptions as any).footerTemplate).toBe('');
     });
 
     it('should test different filename format configurations', () => {
       // Test utility function for filename format descriptions
-      const getFilenameFormatDescription = (format: string, customPattern?: string) => {
+      const getFilenameFormatDescription = (
+        format: string,
+        customPattern?: string,
+      ) => {
         switch (format) {
           case 'original':
             return 'Keep original names';
@@ -720,22 +801,29 @@ describe('BatchInteractiveMode', () => {
         }
       };
 
-      expect(getFilenameFormatDescription('original')).toBe('Keep original names');
+      expect(getFilenameFormatDescription('original')).toBe(
+        'Keep original names',
+      );
       expect(getFilenameFormatDescription('with_date')).toBe('Add date suffix');
-      expect(getFilenameFormatDescription('with_timestamp')).toBe('Add timestamp suffix');
+      expect(getFilenameFormatDescription('with_timestamp')).toBe(
+        'Add timestamp suffix',
+      );
       expect(getFilenameFormatDescription('custom', '{name}_{date}.pdf')).toBe(
-        'Custom: {name}_{date}.pdf'
+        'Custom: {name}_{date}.pdf',
       );
     });
 
     it('should test file path processing logic', () => {
       // Test utility function for processing file paths
-      const processFilePaths = (inputPattern: string, cwd: string = process.cwd()) => {
+      const processFilePaths = (
+        inputPattern: string,
+        cwd: string = process.cwd(),
+      ) => {
         if (inputPattern.includes(',')) {
-          return inputPattern.split(',').map(f => f.trim().replace(/"/g, ''));
+          return inputPattern.split(',').map((f) => f.trim().replace(/"/g, ''));
         }
         if (inputPattern === '*.md') {
-          return ['file1.md', 'file2.md'].map(f => `${cwd}/${f}`);
+          return ['file1.md', 'file2.md'].map((f) => `${cwd}/${f}`);
         }
         return [inputPattern];
       };
@@ -762,7 +850,7 @@ describe('BatchInteractiveMode', () => {
     it('should test retry logic branching', () => {
       // Test retry decision logic
       const shouldRetryFiles = (errors: any[], userChoice: boolean) => {
-        const retryableErrors = errors.filter(e => e.canRetry);
+        const retryableErrors = errors.filter((e) => e.canRetry);
         return retryableErrors.length > 0 && userChoice;
       };
 
@@ -790,7 +878,10 @@ describe('BatchInteractiveMode', () => {
           errors.push('TOC depth must be between 1 and 6');
         }
 
-        if (config.maxConcurrentProcesses < 1 || config.maxConcurrentProcesses > 10) {
+        if (
+          config.maxConcurrentProcesses < 1 ||
+          config.maxConcurrentProcesses > 10
+        ) {
           errors.push('Concurrent processes must be between 1 and 10');
         }
 
@@ -802,7 +893,7 @@ describe('BatchInteractiveMode', () => {
           outputDirectory: './output',
           tocDepth: 2,
           maxConcurrentProcesses: 3,
-        })
+        }),
       ).toEqual([]);
 
       expect(
@@ -810,7 +901,7 @@ describe('BatchInteractiveMode', () => {
           outputDirectory: '',
           tocDepth: 7,
           maxConcurrentProcesses: 15,
-        })
+        }),
       ).toHaveLength(3);
     });
 
@@ -870,7 +961,7 @@ describe('BatchInteractiveMode', () => {
           maxConcurrency: 2,
           continueOnError: true,
           generateReport: true,
-        })
+        }),
       );
     });
 
@@ -892,7 +983,9 @@ describe('BatchInteractiveMode', () => {
         totalFiles: 2,
         successfulFiles: 1,
         failedFiles: 1,
-        errors: [{ inputPath: '/test/file2.md', error: 'Test error', canRetry: false }],
+        errors: [
+          { inputPath: '/test/file2.md', error: 'Test error', canRetry: false },
+        ],
         outputFiles: ['output1.pdf'],
       });
 
@@ -935,7 +1028,7 @@ describe('BatchInteractiveMode', () => {
           maxConcurrency: 2,
           continueOnError: false, // Changed for retry
           generateReport: true,
-        })
+        }),
       );
     });
 
@@ -957,7 +1050,13 @@ describe('BatchInteractiveMode', () => {
         totalFiles: 1,
         successfulFiles: 0,
         failedFiles: 1,
-        errors: [{ inputPath: '/test/file1.md', error: 'Retry failed', canRetry: false }],
+        errors: [
+          {
+            inputPath: '/test/file1.md',
+            error: 'Retry failed',
+            canRetry: false,
+          },
+        ],
         outputFiles: [],
       });
 
@@ -973,7 +1072,7 @@ describe('BatchInteractiveMode', () => {
           maxConcurrency: 2,
           continueOnError: false,
           generateReport: true,
-        })
+        }),
       );
     });
 
@@ -990,12 +1089,12 @@ describe('BatchInteractiveMode', () => {
 
       // Mock batch processor to throw error
       mockBatchProcessorService.processBatch.mockRejectedValueOnce(
-        new Error('Retry processing failed')
+        new Error('Retry processing failed'),
       );
 
       // This should not throw - error should be caught and logged
       await expect(
-        batchModePrivate.retryFailedFiles(originalConfig, failedFiles)
+        batchModePrivate.retryFailedFiles(originalConfig, failedFiles),
       ).resolves.not.toThrow();
     });
   });
@@ -1048,7 +1147,6 @@ describe('BatchInteractiveMode', () => {
 
         expect(mockProcessOff).toHaveBeenCalledWith('SIGINT', handleCancel);
         expect(mockProcessOff).toHaveBeenCalledWith('SIGTERM', handleCancel);
-
       } finally {
         // Restore original methods
         process.on = originalOn;
@@ -1059,7 +1157,7 @@ describe('BatchInteractiveMode', () => {
     it('should test retry logic branching with no retryable errors', () => {
       // Test the retry decision logic when there are no retryable errors
       const testRetryLogic = (errors: any[]) => {
-        const retryableErrors = errors.filter(e => e.canRetry);
+        const retryableErrors = errors.filter((e) => e.canRetry);
         return retryableErrors.length > 0;
       };
 
@@ -1091,7 +1189,7 @@ describe('BatchInteractiveMode', () => {
           pdfOptions: {
             margin: {
               top: '1in',
-              right: '1in', 
+              right: '1in',
               bottom: '1in',
               left: '1in',
             },
@@ -1136,7 +1234,7 @@ describe('BatchInteractiveMode', () => {
         },
       ];
 
-      configs.forEach(config => {
+      configs.forEach((config) => {
         const options = buildCompleteFileOptions(config);
         expect(options.outputPath).toBe(config.outputDirectory);
         expect((options.tocOptions as any).maxDepth).toBe(config.tocDepth);
@@ -1199,7 +1297,7 @@ describe('BatchInteractiveMode', () => {
         { maxConcurrentProcesses: 5, continueOnError: true },
       ];
 
-      testConfigs.forEach(config => {
+      testConfigs.forEach((config) => {
         const options = buildBatchOptions(config);
         expect(options.maxConcurrency).toBe(config.maxConcurrentProcesses);
         expect(options.continueOnError).toBe(config.continueOnError);
@@ -1210,15 +1308,31 @@ describe('BatchInteractiveMode', () => {
     it('should test error filtering and retry mapping logic', () => {
       // Test the retry error processing logic
       const processRetryableErrors = (errors: any[]) => {
-        const retryableErrors = errors.filter(e => e.canRetry);
-        return retryableErrors.map(e => e.inputPath);
+        const retryableErrors = errors.filter((e) => e.canRetry);
+        return retryableErrors.map((e) => e.inputPath);
       };
 
       const testErrors = [
-        { inputPath: '/test/file1.md', canRetry: true, message: 'Network timeout' },
-        { inputPath: '/test/file2.md', canRetry: false, message: 'Invalid syntax' },
-        { inputPath: '/test/file3.md', canRetry: true, message: 'Resource busy' },
-        { inputPath: '/test/file4.md', canRetry: false, message: 'Permission denied' },
+        {
+          inputPath: '/test/file1.md',
+          canRetry: true,
+          message: 'Network timeout',
+        },
+        {
+          inputPath: '/test/file2.md',
+          canRetry: false,
+          message: 'Invalid syntax',
+        },
+        {
+          inputPath: '/test/file3.md',
+          canRetry: true,
+          message: 'Resource busy',
+        },
+        {
+          inputPath: '/test/file4.md',
+          canRetry: false,
+          message: 'Permission denied',
+        },
       ];
 
       const retryPaths = processRetryableErrors(testErrors);
@@ -1315,7 +1429,7 @@ describe('BatchInteractiveMode', () => {
         123,
       ];
 
-      testCases.forEach(testCase => {
+      testCases.forEach((testCase) => {
         const result = processErrorMessage(testCase);
         expect(typeof result).toBe('string');
         expect(result.length).toBeGreaterThan(0);
@@ -1325,7 +1439,7 @@ describe('BatchInteractiveMode', () => {
     it('should test edge cases for file counting and display', () => {
       // Test edge cases in file counting logic
       const testFileDisplayLogic = (files: Array<{ inputPath: string }>) => {
-        const shortFileList = files.slice(0, 3).map(f => {
+        const shortFileList = files.slice(0, 3).map((f) => {
           const relativePath = f.inputPath.replace(process.cwd() + '/', './');
           return relativePath;
         });
@@ -1355,7 +1469,7 @@ describe('BatchInteractiveMode', () => {
         ], // more than 3 files
       ];
 
-      testScenarios.forEach(scenario => {
+      testScenarios.forEach((scenario) => {
         const result = testFileDisplayLogic(scenario);
 
         if (scenario.length === 0) {
@@ -1376,7 +1490,10 @@ describe('BatchInteractiveMode', () => {
 
     it('should test filename format string building edge cases', () => {
       // Test all filename format combinations
-      const getFilenameFormatDescription = (format: string, isCustom = false) => {
+      const getFilenameFormatDescription = (
+        format: string,
+        isCustom = false,
+      ) => {
         if (isCustom) return 'Custom format';
 
         switch (format) {
@@ -1399,8 +1516,11 @@ describe('BatchInteractiveMode', () => {
         { format: 'unknown', expected: 'Unknown format' },
       ];
 
-      testCases.forEach(testCase => {
-        const result = getFilenameFormatDescription(testCase.format, testCase.isCustom);
+      testCases.forEach((testCase) => {
+        const result = getFilenameFormatDescription(
+          testCase.format,
+          testCase.isCustom,
+        );
         expect(result).toBe(testCase.expected);
       });
     });
@@ -1412,7 +1532,7 @@ describe('BatchInteractiveMode', () => {
       };
 
       const testValues = [0, 1, 2, 3, 4, 5, 10];
-      testValues.forEach(value => {
+      testValues.forEach((value) => {
         const result = testMathMinUsage(value);
         expect(result).toBeLessThanOrEqual(2);
         expect(result).toBeLessThanOrEqual(value);
@@ -1447,8 +1567,16 @@ describe('BatchInteractiveMode', () => {
         successfulFiles: 0,
         failedFiles: 2,
         errors: [
-          { inputPath: '/test/file1.md', canRetry: false, message: 'Critical error' },
-          { inputPath: '/test/file2.md', canRetry: false, message: 'Parse error' },
+          {
+            inputPath: '/test/file1.md',
+            canRetry: false,
+            message: 'Critical error',
+          },
+          {
+            inputPath: '/test/file2.md',
+            canRetry: false,
+            message: 'Parse error',
+          },
         ],
       });
 
@@ -1468,7 +1596,7 @@ describe('BatchInteractiveMode', () => {
           maxConcurrency: 2,
           continueOnError: true,
           generateReport: true,
-        })
+        }),
       );
     });
 
@@ -1494,7 +1622,9 @@ describe('BatchInteractiveMode', () => {
         abort: jest.fn(),
       };
 
-      global.AbortController = jest.fn().mockImplementation(() => mockAbortController);
+      global.AbortController = jest
+        .fn()
+        .mockImplementation(() => mockAbortController);
 
       await batchModePrivate.processBatch(mockConfig);
 
@@ -1532,7 +1662,7 @@ describe('BatchInteractiveMode', () => {
           maxConcurrency: 2,
           continueOnError: false,
           generateReport: true,
-        })
+        }),
       );
     });
 
@@ -1576,7 +1706,9 @@ describe('BatchInteractiveMode', () => {
 
       expect(testDisplayFormatLogic('original')).toBe('Keep original names');
       expect(testDisplayFormatLogic('with_date')).toBe('Add date suffix');
-      expect(testDisplayFormatLogic('with_timestamp')).toBe('Add timestamp suffix');
+      expect(testDisplayFormatLogic('with_timestamp')).toBe(
+        'Add timestamp suffix',
+      );
       expect(testDisplayFormatLogic('custom')).toBe('Custom format');
       expect(testDisplayFormatLogic('unknown')).toBe('Custom format');
     });
@@ -1588,7 +1720,7 @@ describe('BatchInteractiveMode', () => {
       }));
 
       const getFileDisplayList = (files: any[]) => {
-        const shortFileList = files.slice(0, 3).map(f => {
+        const shortFileList = files.slice(0, 3).map((f) => {
           const relativePath = f.inputPath.replace(process.cwd() + '/', './');
           return relativePath;
         });
@@ -1640,10 +1772,14 @@ describe('BatchInteractiveMode', () => {
       expect(validateInputPattern('  ')).toBe('Please enter an input pattern');
       expect(validateInputPattern('*.md')).toBe(true);
 
-      expect(validateOutputDirectory('')).toBe('Please enter an output directory');
+      expect(validateOutputDirectory('')).toBe(
+        'Please enter an output directory',
+      );
       expect(validateOutputDirectory('./output')).toBe(true);
 
-      expect(validateCustomPattern('{date}.pdf')).toBe('Pattern must include {name} placeholder');
+      expect(validateCustomPattern('{date}.pdf')).toBe(
+        'Pattern must include {name} placeholder',
+      );
       expect(validateCustomPattern('{name}_{date}.pdf')).toBe(true);
     });
 
@@ -1657,7 +1793,9 @@ describe('BatchInteractiveMode', () => {
           fileList = ['file1.md', 'file2.md'];
         } else if (inputPattern.includes(',')) {
           // Multiple files
-          fileList = inputPattern.split(',').map(f => f.trim().replace(/"/g, ''));
+          fileList = inputPattern
+            .split(',')
+            .map((f) => f.trim().replace(/"/g, ''));
         } else {
           // Single file or directory
           fileList = [inputPattern];
@@ -1668,8 +1806,14 @@ describe('BatchInteractiveMode', () => {
 
       expect(processInputPattern('*.md')).toEqual(['file1.md', 'file2.md']);
       expect(processInputPattern('**/*.md')).toEqual(['file1.md', 'file2.md']);
-      expect(processInputPattern('file1.md,file2.md')).toEqual(['file1.md', 'file2.md']);
-      expect(processInputPattern('"file1.md","file2.md"')).toEqual(['file1.md', 'file2.md']);
+      expect(processInputPattern('file1.md,file2.md')).toEqual([
+        'file1.md',
+        'file2.md',
+      ]);
+      expect(processInputPattern('"file1.md","file2.md"')).toEqual([
+        'file1.md',
+        'file2.md',
+      ]);
       expect(processInputPattern('./docs')).toEqual(['./docs']);
     });
 
@@ -1726,11 +1870,15 @@ describe('BatchInteractiveMode', () => {
 
       const optionsWithChinese = buildFileOptions(configWithChinese);
       expect(optionsWithChinese.customStyles).toContain('Noto Sans CJK SC');
-      expect((optionsWithChinese.pdfOptions as any).displayHeaderFooter).toBe(true);
+      expect((optionsWithChinese.pdfOptions as any).displayHeaderFooter).toBe(
+        true,
+      );
 
       const optionsWithoutChinese = buildFileOptions(configWithoutChinese);
       expect(optionsWithoutChinese.customStyles).toBeUndefined();
-      expect((optionsWithoutChinese.pdfOptions as any).displayHeaderFooter).toBe(false);
+      expect(
+        (optionsWithoutChinese.pdfOptions as any).displayHeaderFooter,
+      ).toBe(false);
     });
 
     it('should test error handling with different error types', () => {
@@ -1751,7 +1899,7 @@ describe('BatchInteractiveMode', () => {
     it('should test retry logic with different retry scenarios', () => {
       // Test retry decision making
       const shouldShowRetryOption = (errors: any[]) => {
-        const retryableErrors = errors.filter(e => e.canRetry);
+        const retryableErrors = errors.filter((e) => e.canRetry);
         return retryableErrors.length > 0;
       };
 
@@ -1799,7 +1947,9 @@ describe('BatchInteractiveMode', () => {
         } else if (inputPattern.includes(',')) {
           return {
             type: 'multiple',
-            files: inputPattern.split(',').map(f => f.trim().replace(/"/g, '')),
+            files: inputPattern
+              .split(',')
+              .map((f) => f.trim().replace(/"/g, '')),
           };
         } else {
           return { type: 'single', path: inputPattern };
@@ -1820,7 +1970,11 @@ describe('BatchInteractiveMode', () => {
       // Test multiple files
       const multipleResult = processPattern('file1.md,file2.md,"file 3.md"');
       expect(multipleResult.type).toBe('multiple');
-      expect(multipleResult.files).toEqual(['file1.md', 'file2.md', 'file 3.md']);
+      expect(multipleResult.files).toEqual([
+        'file1.md',
+        'file2.md',
+        'file 3.md',
+      ]);
 
       // Test single file
       expect(processPattern('single.md')).toEqual({
@@ -1831,7 +1985,9 @@ describe('BatchInteractiveMode', () => {
 
     it('should test markdown file filtering logic', () => {
       const filterMarkdownFiles = (files: string[]) => {
-        return files.filter(file => file.endsWith('.md') || file.endsWith('.markdown'));
+        return files.filter(
+          (file) => file.endsWith('.md') || file.endsWith('.markdown'),
+        );
       };
 
       const testFiles = ['file1.md', 'file2.txt', 'file3.markdown', 'file4.js'];
@@ -1876,7 +2032,9 @@ describe('BatchInteractiveMode', () => {
         files: [{ inputPath: 'another.md' }],
       });
 
-      await expect(simulateFileSearchWithRetry(false)).rejects.toThrow('Process exit called');
+      await expect(simulateFileSearchWithRetry(false)).rejects.toThrow(
+        'Process exit called',
+      );
     });
 
     it('should test file count validation logic', () => {
@@ -1892,15 +2050,22 @@ describe('BatchInteractiveMode', () => {
     });
 
     it('should test relative path generation', () => {
-      const generateRelativePath = (inputPath: string, cwd: string = '/current') => {
+      const generateRelativePath = (
+        inputPath: string,
+        cwd: string = '/current',
+      ) => {
         if (inputPath.startsWith(cwd + '/')) {
           return './' + inputPath.replace(cwd + '/', '');
         }
         return inputPath;
       };
 
-      expect(generateRelativePath('/current/test/file.md', '/current')).toBe('./test/file.md');
-      expect(generateRelativePath('/other/file.md', '/current')).toBe('/other/file.md');
+      expect(generateRelativePath('/current/test/file.md', '/current')).toBe(
+        './test/file.md',
+      );
+      expect(generateRelativePath('/other/file.md', '/current')).toBe(
+        '/other/file.md',
+      );
     });
 
     it('should test file list display logic', () => {
@@ -1913,7 +2078,9 @@ describe('BatchInteractiveMode', () => {
         };
       };
 
-      const files = Array.from({ length: 5 }, (_, i) => ({ path: `file${i + 1}.md` }));
+      const files = Array.from({ length: 5 }, (_, i) => ({
+        path: `file${i + 1}.md`,
+      }));
       const result = getDisplayList(files);
 
       expect(result.displayFiles).toHaveLength(3);
@@ -1935,8 +2102,12 @@ describe('BatchInteractiveMode', () => {
         return true;
       };
 
-      expect(validateOutputDirectory('')).toBe('Please enter an output directory');
-      expect(validateOutputDirectory('   ')).toBe('Please enter an output directory');
+      expect(validateOutputDirectory('')).toBe(
+        'Please enter an output directory',
+      );
+      expect(validateOutputDirectory('   ')).toBe(
+        'Please enter an output directory',
+      );
       expect(validateOutputDirectory('./output')).toBe(true);
       expect(validateOutputDirectory('/tmp/batch')).toBe(true);
     });
@@ -1949,22 +2120,36 @@ describe('BatchInteractiveMode', () => {
         return true;
       };
 
-      expect(validateCustomPattern('invalid')).toBe('Pattern must include {name} placeholder');
-      expect(validateCustomPattern('{date}.pdf')).toBe('Pattern must include {name} placeholder');
+      expect(validateCustomPattern('invalid')).toBe(
+        'Pattern must include {name} placeholder',
+      );
+      expect(validateCustomPattern('{date}.pdf')).toBe(
+        'Pattern must include {name} placeholder',
+      );
       expect(validateCustomPattern('{name}_{date}.pdf')).toBe(true);
       expect(validateCustomPattern('{name}_{timestamp}.pdf')).toBe(true);
       expect(validateCustomPattern('prefix_{name}_suffix.pdf')).toBe(true);
     });
 
     it('should test when condition logic for custom pattern', () => {
-      const whenCondition = (answers: { filenameFormat: BatchFilenameFormat }): boolean => {
+      const whenCondition = (answers: {
+        filenameFormat: BatchFilenameFormat;
+      }): boolean => {
         return answers.filenameFormat === BatchFilenameFormat.CUSTOM;
       };
 
-      expect(whenCondition({ filenameFormat: BatchFilenameFormat.CUSTOM })).toBe(true);
-      expect(whenCondition({ filenameFormat: BatchFilenameFormat.ORIGINAL })).toBe(false);
-      expect(whenCondition({ filenameFormat: BatchFilenameFormat.WITH_DATE })).toBe(false);
-      expect(whenCondition({ filenameFormat: BatchFilenameFormat.WITH_TIMESTAMP })).toBe(false);
+      expect(
+        whenCondition({ filenameFormat: BatchFilenameFormat.CUSTOM }),
+      ).toBe(true);
+      expect(
+        whenCondition({ filenameFormat: BatchFilenameFormat.ORIGINAL }),
+      ).toBe(false);
+      expect(
+        whenCondition({ filenameFormat: BatchFilenameFormat.WITH_DATE }),
+      ).toBe(false);
+      expect(
+        whenCondition({ filenameFormat: BatchFilenameFormat.WITH_TIMESTAMP }),
+      ).toBe(false);
     });
 
     it('should test batch config construction logic', () => {
@@ -2013,11 +2198,13 @@ describe('BatchInteractiveMode', () => {
         return answers.customFilenamePattern ?? '';
       };
 
-      expect(handleCustomPattern({ customFilenamePattern: '{name}_{date}.pdf' })).toBe(
-        '{name}_{date}.pdf'
-      );
+      expect(
+        handleCustomPattern({ customFilenamePattern: '{name}_{date}.pdf' }),
+      ).toBe('{name}_{date}.pdf');
       expect(handleCustomPattern({})).toBe('');
-      expect(handleCustomPattern({ customFilenamePattern: undefined })).toBe('');
+      expect(handleCustomPattern({ customFilenamePattern: undefined })).toBe(
+        '',
+      );
     });
 
     it('should test configuration option values', () => {
@@ -2034,17 +2221,25 @@ describe('BatchInteractiveMode', () => {
       expect(concurrentChoices.length).toBe(5);
 
       // Test filename format enum values
-      expect(Object.values(BatchFilenameFormat)).toContain(BatchFilenameFormat.ORIGINAL);
-      expect(Object.values(BatchFilenameFormat)).toContain(BatchFilenameFormat.WITH_DATE);
-      expect(Object.values(BatchFilenameFormat)).toContain(BatchFilenameFormat.WITH_TIMESTAMP);
-      expect(Object.values(BatchFilenameFormat)).toContain(BatchFilenameFormat.CUSTOM);
+      expect(Object.values(BatchFilenameFormat)).toContain(
+        BatchFilenameFormat.ORIGINAL,
+      );
+      expect(Object.values(BatchFilenameFormat)).toContain(
+        BatchFilenameFormat.WITH_DATE,
+      );
+      expect(Object.values(BatchFilenameFormat)).toContain(
+        BatchFilenameFormat.WITH_TIMESTAMP,
+      );
+      expect(Object.values(BatchFilenameFormat)).toContain(
+        BatchFilenameFormat.CUSTOM,
+      );
     });
   });
 
   describe('finalConfirmation method coverage - logical tests', () => {
     it('should test file list display logic for different counts', () => {
       const getDisplayLogic = (files: { inputPath: string }[]) => {
-        const shortFileList = files.slice(0, 3).map(f => {
+        const shortFileList = files.slice(0, 3).map((f) => {
           const relativePath = f.inputPath.replace(process.cwd() + '/', './');
           return relativePath;
         });
@@ -2065,7 +2260,10 @@ describe('BatchInteractiveMode', () => {
       };
 
       // Test with <= 3 files
-      const smallList = [{ inputPath: '/current/file1.md' }, { inputPath: '/current/file2.md' }];
+      const smallList = [
+        { inputPath: '/current/file1.md' },
+        { inputPath: '/current/file2.md' },
+      ];
       const smallResult = getDisplayLogic(smallList);
       expect(smallResult.displayFiles).toHaveLength(2);
       expect(smallResult.showMore).toBe(false);
@@ -2096,7 +2294,9 @@ describe('BatchInteractiveMode', () => {
 
       expect(getFormatDescription('original')).toBe('Keep original names');
       expect(getFormatDescription('with_date')).toBe('Add date suffix');
-      expect(getFormatDescription('with_timestamp')).toBe('Add timestamp suffix');
+      expect(getFormatDescription('with_timestamp')).toBe(
+        'Add timestamp suffix',
+      );
       expect(getFormatDescription('custom')).toBe('Custom format');
       expect(getFormatDescription('unknown')).toBe('Custom format');
     });
@@ -2112,8 +2312,12 @@ describe('BatchInteractiveMode', () => {
 
       const currentPath = process.cwd();
       expect(convertToRelativePath(`${currentPath}/test.md`)).toBe('./test.md');
-      expect(convertToRelativePath(`${currentPath}/docs/test.md`)).toBe('./docs/test.md');
-      expect(convertToRelativePath('/other/path/test.md')).toBe('/other/path/test.md');
+      expect(convertToRelativePath(`${currentPath}/docs/test.md`)).toBe(
+        './docs/test.md',
+      );
+      expect(convertToRelativePath('/other/path/test.md')).toBe(
+        '/other/path/test.md',
+      );
     });
 
     it('should test configuration summary formatting logic', () => {
@@ -2121,12 +2325,20 @@ describe('BatchInteractiveMode', () => {
         const summary = [];
         summary.push(`Files to process: ${files.length}`);
         summary.push(`Output directory: ${config.outputDirectory}`);
-        summary.push(`Preserve structure: ${config.preserveDirectoryStructure ? 'Yes' : 'No'}`);
+        summary.push(
+          `Preserve structure: ${config.preserveDirectoryStructure ? 'Yes' : 'No'}`,
+        );
         summary.push(`Table of contents: ${config.tocDepth} levels`);
-        summary.push(`Page numbers: ${config.includePageNumbers ? 'Yes' : 'No'}`);
-        summary.push(`Chinese support: ${config.chineseFontSupport ? 'Enabled' : 'Disabled'}`);
+        summary.push(
+          `Page numbers: ${config.includePageNumbers ? 'Yes' : 'No'}`,
+        );
+        summary.push(
+          `Chinese support: ${config.chineseFontSupport ? 'Enabled' : 'Disabled'}`,
+        );
         summary.push(`Concurrent processes: ${config.maxConcurrentProcesses}`);
-        summary.push(`Continue on error: ${config.continueOnError ? 'Yes' : 'No'}`);
+        summary.push(
+          `Continue on error: ${config.continueOnError ? 'Yes' : 'No'}`,
+        );
         return summary;
       };
 
@@ -2202,7 +2414,9 @@ describe('BatchInteractiveMode', () => {
       const optionsWithChinese = buildFileOptions(configWithChinese);
       expect(optionsWithChinese.customStyles).toContain('Noto Sans CJK SC');
       expect((optionsWithChinese.tocOptions as any).maxDepth).toBe(3);
-      expect((optionsWithChinese.pdfOptions as any).displayHeaderFooter).toBe(true);
+      expect((optionsWithChinese.pdfOptions as any).displayHeaderFooter).toBe(
+        true,
+      );
 
       // Test with Chinese support disabled
       const configWithoutChinese = {
@@ -2214,7 +2428,9 @@ describe('BatchInteractiveMode', () => {
 
       const optionsWithoutChinese = buildFileOptions(configWithoutChinese);
       expect(optionsWithoutChinese.customStyles).toBeUndefined();
-      expect((optionsWithoutChinese.pdfOptions as any).displayHeaderFooter).toBe(false);
+      expect(
+        (optionsWithoutChinese.pdfOptions as any).displayHeaderFooter,
+      ).toBe(false);
       expect((optionsWithoutChinese.pdfOptions as any).footerTemplate).toBe('');
     });
 
@@ -2249,20 +2465,20 @@ describe('BatchInteractiveMode', () => {
         }
       };
 
-      expect(processResult({ success: true, failedFiles: 0, successfulFiles: 5 })).toBe(
-        'all_success'
-      );
-      expect(processResult({ success: false, failedFiles: 1, successfulFiles: 4 })).toBe(
-        'partial_success'
-      );
-      expect(processResult({ success: false, failedFiles: 5, successfulFiles: 0 })).toBe(
-        'complete_failure'
-      );
+      expect(
+        processResult({ success: true, failedFiles: 0, successfulFiles: 5 }),
+      ).toBe('all_success');
+      expect(
+        processResult({ success: false, failedFiles: 1, successfulFiles: 4 }),
+      ).toBe('partial_success');
+      expect(
+        processResult({ success: false, failedFiles: 5, successfulFiles: 0 }),
+      ).toBe('complete_failure');
     });
 
     it('should test retryable error filtering', () => {
       const filterRetryableErrors = (errors: any[]) => {
-        return errors.filter(e => e.canRetry);
+        return errors.filter((e) => e.canRetry);
       };
 
       const errors = [
@@ -2274,7 +2490,7 @@ describe('BatchInteractiveMode', () => {
 
       const retryableErrors = filterRetryableErrors(errors);
       expect(retryableErrors).toHaveLength(2);
-      expect(retryableErrors.every(e => e.canRetry)).toBe(true);
+      expect(retryableErrors.every((e) => e.canRetry)).toBe(true);
     });
 
     it('should test AbortController signal checking', () => {
@@ -2292,11 +2508,17 @@ describe('BatchInteractiveMode', () => {
 
   describe('retryFailedFiles method coverage - logical tests', () => {
     it('should test retry configuration creation', () => {
-      const createRetryConfig = (originalConfig: any, failedFiles: string[]) => {
+      const createRetryConfig = (
+        originalConfig: any,
+        failedFiles: string[],
+      ) => {
         return {
           ...originalConfig,
           inputPattern: failedFiles[0],
-          maxConcurrentProcesses: Math.min(2, originalConfig.maxConcurrentProcesses),
+          maxConcurrentProcesses: Math.min(
+            2,
+            originalConfig.maxConcurrentProcesses,
+          ),
         };
       };
 
@@ -2346,7 +2568,9 @@ describe('BatchInteractiveMode', () => {
         }
       };
 
-      expect(processRetryResult({ successfulFiles: 3 })).toBe('retry_success_3');
+      expect(processRetryResult({ successfulFiles: 3 })).toBe(
+        'retry_success_3',
+      );
       expect(processRetryResult({ successfulFiles: 0 })).toBe('retry_failed');
     });
   });
@@ -2365,7 +2589,8 @@ describe('BatchInteractiveMode', () => {
     });
 
     it('should test Math.min calculations for concurrency', () => {
-      const calculateRetryConcurrency = (original: number) => Math.min(2, original);
+      const calculateRetryConcurrency = (original: number) =>
+        Math.min(2, original);
 
       expect(calculateRetryConcurrency(1)).toBe(1);
       expect(calculateRetryConcurrency(2)).toBe(2);
@@ -2374,7 +2599,8 @@ describe('BatchInteractiveMode', () => {
 
     it('should test boolean flag conversions', () => {
       const convertToYesNo = (flag: boolean) => (flag ? 'Yes' : 'No');
-      const convertToEnabledDisabled = (flag: boolean) => (flag ? 'Enabled' : 'Disabled');
+      const convertToEnabledDisabled = (flag: boolean) =>
+        flag ? 'Enabled' : 'Disabled';
 
       expect(convertToYesNo(true)).toBe('Yes');
       expect(convertToYesNo(false)).toBe('No');

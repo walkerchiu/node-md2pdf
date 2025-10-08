@@ -2,11 +2,14 @@
  * Configuration Manager implementation
  */
 
-import * as fs from 'fs-extra';
-import * as path from 'path';
 import * as os from 'os';
-import type { IConfigManager, ConfigOptions } from './types';
+import * as path from 'path';
+
+import * as fs from 'fs-extra';
+
 import { defaultConfig, environmentMappings } from './defaults';
+
+import type { IConfigManager, ConfigOptions } from './types';
 
 export class ConfigManager implements IConfigManager {
   private config: Record<string, unknown>;
@@ -60,7 +63,10 @@ export class ConfigManager implements IConfigManager {
     try {
       if (await fs.pathExists(this.configPath)) {
         const savedConfig = await fs.readJson(this.configPath);
-        this.config = this.mergeDeep(this.config, savedConfig) as Record<string, unknown>;
+        this.config = this.mergeDeep(this.config, savedConfig) as Record<
+          string,
+          unknown
+        >;
       }
     } catch (error) {
       // Silently fail and use defaults
@@ -105,7 +111,11 @@ export class ConfigManager implements IConfigManager {
     }, obj);
   }
 
-  private setNestedValue(obj: Record<string, unknown>, path: string, value: unknown): void {
+  private setNestedValue(
+    obj: Record<string, unknown>,
+    path: string,
+    value: unknown,
+  ): void {
     const keys = path.split('.');
     const lastKey = keys.pop()!;
     const target = keys.reduce((current, key) => {
@@ -120,7 +130,7 @@ export class ConfigManager implements IConfigManager {
   private deepClone(obj: unknown): unknown {
     if (obj === null || typeof obj !== 'object') return obj;
     if (obj instanceof Date) return new Date(obj);
-    if (Array.isArray(obj)) return obj.map(item => this.deepClone(item));
+    if (Array.isArray(obj)) return obj.map((item) => this.deepClone(item));
 
     const cloned: Record<string, unknown> = {};
     for (const key in obj as Record<string, unknown>) {
@@ -138,7 +148,11 @@ export class ConfigManager implements IConfigManager {
     for (const key in sourceObj) {
       if (Object.prototype.hasOwnProperty.call(sourceObj, key)) {
         const sourceValue = sourceObj[key];
-        if (sourceValue && typeof sourceValue === 'object' && !Array.isArray(sourceValue)) {
+        if (
+          sourceValue &&
+          typeof sourceValue === 'object' &&
+          !Array.isArray(sourceValue)
+        ) {
           result[key] = this.mergeDeep(result[key] || {}, sourceValue);
         } else {
           result[key] = sourceValue;

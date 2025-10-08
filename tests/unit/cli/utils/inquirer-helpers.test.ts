@@ -88,11 +88,15 @@ describe('InquirerHelpers', () => {
     });
 
     it('should return true for custom back value', () => {
-      expect(InquirerHelpers.isBackNavigation('custom-back', 'custom-back')).toBe(true);
+      expect(
+        InquirerHelpers.isBackNavigation('custom-back', 'custom-back'),
+      ).toBe(true);
     });
 
     it('should return false for non-matching custom back value', () => {
-      expect(InquirerHelpers.isBackNavigation('__back__', 'custom-back')).toBe(false);
+      expect(InquirerHelpers.isBackNavigation('__back__', 'custom-back')).toBe(
+        false,
+      );
     });
   });
 
@@ -151,7 +155,11 @@ describe('InquirerHelpers', () => {
           type: 'list',
           name: 'selection',
           message: options.message,
-          choices: [{ name: '0. Return to Main Menu', value: '__back__' }, 'Option 1', 'Option 2'],
+          choices: [
+            { name: '0. Return to Main Menu', value: '__back__' },
+            'Option 1',
+            'Option 2',
+          ],
           default: undefined,
           pageSize: undefined,
         },
@@ -179,7 +187,11 @@ describe('InquirerHelpers', () => {
           type: 'list',
           name: 'selection',
           message: options.message,
-          choices: [{ name: '← Go Back', value: 'custom-back' }, 'Option 1', 'Option 2'],
+          choices: [
+            { name: '← Go Back', value: 'custom-back' },
+            'Option 1',
+            'Option 2',
+          ],
           default: 'Option 1',
           pageSize: 10,
         },

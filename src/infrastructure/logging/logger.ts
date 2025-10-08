@@ -2,8 +2,9 @@
  * Simple console-based logger implementation
  */
 
-import type { ILogger, LogLevel, LoggerOptions, LogEntry } from './types';
 import { shouldLog, formatLevel } from './levels';
+
+import type { ILogger, LogLevel, LoggerOptions, LogEntry } from './types';
 
 export class ConsoleLogger implements ILogger {
   private level: LogLevel;
@@ -82,7 +83,11 @@ export class ConsoleLogger implements ILogger {
     return this.level;
   }
 
-  private createLogEntry(level: LogLevel, message: string, args: unknown[]): LogEntry {
+  private createLogEntry(
+    level: LogLevel,
+    message: string,
+    args: unknown[],
+  ): LogEntry {
     return {
       level,
       message,

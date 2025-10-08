@@ -3,13 +3,14 @@
  * Manages conversion progress and statistics
  */
 
+import { EventEmitter } from 'events';
+
 import {
   BatchProgressInfo,
   BatchProgressEvent,
   SingleBatchResult,
   BatchError,
 } from '../../types/batch';
-import { EventEmitter } from 'events';
 
 export class ProgressTracker extends EventEmitter {
   private progress: BatchProgressInfo;
@@ -116,7 +117,9 @@ export class ProgressTracker extends EventEmitter {
    */
   getProgressPercentage(): number {
     if (this.progress.totalFiles === 0) return 100;
-    return Math.round((this.progress.processedFiles / this.progress.totalFiles) * 100);
+    return Math.round(
+      (this.progress.processedFiles / this.progress.totalFiles) * 100,
+    );
   }
 
   /**
@@ -163,7 +166,8 @@ export class ProgressTracker extends EventEmitter {
   private updateEstimatedTime(): void {
     if (this.progress.averageProcessingTime > 0) {
       const remainingFiles = this.getRemainingFiles();
-      this.progress.estimatedTimeRemaining = remainingFiles * this.progress.averageProcessingTime;
+      this.progress.estimatedTimeRemaining =
+        remainingFiles * this.progress.averageProcessingTime;
     }
   }
 
@@ -173,7 +177,9 @@ export class ProgressTracker extends EventEmitter {
   private updateAverageProcessingTime(): void {
     if (this.processingTimes.length > 0) {
       const sum = this.processingTimes.reduce((a, b) => a + b, 0);
-      this.progress.averageProcessingTime = Math.round(sum / this.processingTimes.length);
+      this.progress.averageProcessingTime = Math.round(
+        sum / this.processingTimes.length,
+      );
     }
   }
 
@@ -183,7 +189,7 @@ export class ProgressTracker extends EventEmitter {
   private emitProgressEvent(
     type: BatchProgressEvent['type'],
     currentFile?: string,
-    error?: BatchError['error']
+    error?: BatchError['error'],
   ): void {
     const event: BatchProgressEvent = {
       type,
@@ -215,7 +221,9 @@ export class ProgressTracker extends EventEmitter {
    */
   getSuccessRate(): number {
     if (this.progress.processedFiles === 0) return 0;
-    return Math.round((this.progress.successfulFiles / this.progress.processedFiles) * 100);
+    return Math.round(
+      (this.progress.successfulFiles / this.progress.processedFiles) * 100,
+    );
   }
 
   /**

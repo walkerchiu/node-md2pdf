@@ -70,26 +70,34 @@ describe('CLI Integration Tests', () => {
     it('should be able to create and start single mode', async () => {
       const inquirer = await import('inquirer');
       (
-        inquirer.default.prompt as jest.MockedFunction<typeof inquirer.default.prompt>
+        inquirer.default.prompt as jest.MockedFunction<
+          typeof inquirer.default.prompt
+        >
       ).mockResolvedValue({ mode: 'single' });
 
       // Mock InteractiveMode to avoid actual file processing
       const mockInteractiveStart = jest.fn(async () => {});
       jest
         .spyOn(InteractiveMode.prototype, 'start')
-        .mockImplementation(mockInteractiveStart as unknown as () => Promise<void>);
+        .mockImplementation(
+          mockInteractiveStart as unknown as () => Promise<void>,
+        );
 
       const mainMode = new MainInteractiveMode(container);
       await mainMode.start();
 
       expect(mockInteractiveStart).toHaveBeenCalled();
-      expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('MD2PDF Main Menu'));
+      expect(consoleSpy).toHaveBeenCalledWith(
+        expect.stringContaining('MD2PDF Main Menu'),
+      );
     });
 
     it('should be able to create and start batch mode', async () => {
       const inquirer = await import('inquirer');
       (
-        inquirer.default.prompt as jest.MockedFunction<typeof inquirer.default.prompt>
+        inquirer.default.prompt as jest.MockedFunction<
+          typeof inquirer.default.prompt
+        >
       ).mockResolvedValue({ mode: 'batch' });
 
       // Mock BatchInteractiveMode to avoid actual batch processing
@@ -107,7 +115,9 @@ describe('CLI Integration Tests', () => {
     it('should handle exit mode gracefully', async () => {
       const inquirer = await import('inquirer');
       (
-        inquirer.default.prompt as jest.MockedFunction<typeof inquirer.default.prompt>
+        inquirer.default.prompt as jest.MockedFunction<
+          typeof inquirer.default.prompt
+        >
       ).mockResolvedValue({ mode: 'exit' });
 
       const mainMode = new MainInteractiveMode(container);
@@ -125,7 +135,11 @@ describe('CLI Integration Tests', () => {
 
     it('should be able to access file processor service', async () => {
       const inquirer = await import('inquirer');
-      (inquirer.default.prompt as jest.MockedFunction<typeof inquirer.default.prompt>)
+      (
+        inquirer.default.prompt as jest.MockedFunction<
+          typeof inquirer.default.prompt
+        >
+      )
         .mockResolvedValueOnce({ inputPath: 'test.md' })
         .mockResolvedValueOnce({
           outputPath: 'test.pdf',
@@ -152,7 +166,11 @@ describe('CLI Integration Tests', () => {
         chineseFontSupport: true,
       };
 
-      (inquirer.default.prompt as jest.MockedFunction<typeof inquirer.default.prompt>)
+      (
+        inquirer.default.prompt as jest.MockedFunction<
+          typeof inquirer.default.prompt
+        >
+      )
         .mockResolvedValueOnce({ inputPath: mockConfig.inputPath })
         .mockResolvedValueOnce({
           outputPath: mockConfig.outputPath,
@@ -164,7 +182,7 @@ describe('CLI Integration Tests', () => {
 
       // Mock file processor service to avoid actual file operations
       const fileProcessorService = container.resolve(
-        'fileProcessor'
+        'fileProcessor',
       ) as unknown as IFileProcessorService;
       jest.spyOn(fileProcessorService, 'processFile').mockResolvedValue({
         success: true,
@@ -192,7 +210,7 @@ describe('CLI Integration Tests', () => {
             maxDepth: 2,
             includePageNumbers: true,
           }),
-        })
+        }),
       );
     });
   });
@@ -207,7 +225,11 @@ describe('CLI Integration Tests', () => {
       const inquirer = await import('inquirer');
 
       // Mock the pattern input and confirmation flow
-      (inquirer.default.prompt as jest.MockedFunction<typeof inquirer.default.prompt>)
+      (
+        inquirer.default.prompt as jest.MockedFunction<
+          typeof inquirer.default.prompt
+        >
+      )
         .mockResolvedValueOnce({ inputPattern: '*.md' })
         .mockResolvedValueOnce({ confirmFiles: false });
 
@@ -228,7 +250,11 @@ describe('CLI Integration Tests', () => {
       const inquirer = await import('inquirer');
 
       // Mock the full configuration flow
-      (inquirer.default.prompt as jest.MockedFunction<typeof inquirer.default.prompt>)
+      (
+        inquirer.default.prompt as jest.MockedFunction<
+          typeof inquirer.default.prompt
+        >
+      )
         .mockResolvedValueOnce({ inputPattern: '*.md' })
         .mockResolvedValueOnce({ confirmFiles: true })
         .mockResolvedValueOnce({
@@ -245,9 +271,11 @@ describe('CLI Integration Tests', () => {
 
       // Mock batch processor service
       const batchProcessorService = container.resolve(
-        'batchProcessor'
+        'batchProcessor',
       ) as unknown as IBatchProcessorService;
-      jest.spyOn(batchProcessorService, 'estimateBatchSize').mockResolvedValue(3);
+      jest
+        .spyOn(batchProcessorService, 'estimateBatchSize')
+        .mockResolvedValue(3);
 
       const batchMode = new BatchInteractiveMode(container);
 
@@ -294,23 +322,34 @@ describe('CLI Integration Tests', () => {
       const inquirer = await import('inquirer');
       const testError = new Error('Integration test error');
       (
-        inquirer.default.prompt as jest.MockedFunction<typeof inquirer.default.prompt>
+        inquirer.default.prompt as jest.MockedFunction<
+          typeof inquirer.default.prompt
+        >
       ).mockRejectedValue(testError);
 
-      const errorHandler = container.resolve('errorHandler') as unknown as IErrorHandler;
+      const errorHandler = container.resolve(
+        'errorHandler',
+      ) as unknown as IErrorHandler;
       const handleErrorSpy = jest.spyOn(errorHandler, 'handleError');
 
       const interactiveMode = new InteractiveMode(container);
 
-      await expect(interactiveMode.start()).rejects.toThrow('Integration test error');
-      expect(handleErrorSpy).toHaveBeenCalledWith(testError, 'InteractiveMode.start');
+      await expect(interactiveMode.start()).rejects.toThrow(
+        'Integration test error',
+      );
+      expect(handleErrorSpy).toHaveBeenCalledWith(
+        testError,
+        'InteractiveMode.start',
+      );
     });
 
     it('should log errors through logger service', async () => {
       const inquirer = await import('inquirer');
       const testError = new Error('Logger integration test');
       (
-        inquirer.default.prompt as jest.MockedFunction<typeof inquirer.default.prompt>
+        inquirer.default.prompt as jest.MockedFunction<
+          typeof inquirer.default.prompt
+        >
       ).mockRejectedValue(testError);
 
       const logger = container.resolve('logger') as unknown as ILogger;
@@ -318,8 +357,13 @@ describe('CLI Integration Tests', () => {
 
       const batchMode = new BatchInteractiveMode(container);
 
-      await expect(batchMode.start()).rejects.toThrow('Logger integration test');
-      expect(logErrorSpy).toHaveBeenCalledWith('Batch interactive mode error', testError);
+      await expect(batchMode.start()).rejects.toThrow(
+        'Logger integration test',
+      );
+      expect(logErrorSpy).toHaveBeenCalledWith(
+        'Batch interactive mode error',
+        testError,
+      );
     });
   });
 
@@ -333,7 +377,11 @@ describe('CLI Integration Tests', () => {
 
     it('should pass configuration to processing services', async () => {
       const inquirer = await import('inquirer');
-      (inquirer.default.prompt as jest.MockedFunction<typeof inquirer.default.prompt>)
+      (
+        inquirer.default.prompt as jest.MockedFunction<
+          typeof inquirer.default.prompt
+        >
+      )
         .mockResolvedValueOnce({ inputPath: 'config-test.md' })
         .mockResolvedValueOnce({
           outputPath: 'config-test.pdf',
@@ -345,21 +393,23 @@ describe('CLI Integration Tests', () => {
 
       // Mock file processor to capture configuration
       const fileProcessorService = container.resolve(
-        'fileProcessor'
+        'fileProcessor',
       ) as unknown as IFileProcessorService;
-      const processFileSpy = jest.spyOn(fileProcessorService, 'processFile').mockResolvedValue({
-        success: true,
-        inputPath: 'config-test.md',
-        outputPath: 'config-test.pdf',
-        processingTime: 500,
-        fileSize: 512,
-        parsedContent: { headings: [] },
-        pdfResult: {
+      const processFileSpy = jest
+        .spyOn(fileProcessorService, 'processFile')
+        .mockResolvedValue({
           success: true,
+          inputPath: 'config-test.md',
           outputPath: 'config-test.pdf',
-          metadata: { pages: 1, fileSize: 512, generationTime: 25 },
-        },
-      });
+          processingTime: 500,
+          fileSize: 512,
+          parsedContent: { headings: [] },
+          pdfResult: {
+            success: true,
+            outputPath: 'config-test.pdf',
+            metadata: { pages: 1, fileSize: 512, generationTime: 25 },
+          },
+        });
 
       const interactiveMode = new InteractiveMode(container);
       await interactiveMode.start();
@@ -372,7 +422,7 @@ describe('CLI Integration Tests', () => {
             maxDepth: 3,
             includePageNumbers: false,
           }),
-        })
+        }),
       );
     });
   });

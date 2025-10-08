@@ -34,13 +34,16 @@ describe('MarkdownParser - File Parsing Integration', () => {
       expect(result.headings.length).toBeGreaterThan(0);
 
       // Check specific headings
-      const h1Headings = result.headings.filter(h => h.level === 1);
+      const h1Headings = result.headings.filter((h) => h.level === 1);
       expect(h1Headings).toHaveLength(1);
       expect(h1Headings[0].text).toBe('測試文件標題');
 
       // Verify statistics
       expect(result.metadata?.statistics).toBeDefined();
-      const stats = result.metadata?.statistics as { wordCount: number; headingCount: number };
+      const stats = result.metadata?.statistics as {
+        wordCount: number;
+        headingCount: number;
+      };
       expect(stats.wordCount).toBeGreaterThan(0);
       expect(stats.headingCount).toBe(result.headings.length);
     });
@@ -80,7 +83,9 @@ describe('MarkdownParser - File Parsing Integration', () => {
       expect(result.metadata?.title).toBe('Test Document with Metadata');
       expect(result.metadata?.author).toBe('MD2PDF Test Suite');
       expect(result.metadata?.date).toBe('2025-09-02');
-      expect(result.metadata?.description).toBe('A test document with YAML frontmatter');
+      expect(result.metadata?.description).toBe(
+        'A test document with YAML frontmatter',
+      );
 
       // Tags are parsed as a string in our simple parser
       expect(result.metadata?.tags).toBeDefined();
@@ -93,12 +98,16 @@ describe('MarkdownParser - File Parsing Integration', () => {
       const result = parser.parseFile(filePath);
 
       // Find Chinese headings
-      const chineseHeadings = result.headings.filter(h => /[\u4e00-\u9fff]/.test(h.text));
+      const chineseHeadings = result.headings.filter((h) =>
+        /[\u4e00-\u9fff]/.test(h.text),
+      );
 
       expect(chineseHeadings.length).toBeGreaterThan(0);
 
       // Verify Chinese heading slugs are preserved
-      const chineseTestHeading = result.headings.find(h => h.text === '中文測試');
+      const chineseTestHeading = result.headings.find(
+        (h) => h.text === '中文測試',
+      );
       if (chineseTestHeading) {
         expect(chineseTestHeading.id).toBe('中文測試');
         expect(chineseTestHeading.anchor).toBe('#中文測試');

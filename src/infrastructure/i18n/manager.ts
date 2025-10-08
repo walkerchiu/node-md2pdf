@@ -105,7 +105,10 @@ export class TranslationManager implements ITranslationManager {
 
     if (typeof translation !== 'string') {
       // If translation is not found or not a string, try fallback
-      const fallbackTranslation = this.getTranslationValue(key, this.fallbackLocale);
+      const fallbackTranslation = this.getTranslationValue(
+        key,
+        this.fallbackLocale,
+      );
 
       if (typeof fallbackTranslation === 'string') {
         return this.interpolate(fallbackTranslation, params);
@@ -124,9 +127,15 @@ export class TranslationManager implements ITranslationManager {
     return typeof translation === 'string';
   }
 
-  loadTranslations(locale: SupportedLocale, translations: TranslationKey): void {
+  loadTranslations(
+    locale: SupportedLocale,
+    translations: TranslationKey,
+  ): void {
     const existing = this.translations.get(locale) || {};
-    this.translations.set(locale, this.mergeTranslations(existing, translations));
+    this.translations.set(
+      locale,
+      this.mergeTranslations(existing, translations),
+    );
   }
 
   getTranslations(locale: SupportedLocale): TranslationKey {
@@ -156,7 +165,10 @@ export class TranslationManager implements ITranslationManager {
     return current as string | TranslationKey | undefined;
   }
 
-  private interpolate(template: string, params?: Record<string, string | number>): string {
+  private interpolate(
+    template: string,
+    params?: Record<string, string | number>,
+  ): string {
     if (!params) {
       return template;
     }
@@ -167,11 +179,18 @@ export class TranslationManager implements ITranslationManager {
     });
   }
 
-  private mergeTranslations(target: TranslationKey, source: TranslationKey): TranslationKey {
+  private mergeTranslations(
+    target: TranslationKey,
+    source: TranslationKey,
+  ): TranslationKey {
     const result: TranslationKey = { ...target };
 
     for (const [key, value] of Object.entries(source)) {
-      if (typeof value === 'object' && value !== null && !Array.isArray(value)) {
+      if (
+        typeof value === 'object' &&
+        value !== null &&
+        !Array.isArray(value)
+      ) {
         if (
           typeof target[key] === 'object' &&
           target[key] !== null &&

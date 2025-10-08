@@ -34,15 +34,21 @@ describe('ErrorHandler', () => {
 
   describe('handleError', () => {
     it('should handle MD2PDFError with proper logging', async () => {
-      const error = new MD2PDFError('Test MD2PDF error', 'TEST_ERROR', 'test_category');
+      const error = new MD2PDFError(
+        'Test MD2PDF error',
+        'TEST_ERROR',
+        'test_category',
+      );
 
       await errorHandler.handleError(error, 'test-context');
 
       expect(mockLogger.error).toHaveBeenCalledWith(
         '[test_category] TEST_ERROR: Test MD2PDF error',
-        error
+        error,
       );
-      expect(mockLogger.error).toHaveBeenCalledWith('Error context: test-context');
+      expect(mockLogger.error).toHaveBeenCalledWith(
+        'Error context: test-context',
+      );
     });
 
     it('should handle FileNotFoundError with appropriate logging', async () => {
@@ -52,21 +58,29 @@ describe('ErrorHandler', () => {
 
       expect(mockLogger.error).toHaveBeenCalledWith(
         '[file_system] FILE_NOT_FOUND: File not found: /path/to/file.md',
-        error
+        error,
       );
-      expect(mockLogger.error).toHaveBeenCalledWith('Error context: file-operation');
+      expect(mockLogger.error).toHaveBeenCalledWith(
+        'Error context: file-operation',
+      );
     });
 
     it('should handle ValidationError with proper context', async () => {
-      const error = new ValidationError('testField', 'invalidValue', 'Invalid input data');
+      const error = new ValidationError(
+        'testField',
+        'invalidValue',
+        'Invalid input data',
+      );
 
       await errorHandler.handleError(error, 'validation-context');
 
       expect(mockLogger.error).toHaveBeenCalledWith(
         '[validation] VALIDATION_ERROR: Invalid input data',
-        error
+        error,
       );
-      expect(mockLogger.error).toHaveBeenCalledWith('Error context: validation-context');
+      expect(mockLogger.error).toHaveBeenCalledWith(
+        'Error context: validation-context',
+      );
     });
 
     it('should handle generic Error with fallback handling', async () => {
@@ -76,9 +90,11 @@ describe('ErrorHandler', () => {
 
       expect(mockLogger.error).toHaveBeenCalledWith(
         '[unknown] Error: Generic error message',
-        error
+        error,
       );
-      expect(mockLogger.error).toHaveBeenCalledWith('Error context: generic-context');
+      expect(mockLogger.error).toHaveBeenCalledWith(
+        'Error context: generic-context',
+      );
     });
 
     it('should handle error without context', async () => {
@@ -86,7 +102,10 @@ describe('ErrorHandler', () => {
 
       await errorHandler.handleError(error);
 
-      expect(mockLogger.error).toHaveBeenCalledWith('[test_category] TEST_CODE: Test error', error);
+      expect(mockLogger.error).toHaveBeenCalledWith(
+        '[test_category] TEST_CODE: Test error',
+        error,
+      );
       expect(mockLogger.error).toHaveBeenCalledTimes(1);
     });
   });
@@ -111,7 +130,11 @@ describe('ErrorHandler', () => {
     });
 
     it('should format ValidationError with details', () => {
-      const error = new ValidationError('testField', 'invalidValue', 'Validation failed');
+      const error = new ValidationError(
+        'testField',
+        'invalidValue',
+        'Validation failed',
+      );
 
       const formatted = errorHandler.formatError(error);
 
@@ -187,7 +210,11 @@ describe('ErrorHandler', () => {
     });
 
     it('should categorize system MD2PDFError correctly', () => {
-      const error = new MD2PDFError('System issue', 'SYSTEM_ERROR', 'configuration');
+      const error = new MD2PDFError(
+        'System issue',
+        'SYSTEM_ERROR',
+        'configuration',
+      );
 
       const category = errorHandler.categorizeError(error);
 
@@ -216,8 +243,13 @@ describe('ErrorHandler', () => {
 
       await errorHandler.handleError(error, 'test-context');
 
-      expect(mockLogger.error).toHaveBeenCalledWith('[unknown] Error: Test error', error);
-      expect(mockLogger.error).toHaveBeenCalledWith('Error context: test-context');
+      expect(mockLogger.error).toHaveBeenCalledWith(
+        '[unknown] Error: Test error',
+        error,
+      );
+      expect(mockLogger.error).toHaveBeenCalledWith(
+        'Error context: test-context',
+      );
     });
 
     it('should handle complex error details in ValidationError', () => {
@@ -229,7 +261,7 @@ describe('ErrorHandler', () => {
         'email',
         'invalid-email',
         'Complex validation error',
-        complexDetails
+        complexDetails,
       );
 
       const formatted = errorHandler.formatError(error);
@@ -242,7 +274,10 @@ describe('ErrorHandler', () => {
 
       await errorHandler.handleError(error, '');
 
-      expect(mockLogger.error).toHaveBeenCalledWith('[test_category] TEST_CODE: Test error', error);
+      expect(mockLogger.error).toHaveBeenCalledWith(
+        '[test_category] TEST_CODE: Test error',
+        error,
+      );
       expect(mockLogger.error).toHaveBeenCalledTimes(1);
     });
   });

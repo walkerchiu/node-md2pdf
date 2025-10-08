@@ -12,11 +12,11 @@ import * as childProcess from 'child_process';
 
 // Mock chalk
 jest.mock('chalk', () => ({
-  green: jest.fn(text => text),
-  red: jest.fn(text => text),
-  yellow: jest.fn(text => text),
-  cyan: jest.fn(text => text),
-  gray: jest.fn(text => text),
+  green: jest.fn((text) => text),
+  red: jest.fn((text) => text),
+  yellow: jest.fn((text) => text),
+  cyan: jest.fn((text) => text),
+  gray: jest.fn((text) => text),
 }));
 
 // Mock console methods
@@ -63,7 +63,9 @@ describe('Environment Validation Integration Tests', () => {
 
       expect(result).toBe(true);
       expect(mockConsoleLog).toHaveBeenCalledWith(
-        expect.stringContaining('✅ Node.js version: v18.17.0 (meets requirements)')
+        expect.stringContaining(
+          '✅ Node.js version: v18.17.0 (meets requirements)',
+        ),
       );
     });
 
@@ -78,7 +80,9 @@ describe('Environment Validation Integration Tests', () => {
 
       expect(result).toBe(true);
       expect(mockConsoleLog).toHaveBeenCalledWith(
-        expect.stringContaining('✅ Node.js version: v20.10.0 (meets requirements)')
+        expect.stringContaining(
+          '✅ Node.js version: v20.10.0 (meets requirements)',
+        ),
       );
     });
 
@@ -93,7 +97,9 @@ describe('Environment Validation Integration Tests', () => {
 
       expect(result).toBe(false);
       expect(mockConsoleError).toHaveBeenCalledWith(
-        expect.stringContaining('❌ Node.js version too old: v16.20.2, requires >= 18.0.0')
+        expect.stringContaining(
+          '❌ Node.js version too old: v16.20.2, requires >= 18.0.0',
+        ),
       );
     });
 
@@ -108,7 +114,7 @@ describe('Environment Validation Integration Tests', () => {
 
       expect(result).toBe(true);
       expect(mockConsoleLog).toHaveBeenCalledWith(
-        expect.stringContaining('✅ Node.js version: v18.0.0')
+        expect.stringContaining('✅ Node.js version: v18.0.0'),
       );
     });
 
@@ -142,7 +148,9 @@ describe('Environment Validation Integration Tests', () => {
       const result = await validatePuppeteer();
 
       expect(result).toBe(true);
-      expect(mockConsoleLog).toHaveBeenCalledWith(expect.stringContaining('✅ Puppeteer is ready'));
+      expect(mockConsoleLog).toHaveBeenCalledWith(
+        expect.stringContaining('✅ Puppeteer is ready'),
+      );
     });
 
     // Note: The current implementation always returns true
@@ -151,7 +159,9 @@ describe('Environment Validation Integration Tests', () => {
       const result = await validatePuppeteer();
 
       expect(result).toBe(true);
-      expect(mockConsoleLog).toHaveBeenCalledWith(expect.stringContaining('✅ Puppeteer is ready'));
+      expect(mockConsoleLog).toHaveBeenCalledWith(
+        expect.stringContaining('✅ Puppeteer is ready'),
+      );
       expect(mockConsoleError).not.toHaveBeenCalled();
     });
   });
@@ -171,7 +181,7 @@ describe('Environment Validation Integration Tests', () => {
 
       expect(result).toBe(true);
       expect(mockConsoleLog).toHaveBeenCalledWith(
-        expect.stringContaining('✅ Memory usage: 48 MB')
+        expect.stringContaining('✅ Memory usage: 48 MB'),
       );
     });
 
@@ -189,7 +199,7 @@ describe('Environment Validation Integration Tests', () => {
 
       expect(result).toBe(true);
       expect(mockConsoleWarn).toHaveBeenCalledWith(
-        expect.stringContaining('⚠️ High memory usage: 191 MB')
+        expect.stringContaining('⚠️ High memory usage: 191 MB'),
       );
     });
 
@@ -207,7 +217,7 @@ describe('Environment Validation Integration Tests', () => {
 
       expect(result).toBe(true); // Should still pass
       expect(mockConsoleWarn).toHaveBeenCalledWith(
-        expect.stringContaining('⚠️ Unable to check system resources')
+        expect.stringContaining('⚠️ Unable to check system resources'),
       );
     });
 
@@ -225,7 +235,7 @@ describe('Environment Validation Integration Tests', () => {
 
       expect(result).toBe(true);
       expect(mockConsoleWarn).toHaveBeenCalledWith(
-        expect.stringContaining('⚠️ High memory usage: 100 MB')
+        expect.stringContaining('⚠️ High memory usage: 100 MB'),
       );
     });
 
@@ -243,7 +253,7 @@ describe('Environment Validation Integration Tests', () => {
 
       expect(result).toBe(true);
       expect(mockConsoleLog).toHaveBeenCalledWith(
-        expect.stringContaining('✅ Memory usage: 100 MB')
+        expect.stringContaining('✅ Memory usage: 100 MB'),
       );
     });
   });
@@ -280,9 +290,15 @@ describe('Environment Validation Integration Tests', () => {
 
       await expect(validateEnvironment()).resolves.toBeUndefined();
 
-      expect(mockConsoleLog).toHaveBeenCalledWith(expect.stringContaining('✅ Node.js version'));
-      expect(mockConsoleLog).toHaveBeenCalledWith(expect.stringContaining('✅ Puppeteer is ready'));
-      expect(mockConsoleLog).toHaveBeenCalledWith(expect.stringContaining('✅ Memory usage'));
+      expect(mockConsoleLog).toHaveBeenCalledWith(
+        expect.stringContaining('✅ Node.js version'),
+      );
+      expect(mockConsoleLog).toHaveBeenCalledWith(
+        expect.stringContaining('✅ Puppeteer is ready'),
+      );
+      expect(mockConsoleLog).toHaveBeenCalledWith(
+        expect.stringContaining('✅ Memory usage'),
+      );
     });
 
     it('should throw error when Node.js version check fails', async () => {
@@ -302,11 +318,11 @@ describe('Environment Validation Integration Tests', () => {
       }) as jest.MockedFunction<typeof childProcess.exec>);
 
       await expect(validateEnvironment()).rejects.toThrow(
-        'Environment check failed (1 checks not passed)'
+        'Environment check failed (1 checks not passed)',
       );
 
       expect(mockConsoleError).toHaveBeenCalledWith(
-        expect.stringContaining('❌ Node.js version too old')
+        expect.stringContaining('❌ Node.js version too old'),
       );
     });
 
@@ -322,7 +338,9 @@ describe('Environment Validation Integration Tests', () => {
 
       await expect(validateEnvironment()).resolves.toBeUndefined();
 
-      expect(mockConsoleWarn).toHaveBeenCalledWith(expect.stringContaining('⚠️ High memory usage'));
+      expect(mockConsoleWarn).toHaveBeenCalledWith(
+        expect.stringContaining('⚠️ High memory usage'),
+      );
     });
 
     it('should pass when system resource check fails but other checks pass', async () => {
@@ -337,7 +355,7 @@ describe('Environment Validation Integration Tests', () => {
       await expect(validateEnvironment()).resolves.toBeUndefined();
 
       expect(mockConsoleWarn).toHaveBeenCalledWith(
-        expect.stringContaining('⚠️ Unable to check system resources')
+        expect.stringContaining('⚠️ Unable to check system resources'),
       );
     });
 
@@ -370,7 +388,7 @@ describe('Environment Validation Integration Tests', () => {
       });
 
       await expect(validateEnvironment()).rejects.toThrow(
-        'Environment check failed (1 checks not passed)'
+        'Environment check failed (1 checks not passed)',
       );
     });
   });
@@ -405,11 +423,13 @@ describe('Environment Validation Integration Tests', () => {
       await expect(validateEnvironment()).resolves.toBeUndefined();
 
       expect(mockConsoleLog).toHaveBeenCalledWith(
-        expect.stringContaining('✅ Node.js version: v20.10.0')
+        expect.stringContaining('✅ Node.js version: v20.10.0'),
       );
-      expect(mockConsoleLog).toHaveBeenCalledWith(expect.stringContaining('✅ Puppeteer is ready'));
       expect(mockConsoleLog).toHaveBeenCalledWith(
-        expect.stringContaining('✅ Memory usage: 72 MB')
+        expect.stringContaining('✅ Puppeteer is ready'),
+      );
+      expect(mockConsoleLog).toHaveBeenCalledWith(
+        expect.stringContaining('✅ Memory usage: 72 MB'),
       );
     });
 
@@ -432,7 +452,7 @@ describe('Environment Validation Integration Tests', () => {
       await expect(validateEnvironment()).resolves.toBeUndefined();
 
       expect(mockConsoleWarn).toHaveBeenCalledWith(
-        expect.stringContaining('⚠️ High memory usage: 143 MB')
+        expect.stringContaining('⚠️ High memory usage: 143 MB'),
       );
     });
 
@@ -444,11 +464,11 @@ describe('Environment Validation Integration Tests', () => {
       });
 
       await expect(validateEnvironment()).rejects.toThrow(
-        expect.stringContaining('Environment check failed')
+        expect.stringContaining('Environment check failed'),
       );
 
       expect(mockConsoleError).toHaveBeenCalledWith(
-        expect.stringContaining('❌ Node.js version too old: v12.22.12')
+        expect.stringContaining('❌ Node.js version too old: v12.22.12'),
       );
     });
   });

@@ -56,8 +56,10 @@ type PromptQuestion = {
 
 const mockInquirerPrompt = jest.fn() as jest.MockedFunction<
   (
-    questions: PromptQuestion[]
-  ) => Promise<ConversionConfig | { confirmed: boolean } | Record<string, unknown>>
+    questions: PromptQuestion[],
+  ) => Promise<
+    ConversionConfig | { confirmed: boolean } | Record<string, unknown>
+  >
 >;
 jest.mock('inquirer', () => ({
   __esModule: true,
@@ -132,7 +134,9 @@ describe('InteractiveMode', () => {
       generateOutputPath: jest.fn(),
     } as unknown as jest.Mocked<IFileProcessorService>;
 
-    mockFileProcessorService.processFile.mockResolvedValue(mockProcessingResult);
+    mockFileProcessorService.processFile.mockResolvedValue(
+      mockProcessingResult,
+    );
 
     container = new ServiceContainer();
     container.registerInstance('logger', mockLogger);
@@ -173,9 +177,11 @@ describe('InteractiveMode', () => {
 
       await interactiveMode.start();
 
-      expect(mockLogger.info).toHaveBeenCalledWith('Starting interactive conversion process');
+      expect(mockLogger.info).toHaveBeenCalledWith(
+        'Starting interactive conversion process',
+      );
       expect(consoleSpy).toHaveBeenCalledWith(
-        expect.stringContaining('📋 Interactive Markdown to PDF Configuration')
+        expect.stringContaining('📋 Interactive Markdown to PDF Configuration'),
       );
       expect(mockFileProcessorService.processFile).toHaveBeenCalled();
     });
@@ -204,9 +210,18 @@ describe('InteractiveMode', () => {
 
       await expect(interactiveMode.start()).rejects.toThrow('Test error');
 
-      expect(mockLogger.error).toHaveBeenCalledWith('Interactive mode error', testError);
-      expect(mockErrorHandler.handleError).toHaveBeenCalledWith(testError, 'InteractiveMode.start');
-      expect(consoleErrorSpy).toHaveBeenCalledWith('❌ Interactive mode error:', testError);
+      expect(mockLogger.error).toHaveBeenCalledWith(
+        'Interactive mode error',
+        testError,
+      );
+      expect(mockErrorHandler.handleError).toHaveBeenCalledWith(
+        testError,
+        'InteractiveMode.start',
+      );
+      expect(consoleErrorSpy).toHaveBeenCalledWith(
+        '❌ Interactive mode error:',
+        testError,
+      );
     });
 
     it('should display welcome messages correctly', async () => {
@@ -222,9 +237,11 @@ describe('InteractiveMode', () => {
 
       await interactiveMode.start();
 
-      expect(consoleSpy).toHaveBeenCalledWith('📋 Interactive Markdown to PDF Configuration');
       expect(consoleSpy).toHaveBeenCalledWith(
-        'Please answer the following questions to complete the conversion setup:'
+        '📋 Interactive Markdown to PDF Configuration',
+      );
+      expect(consoleSpy).toHaveBeenCalledWith(
+        'Please answer the following questions to complete the conversion setup:',
       );
     });
   });
@@ -252,15 +269,21 @@ describe('InteractiveMode', () => {
             name: 'inputPath',
             message: expect.any(String),
           }),
-        ])
+        ]),
       );
       expect(mockInquirerPrompt.mock.calls[1][0]).toEqual(
         expect.arrayContaining([
           expect.objectContaining({ type: 'input', name: 'outputPath' }),
           expect.objectContaining({ type: 'list', name: 'tocDepth' }),
-          expect.objectContaining({ type: 'confirm', name: 'includePageNumbers' }),
-          expect.objectContaining({ type: 'confirm', name: 'chineseFontSupport' }),
-        ])
+          expect.objectContaining({
+            type: 'confirm',
+            name: 'includePageNumbers',
+          }),
+          expect.objectContaining({
+            type: 'confirm',
+            name: 'chineseFontSupport',
+          }),
+        ]),
       );
     });
 
@@ -277,11 +300,16 @@ describe('InteractiveMode', () => {
 
       await interactiveMode.start();
 
-      const promptCall = mockInquirerPrompt.mock.calls[0][0] as PromptQuestion[];
-      const inputPathQuestion = promptCall.find((q: PromptQuestion) => q.name === 'inputPath')!;
+      const promptCall = mockInquirerPrompt.mock
+        .calls[0][0] as PromptQuestion[];
+      const inputPathQuestion = promptCall.find(
+        (q: PromptQuestion) => q.name === 'inputPath',
+      )!;
 
       expect(inputPathQuestion.validate!('')).toBe('Please enter a file path');
-      expect(inputPathQuestion.validate!('   ')).toBe('Please enter a file path');
+      expect(inputPathQuestion.validate!('   ')).toBe(
+        'Please enter a file path',
+      );
     });
 
     it('should validate input path for correct file extensions', async () => {
@@ -297,14 +325,17 @@ describe('InteractiveMode', () => {
 
       await interactiveMode.start();
 
-      const promptCall = mockInquirerPrompt.mock.calls[0][0] as PromptQuestion[];
-      const inputPathQuestion = promptCall.find((q: PromptQuestion) => q.name === 'inputPath')!;
+      const promptCall = mockInquirerPrompt.mock
+        .calls[0][0] as PromptQuestion[];
+      const inputPathQuestion = promptCall.find(
+        (q: PromptQuestion) => q.name === 'inputPath',
+      )!;
 
       expect(inputPathQuestion.validate!('document.txt')).toBe(
-        'Please enter a valid Markdown file (.md or .markdown)'
+        'Please enter a valid Markdown file (.md or .markdown)',
       );
       expect(inputPathQuestion.validate!('document.pdf')).toBe(
-        'Please enter a valid Markdown file (.md or .markdown)'
+        'Please enter a valid Markdown file (.md or .markdown)',
       );
       expect(inputPathQuestion.validate!('document.md')).toBe(true);
       expect(inputPathQuestion.validate!('document.markdown')).toBe(true);
@@ -323,11 +354,18 @@ describe('InteractiveMode', () => {
 
       await interactiveMode.start();
 
-      const promptCall = mockInquirerPrompt.mock.calls[1][0] as PromptQuestion[];
-      const outputPathQuestion = promptCall.find((q: PromptQuestion) => q.name === 'outputPath')!;
+      const promptCall = mockInquirerPrompt.mock
+        .calls[1][0] as PromptQuestion[];
+      const outputPathQuestion = promptCall.find(
+        (q: PromptQuestion) => q.name === 'outputPath',
+      )!;
 
-      expect(outputPathQuestion.default!({ inputPath: 'document.md' })).toBe('document.pdf');
-      expect(outputPathQuestion.default!({ inputPath: 'file.markdown' })).toBe('file.pdf');
+      expect(outputPathQuestion.default!({ inputPath: 'document.md' })).toBe(
+        'document.pdf',
+      );
+      expect(outputPathQuestion.default!({ inputPath: 'file.markdown' })).toBe(
+        'file.pdf',
+      );
     });
 
     it('should provide correct TOC depth choices', async () => {
@@ -343,12 +381,21 @@ describe('InteractiveMode', () => {
 
       await interactiveMode.start();
 
-      const promptCall = mockInquirerPrompt.mock.calls[1][0] as PromptQuestion[];
-      const tocDepthQuestion = promptCall.find((q: PromptQuestion) => q.name === 'tocDepth')!;
+      const promptCall = mockInquirerPrompt.mock
+        .calls[1][0] as PromptQuestion[];
+      const tocDepthQuestion = promptCall.find(
+        (q: PromptQuestion) => q.name === 'tocDepth',
+      )!;
 
       expect(tocDepthQuestion.choices).toHaveLength(6);
-      expect(tocDepthQuestion.choices![0]).toEqual({ name: '1 level (H1 only)', value: 1 });
-      expect(tocDepthQuestion.choices![5]).toEqual({ name: '6 levels (H1-H6)', value: 6 });
+      expect(tocDepthQuestion.choices![0]).toEqual({
+        name: '1 level (H1 only)',
+        value: 1,
+      });
+      expect(tocDepthQuestion.choices![5]).toEqual({
+        name: '6 levels (H1-H6)',
+        value: 6,
+      });
       expect(tocDepthQuestion.default).toBe(2);
     });
   });
@@ -368,7 +415,9 @@ describe('InteractiveMode', () => {
       await interactiveMode.start();
 
       // Verify that configuration summary was displayed
-      expect(consoleSpy).toHaveBeenCalledWith('📄 Conversion Configuration Summary:');
+      expect(consoleSpy).toHaveBeenCalledWith(
+        '📄 Conversion Configuration Summary:',
+      );
       expect(consoleSpy).toHaveBeenCalledWith('─'.repeat(50));
       expect(consoleSpy).toHaveBeenCalledWith('Input file: test.md');
       expect(consoleSpy).toHaveBeenCalledWith('Output file: test.pdf');
@@ -385,7 +434,9 @@ describe('InteractiveMode', () => {
       };
 
       mockInquirerPrompt
-        .mockResolvedValueOnce({ inputPath: configWithDisabledOptions.inputPath })
+        .mockResolvedValueOnce({
+          inputPath: configWithDisabledOptions.inputPath,
+        })
         .mockResolvedValueOnce({
           outputPath: configWithDisabledOptions.outputPath,
           tocDepth: configWithDisabledOptions.tocDepth,
@@ -472,7 +523,7 @@ describe('InteractiveMode', () => {
             printBackground: true,
           }),
           customStyles: expect.stringContaining('Noto Sans CJK SC'),
-        })
+        }),
       );
     });
 
@@ -498,7 +549,7 @@ describe('InteractiveMode', () => {
         'test.md',
         expect.not.objectContaining({
           customStyles: expect.stringContaining('Noto Sans CJK SC'),
-        })
+        }),
       );
     });
 
@@ -524,7 +575,7 @@ describe('InteractiveMode', () => {
         'test.md',
         expect.objectContaining({
           outputPath: 'test.pdf', // Should default to input.pdf
-        })
+        }),
       );
     });
 
@@ -541,7 +592,9 @@ describe('InteractiveMode', () => {
 
       await interactiveMode.start();
 
-      expect(mockSpinner.succeed).toHaveBeenCalledWith('✅ Conversion completed successfully!');
+      expect(mockSpinner.succeed).toHaveBeenCalledWith(
+        '✅ Conversion completed successfully!',
+      );
       expect(consoleSpy).toHaveBeenCalledWith('📄 Conversion Results:');
       expect(consoleSpy).toHaveBeenCalledWith('Input file: test.md');
       expect(consoleSpy).toHaveBeenCalledWith('Output file: test.pdf');
@@ -575,7 +628,7 @@ describe('InteractiveMode', () => {
             displayHeaderFooter: true,
             footerTemplate: expect.stringContaining('pageNumber'),
           }),
-        })
+        }),
       );
     });
 
@@ -586,7 +639,9 @@ describe('InteractiveMode', () => {
       };
 
       mockInquirerPrompt
-        .mockResolvedValueOnce({ inputPath: configWithoutPageNumbers.inputPath })
+        .mockResolvedValueOnce({
+          inputPath: configWithoutPageNumbers.inputPath,
+        })
         .mockResolvedValueOnce({
           outputPath: configWithoutPageNumbers.outputPath,
           tocDepth: configWithoutPageNumbers.tocDepth,
@@ -604,7 +659,7 @@ describe('InteractiveMode', () => {
             displayHeaderFooter: false,
             footerTemplate: '',
           }),
-        })
+        }),
       );
     });
 
@@ -622,12 +677,14 @@ describe('InteractiveMode', () => {
         })
         .mockResolvedValueOnce({ confirmed: true });
 
-      await expect(interactiveMode.start()).rejects.toThrow('Processing failed');
+      await expect(interactiveMode.start()).rejects.toThrow(
+        'Processing failed',
+      );
 
       expect(mockSpinner.fail).toHaveBeenCalledWith('❌ Conversion failed!');
       expect(mockLogger.error).toHaveBeenCalledWith(
         'Conversion failed in interactive mode',
-        conversionError
+        conversionError,
       );
     });
 
@@ -649,12 +706,15 @@ describe('InteractiveMode', () => {
         outputPath: 'test.pdf',
       });
 
-      expect(mockLogger.info).toHaveBeenCalledWith('File conversion completed successfully', {
-        inputPath: 'test.md',
-        outputPath: 'test.pdf',
-        processingTime: 1500,
-        fileSize: 1024000,
-      });
+      expect(mockLogger.info).toHaveBeenCalledWith(
+        'File conversion completed successfully',
+        {
+          inputPath: 'test.md',
+          outputPath: 'test.pdf',
+          processingTime: 1500,
+          fileSize: 1024000,
+        },
+      );
     });
 
     it('should update spinner text during conversion steps', async () => {
@@ -747,7 +807,9 @@ describe('InteractiveMode', () => {
           metadata: {},
         },
       };
-      mockFileProcessorService.processFile.mockResolvedValue(resultWithoutHeadings);
+      mockFileProcessorService.processFile.mockResolvedValue(
+        resultWithoutHeadings,
+      );
 
       mockInquirerPrompt
         .mockResolvedValueOnce({ inputPath: mockConversionConfig.inputPath })
@@ -761,8 +823,12 @@ describe('InteractiveMode', () => {
 
       await interactiveMode.start();
 
-      expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('Headings found: 0'));
-      expect(mockSpinner.succeed).toHaveBeenCalledWith('✅ Conversion completed successfully!');
+      expect(consoleSpy).toHaveBeenCalledWith(
+        expect.stringContaining('Headings found: 0'),
+      );
+      expect(mockSpinner.succeed).toHaveBeenCalledWith(
+        '✅ Conversion completed successfully!',
+      );
     });
 
     it('should handle different TOC depth levels', async () => {
@@ -789,7 +855,7 @@ describe('InteractiveMode', () => {
           tocOptions: expect.objectContaining({
             maxDepth: 6,
           }),
-        })
+        }),
       );
     });
 
@@ -803,7 +869,9 @@ describe('InteractiveMode', () => {
       };
 
       mockInquirerPrompt
-        .mockResolvedValueOnce({ inputPath: configWithMarkdownExtension.inputPath })
+        .mockResolvedValueOnce({
+          inputPath: configWithMarkdownExtension.inputPath,
+        })
         .mockResolvedValueOnce({
           outputPath: configWithMarkdownExtension.outputPath,
           tocDepth: configWithMarkdownExtension.tocDepth,
@@ -816,7 +884,7 @@ describe('InteractiveMode', () => {
 
       expect(mockFileProcessorService.processFile).toHaveBeenCalledWith(
         'document.markdown',
-        expect.any(Object)
+        expect.any(Object),
       );
     });
 
@@ -842,7 +910,7 @@ describe('InteractiveMode', () => {
         'test.md',
         expect.objectContaining({
           outputPath: 'test.pdf', // Should use fallback logic
-        })
+        }),
       );
     });
 
@@ -851,7 +919,9 @@ describe('InteractiveMode', () => {
         ...mockProcessingResult,
         fileSize: 0,
       };
-      mockFileProcessorService.processFile.mockResolvedValue(resultWithZeroSize);
+      mockFileProcessorService.processFile.mockResolvedValue(
+        resultWithZeroSize,
+      );
 
       mockInquirerPrompt
         .mockResolvedValueOnce({ inputPath: mockConversionConfig.inputPath })
@@ -906,7 +976,7 @@ describe('InteractiveMode', () => {
             },
             printBackground: true,
           }),
-        })
+        }),
       );
     });
   });
@@ -926,10 +996,16 @@ describe('InteractiveMode', () => {
       await interactiveMode.start();
 
       // Verify complete flow
-      expect(mockLogger.info).toHaveBeenCalledWith('Starting interactive conversion process');
-      expect(consoleSpy).toHaveBeenCalledWith('📋 Interactive Markdown to PDF Configuration');
+      expect(mockLogger.info).toHaveBeenCalledWith(
+        'Starting interactive conversion process',
+      );
+      expect(consoleSpy).toHaveBeenCalledWith(
+        '📋 Interactive Markdown to PDF Configuration',
+      );
       expect(mockInquirerPrompt).toHaveBeenCalledTimes(3);
-      expect(consoleSpy).toHaveBeenCalledWith('📄 Conversion Configuration Summary:');
+      expect(consoleSpy).toHaveBeenCalledWith(
+        '📄 Conversion Configuration Summary:',
+      );
       expect(mockSpinner.start).toHaveBeenCalled();
       expect(mockFileProcessorService.processFile).toHaveBeenCalled();
       expect(mockSpinner.succeed).toHaveBeenCalled();
@@ -950,7 +1026,9 @@ describe('InteractiveMode', () => {
       await interactiveMode.start();
 
       // Verify cancellation flow
-      expect(mockLogger.info).toHaveBeenCalledWith('Starting interactive conversion process');
+      expect(mockLogger.info).toHaveBeenCalledWith(
+        'Starting interactive conversion process',
+      );
       expect(mockLogger.info).toHaveBeenCalledWith('User cancelled conversion');
       expect(consoleSpy).toHaveBeenCalledWith('❌ Conversion cancelled');
       expect(mockFileProcessorService.processFile).not.toHaveBeenCalled();
@@ -969,13 +1047,16 @@ describe('InteractiveMode', () => {
 
       await interactiveMode.start();
 
-      const promptCall = mockInquirerPrompt.mock.calls[1][0] as PromptQuestion[];
+      const promptCall = mockInquirerPrompt.mock
+        .calls[1][0] as PromptQuestion[];
       const chineseFontQuestion = promptCall.find(
-        (q: PromptQuestion) => q.name === 'chineseFontSupport'
+        (q: PromptQuestion) => q.name === 'chineseFontSupport',
       )!;
 
       expect(chineseFontQuestion.message).toContain('Chinese font support');
-      expect(chineseFontQuestion.message).toContain('faster processing and smaller file size');
+      expect(chineseFontQuestion.message).toContain(
+        'faster processing and smaller file size',
+      );
     });
   });
 });

@@ -46,7 +46,12 @@ describe('SmartDefaultsService', () => {
             {
               level: 2,
               count: 4,
-              titles: ['GET /users', 'POST /users', 'Code Sample', 'Error Handling'],
+              titles: [
+                'GET /users',
+                'POST /users',
+                'Code Sample',
+                'Error Handling',
+              ],
             },
             {
               level: 3,
@@ -343,7 +348,11 @@ describe('SmartDefaultsService', () => {
           documentType: 'technical-manual',
           recommendedTocDepth: 3,
           factors: [
-            { type: 'code-heavy', weight: 0.3, description: 'Contains multiple code blocks' },
+            {
+              type: 'code-heavy',
+              weight: 0.3,
+              description: 'Contains multiple code blocks',
+            },
           ],
         },
         languageDetection: {
@@ -447,12 +456,12 @@ describe('SmartDefaultsService', () => {
       const presets = service.getPresetConfigs();
 
       expect(presets).toHaveLength(4);
-      expect(presets.map(p => p.name)).toContain('Quick & Simple');
-      expect(presets.map(p => p.name)).toContain('Professional Document');
-      expect(presets.map(p => p.name)).toContain('Technical Document');
-      expect(presets.map(p => p.name)).toContain('Academic Paper');
+      expect(presets.map((p) => p.name)).toContain('Quick & Simple');
+      expect(presets.map((p) => p.name)).toContain('Professional Document');
+      expect(presets.map((p) => p.name)).toContain('Technical Document');
+      expect(presets.map((p) => p.name)).toContain('Academic Paper');
 
-      presets.forEach(preset => {
+      presets.forEach((preset) => {
         expect(preset.name).toBeDefined();
         expect(preset.description).toBeDefined();
         expect(preset.config).toBeDefined();
@@ -481,8 +490,16 @@ describe('SmartDefaultsService', () => {
           documentType: 'technical-manual',
           recommendedTocDepth: 4,
           factors: [
-            { type: 'code-heavy', weight: 0.3, description: 'Contains many code blocks' },
-            { type: 'media-rich', weight: 0.2, description: 'Contains many images' },
+            {
+              type: 'code-heavy',
+              weight: 0.3,
+              description: 'Contains many code blocks',
+            },
+            {
+              type: 'media-rich',
+              weight: 0.2,
+              description: 'Contains many images',
+            },
           ],
         },
         languageDetection: {
@@ -528,18 +545,22 @@ describe('SmartDefaultsService', () => {
 
       expect(insights.documentTypeConfidence).toBeDefined();
       expect(insights.suggestedImprovements).toContain(
-        'Consider reducing heading depth for better readability'
+        'Consider reducing heading depth for better readability',
       );
       expect(insights.suggestedImprovements).toContain(
-        'Consider optimizing images to reduce file size'
+        'Consider optimizing images to reduce file size',
       );
-      expect(insights.potentialIssues.some(issue => issue.type === 'performance')).toBe(true);
-      expect(insights.potentialIssues.some(issue => issue.severity === 'high')).toBe(true);
+      expect(
+        insights.potentialIssues.some((issue) => issue.type === 'performance'),
+      ).toBe(true);
+      expect(
+        insights.potentialIssues.some((issue) => issue.severity === 'high'),
+      ).toBe(true);
       expect(insights.processingWarnings).toContain(
-        'Large document detected - processing may take several minutes'
+        'Large document detected - processing may take several minutes',
       );
       expect(insights.processingWarnings).toContain(
-        'Complex document structure - additional memory may be required'
+        'Complex document structure - additional memory may be required',
       );
     });
   });

@@ -228,12 +228,24 @@ export class SmartConversionMode {
 
   private displayAnalysisResults(analysis: ContentAnalysis): void {
     this.renderer.newline();
-    this.renderer.info(chalk.green('┌─────────────────────────────────────────┐'));
-    this.renderer.info(chalk.green('│        📊 Content Analysis Results      │'));
-    this.renderer.info(chalk.green('└─────────────────────────────────────────┘'));
-    this.renderer.info(chalk.cyan(`   📄 Words: ${analysis.wordCount.toLocaleString()}`));
-    this.renderer.info(chalk.cyan(`   📖 Estimated pages: ${analysis.estimatedPages}`));
-    this.renderer.info(chalk.cyan(`   ⏱️  Reading time: ${analysis.readingTime} minutes`));
+    this.renderer.info(
+      chalk.green('┌─────────────────────────────────────────┐'),
+    );
+    this.renderer.info(
+      chalk.green('│        📊 Content Analysis Results      │'),
+    );
+    this.renderer.info(
+      chalk.green('└─────────────────────────────────────────┘'),
+    );
+    this.renderer.info(
+      chalk.cyan(`   📄 Words: ${analysis.wordCount.toLocaleString()}`),
+    );
+    this.renderer.info(
+      chalk.cyan(`   📖 Estimated pages: ${analysis.estimatedPages}`),
+    );
+    this.renderer.info(
+      chalk.cyan(`   ⏱️  Reading time: ${analysis.readingTime} minutes`),
+    );
     this.renderer.info(
       chalk.cyan(
         `   📝 Headings: ${analysis.headingStructure.totalHeadings} (max depth: ${
@@ -262,7 +274,7 @@ export class SmartConversionMode {
     }
 
     this.renderer.info(
-      `   🤖 Document type: ${this.getDocumentTypeDisplay(analysis.contentComplexity.documentType)}`
+      `   🤖 Document type: ${this.getDocumentTypeDisplay(analysis.contentComplexity.documentType)}`,
     );
     this.renderer.info(
       `   📈 Complexity: ${analysis.contentComplexity.score}/10`,
@@ -344,7 +356,7 @@ export class SmartConversionMode {
         type: 'list',
         name: 'presetName',
         message: '🔧 Select a preset configuration:',
-        choices: presetConfigs.map(preset => ({
+        choices: presetConfigs.map((preset) => ({
           name: `${preset.name} - ${preset.description}`,
           value: preset.name,
         })),
@@ -365,7 +377,7 @@ export class SmartConversionMode {
   private async confirmAndConvert(
     filePath: string,
     choice: ConversionChoice,
-    analysis: ContentAnalysis
+    analysis: ContentAnalysis,
   ): Promise<void> {
     const inquirer = await import('inquirer');
 
@@ -502,7 +514,7 @@ export class SmartConversionMode {
 
   private convertToProcessingConfig(
     config: QuickConfig | RecommendedConfig | undefined,
-    analysis: ContentAnalysis
+    analysis: ContentAnalysis,
   ): any {
     if (!config) {
       // Return basic configuration matching single file and batch processing
@@ -660,9 +672,13 @@ export class SmartConversionMode {
           return resolvedPath;
         }
 
-        this.renderer.error(chalk.red('❌ Invalid Markdown file path. Please check:'));
+        this.renderer.error(
+          chalk.red('❌ Invalid Markdown file path. Please check:'),
+        );
         this.renderer.error(chalk.red('   • File exists'));
-        this.renderer.error(chalk.red('   • File has .md, .markdown, .mdown, or .mkd extension'));
+        this.renderer.error(
+          chalk.red('   • File has .md, .markdown, .mdown, or .mkd extension'),
+        );
 
         const { action } = await inquirer.default.prompt({
           type: 'list',

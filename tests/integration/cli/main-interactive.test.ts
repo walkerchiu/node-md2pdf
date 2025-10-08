@@ -18,11 +18,11 @@ jest.mock('inquirer', () => ({
 
 // Mock chalk
 jest.mock('chalk', () => ({
-  cyan: jest.fn(text => text),
-  red: jest.fn(text => text),
-  yellow: jest.fn(text => text),
-  green: jest.fn(text => text),
-  gray: jest.fn(text => text),
+  cyan: jest.fn((text) => text),
+  red: jest.fn((text) => text),
+  yellow: jest.fn((text) => text),
+  green: jest.fn((text) => text),
+  gray: jest.fn((text) => text),
 }));
 
 // Mock console methods
@@ -85,12 +85,14 @@ describe('MainInteractiveMode Integration Tests', () => {
       await mainInteractive.start();
 
       // Verify welcome message is displayed
-      expect(mockConsoleLog).toHaveBeenCalledWith(expect.stringContaining('MD2PDF Main Menu'));
       expect(mockConsoleLog).toHaveBeenCalledWith(
-        expect.stringContaining('Convert Markdown files to professional')
+        expect.stringContaining('MD2PDF Main Menu'),
       );
       expect(mockConsoleLog).toHaveBeenCalledWith(
-        expect.stringContaining('PDF documents with table of contents')
+        expect.stringContaining('Convert Markdown files to professional'),
+      );
+      expect(mockConsoleLog).toHaveBeenCalledWith(
+        expect.stringContaining('PDF documents with table of contents'),
       );
     });
 
@@ -101,13 +103,13 @@ describe('MainInteractiveMode Integration Tests', () => {
 
       // Verify box characters are used
       expect(mockConsoleLog).toHaveBeenCalledWith(
-        expect.stringContaining('┌─────────────────────────────────────────┐')
+        expect.stringContaining('┌─────────────────────────────────────────┐'),
       );
       expect(mockConsoleLog).toHaveBeenCalledWith(
-        expect.stringContaining('├─────────────────────────────────────────┤')
+        expect.stringContaining('├─────────────────────────────────────────┤'),
       );
       expect(mockConsoleLog).toHaveBeenCalledWith(
-        expect.stringContaining('└─────────────────────────────────────────┘')
+        expect.stringContaining('└─────────────────────────────────────────┘'),
       );
     });
   });
@@ -159,7 +161,9 @@ describe('MainInteractiveMode Integration Tests', () => {
 
   describe('single file mode selection', () => {
     it('should start InteractiveMode when single mode is selected then return to menu', async () => {
-      mockPrompt.mockResolvedValueOnce({ mode: 'single' }).mockResolvedValueOnce({ mode: 'exit' });
+      mockPrompt
+        .mockResolvedValueOnce({ mode: 'single' })
+        .mockResolvedValueOnce({ mode: 'exit' });
 
       const { InteractiveMode } = await import('../../../src/cli/interactive');
       const mockInteractiveMode = new InteractiveMode(container);
@@ -168,24 +172,34 @@ describe('MainInteractiveMode Integration Tests', () => {
 
       expect(InteractiveMode).toHaveBeenCalledWith(container);
       expect(mockInteractiveMode.start).toHaveBeenCalled();
-      expect(mockLogger.info).toHaveBeenCalledWith('User selected single file mode');
+      expect(mockLogger.info).toHaveBeenCalledWith(
+        'User selected single file mode',
+      );
       expect(mockLogger.info).toHaveBeenCalledWith('User selected exit');
     });
 
     it('should log appropriate messages for single mode', async () => {
-      mockPrompt.mockResolvedValueOnce({ mode: 'single' }).mockResolvedValueOnce({ mode: 'exit' });
+      mockPrompt
+        .mockResolvedValueOnce({ mode: 'single' })
+        .mockResolvedValueOnce({ mode: 'exit' });
 
       await mainInteractive.start();
 
-      expect(mockLogger.info).toHaveBeenCalledWith('Starting main interactive mode');
-      expect(mockLogger.info).toHaveBeenCalledWith('User selected single file mode');
+      expect(mockLogger.info).toHaveBeenCalledWith(
+        'Starting main interactive mode',
+      );
+      expect(mockLogger.info).toHaveBeenCalledWith(
+        'User selected single file mode',
+      );
       expect(mockLogger.info).toHaveBeenCalledWith('User selected exit');
     });
   });
 
   describe('batch mode selection', () => {
     it('should start BatchInteractiveMode when batch mode is selected then return to menu', async () => {
-      mockPrompt.mockResolvedValueOnce({ mode: 'batch' }).mockResolvedValueOnce({ mode: 'exit' });
+      mockPrompt
+        .mockResolvedValueOnce({ mode: 'batch' })
+        .mockResolvedValueOnce({ mode: 'exit' });
 
       const { BatchInteractiveMode } = await import('../../../src/cli/batch');
       const mockBatchMode = new BatchInteractiveMode(container);
@@ -199,11 +213,15 @@ describe('MainInteractiveMode Integration Tests', () => {
     });
 
     it('should log appropriate messages for batch mode', async () => {
-      mockPrompt.mockResolvedValueOnce({ mode: 'batch' }).mockResolvedValueOnce({ mode: 'exit' });
+      mockPrompt
+        .mockResolvedValueOnce({ mode: 'batch' })
+        .mockResolvedValueOnce({ mode: 'exit' });
 
       await mainInteractive.start();
 
-      expect(mockLogger.info).toHaveBeenCalledWith('Starting main interactive mode');
+      expect(mockLogger.info).toHaveBeenCalledWith(
+        'Starting main interactive mode',
+      );
       expect(mockLogger.info).toHaveBeenCalledWith('User selected batch mode');
       expect(mockLogger.info).toHaveBeenCalledWith('User selected exit');
     });
@@ -215,7 +233,9 @@ describe('MainInteractiveMode Integration Tests', () => {
 
       await mainInteractive.start();
 
-      expect(mockConsoleLog).toHaveBeenCalledWith(expect.stringContaining('👋 Goodbye!'));
+      expect(mockConsoleLog).toHaveBeenCalledWith(
+        expect.stringContaining('👋 Goodbye!'),
+      );
       expect(mockLogger.info).toHaveBeenCalledWith('User selected exit');
     });
 
@@ -239,10 +259,13 @@ describe('MainInteractiveMode Integration Tests', () => {
 
       await expect(mainInteractive.start()).rejects.toThrow('Inquirer error');
 
-      expect(mockLogger.error).toHaveBeenCalledWith('Main interactive mode error', testError);
+      expect(mockLogger.error).toHaveBeenCalledWith(
+        'Main interactive mode error',
+        testError,
+      );
       expect(mockConsoleError).toHaveBeenCalledWith(
         expect.stringContaining('❌ Main interactive mode error:'),
-        testError
+        testError,
       );
     });
 
@@ -254,9 +277,14 @@ describe('MainInteractiveMode Integration Tests', () => {
       const mockInteractiveMode = new InteractiveMode(container);
       (mockInteractiveMode.start as jest.Mock).mockRejectedValue(testError);
 
-      await expect(mainInteractive.start()).rejects.toThrow('Single mode error');
+      await expect(mainInteractive.start()).rejects.toThrow(
+        'Single mode error',
+      );
 
-      expect(mockLogger.error).toHaveBeenCalledWith('Main interactive mode error', testError);
+      expect(mockLogger.error).toHaveBeenCalledWith(
+        'Main interactive mode error',
+        testError,
+      );
     });
 
     it('should handle errors during batch mode execution', async () => {
@@ -269,7 +297,10 @@ describe('MainInteractiveMode Integration Tests', () => {
 
       await expect(mainInteractive.start()).rejects.toThrow('Batch mode error');
 
-      expect(mockLogger.error).toHaveBeenCalledWith('Main interactive mode error', testError);
+      expect(mockLogger.error).toHaveBeenCalledWith(
+        'Main interactive mode error',
+        testError,
+      );
     });
   });
 
@@ -300,7 +331,9 @@ describe('MainInteractiveMode Integration Tests', () => {
 
       await mainInteractive.start();
 
-      expect(mockLogger.info).toHaveBeenCalledWith('Starting main interactive mode');
+      expect(mockLogger.info).toHaveBeenCalledWith(
+        'Starting main interactive mode',
+      );
     });
 
     it('should log user selections appropriately', async () => {
@@ -314,18 +347,24 @@ describe('MainInteractiveMode Integration Tests', () => {
 
   describe('main menu loop behavior', () => {
     it('should Return to Main Menu after single file conversion', async () => {
-      mockPrompt.mockResolvedValueOnce({ mode: 'single' }).mockResolvedValueOnce({ mode: 'exit' });
+      mockPrompt
+        .mockResolvedValueOnce({ mode: 'single' })
+        .mockResolvedValueOnce({ mode: 'exit' });
 
       await mainInteractive.start();
 
       // Should be called twice - once for single mode, once for exit
       expect(mockPrompt).toHaveBeenCalledTimes(2);
-      expect(mockLogger.info).toHaveBeenCalledWith('User selected single file mode');
+      expect(mockLogger.info).toHaveBeenCalledWith(
+        'User selected single file mode',
+      );
       expect(mockLogger.info).toHaveBeenCalledWith('User selected exit');
     });
 
     it('should Return to Main Menu after batch processing', async () => {
-      mockPrompt.mockResolvedValueOnce({ mode: 'batch' }).mockResolvedValueOnce({ mode: 'exit' });
+      mockPrompt
+        .mockResolvedValueOnce({ mode: 'batch' })
+        .mockResolvedValueOnce({ mode: 'exit' });
 
       await mainInteractive.start();
 
@@ -346,7 +385,9 @@ describe('MainInteractiveMode Integration Tests', () => {
 
       // Should be called four times
       expect(mockPrompt).toHaveBeenCalledTimes(4);
-      expect(mockLogger.info).toHaveBeenCalledWith('User selected single file mode');
+      expect(mockLogger.info).toHaveBeenCalledWith(
+        'User selected single file mode',
+      );
       expect(mockLogger.info).toHaveBeenCalledWith('User selected batch mode');
       expect(mockLogger.info).toHaveBeenCalledWith('User selected exit');
     });

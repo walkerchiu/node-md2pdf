@@ -4,6 +4,7 @@
  */
 
 import { readFileSync } from 'fs';
+
 import {
   ContentAnalysis,
   HeadingAnalysis,
@@ -32,7 +33,10 @@ export class ContentAnalyzer {
     return this.analyzeContent(content, filePath);
   }
 
-  async analyzeContent(content: string, _filePath?: string): Promise<ContentAnalysis> {
+  async analyzeContent(
+    content: string,
+    _filePath?: string,
+  ): Promise<ContentAnalysis> {
     const basicStats = this.getBasicStats(content);
     const headingStructure = this.analyzeHeadings(content);
     const languageInfo = this.detectLanguages(content);
@@ -45,7 +49,7 @@ export class ContentAnalyzer {
       headingStructure,
       codeBlocks,
       tables,
-      mediaElements
+      mediaElements,
     );
 
     return {
@@ -58,7 +62,12 @@ export class ContentAnalyzer {
       codeBlocks,
       tables,
       links,
-      estimatedPages: this.estimatePages(content, mediaElements, tables.length, codeBlocks.length),
+      estimatedPages: this.estimatePages(
+        content,
+        mediaElements,
+        tables.length,
+        codeBlocks.length,
+      ),
       readingTime: Math.ceil(basicStats.wordCount / 200), // Assuming 200 words per minute
     };
   }
@@ -71,12 +80,15 @@ export class ContentAnalyzer {
     }
   }
 
-  private getBasicStats(content: string): { fileSize: number; wordCount: number } {
+  private getBasicStats(content: string): {
+    fileSize: number;
+    wordCount: number;
+  } {
     const fileSize = Buffer.byteLength(content, 'utf8');
     const words = content
       .replace(/[^\w\s\u4e00-\u9fff]/g, ' ')
       .split(/\s+/)
-      .filter(word => word.length > 0);
+      .filter((word) => word.length > 0);
 
     return {
       fileSize,
@@ -96,17 +108,17 @@ export class ContentAnalyzer {
 
     const structure: HeadingLevel[] = [];
     for (let i = 1; i <= 6; i++) {
-      const levelHeadings = headings.filter(h => h.level === i);
+      const levelHeadings = headings.filter((h) => h.level === i);
       if (levelHeadings.length > 0) {
         structure.push({
           level: i,
           count: levelHeadings.length,
-          titles: levelHeadings.map(h => h.title),
+          titles: levelHeadings.map((h) => h.title),
         });
       }
     }
 
-    const hasNumberedHeadings = headings.some(h => /^\d+\./.test(h.title));
+    const hasNumberedHeadings = headings.some((h) => /^\d+\./.test(h.title));
     const averageHeadingLength =
       headings.length > 0
         ? headings.reduce((sum, h) => sum + h.title.length, 0) / headings.length
@@ -114,7 +126,7 @@ export class ContentAnalyzer {
 
     return {
       totalHeadings: headings.length,
-      maxDepth: Math.max(...headings.map(h => h.level), 0),
+      maxDepth: Math.max(...headings.map((h) => h.level), 0),
       structure,
       hasNumberedHeadings,
       averageHeadingLength,
@@ -156,7 +168,7 @@ export class ContentAnalyzer {
     const detectedLanguages: DetectedLanguage[] = [
       { language: 'Chinese', percentage: Math.round(chineseRatio * 100) },
       { language: 'English', percentage: Math.round(englishRatio * 100) },
-    ].filter(lang => lang.percentage > 0);
+    ].filter((lang) => lang.percentage > 0);
 
     return {
       primary,
@@ -181,10 +193,13 @@ export class ContentAnalyzer {
       'plantuml',
       'mermaid',
     ];
-    const hasDiagrams = diagramKeywords.some(keyword => content.toLowerCase().includes(keyword));
+    const hasDiagrams = diagramKeywords.some((keyword) =>
+      content.toLowerCase().includes(keyword),
+    );
 
     // Estimate if images are large based on context
-    const hasLargeImages = content.includes('width') || content.includes('height') || images > 5;
+    const hasLargeImages =
+      content.includes('width') || content.includes('height') || images > 5;
 
     return {
       images,
@@ -248,7 +263,7 @@ export class ContentAnalyzer {
     if (currentTable.length >= 2) {
       // Header + at least one data row
       // Filter out separator lines (lines with only -, |, :, and spaces)
-      const dataRows = currentTable.filter(row => {
+      const dataRows = currentTable.filter((row) => {
         const trimmed = row.trim();
         return !(/^[\s\-|:]+$/.test(trimmed) && trimmed.includes('-'));
       });
@@ -256,10 +271,10 @@ export class ContentAnalyzer {
       if (dataRows.length >= 2) {
         // Header + at least one data row
         const columns = Math.max(
-          ...dataRows.map(row => {
+          ...dataRows.map((row) => {
             const parts = row.split('|');
-            return parts.filter(part => part.trim() !== '').length;
-          })
+            return parts.filter((part) => part.trim() !== '').length;
+          }),
         );
         const rows = dataRows.length - 1; // Exclude header
 
@@ -277,9 +292,13 @@ export class ContentAnalyzer {
     let internal = 0;
     let external = 0;
 
-    linkMatches.forEach(match => {
+    linkMatches.forEach((match) => {
       const url = match.match(/\]\(([^)]+)\)/)?.[1] || '';
-      if (url.startsWith('#') || url.startsWith('./') || url.startsWith('../')) {
+      if (
+        url.startsWith('#') ||
+        url.startsWith('./') ||
+        url.startsWith('../')
+      ) {
         internal++;
       } else if (url.startsWith('http')) {
         external++;
@@ -296,13 +315,16 @@ export class ContentAnalyzer {
     headings: HeadingAnalysis,
     codeBlocks: CodeBlockInfo[],
     tables: TableInfo[],
-    media: MediaElementsInfo
+    media: MediaElementsInfo,
   ): ContentComplexity {
     const factors: ComplexityFactor[] = [];
     let score = 1;
 
     // Code complexity
-    const totalCodeLines = codeBlocks.reduce((sum, block) => sum + block.lineCount, 0);
+    const totalCodeLines = codeBlocks.reduce(
+      (sum, block) => sum + block.lineCount,
+      0,
+    );
     if (totalCodeLines > 100) {
       factors.push({
         type: 'code-heavy',
@@ -313,7 +335,9 @@ export class ContentAnalyzer {
     }
 
     // Table complexity
-    const complexTables = tables.filter(t => t.complexity !== 'simple').length;
+    const complexTables = tables.filter(
+      (t) => t.complexity !== 'simple',
+    ).length;
     if (complexTables > 0) {
       factors.push({
         type: 'table-heavy',
@@ -359,12 +383,15 @@ export class ContentAnalyzer {
     };
   }
 
-  private detectDocumentType(content: string, factors: ComplexityFactor[]): DocumentType {
+  private detectDocumentType(
+    content: string,
+    factors: ComplexityFactor[],
+  ): DocumentType {
     const lowerContent = content.toLowerCase();
 
     // Technical manual indicators
     if (
-      factors.some(f => f.type === 'code-heavy') ||
+      factors.some((f) => f.type === 'code-heavy') ||
       lowerContent.includes('api') ||
       lowerContent.includes('installation') ||
       lowerContent.includes('configuration')
@@ -397,7 +424,7 @@ export class ContentAnalyzer {
       lowerContent.includes('getting started') ||
       lowerContent.includes('usage') ||
       lowerContent.includes('examples') ||
-      factors.some(f => f.type === 'technical')
+      factors.some((f) => f.type === 'technical')
     ) {
       return 'documentation';
     }
@@ -419,7 +446,7 @@ export class ContentAnalyzer {
     content: string,
     media: MediaElementsInfo,
     tableCount: number,
-    codeBlockCount: number
+    codeBlockCount: number,
   ): number {
     const wordsPerPage = 500; // Conservative estimate for PDF
     const wordCount = content.split(/\s+/).length;

@@ -2,9 +2,10 @@
  * Environment validation utilities
  */
 
-import chalk from 'chalk';
 import { exec } from 'child_process';
 import { promisify } from 'util';
+
+import chalk from 'chalk';
 
 const execAsync = promisify(exec);
 

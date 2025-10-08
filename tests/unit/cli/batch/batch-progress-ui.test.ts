@@ -53,7 +53,9 @@ describe('BatchProgressUI', () => {
     it('should start spinner with correct message', () => {
       progressUI.start(5);
 
-      expect(mockSpinner.start).toHaveBeenCalledWith('🚀 Starting batch conversion of 5 files...');
+      expect(mockSpinner.start).toHaveBeenCalledWith(
+        '🚀 Starting batch conversion of 5 files...',
+      );
     });
   });
 
@@ -99,13 +101,18 @@ describe('BatchProgressUI', () => {
           },
           {
             inputPath: 'error2.md',
-            error: { ...new Error('Permission denied'), type: 'PERMISSION_ERROR' },
+            error: {
+              ...new Error('Permission denied'),
+              type: 'PERMISSION_ERROR',
+            },
             canRetry: false,
           },
         ],
       };
 
-      expect(() => progressUI.displayResults(partialResults as any)).not.toThrow();
+      expect(() =>
+        progressUI.displayResults(partialResults as any),
+      ).not.toThrow();
       expect(consoleSpy).toHaveBeenCalled();
       expect(mockSpinner.warn).toHaveBeenCalled();
     });
@@ -128,7 +135,9 @@ describe('BatchProgressUI', () => {
         ],
       };
 
-      expect(() => progressUI.displayResults(failureResults as any)).not.toThrow();
+      expect(() =>
+        progressUI.displayResults(failureResults as any),
+      ).not.toThrow();
       expect(consoleSpy).toHaveBeenCalled();
       expect(mockSpinner.fail).toHaveBeenCalled();
     });

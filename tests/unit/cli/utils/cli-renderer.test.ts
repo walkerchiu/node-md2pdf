@@ -77,7 +77,10 @@ describe('CliRenderer', () => {
     });
 
     it('should render error box with suggestions', () => {
-      renderer.errorBox('Error Title', 'This is an error message', ['Try this', 'Or this']);
+      renderer.errorBox('Error Title', 'This is an error message', [
+        'Try this',
+        'Or this',
+      ]);
       expect(mockConsoleError).toHaveBeenCalled();
       expect(mockConsoleError.mock.calls.length).toBeGreaterThan(5);
     });

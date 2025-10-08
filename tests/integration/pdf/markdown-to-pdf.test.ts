@@ -50,7 +50,7 @@ describe('Markdown to PDF Integration', () => {
         new Promise<{ isValid: boolean; errors: string[] }>((_, reject) => {
           const timeoutId = setTimeout(
             () => reject(new Error('Environment validation timeout')),
-            10000
+            10000,
           );
           // Ensure timeout doesn't keep the process alive
           if (timeoutId.unref) {
@@ -65,7 +65,10 @@ describe('Markdown to PDF Integration', () => {
       await Promise.race([
         testGenerator.close(),
         new Promise<void>((_, reject) => {
-          const timeoutId = setTimeout(() => reject(new Error('Cleanup timeout')), 3000);
+          const timeoutId = setTimeout(
+            () => reject(new Error('Cleanup timeout')),
+            3000,
+          );
           if (timeoutId.unref) {
             timeoutId.unref();
           }
@@ -81,16 +84,23 @@ describe('Markdown to PDF Integration', () => {
       });
 
       if (!canRunPuppeteer) {
-        console.warn('⚠️  Puppeteer environment validation failed:', validation.errors);
-        console.warn('ℹ️  Tests will verify error handling instead of actual PDF generation');
+        console.warn(
+          '⚠️  Puppeteer environment validation failed:',
+          validation.errors,
+        );
+        console.warn(
+          'ℹ️  Tests will verify error handling instead of actual PDF generation',
+        );
       } else {
-        console.log('✅ Puppeteer environment validation passed - will test actual PDF generation');
+        console.log(
+          '✅ Puppeteer environment validation passed - will test actual PDF generation',
+        );
       }
     } catch (error) {
       canRunPuppeteer = false;
       console.warn(
         '⚠️  Puppeteer environment check failed, using fallback mode:',
-        (error as Error).message
+        (error as Error).message,
       );
     }
   }, 15000);
@@ -101,7 +111,10 @@ describe('Markdown to PDF Integration', () => {
       try {
         const closePromise = pdfGenerator.close();
         const timeoutPromise = new Promise<void>((_, reject) => {
-          const timer = setTimeout(() => reject(new Error('Close timeout')), 1000);
+          const timer = setTimeout(
+            () => reject(new Error('Close timeout')),
+            1000,
+          );
           // Don't keep the process alive
           if (timer.unref) {
             timer.unref();
@@ -158,9 +171,15 @@ describe('Markdown to PDF Integration', () => {
       expect(parseResult.headings).toHaveLength(4);
 
       // Step 2: Generate PDF (always attempt, check result)
-      const pdfResult = await pdfGenerator.generatePDF(parseResult.content, outputPath, {
-        title: (parseResult.metadata?.title as string | undefined) || 'Simple Test Document',
-      });
+      const pdfResult = await pdfGenerator.generatePDF(
+        parseResult.content,
+        outputPath,
+        {
+          title:
+            (parseResult.metadata?.title as string | undefined) ||
+            'Simple Test Document',
+        },
+      );
 
       // Check results regardless of initial validation
       if (pdfResult.success) {
@@ -172,7 +191,9 @@ describe('Markdown to PDF Integration', () => {
       } else {
         // PDF generation failed gracefully
         expect(pdfResult.error).toBeTruthy();
-        expect(pdfResult.error).toMatch(/Failed to initialize PDF generator|PDF generation failed/);
+        expect(pdfResult.error).toMatch(
+          /Failed to initialize PDF generator|PDF generation failed/,
+        );
         console.log('✅ PDF generation gracefully failed:', pdfResult.error);
       }
     });
@@ -187,9 +208,13 @@ describe('Markdown to PDF Integration', () => {
       expect(parseResult.content).toContain('中文測試');
 
       // Generate PDF with Chinese font support
-      const pdfResult = await pdfGenerator.generatePDF(parseResult.content, outputPath, {
-        title: '中文測試文件',
-      });
+      const pdfResult = await pdfGenerator.generatePDF(
+        parseResult.content,
+        outputPath,
+        {
+          title: '中文測試文件',
+        },
+      );
 
       // Check results regardless of initial validation
       if (pdfResult.success) {
@@ -198,7 +223,10 @@ describe('Markdown to PDF Integration', () => {
         console.log('✅ Chinese PDF generation successful');
       } else {
         expect(pdfResult.error).toBeTruthy();
-        console.log('✅ Chinese PDF generation gracefully failed:', pdfResult.error);
+        console.log(
+          '✅ Chinese PDF generation gracefully failed:',
+          pdfResult.error,
+        );
       }
     });
 
@@ -212,9 +240,12 @@ describe('Markdown to PDF Integration', () => {
       expect(parseResult.metadata?.author).toBe('MD2PDF Test Suite');
 
       // Generate PDF using metadata
-      const pdfResult = await pdfGenerator.generatePDF(parseResult.content, outputPath, {
-        title: parseResult.metadata?.title as string,
-        customCSS: `
+      const pdfResult = await pdfGenerator.generatePDF(
+        parseResult.content,
+        outputPath,
+        {
+          title: parseResult.metadata?.title as string,
+          customCSS: `
             .document-info {
               margin-bottom: 2em;
               padding: 1em;
@@ -222,7 +253,8 @@ describe('Markdown to PDF Integration', () => {
               border-left: 4px solid #007bff;
             }
           `,
-      });
+        },
+      );
 
       // Check results regardless of initial validation
       if (pdfResult.success) {
@@ -230,7 +262,10 @@ describe('Markdown to PDF Integration', () => {
         console.log('✅ Metadata PDF generation successful');
       } else {
         expect(pdfResult.error).toBeTruthy();
-        console.log('✅ Metadata PDF generation gracefully failed:', pdfResult.error);
+        console.log(
+          '✅ Metadata PDF generation gracefully failed:',
+          pdfResult.error,
+        );
       }
     });
   });
@@ -245,10 +280,14 @@ describe('Markdown to PDF Integration', () => {
     });
 
     it('should handle PDF generation errors gracefully', async () => {
-      const invalidOutputPath = '/nonexistent/directory/that/cannot/be/created/test.pdf';
+      const invalidOutputPath =
+        '/nonexistent/directory/that/cannot/be/created/test.pdf';
       const parseResult = parser.parse('# Simple Test');
 
-      const pdfResult = await pdfGenerator.generatePDF(parseResult.content, invalidOutputPath);
+      const pdfResult = await pdfGenerator.generatePDF(
+        parseResult.content,
+        invalidOutputPath,
+      );
 
       expect(pdfResult.success).toBe(false);
       expect(pdfResult.error).toBeTruthy();
@@ -264,7 +303,10 @@ describe('Markdown to PDF Integration', () => {
 
       // Complete conversion pipeline
       const parseResult = parser.parseFile(inputPath);
-      const pdfResult = await pdfGenerator.generatePDF(parseResult.content, outputPath);
+      const pdfResult = await pdfGenerator.generatePDF(
+        parseResult.content,
+        outputPath,
+      );
 
       const endTime = Date.now();
       const totalTime = endTime - startTime;
@@ -279,7 +321,9 @@ describe('Markdown to PDF Integration', () => {
       } else {
         // Even if PDF generation failed, parsing should be fast
         expect(totalTime).toBeLessThan(10000);
-        console.log(`✅ Performance test completed (PDF gen failed gracefully): ${totalTime}ms`);
+        console.log(
+          `✅ Performance test completed (PDF gen failed gracefully): ${totalTime}ms`,
+        );
       }
     });
   });
@@ -301,7 +345,10 @@ describe('Markdown to PDF Integration', () => {
       expect(parseResult.content).toContain('<em>');
       expect(parseResult.content).toContain('<a href=');
 
-      const pdfResult = await pdfGenerator.generatePDF(parseResult.content, outputPath);
+      const pdfResult = await pdfGenerator.generatePDF(
+        parseResult.content,
+        outputPath,
+      );
 
       // Check results regardless of initial validation
       if (pdfResult.success) {
@@ -311,7 +358,7 @@ describe('Markdown to PDF Integration', () => {
         expect(pdfResult.error).toBeTruthy();
         console.log(
           '✅ Content preservation verified (parsing only, PDF gen failed):',
-          pdfResult.error
+          pdfResult.error,
         );
       }
     });
@@ -329,7 +376,10 @@ describe('Markdown to PDF Integration', () => {
       expect(parseResult.headings[2].level).toBe(3);
       expect(parseResult.headings[3].level).toBe(2);
 
-      const pdfResult = await pdfGenerator.generatePDF(parseResult.content, outputPath);
+      const pdfResult = await pdfGenerator.generatePDF(
+        parseResult.content,
+        outputPath,
+      );
 
       // Check results regardless of initial validation
       if (pdfResult.success) {
@@ -338,7 +388,7 @@ describe('Markdown to PDF Integration', () => {
         expect(pdfResult.error).toBeTruthy();
         console.log(
           '✅ Heading structure verified (structure parsing confirmed, PDF gen failed):',
-          pdfResult.error
+          pdfResult.error,
         );
       }
     });

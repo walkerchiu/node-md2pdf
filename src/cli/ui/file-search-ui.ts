@@ -14,12 +14,16 @@ export const FileSearchUI = {
     const displayFiles = files.slice(0, maxDisplay);
     displayFiles.forEach((file, index) => {
       const shortPath = FileSearchUI.shortenPath(file);
-      process.stdout.write(chalk.gray(`  ${index + 1}. `) + chalk.white(shortPath) + '\n');
+      process.stdout.write(
+        chalk.gray(`  ${index + 1}. `) + chalk.white(shortPath) + '\n',
+      );
     });
 
     if (files.length > maxDisplay) {
       const remaining = files.length - maxDisplay;
-      process.stdout.write(chalk.gray(`  ... and ${remaining} more files`) + '\n');
+      process.stdout.write(
+        chalk.gray(`  ... and ${remaining} more files`) + '\n',
+      );
     }
 
     process.stdout.write(chalk.gray('\u2500'.repeat(60)) + '\n');

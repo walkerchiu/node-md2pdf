@@ -129,7 +129,9 @@ More content.`;
     };
 
     // Mock MarkdownParser
-    MockMarkdownParser = MarkdownParser as jest.MockedClass<typeof MarkdownParser>;
+    MockMarkdownParser = MarkdownParser as jest.MockedClass<
+      typeof MarkdownParser
+    >;
     MockMarkdownParser.mockClear();
 
     mockParserInstance = {
@@ -144,7 +146,9 @@ More content.`;
       processMarkdown: jest.fn(),
       postProcess: jest.fn(),
     };
-    MockMarkdownParser.mockImplementation(() => mockParserInstance as unknown as MarkdownParser);
+    MockMarkdownParser.mockImplementation(
+      () => mockParserInstance as unknown as MarkdownParser,
+    );
 
     // Setup default successful parsing behavior
     mockParserInstance.parse.mockResolvedValue(mockParsedMarkdown);
@@ -154,7 +158,7 @@ More content.`;
       mockLogger,
       mockErrorHandler,
       mockConfigManager,
-      mockFileSystemManager
+      mockFileSystemManager,
     );
   });
 
@@ -164,10 +168,10 @@ More content.`;
 
       expect(result).toEqual(mockParsedMarkdown);
       expect(mockLogger.info).toHaveBeenCalledWith(
-        expect.stringContaining('Markdown parsed successfully')
+        expect.stringContaining('Markdown parsed successfully'),
       );
       expect(mockLogger.debug).toHaveBeenCalledWith(
-        `Parsing Markdown content (${sampleContent.length} characters)`
+        `Parsing Markdown content (${sampleContent.length} characters)`,
       );
     });
 
@@ -181,10 +185,15 @@ More content.`;
         typographer: true,
         quotes: '""\'\'',
       });
-      expect(mockConfigManager.get).toHaveBeenCalledWith('markdown', expect.any(Object));
-      expect(mockLogger.info).toHaveBeenCalledWith('Initializing Markdown parser service');
+      expect(mockConfigManager.get).toHaveBeenCalledWith(
+        'markdown',
+        expect.any(Object),
+      );
       expect(mockLogger.info).toHaveBeenCalledWith(
-        'Markdown parser service initialized successfully'
+        'Initializing Markdown parser service',
+      );
+      expect(mockLogger.info).toHaveBeenCalledWith(
+        'Markdown parser service initialized successfully',
       );
     });
 
@@ -199,7 +208,9 @@ More content.`;
       const parseError = new Error('Parser error');
       mockParserInstance.parse.mockRejectedValue(parseError);
 
-      await expect(service.parseMarkdown(sampleContent)).rejects.toThrow(MarkdownParsingError);
+      await expect(service.parseMarkdown(sampleContent)).rejects.toThrow(
+        MarkdownParsingError,
+      );
       expect(mockErrorHandler.handleError).toHaveBeenCalled();
     });
 
@@ -208,21 +219,23 @@ More content.`;
         throw new Error('Initialization failed');
       });
 
-      await expect(service.parseMarkdown(sampleContent)).rejects.toThrow(MD2PDFError);
+      await expect(service.parseMarkdown(sampleContent)).rejects.toThrow(
+        MD2PDFError,
+      );
       expect(mockErrorHandler.handleError).toHaveBeenCalled();
     });
 
     it('should track parsing performance', async () => {
       // Add a small delay to ensure processing time > 0
       mockParserInstance.parse.mockImplementation(async () => {
-        await new Promise(resolve => setTimeout(resolve, 10));
+        await new Promise((resolve) => setTimeout(resolve, 10));
         return mockParsedMarkdown;
       });
 
       await service.parseMarkdown(sampleContent);
 
       expect(mockLogger.info).toHaveBeenCalledWith(
-        expect.stringMatching(/Markdown parsed successfully \(\d+ms\)/)
+        expect.stringMatching(/Markdown parsed successfully \(\d+ms\)/),
       );
     });
   });
@@ -248,31 +261,44 @@ More content.`;
       });
 
       expect(mockFileSystemManager.exists).toHaveBeenCalledWith(filePath);
-      expect(mockFileSystemManager.readFile).toHaveBeenCalledWith(filePath, 'utf8');
-      expect(mockLogger.debug).toHaveBeenCalledWith(`Parsing Markdown file: ${filePath}`);
+      expect(mockFileSystemManager.readFile).toHaveBeenCalledWith(
+        filePath,
+        'utf8',
+      );
+      expect(mockLogger.debug).toHaveBeenCalledWith(
+        `Parsing Markdown file: ${filePath}`,
+      );
       expect(mockLogger.info).toHaveBeenCalledWith(
-        `Markdown file parsed successfully: ${filePath}`
+        `Markdown file parsed successfully: ${filePath}`,
       );
     });
 
     it('should handle file not found', async () => {
       mockFileSystemManager.exists.mockResolvedValue(false);
 
-      await expect(service.parseMarkdownFile(filePath)).rejects.toThrow(FileNotFoundError);
+      await expect(service.parseMarkdownFile(filePath)).rejects.toThrow(
+        FileNotFoundError,
+      );
       expect(mockErrorHandler.handleError).toHaveBeenCalled();
     });
 
     it('should handle file read errors', async () => {
-      mockFileSystemManager.readFile.mockRejectedValue(new Error('File read error'));
+      mockFileSystemManager.readFile.mockRejectedValue(
+        new Error('File read error'),
+      );
 
-      await expect(service.parseMarkdownFile(filePath)).rejects.toThrow(MarkdownParsingError);
+      await expect(service.parseMarkdownFile(filePath)).rejects.toThrow(
+        MarkdownParsingError,
+      );
       expect(mockErrorHandler.handleError).toHaveBeenCalled();
     });
 
     it('should handle parsing errors during file processing', async () => {
       mockParserInstance.parse.mockRejectedValue(new Error('Parser error'));
 
-      await expect(service.parseMarkdownFile(filePath)).rejects.toThrow(MarkdownParsingError);
+      await expect(service.parseMarkdownFile(filePath)).rejects.toThrow(
+        MarkdownParsingError,
+      );
       expect(mockErrorHandler.handleError).toHaveBeenCalled();
     });
   });
@@ -282,9 +308,11 @@ More content.`;
       const result = await service.extractHeadings(sampleContent);
 
       expect(result).toEqual(mockParsedMarkdown.headings);
-      expect(mockLogger.debug).toHaveBeenCalledWith('Extracting headings from Markdown content');
+      expect(mockLogger.debug).toHaveBeenCalledWith(
+        'Extracting headings from Markdown content',
+      );
       expect(mockLogger.info).toHaveBeenCalledWith(
-        `Extracted ${mockParsedMarkdown.headings.length} headings`
+        `Extracted ${mockParsedMarkdown.headings.length} headings`,
       );
     });
 
@@ -305,7 +333,9 @@ More content.`;
     it('should handle extraction errors', async () => {
       mockParserInstance.parse.mockRejectedValue(new Error('Extraction error'));
 
-      await expect(service.extractHeadings(sampleContent)).rejects.toThrow(MarkdownParsingError);
+      await expect(service.extractHeadings(sampleContent)).rejects.toThrow(
+        MarkdownParsingError,
+      );
       expect(mockErrorHandler.handleError).toHaveBeenCalled();
     });
   });
@@ -315,7 +345,9 @@ More content.`;
       const result = await service.validateMarkdown(sampleContent);
 
       expect(result).toBe(true);
-      expect(mockLogger.debug).toHaveBeenCalledWith('Validating Markdown content');
+      expect(mockLogger.debug).toHaveBeenCalledWith(
+        'Validating Markdown content',
+      );
       expect(mockLogger.info).toHaveBeenCalledWith('Markdown content is valid');
     });
 
@@ -326,7 +358,7 @@ More content.`;
 
       expect(result).toBe(false);
       expect(mockLogger.warn).toHaveBeenCalledWith(
-        expect.stringContaining('Markdown validation failed')
+        expect.stringContaining('Markdown validation failed'),
       );
     });
 
@@ -347,14 +379,16 @@ More content.`;
         mockLogger,
         mockErrorHandler,
         mockConfigManager,
-        mockFileSystemManager
+        mockFileSystemManager,
       );
 
-      await expect(service.parseMarkdown(sampleContent)).rejects.toThrow(MD2PDFError);
+      await expect(service.parseMarkdown(sampleContent)).rejects.toThrow(
+        MD2PDFError,
+      );
 
       expect(mockErrorHandler.handleError).toHaveBeenCalledWith(
         expect.any(MD2PDFError),
-        'MarkdownParserService.initialize'
+        'MarkdownParserService.initialize',
       );
     });
 
@@ -362,22 +396,26 @@ More content.`;
       const originalError = new Error('Mock parsing error');
       mockParserInstance.parse.mockRejectedValue(originalError);
 
-      await expect(service.parseMarkdown(sampleContent)).rejects.toThrow(MarkdownParsingError);
+      await expect(service.parseMarkdown(sampleContent)).rejects.toThrow(
+        MarkdownParsingError,
+      );
 
       expect(mockErrorHandler.handleError).toHaveBeenCalledWith(
         expect.any(MarkdownParsingError),
-        'MarkdownParserService.parseMarkdown'
+        'MarkdownParserService.parseMarkdown',
       );
     });
 
     it('should preserve FileNotFoundError from file operations', async () => {
       mockFileSystemManager.exists.mockResolvedValue(false);
 
-      await expect(service.parseMarkdownFile('/nonexistent.md')).rejects.toThrow(FileNotFoundError);
+      await expect(
+        service.parseMarkdownFile('/nonexistent.md'),
+      ).rejects.toThrow(FileNotFoundError);
 
       expect(mockErrorHandler.handleError).toHaveBeenCalledWith(
         expect.any(FileNotFoundError),
-        'MarkdownParserService.parseMarkdownFile'
+        'MarkdownParserService.parseMarkdownFile',
       );
     });
   });
@@ -397,7 +435,7 @@ More content.`;
         mockLogger,
         mockErrorHandler,
         mockConfigManager,
-        mockFileSystemManager
+        mockFileSystemManager,
       );
 
       await service.parseMarkdown(sampleContent);
@@ -412,7 +450,7 @@ More content.`;
         mockLogger,
         mockErrorHandler,
         mockConfigManager,
-        mockFileSystemManager
+        mockFileSystemManager,
       );
 
       await service.parseMarkdown(sampleContent);

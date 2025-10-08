@@ -4,17 +4,17 @@
  */
 
 import {
-  PDFGeneratorService,
-  type IPDFGeneratorService,
-} from './pdf-generator.service';
-import {
   EnhancedPDFGeneratorService,
   type IEnhancedPDFGeneratorService,
 } from './enhanced-pdf-generator.service';
+import {
+  PDFGeneratorService,
+  type IPDFGeneratorService,
+} from './pdf-generator.service';
 
-import type { ILogger } from '../../infrastructure/logging/types';
-import type { IErrorHandler } from '../../infrastructure/error/types';
 import type { IConfigManager } from '../../infrastructure/config/types';
+import type { IErrorHandler } from '../../infrastructure/error/types';
+import type { ILogger } from '../../infrastructure/logging/types';
 
 export interface IPDFServiceFactory {
   createPDFGenerator(): Promise<

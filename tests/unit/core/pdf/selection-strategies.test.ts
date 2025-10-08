@@ -16,7 +16,7 @@ import {
 function makeMockEngine(
   name: string,
   capabilities: PDFEngineCapabilities,
-  canHandle = true
+  canHandle = true,
 ): IPDFEngine {
   return {
     name,
@@ -35,7 +35,11 @@ function makeMockEngine(
       errors: [],
       performance: { averageGenerationTime: 0, successRate: 1, memoryUsage: 0 },
     }),
-    getResourceUsage: async () => ({ memoryUsage: 0, activeTasks: 0, averageTaskTime: 0 }),
+    getResourceUsage: async () => ({
+      memoryUsage: 0,
+      activeTasks: 0,
+      averageTaskTime: 0,
+    }),
     cleanup: async () => {},
     canHandle: async () => canHandle,
   } as unknown as IPDFEngine;
@@ -73,7 +77,11 @@ describe('Selection Strategies', () => {
       engineName: 'e1',
       lastCheck: new Date(),
       errors: [],
-      performance: { averageGenerationTime: 2000, successRate: 0.9, memoryUsage: 10 },
+      performance: {
+        averageGenerationTime: 2000,
+        successRate: 0.9,
+        memoryUsage: 10,
+      },
     };
 
     const health2: PDFEngineHealthStatus = {
@@ -81,7 +89,11 @@ describe('Selection Strategies', () => {
       engineName: 'e2',
       lastCheck: new Date(),
       errors: [],
-      performance: { averageGenerationTime: 500, successRate: 0.99, memoryUsage: 5 },
+      performance: {
+        averageGenerationTime: 500,
+        successRate: 0.99,
+        memoryUsage: 5,
+      },
     };
 
     const chosen = await s.selectEngine(context, [e1, e2], [health1, health2]);
@@ -126,7 +138,11 @@ describe('Selection Strategies', () => {
       performance: { averageGenerationTime: 0, successRate: 1, memoryUsage: 0 },
     };
 
-    const chosen = await s.selectEngine(context, [primary, other], [primaryHealth, otherHealth]);
+    const chosen = await s.selectEngine(
+      context,
+      [primary, other],
+      [primaryHealth, otherHealth],
+    );
     expect(chosen?.name).toBe('primary');
   });
 
@@ -218,7 +234,7 @@ describe('Selection Strategies', () => {
         toc: { enabled: true, includePageNumbers: false, maxDepth: 2 },
       },
       [withTOC, withoutTOC],
-      [h1, h2]
+      [h1, h2],
     );
 
     expect(chosen?.name).toBe('withTOC');
@@ -254,7 +270,11 @@ describe('Selection Strategies', () => {
       engineName: 'fast',
       lastCheck: new Date(),
       errors: [],
-      performance: { averageGenerationTime: 1000, successRate: 1, memoryUsage: 0 },
+      performance: {
+        averageGenerationTime: 1000,
+        successRate: 1,
+        memoryUsage: 0,
+      },
     };
 
     const hSlow: PDFEngineHealthStatus = {
@@ -262,7 +282,11 @@ describe('Selection Strategies', () => {
       engineName: 'slow',
       lastCheck: new Date(),
       errors: [],
-      performance: { averageGenerationTime: 8000, successRate: 0.5, memoryUsage: 0 },
+      performance: {
+        averageGenerationTime: 8000,
+        successRate: 0.5,
+        memoryUsage: 0,
+      },
     };
 
     const chosen = await s.selectEngine(context, [fast, slow], [hFast, hSlow]);

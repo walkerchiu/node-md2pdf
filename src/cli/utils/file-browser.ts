@@ -3,9 +3,10 @@
  * Provides advanced file browsing capabilities for Smart Conversion Mode
  */
 
-import chalk from 'chalk';
 import { promises as fs } from 'fs';
 import { join, dirname, extname, resolve } from 'path';
+
+import chalk from 'chalk';
 
 import { FileSearchUI } from '../ui/file-search-ui';
 
@@ -48,15 +49,23 @@ export class FileBrowser {
         const items = await this.scanDirectory(currentPath, options);
         const choices = this.buildChoices(items, currentPath);
 
-        this.renderer.info(chalk.cyan('┌─────────────────────────────────────────┐'));
-        this.renderer.info(chalk.cyan('│           📁 File Browser Mode          │'));
-        this.renderer.info(chalk.cyan('├─────────────────────────────────────────┤'));
+        this.renderer.info(
+          chalk.cyan('┌─────────────────────────────────────────┐'),
+        );
+        this.renderer.info(
+          chalk.cyan('│           📁 File Browser Mode          │'),
+        );
+        this.renderer.info(
+          chalk.cyan('├─────────────────────────────────────────┤'),
+        );
         this.renderer.info(
           chalk.cyan(
             `│ Current: ${FileSearchUI.shortenPath(currentPath, 28).padEnd(28)} │`,
           ),
         );
-        this.renderer.info(chalk.cyan('└─────────────────────────────────────────┘'));
+        this.renderer.info(
+          chalk.cyan('└─────────────────────────────────────────┘'),
+        );
 
         if (items.filter((item) => item.isMarkdown).length > 0) {
           this.renderer.info(
@@ -72,7 +81,7 @@ export class FileBrowser {
           message: '🔍 Select an action:',
           choices,
           pageSize: 15,
-          default: '__recent__', // 預設選擇最近檔案
+          default: '__recent__', // Select recent files by default
         });
 
         if (action === '__up__') {
@@ -170,7 +179,7 @@ export class FileBrowser {
 
   private buildChoices(
     items: FileItem[],
-    currentPath: string
+    currentPath: string,
   ): Array<{ name: string; value: string; short?: string }> {
     const choices: Array<{ name: string; value: string; short?: string }> = [];
 
@@ -260,7 +269,7 @@ export class FileBrowser {
   private sortItems(
     items: FileItem[],
     sortBy: 'name' | 'modified' | 'size',
-    order: 'asc' | 'desc'
+    order: 'asc' | 'desc',
   ): FileItem[] {
     const sorted = [...items].sort((a, b) => {
       // Directories always come first

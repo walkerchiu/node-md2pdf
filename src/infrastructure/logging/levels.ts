@@ -20,11 +20,17 @@ export const LOG_COLORS: Record<LogLevel, string> = {
 
 export const RESET_COLOR = '\x1b[0m';
 
-export function shouldLog(currentLevel: LogLevel, messageLevel: LogLevel): boolean {
+export function shouldLog(
+  currentLevel: LogLevel,
+  messageLevel: LogLevel,
+): boolean {
   return LOG_LEVELS[messageLevel] <= LOG_LEVELS[currentLevel];
 }
 
-export function formatLevel(level: LogLevel, useColors: boolean = false): string {
+export function formatLevel(
+  level: LogLevel,
+  useColors: boolean = false,
+): string {
   const levelStr = level.toUpperCase().padEnd(5);
   if (useColors) {
     return `${LOG_COLORS[level]}${levelStr}${RESET_COLOR}`;

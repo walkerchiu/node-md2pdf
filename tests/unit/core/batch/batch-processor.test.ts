@@ -20,7 +20,9 @@ const { FileCollector } = require('../../../../src/core/batch/file-collector');
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const { OutputManager } = require('../../../../src/core/batch/output-manager');
 // eslint-disable-next-line @typescript-eslint/no-var-requires
-const { ProgressTracker } = require('../../../../src/core/batch/progress-tracker');
+const {
+  ProgressTracker,
+} = require('../../../../src/core/batch/progress-tracker');
 
 // Mock dependencies
 jest.mock('../../../../src/core/batch/file-collector');
@@ -68,7 +70,7 @@ describe('BatchProcessor', () => {
     // Inject mocks to avoid relying on constructor side-effects in tests
     batchProcessor = new BatchProcessor(
       mockFileCollector as unknown as FileCollectorType,
-      mockOutputManager as unknown as OutputManagerType
+      mockOutputManager as unknown as OutputManagerType,
     );
   });
 
@@ -79,13 +81,21 @@ describe('BatchProcessor', () => {
 
     it('should use injected FileCollector instance', () => {
       expect(
-        (batchProcessor as unknown as { fileCollector: typeof mockFileCollector }).fileCollector
+        (
+          batchProcessor as unknown as {
+            fileCollector: typeof mockFileCollector;
+          }
+        ).fileCollector,
       ).toBe(mockFileCollector);
     });
 
     it('should use injected OutputManager instance', () => {
       expect(
-        (batchProcessor as unknown as { outputManager: typeof mockOutputManager }).outputManager
+        (
+          batchProcessor as unknown as {
+            outputManager: typeof mockOutputManager;
+          }
+        ).outputManager,
       ).toBe(mockOutputManager);
     });
   });
@@ -144,13 +154,17 @@ describe('BatchProcessor', () => {
     });
 
     it('should handle file collection errors', async () => {
-      mockFileCollector.collectFiles.mockRejectedValue(new Error('Collection failed'));
+      mockFileCollector.collectFiles.mockRejectedValue(
+        new Error('Collection failed'),
+      );
 
       const result = await batchProcessor.processBatch(mockConfig);
 
       expect(result.success).toBe(false);
       expect(result.errors).toHaveLength(1);
-      expect(result.errors[0].error.message).toContain('Batch processing failed');
+      expect(result.errors[0].error.message).toContain(
+        'Batch processing failed',
+      );
     });
 
     it('should handle invalid files', async () => {
@@ -230,7 +244,10 @@ describe('BatchProcessor', () => {
       const onProgress = jest.fn();
       await batchProcessor.processBatch(mockConfig, { onProgress });
 
-      expect(mockProgressTracker.on).toHaveBeenCalledWith('progress', onProgress);
+      expect(mockProgressTracker.on).toHaveBeenCalledWith(
+        'progress',
+        onProgress,
+      );
       expect(mockProgressTracker.start).toHaveBeenCalled();
       expect(mockProgressTracker.complete).toHaveBeenCalled();
     });
@@ -257,7 +274,9 @@ describe('BatchProcessor', () => {
 
       expect(result.success).toBe(false);
       expect(result.errors).toHaveLength(1);
-      expect(result.errors[0].error.message).toContain('Batch processing failed');
+      expect(result.errors[0].error.message).toContain(
+        'Batch processing failed',
+      );
     });
 
     it('should handle maxConcurrentProcesses limit', async () => {
@@ -287,7 +306,9 @@ describe('BatchProcessor', () => {
       const result = await batchProcessor.processBatch(largeConfig);
 
       expect(result.totalFiles).toBe(5);
-      expect(mockOutputManager.prepareOutputDirectories).toHaveBeenCalledWith(manyFiles);
+      expect(mockOutputManager.prepareOutputDirectories).toHaveBeenCalledWith(
+        manyFiles,
+      );
     });
   });
 
