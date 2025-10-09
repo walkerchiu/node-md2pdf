@@ -5,6 +5,8 @@
 import { SettingsMode } from '../../../src/cli/settings-mode';
 import type { ServiceContainer } from '../../../src/shared/container';
 import type { ILogger } from '../../../src/infrastructure/logging/types';
+import type { ITranslationManager } from '../../../src/infrastructure/i18n/types';
+import type { IConfigManager } from '../../../src/infrastructure/config/types';
 
 // Mock chalk
 jest.mock('chalk', () => ({
@@ -12,6 +14,7 @@ jest.mock('chalk', () => ({
   green: (text: string) => text,
   yellow: (text: string) => text,
   red: (text: string) => text,
+  gray: (text: string) => text,
 }));
 
 // Mock inquirer
@@ -26,6 +29,8 @@ describe('SettingsMode', () => {
   let settingsMode: SettingsMode;
   let mockContainer: ServiceContainer;
   let mockLogger: ILogger;
+  let mockTranslationManager: ITranslationManager;
+  let mockConfigManager: IConfigManager;
   let mockInquirer: any;
 
   beforeEach(() => {
@@ -42,9 +47,31 @@ describe('SettingsMode', () => {
       getLevel: jest.fn(),
     };
 
+    mockTranslationManager = {
+      getCurrentLocale: jest.fn().mockReturnValue('en'),
+      getSupportedLocales: jest.fn().mockReturnValue(['en', 'zh-TW']),
+      setLocale: jest.fn(),
+      translate: jest.fn(),
+      t: jest.fn(),
+      hasTranslation: jest.fn(),
+      loadTranslations: jest.fn(),
+      getTranslations: jest.fn(),
+    };
+
+    mockConfigManager = {
+      get: jest.fn(),
+      set: jest.fn(),
+      has: jest.fn(),
+      getAll: jest.fn(),
+      save: jest.fn().mockResolvedValue(undefined),
+      load: jest.fn().mockResolvedValue(undefined),
+    };
+
     mockContainer = {
       resolve: jest.fn((key: string) => {
         if (key === 'logger') return mockLogger;
+        if (key === 'translator') return mockTranslationManager;
+        if (key === 'config') return mockConfigManager;
         throw new Error(`Unknown service: ${key}`);
       }),
     } as any;
@@ -62,8 +89,10 @@ describe('SettingsMode', () => {
   });
 
   describe('constructor', () => {
-    it('should resolve logger from container', () => {
+    it('should resolve services from container', () => {
       expect(mockContainer.resolve).toHaveBeenCalledWith('logger');
+      expect(mockContainer.resolve).toHaveBeenCalledWith('translator');
+      expect(mockContainer.resolve).toHaveBeenCalledWith('config');
     });
   });
 
@@ -84,19 +113,15 @@ describe('SettingsMode', () => {
 
     it('should handle language settings option', async () => {
       mockInquirer.prompt
-        .mockResolvedValueOnce({ option: 'language' })
-        .mockResolvedValueOnce({ continue: '' }) // pressAnyKey
-        .mockResolvedValueOnce({ option: 'back' });
+        .mockResolvedValueOnce({ option: 'language' }) // main settings menu
+        .mockResolvedValueOnce({ language: 'back' }) // language selection menu - go back
+        .mockResolvedValueOnce({ option: 'back' }); // main settings menu - go back
 
       await settingsMode.start();
 
-      expect(console.log).toHaveBeenCalledWith(
-        expect.stringContaining('Language Settings'),
-      );
-      expect(console.log).toHaveBeenCalledWith(
-        'Current language: English (en-US)',
-      );
-      expect(console.log).toHaveBeenCalledWith('Available languages:');
+      // Language settings now shows a different interface
+      expect(mockTranslationManager.getCurrentLocale).toHaveBeenCalled();
+      expect(mockTranslationManager.getSupportedLocales).toHaveBeenCalled();
     });
 
     it('should handle defaults settings option', async () => {
@@ -280,10 +305,7 @@ describe('SettingsMode', () => {
       showHeaderMethod();
 
       expect(console.log).toHaveBeenCalledWith(
-        expect.stringContaining('Settings & Preferences'),
-      );
-      expect(console.log).toHaveBeenCalledWith(
-        expect.stringContaining('Language, defaults, and system config'),
+        expect.stringContaining('Current Language: English'),
       );
     });
   });
