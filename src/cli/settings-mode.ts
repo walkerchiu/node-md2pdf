@@ -5,14 +5,24 @@
 
 import chalk from 'chalk';
 
+import type { IConfigManager } from '../infrastructure/config/types';
+import type {
+  ITranslationManager,
+  SupportedLocale,
+} from '../infrastructure/i18n/types';
 import type { ILogger } from '../infrastructure/logging/types';
 import type { ServiceContainer } from '../shared/container';
 
 export class SettingsMode {
   private logger: ILogger;
+  private translationManager: ITranslationManager;
+  private configManager: IConfigManager;
 
   constructor(private readonly container: ServiceContainer) {
     this.logger = this.container.resolve<ILogger>('logger');
+    this.translationManager =
+      this.container.resolve<ITranslationManager>('translator');
+    this.configManager = this.container.resolve<IConfigManager>('config');
   }
 
   /**
@@ -70,10 +80,23 @@ export class SettingsMode {
    */
   private showSettingsHeader(): void {
     console.log(chalk.blue('┌───────────────────────────────────────────┐'));
-    console.log(chalk.blue('│           🔧 Settings & Preferences        │'));
+    const currentLocale = this.translationManager.getCurrentLocale();
+    const displayLanguage = this.getLanguageDisplayName(currentLocale);
+
+    console.log(chalk.blue('│           🔧 Settings & Preferences       │'));
     console.log(chalk.blue('├───────────────────────────────────────────┤'));
-    console.log(chalk.blue('│    Language, defaults, and system config  │'));
+    console.log(
+      chalk.blue(`│  Current Language: ${displayLanguage.padEnd(20)}   │`),
+    );
     console.log(chalk.blue('└───────────────────────────────────────────┘'));
+  }
+
+  private getLanguageDisplayName(locale: SupportedLocale): string {
+    const displayNames: Record<SupportedLocale, string> = {
+      en: 'English',
+      'zh-TW': '正體中文 (Traditional Chinese)',
+    };
+    return displayNames[locale] || locale;
   }
 
   /**
@@ -138,15 +161,49 @@ export class SettingsMode {
     return result.option;
   }
 
-  // Placeholder methods for future implementation
+  // Language settings implementation
   private async languageSettings(): Promise<void> {
-    console.log(chalk.green('Language Settings'));
-    console.log('Current language: English (en-US)');
-    console.log('Available languages:');
-    console.log('  • English (Default)');
-    console.log('  • 正體中文 (Traditional Chinese)');
-    console.log(chalk.yellow('Language switching features coming soon...'));
-    await this.pressAnyKey();
+    try {
+      let running = true;
+
+      while (running) {
+        console.clear();
+        this.showLanguageHeader();
+
+        const currentLocale = this.translationManager.getCurrentLocale();
+        const supportedLocales = this.translationManager.getSupportedLocales();
+
+        const choices = [
+          { name: '0. Return to Settings Menu', value: 'back', short: 'Back' },
+          ...supportedLocales.map((locale, index) => ({
+            name: `${index + 1}. ${this.getLanguageDisplayName(locale)} ${currentLocale === locale ? chalk.green('(Current)') : ''}`,
+            value: locale,
+            short: this.getLanguageDisplayName(locale),
+          })),
+        ];
+
+        const inquirer = await import('inquirer');
+        const result = await inquirer.default.prompt([
+          {
+            type: 'list',
+            name: 'language',
+            message: 'Select language:',
+            choices,
+            default: currentLocale,
+            pageSize: 10,
+          },
+        ]);
+
+        if (result.language === 'back') {
+          running = false;
+        } else if (result.language !== currentLocale) {
+          await this.changeLanguage(result.language);
+        }
+      }
+    } catch (error) {
+      this.logger.error('Language settings error', error);
+      console.error(chalk.red('❌ Language settings error:'), error);
+    }
   }
 
   private async defaultSettings(): Promise<void> {
@@ -195,5 +252,37 @@ export class SettingsMode {
         message: 'Press Enter to continue...',
       },
     ]);
+  }
+
+  private showLanguageHeader(): void {
+    console.log(chalk.blue('┌───────────────────────────────────────────┐'));
+    console.log(chalk.blue('│          🌐 Language & Localization       │'));
+    console.log(chalk.blue('├───────────────────────────────────────────┤'));
+    console.log(chalk.blue('│     Choose your preferred language        │'));
+    console.log(chalk.blue('└───────────────────────────────────────────┘'));
+    console.log();
+  }
+
+  private async changeLanguage(newLocale: SupportedLocale): Promise<void> {
+    try {
+      this.translationManager.setLocale(newLocale);
+      this.configManager.set('language.default', newLocale);
+      await this.configManager.save();
+
+      console.log();
+      console.log(chalk.green('✅ Language changed successfully!'));
+      console.log(
+        chalk.gray(
+          `   New language: ${this.getLanguageDisplayName(newLocale)}`,
+        ),
+      );
+      console.log();
+
+      await this.pressAnyKey();
+    } catch (error) {
+      this.logger.error('Failed to change language', error);
+      console.error(chalk.red('❌ Failed to change language:'), error);
+      await this.pressAnyKey();
+    }
   }
 }
