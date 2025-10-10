@@ -7,7 +7,7 @@ import type { ConfigSchema } from './types';
 export const defaultConfig: ConfigSchema = {
   language: {
     default: 'en',
-    available: ['en', 'zh-tw'],
+    available: ['en', 'zh-TW'],
   },
   pdf: {
     format: 'A4',

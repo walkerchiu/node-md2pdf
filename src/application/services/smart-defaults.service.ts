@@ -353,7 +353,7 @@ export class SmartDefaultsService implements ISmartDefaultsService {
         maxDepth: 2,
         includePageNumbers: true,
         style: 'simple',
-        title: '目錄',
+        title: 'Table of Contents',
         reasoning: 'Document too short for TOC',
       };
     }
@@ -367,9 +367,7 @@ export class SmartDefaultsService implements ISmartDefaultsService {
       analysis.contentComplexity.documentType === 'technical-manual'
         ? 'detailed'
         : 'simple';
-    const title = analysis.languageDetection.primary.startsWith('zh')
-      ? '目錄'
-      : 'Table of Contents';
+    const title = 'Table of Contents'; // Use English as default for core services
 
     reasoning.push({
       setting: 'toc',
@@ -692,7 +690,8 @@ export class SmartDefaultsService implements ISmartDefaultsService {
       },
       {
         name: 'Professional Document',
-        description: '專業文件，包含目錄和完整格式',
+        description:
+          'Professional document with table of contents and full formatting',
         config: {
           format: 'A4',
           orientation: 'portrait',

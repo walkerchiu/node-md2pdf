@@ -56,6 +56,7 @@ jest.mock('../../../../src/cli/ui/file-search-ui', () => ({
 
 import { BatchInteractiveMode } from '../../../../src/cli/batch/batch-interactive';
 import { BatchFilenameFormat } from '../../../../src/types/batch';
+import { createMockTranslator } from '../../helpers/mock-translator';
 
 describe('BatchInteractiveMode', () => {
   let batchMode: BatchInteractiveMode;
@@ -104,6 +105,7 @@ describe('BatchInteractiveMode', () => {
     mockContainer = {
       resolve: jest.fn().mockImplementation((service: string) => {
         if (service === 'logger') return mockLogger;
+        if (service === 'translator') return createMockTranslator();
         if (service === 'errorHandler') return { handleError: jest.fn() };
         if (service === 'batchProcessor') return mockBatchProcessorService;
         return {};

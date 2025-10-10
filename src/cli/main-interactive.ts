@@ -11,17 +11,23 @@ import { InteractiveMode } from './interactive';
 import { SettingsMode } from './settings-mode';
 import { SmartConversionMode } from './smart-conversion-mode';
 import { CliRenderer } from './utils/cli-renderer';
+import { I18nHelpers } from './utils/i18n-helpers';
 
 import type { ILogger } from '../infrastructure/logging/types';
+import type { ITranslationManager } from '../infrastructure/i18n/types';
 import type { ServiceContainer } from '../shared/container';
 
 export class MainInteractiveMode {
   private logger: ILogger;
   private renderer: CliRenderer;
+  private translator: ITranslationManager;
+  private i18nHelpers: I18nHelpers;
 
   constructor(private readonly container: ServiceContainer) {
     this.logger = container.resolve<ILogger>('logger');
     this.renderer = new CliRenderer();
+    this.translator = container.resolve<ITranslationManager>('translator');
+    this.i18nHelpers = new I18nHelpers(this.translator);
   }
 
   /**
@@ -29,7 +35,9 @@ export class MainInteractiveMode {
    */
   async start(): Promise<void> {
     try {
-      this.logger.info('Starting main interactive mode');
+      this.logger.info(
+        this.translator.t('startup.startingMainInteractiveMode'),
+      );
 
       // Main menu loop - keep showing menu until user exits
       // eslint-disable-next-line no-constant-condition
@@ -39,14 +47,18 @@ export class MainInteractiveMode {
 
         switch (mode) {
           case 'smart': {
-            this.logger.info('User selected smart conversion mode');
+            this.logger.info(
+              this.translator.t('startup.userSelectedSmartMode'),
+            );
             const smartMode = new SmartConversionMode(this.container);
             await smartMode.start();
             // After smart conversion, continue to main menu
             break;
           }
           case 'single': {
-            this.logger.info('User selected single file mode');
+            this.logger.info(
+              this.translator.t('startup.userSelectedSingleMode'),
+            );
             const singleMode = new InteractiveMode(this.container);
             let retryCount = 0;
             const maxRetries = 5;
@@ -84,29 +96,37 @@ export class MainInteractiveMode {
             break;
           }
           case 'batch': {
-            this.logger.info('User selected batch mode');
+            this.logger.info(
+              this.translator.t('startup.userSelectedBatchMode'),
+            );
             const batchMode = new BatchInteractiveMode(this.container);
             await batchMode.start();
             // After batch conversion, continue to main menu
             break;
           }
           case 'customization': {
-            this.logger.info('User selected customization mode');
+            this.logger.info(
+              this.translator.t('startup.userSelectedCustomizationMode'),
+            );
             const customizationMode = new CustomizationMode(this.container);
             await customizationMode.start();
             // After customization, continue to main menu
             break;
           }
           case 'settings': {
-            this.logger.info('User selected settings mode');
+            this.logger.info(
+              this.translator.t('startup.userSelectedSettingsMode'),
+            );
             const settingsMode = new SettingsMode(this.container);
             await settingsMode.start();
             // After settings, continue to main menu
             break;
           }
           case 'exit':
-            this.logger.info('User selected exit');
-            this.renderer.info(chalk.cyan('👋 Goodbye!'));
+            this.logger.info(this.translator.t('startup.userSelectedExit'));
+            this.renderer.info(
+              chalk.cyan('👋 ' + this.translator.t('cli.options.goodbye')),
+            );
             return;
         }
       }
@@ -121,14 +141,11 @@ export class MainInteractiveMode {
    * Show welcome message
    */
   private showWelcomeMessage(): void {
-    this.renderer.header([
-      '┌──────────────────────────────────────────┐',
-      '│           MD2PDF Main Menu               │',
-      '├──────────────────────────────────────────┤',
-      '│  Convert Markdown files to professional  │',
-      '│  PDF documents with table of contents    │',
-      '└──────────────────────────────────────────┘',
-    ]);
+    const header = this.i18nHelpers.createHeader(
+      'cli.mainMenu.title',
+      'cli.mainMenu.subtitle',
+    );
+    this.renderer.header(header);
     this.renderer.newline();
   }
 
@@ -146,37 +163,37 @@ export class MainInteractiveMode {
       {
         type: 'list',
         name: 'mode',
-        message: 'How would you like to process your files?',
+        message: this.translator.t('cli.mainMenu.processPrompt'),
         choices: [
+          this.i18nHelpers.createMenuChoice(
+            'cli.mainMenu.smartConversion',
+            'cli.mainMenu.smartConversionDesc',
+            'smart',
+          ),
+          this.i18nHelpers.createMenuChoice(
+            'cli.mainMenu.singleFile',
+            'cli.mainMenu.singleFileDesc',
+            'single',
+          ),
+          this.i18nHelpers.createMenuChoice(
+            'cli.mainMenu.batchProcessing',
+            'cli.mainMenu.batchProcessingDesc',
+            'batch',
+          ),
+          this.i18nHelpers.createMenuChoice(
+            'cli.mainMenu.customization',
+            'cli.mainMenu.customizationDesc',
+            'customization',
+          ),
+          this.i18nHelpers.createMenuChoice(
+            'cli.mainMenu.settings',
+            'cli.mainMenu.settingsDesc',
+            'settings',
+          ),
           {
-            name: `🤖 Smart Conversion ${chalk.gray('- AI-powered settings with 3-step workflow')}`,
-            value: 'smart',
-            short: 'Smart Conversion',
-          },
-          {
-            name: `📄 Single File ${chalk.gray('- Convert one Markdown file to PDF')}`,
-            value: 'single',
-            short: 'Single File',
-          },
-          {
-            name: `📚 Batch Processing ${chalk.gray('- Convert multiple files at once')}`,
-            value: 'batch',
-            short: 'Batch Processing',
-          },
-          {
-            name: `🎨 Customization ${chalk.gray('- Advanced styling and templates')}`,
-            value: 'customization',
-            short: 'Customization',
-          },
-          {
-            name: `🔧 Settings ${chalk.gray('- Language and preferences')}`,
-            value: 'settings',
-            short: 'Settings',
-          },
-          {
-            name: '🚪 Exit',
+            name: this.translator.t('cli.mainMenu.exit'),
             value: 'exit',
-            short: 'Exit',
+            short: this.translator.t('cli.mainMenu.exit').replace('🚪 ', ''),
           },
         ],
         default: 'smart',

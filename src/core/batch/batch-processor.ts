@@ -248,7 +248,7 @@ export class BatchProcessor {
           enabled: true,
           maxDepth: config.tocDepth,
           includePageNumbers: config.includePageNumbers,
-          title: '目錄',
+          title: 'Table of Contents',
         },
       });
       const pdfOptions: {

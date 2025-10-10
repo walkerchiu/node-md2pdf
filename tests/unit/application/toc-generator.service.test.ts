@@ -18,6 +18,7 @@ import { Heading } from '../../../src/types/index';
 import type { ILogger } from '../../../src/infrastructure/logging/types';
 import type { IErrorHandler } from '../../../src/infrastructure/error/types';
 import type { IConfigManager } from '../../../src/infrastructure/config/types';
+import type { ITranslationManager } from '../../../src/infrastructure/i18n/types';
 import { MD2PDFError } from '../../../src/infrastructure/error/errors';
 
 // Mock the core modules
@@ -29,6 +30,7 @@ describe('TOCGeneratorService', () => {
   let mockLogger: jest.Mocked<ILogger>;
   let mockErrorHandler: jest.Mocked<IErrorHandler>;
   let mockConfigManager: jest.Mocked<IConfigManager>;
+  let mockTranslationManager: jest.Mocked<ITranslationManager>;
   let MockTOCGenerator: jest.MockedClass<typeof TOCGenerator>;
   let MockPageEstimator: jest.MockedClass<typeof PageEstimator>;
   let mockTOCGeneratorInstance: jest.Mocked<{
@@ -178,6 +180,21 @@ describe('TOCGeneratorService', () => {
       load: jest.fn(),
     };
 
+    // Mock ITranslationManager
+    mockTranslationManager = {
+      t: jest.fn().mockImplementation((key: string) => {
+        if (key === 'pdfContent.tocTitle') return 'Table of Contents';
+        return key;
+      }),
+      getCurrentLocale: jest.fn().mockReturnValue('en'),
+      setLocale: jest.fn(),
+      getSupportedLocales: jest.fn().mockReturnValue(['en', 'zh-TW']),
+      translate: jest.fn(),
+      hasTranslation: jest.fn().mockReturnValue(true),
+      loadTranslations: jest.fn(),
+      getTranslations: jest.fn().mockReturnValue({}),
+    };
+
     // Mock TOCGenerator
     MockTOCGenerator = TOCGenerator as jest.MockedClass<typeof TOCGenerator>;
     MockTOCGenerator.mockClear();
@@ -219,6 +236,7 @@ describe('TOCGeneratorService', () => {
       mockLogger,
       mockErrorHandler,
       mockConfigManager,
+      mockTranslationManager,
     );
   });
 
@@ -226,7 +244,10 @@ describe('TOCGeneratorService', () => {
     it('should initialize TOC generator and page estimator successfully', async () => {
       await service.generateTOC(sampleHeadings);
 
-      expect(MockTOCGenerator).toHaveBeenCalledWith(defaultTOCConfig);
+      expect(MockTOCGenerator).toHaveBeenCalledWith(
+        defaultTOCConfig,
+        mockTranslationManager,
+      );
       expect(MockPageEstimator).toHaveBeenCalled();
       expect(mockConfigManager.get).toHaveBeenCalledWith(
         'toc',
@@ -380,6 +401,7 @@ describe('TOCGeneratorService', () => {
           ...customOptions,
           includePageNumbers: true,
         }),
+        mockTranslationManager,
       );
     });
 
@@ -574,20 +596,29 @@ describe('TOCGeneratorService', () => {
         mockLogger,
         mockErrorHandler,
         mockConfigManager,
+        mockTranslationManager,
       );
 
       await customService.generateTOC(sampleHeadings);
 
-      expect(MockTOCGenerator).toHaveBeenCalledWith(customConfig);
+      expect(MockTOCGenerator).toHaveBeenCalledWith(
+        customConfig,
+        mockTranslationManager,
+      );
     });
 
     it('should use default configuration when config manager returns undefined', async () => {
-      mockConfigManager.get.mockReturnValue(undefined);
+      mockConfigManager.get.mockImplementation(
+        (_key: string, defaultValue: any) => {
+          return defaultValue; // Return the provided default value
+        },
+      );
 
       const service = new TOCGeneratorService(
         mockLogger,
         mockErrorHandler,
         mockConfigManager,
+        mockTranslationManager,
       );
 
       await service.generateTOC(sampleHeadings);
@@ -596,7 +627,10 @@ describe('TOCGeneratorService', () => {
         'toc',
         defaultTOCConfig,
       );
-      expect(MockTOCGenerator).toHaveBeenCalledWith(undefined);
+      expect(MockTOCGenerator).toHaveBeenCalledWith(
+        defaultTOCConfig,
+        mockTranslationManager,
+      );
     });
   });
 
@@ -611,6 +645,7 @@ describe('TOCGeneratorService', () => {
         mockLogger,
         mockErrorHandler,
         mockConfigManager,
+        mockTranslationManager,
       );
 
       await expect(service.generateTOC(sampleHeadings)).rejects.toThrow(
@@ -643,16 +678,19 @@ describe('TOCGeneratorService', () => {
         mockLogger,
         mockErrorHandler,
         mockConfigManager,
+        mockTranslationManager,
       );
       const service2 = new TOCGeneratorService(
         mockLogger,
         mockErrorHandler,
         mockConfigManager,
+        mockTranslationManager,
       );
       const service3 = new TOCGeneratorService(
         mockLogger,
         mockErrorHandler,
         mockConfigManager,
+        mockTranslationManager,
       );
 
       await service1.generateTOC(sampleHeadings);

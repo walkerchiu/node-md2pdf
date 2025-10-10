@@ -171,7 +171,7 @@ export class PDFGenerator {
             link: 'toc-link',
             pageNumber: 'toc-page-number',
           },
-        });
+        }); // No translation manager - will fallback to English
 
         let tocResult;
         if (this.options.toc.includePageNumbers && options.markdownContent) {

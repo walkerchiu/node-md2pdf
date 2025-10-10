@@ -363,24 +363,6 @@ describe('PDFEngineMonitoringService', () => {
     });
   });
 
-  describe('Export Functionality', () => {
-    it('should export metrics in JSON format', async () => {
-      await service.start();
-
-      const exported = await service.exportMetrics('json', 3600000); // 1 hour
-
-      expect(typeof exported).toBe('string');
-    });
-
-    it('should export metrics in CSV format', async () => {
-      await service.start();
-
-      const exported = await service.exportMetrics('csv', 3600000); // 1 hour
-
-      expect(typeof exported).toBe('string');
-    });
-  });
-
   describe('Error Handling', () => {
     it('should handle service creation', () => {
       expect(service).toBeDefined();

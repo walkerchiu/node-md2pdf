@@ -30,6 +30,7 @@ describe('CustomizationMode', () => {
   let customizationMode: CustomizationMode;
   let mockContainer: ServiceContainer;
   let mockLogger: any;
+  let mockTranslationManager: any;
 
   beforeEach(() => {
     // Reset all mocks
@@ -46,12 +47,48 @@ describe('CustomizationMode', () => {
       error: jest.fn(),
     };
 
+    // Create mock translation manager
+    mockTranslationManager = {
+      t: jest.fn().mockImplementation((key: string) => {
+        const translations: Record<string, string> = {
+          'cli.customizationMenu.title': '🎨 Customization Settings',
+          'cli.customizationMenu.subtitle':
+            'Advanced styling and template management options',
+          'cli.customizationMenu.returnToMain': '0. Return to Main Menu',
+          'cli.customizationMenu.coverDesign': '1. Cover Design',
+          'cli.customizationMenu.headersFooters': '2. Headers & Footers',
+          'cli.customizationMenu.documentMetadata': '3. Document Metadata',
+          'cli.customizationMenu.securitySettings': '4. Security & Watermarks',
+          'cli.customizationMenu.templateManagement': '5. Template Management',
+          'customization.selectCustomizationOption':
+            'Select customization option',
+          'customization.coverDesignComingSoon':
+            'Cover Design features coming soon...',
+          'customization.headersFootersComingSoon':
+            'Headers & Footers features coming soon...',
+          'customization.documentMetadataComingSoon':
+            'Document Metadata features coming soon...',
+          'customization.securitySettingsComingSoon':
+            'Security & Watermarks features coming soon...',
+          'customization.templateManagementComingSoon':
+            'Template Management features coming soon...',
+          'customization.customizationError': 'Customization error',
+          'customization.pressEnterToContinue': 'Press Enter to continue...',
+        };
+        return translations[key] || key;
+      }),
+      getCurrentLocale: jest.fn().mockReturnValue('en'),
+      setLocale: jest.fn(),
+    };
+
     // Create mock container
     mockContainer = {
       resolve: jest.fn((key: string) => {
         switch (key) {
           case 'logger':
             return mockLogger;
+          case 'translator':
+            return mockTranslationManager;
           default:
             return {};
         }
@@ -72,6 +109,7 @@ describe('CustomizationMode', () => {
   describe('constructor', () => {
     it('should initialize with container dependencies', () => {
       expect(mockContainer.resolve).toHaveBeenCalledWith('logger');
+      expect(mockContainer.resolve).toHaveBeenCalledWith('translator');
     });
   });
 
@@ -88,7 +126,7 @@ describe('CustomizationMode', () => {
         expect.stringContaining('Advanced styling'),
       );
       expect(mockLogger.info).toHaveBeenCalledWith(
-        'Starting customization mode',
+        'startup.startingCustomizationMode',
       );
     });
 
@@ -178,7 +216,7 @@ describe('CustomizationMode', () => {
       await customizationMode.start();
 
       expect(mockLogger.info).toHaveBeenCalledWith(
-        'Returning to main menu from customization',
+        'startup.returningToMainMenuFromCustomization',
       );
     });
 
@@ -194,7 +232,7 @@ describe('CustomizationMode', () => {
 
       expect(mockPrompt).toHaveBeenCalledTimes(5); // 3 option selections + 2 pressAnyKey
       expect(mockLogger.info).toHaveBeenCalledWith(
-        'Returning to main menu from customization',
+        'startup.returningToMainMenuFromCustomization',
       );
     });
 
@@ -206,9 +244,7 @@ describe('CustomizationMode', () => {
       const selectCustomizationOptionCall = mockPrompt.mock.calls.find(
         (call) =>
           call[0].some &&
-          call[0].some(
-            (q: any) => q.message === 'Select customization option:',
-          ),
+          call[0].some((q: any) => q.message === 'Select customization option'),
       );
 
       expect(selectCustomizationOptionCall).toBeDefined();
@@ -243,7 +279,7 @@ describe('CustomizationMode', () => {
       );
 
       expect(mockLogger.error).toHaveBeenCalledWith(
-        'Customization mode error',
+        'startup.customizationModeError',
         testError,
       );
       expect(console.error).toHaveBeenCalledWith(
@@ -263,7 +299,7 @@ describe('CustomizationMode', () => {
       );
 
       expect(mockLogger.error).toHaveBeenCalledWith(
-        'Customization mode error',
+        'startup.customizationModeError',
         testError,
       );
     });

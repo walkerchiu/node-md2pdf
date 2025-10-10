@@ -53,10 +53,10 @@ export class InfrastructureServices {
     // Register translation manager as singleton
     container.registerSingleton<ITranslationManager>('translator', (c) => {
       const config = c.tryResolve<IConfigManager>('config');
-      const locale = config?.get<string>('locale', 'en') || 'en';
+      const locale = config?.get<string>('language.default', 'en') || 'en';
       return new TranslationManager({
         defaultLocale: locale as SupportedLocale,
-        useEnvironmentLocale: true,
+        useEnvironmentLocale: false,
         fallbackLocale: 'en',
       });
     });
@@ -182,7 +182,7 @@ export class EnhancedServices {
     try {
       return new TranslationManager({
         defaultLocale: (locale as SupportedLocale) || 'en',
-        useEnvironmentLocale: true,
+        useEnvironmentLocale: false,
         fallbackLocale: 'en',
       });
     } catch (error) {

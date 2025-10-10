@@ -10,6 +10,7 @@ import type { ILogger } from '../../../../src/infrastructure/logging/types';
 import type { IErrorHandler } from '../../../../src/infrastructure/error/types';
 import type { IFileProcessorService } from '../../../../src/application/services/file-processor.service';
 import { ConversionConfig } from '../../../../src/types';
+import { createMockTranslator } from '../../helpers/mock-translator';
 
 // Mock chalk
 jest.mock('chalk', () => ({
@@ -140,6 +141,7 @@ describe('InteractiveMode', () => {
 
     container = new ServiceContainer();
     container.registerInstance('logger', mockLogger);
+    container.registerInstance('translator', createMockTranslator());
     container.registerInstance('errorHandler', mockErrorHandler);
     container.registerInstance('fileProcessor', mockFileProcessorService);
 
@@ -181,7 +183,7 @@ describe('InteractiveMode', () => {
         'Starting interactive conversion process',
       );
       expect(consoleSpy).toHaveBeenCalledWith(
-        expect.stringContaining('📋 Interactive Markdown to PDF Configuration'),
+        expect.stringContaining('interactive.title'),
       );
       expect(mockFileProcessorService.processFile).toHaveBeenCalled();
     });
@@ -200,7 +202,7 @@ describe('InteractiveMode', () => {
       await interactiveMode.start();
 
       expect(mockLogger.info).toHaveBeenCalledWith('User cancelled conversion');
-      expect(consoleSpy).toHaveBeenCalledWith('❌ Conversion cancelled');
+      expect(consoleSpy).toHaveBeenCalledWith('interactive.cancelled');
       expect(mockFileProcessorService.processFile).not.toHaveBeenCalled();
     });
 
@@ -219,7 +221,7 @@ describe('InteractiveMode', () => {
         'InteractiveMode.start',
       );
       expect(consoleErrorSpy).toHaveBeenCalledWith(
-        '❌ Interactive mode error:',
+        'interactive.interactiveModeError',
         testError,
       );
     });
@@ -237,12 +239,9 @@ describe('InteractiveMode', () => {
 
       await interactiveMode.start();
 
-      expect(consoleSpy).toHaveBeenCalledWith(
-        '📋 Interactive Markdown to PDF Configuration',
-      );
-      expect(consoleSpy).toHaveBeenCalledWith(
-        'Please answer the following questions to complete the conversion setup:',
-      );
+      expect(consoleSpy).toHaveBeenCalledWith('interactive.title');
+      // interactive.pleaseAnswerQuestions is not output to console in the current implementation
+      expect(consoleSpy).toHaveBeenCalledWith('interactive.starting');
     });
   });
 
@@ -306,9 +305,11 @@ describe('InteractiveMode', () => {
         (q: PromptQuestion) => q.name === 'inputPath',
       )!;
 
-      expect(inputPathQuestion.validate!('')).toBe('Please enter a file path');
+      expect(inputPathQuestion.validate!('')).toBe(
+        'interactive.pleaseEnterFilePath',
+      );
       expect(inputPathQuestion.validate!('   ')).toBe(
-        'Please enter a file path',
+        'interactive.pleaseEnterFilePath',
       );
     });
 
@@ -332,10 +333,10 @@ describe('InteractiveMode', () => {
       )!;
 
       expect(inputPathQuestion.validate!('document.txt')).toBe(
-        'Please enter a valid Markdown file (.md or .markdown)',
+        'interactive.invalidMarkdownFile',
       );
       expect(inputPathQuestion.validate!('document.pdf')).toBe(
-        'Please enter a valid Markdown file (.md or .markdown)',
+        'interactive.invalidMarkdownFile',
       );
       expect(inputPathQuestion.validate!('document.md')).toBe(true);
       expect(inputPathQuestion.validate!('document.markdown')).toBe(true);
@@ -389,11 +390,11 @@ describe('InteractiveMode', () => {
 
       expect(tocDepthQuestion.choices).toHaveLength(6);
       expect(tocDepthQuestion.choices![0]).toEqual({
-        name: '1 level (H1 only)',
+        name: 'interactive.tocLevels.1',
         value: 1,
       });
       expect(tocDepthQuestion.choices![5]).toEqual({
-        name: '6 levels (H1-H6)',
+        name: 'interactive.tocLevels.6',
         value: 6,
       });
       expect(tocDepthQuestion.default).toBe(2);
@@ -415,15 +416,21 @@ describe('InteractiveMode', () => {
       await interactiveMode.start();
 
       // Verify that configuration summary was displayed
-      expect(consoleSpy).toHaveBeenCalledWith(
-        '📄 Conversion Configuration Summary:',
-      );
+      expect(consoleSpy).toHaveBeenCalledWith('interactive.conversionSummary');
       expect(consoleSpy).toHaveBeenCalledWith('─'.repeat(50));
-      expect(consoleSpy).toHaveBeenCalledWith('Input file: test.md');
-      expect(consoleSpy).toHaveBeenCalledWith('Output file: test.pdf');
-      expect(consoleSpy).toHaveBeenCalledWith('TOC depth: 2 levels');
-      expect(consoleSpy).toHaveBeenCalledWith('Page numbers: Yes');
-      expect(consoleSpy).toHaveBeenCalledWith('Chinese support: Yes');
+      expect(consoleSpy).toHaveBeenCalledWith(
+        expect.stringContaining('test.md'),
+      );
+      expect(consoleSpy).toHaveBeenCalledWith(
+        expect.stringContaining('test.pdf'),
+      );
+      expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('2'));
+      expect(consoleSpy).toHaveBeenCalledWith(
+        expect.stringContaining('interactive.yes'),
+      );
+      expect(consoleSpy).toHaveBeenCalledWith(
+        expect.stringContaining('interactive.yes'),
+      );
     });
 
     it('should display "No" for disabled options', async () => {
@@ -447,8 +454,12 @@ describe('InteractiveMode', () => {
 
       await interactiveMode.start();
 
-      expect(consoleSpy).toHaveBeenCalledWith('Page numbers: No');
-      expect(consoleSpy).toHaveBeenCalledWith('Chinese support: No');
+      expect(consoleSpy).toHaveBeenCalledWith(
+        expect.stringContaining('interactive.no'),
+      );
+      expect(consoleSpy).toHaveBeenCalledWith(
+        expect.stringContaining('interactive.no'),
+      );
     });
 
     it('should prompt for confirmation', async () => {
@@ -469,7 +480,7 @@ describe('InteractiveMode', () => {
         expect.objectContaining({
           type: 'confirm',
           name: 'confirmed',
-          message: 'Confirm and start conversion?',
+          message: 'interactive.confirmAndStart',
           default: true,
         }),
       ]);
@@ -489,7 +500,7 @@ describe('InteractiveMode', () => {
       await interactiveMode.start();
 
       expect(mockLogger.info).toHaveBeenCalledWith('User cancelled conversion');
-      expect(consoleSpy).toHaveBeenCalledWith('❌ Conversion cancelled');
+      expect(consoleSpy).toHaveBeenCalledWith('interactive.cancelled');
     });
   });
 
@@ -507,7 +518,7 @@ describe('InteractiveMode', () => {
 
       await interactiveMode.start();
 
-      expect(mockSpinner.text).toBe('📖 Processing Markdown to PDF...');
+      expect(mockSpinner.text).toBe('interactive.processingMarkdown');
       expect(mockFileProcessorService.processFile).toHaveBeenCalledWith(
         'test.md',
         expect.objectContaining({
@@ -516,7 +527,7 @@ describe('InteractiveMode', () => {
           tocOptions: {
             maxDepth: 2,
             includePageNumbers: true,
-            title: '目錄',
+            title: expect.any(String), // Now uses translation manager
           },
           pdfOptions: expect.objectContaining({
             displayHeaderFooter: true,
@@ -593,14 +604,22 @@ describe('InteractiveMode', () => {
       await interactiveMode.start();
 
       expect(mockSpinner.succeed).toHaveBeenCalledWith(
-        '✅ Conversion completed successfully!',
+        'interactive.conversionCompleted',
       );
-      expect(consoleSpy).toHaveBeenCalledWith('📄 Conversion Results:');
-      expect(consoleSpy).toHaveBeenCalledWith('Input file: test.md');
-      expect(consoleSpy).toHaveBeenCalledWith('Output file: test.pdf');
-      expect(consoleSpy).toHaveBeenCalledWith('File size: 1000 KB');
-      expect(consoleSpy).toHaveBeenCalledWith('Processing time: 1500ms');
-      expect(consoleSpy).toHaveBeenCalledWith('Headings found: 2');
+      expect(consoleSpy).toHaveBeenCalledWith('interactive.conversionResults');
+      expect(consoleSpy).toHaveBeenCalledWith(
+        expect.stringContaining('test.md'),
+      );
+      expect(consoleSpy).toHaveBeenCalledWith(
+        expect.stringContaining('test.pdf'),
+      );
+      expect(consoleSpy).toHaveBeenCalledWith(
+        expect.stringContaining('1000 interactive.kb'),
+      );
+      expect(consoleSpy).toHaveBeenCalledWith(
+        expect.stringContaining('1500ms'),
+      );
+      expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('2'));
     });
 
     it('should configure page numbers in header/footer correctly', async () => {
@@ -681,7 +700,9 @@ describe('InteractiveMode', () => {
         'Processing failed',
       );
 
-      expect(mockSpinner.fail).toHaveBeenCalledWith('❌ Conversion failed!');
+      expect(mockSpinner.fail).toHaveBeenCalledWith(
+        'interactive.conversionFailed',
+      );
       expect(mockLogger.error).toHaveBeenCalledWith(
         'Conversion failed in interactive mode',
         conversionError,
@@ -732,7 +753,7 @@ describe('InteractiveMode', () => {
 
       // Check that spinner text was updated during conversion steps
       expect(mockSpinner.start).toHaveBeenCalled();
-      expect(mockSpinner.text).toBe('📖 Processing Markdown to PDF...');
+      expect(mockSpinner.text).toBe('interactive.processingMarkdown');
     });
   });
 
@@ -745,11 +766,11 @@ describe('InteractiveMode', () => {
       const _accessor = interactiveMode as unknown as _InteractiveAccessor;
       const formatBytes = _accessor.formatBytes.bind(interactiveMode);
 
-      expect(formatBytes(0)).toBe('0 Bytes');
-      expect(formatBytes(1024)).toBe('1 KB');
-      expect(formatBytes(1048576)).toBe('1 MB');
-      expect(formatBytes(1073741824)).toBe('1 GB');
-      expect(formatBytes(1500)).toBe('1.46 KB');
+      expect(formatBytes(0)).toBe('0 interactive.bytes');
+      expect(formatBytes(1024)).toBe('1 interactive.kb');
+      expect(formatBytes(1048576)).toBe('1 interactive.mb');
+      expect(formatBytes(1073741824)).toBe('1 interactive.gb');
+      expect(formatBytes(1500)).toBe('1.46 interactive.kb');
     });
 
     it('should handle edge cases correctly', () => {
@@ -760,10 +781,10 @@ describe('InteractiveMode', () => {
       const _accessor = interactiveMode as unknown as _InteractiveAccessor;
       const formatBytes = _accessor.formatBytes.bind(interactiveMode);
 
-      expect(formatBytes(1)).toBe('1 Bytes');
-      expect(formatBytes(1023)).toBe('1023 Bytes');
-      expect(formatBytes(1025)).toBe('1 KB');
-      expect(formatBytes(2048000)).toBe('1.95 MB');
+      expect(formatBytes(1)).toBe('1 interactive.bytes');
+      expect(formatBytes(1023)).toBe('1023 interactive.bytes');
+      expect(formatBytes(1025)).toBe('1 interactive.kb');
+      expect(formatBytes(2048000)).toBe('1.95 interactive.mb');
     });
 
     it('should handle large numbers correctly', () => {
@@ -774,7 +795,7 @@ describe('InteractiveMode', () => {
       const _accessor = interactiveMode as unknown as _InteractiveAccessor;
       const formatBytes = _accessor.formatBytes.bind(interactiveMode);
 
-      expect(formatBytes(1024 * 1024 * 1024 * 2.5)).toBe('2.5 GB');
+      expect(formatBytes(1024 * 1024 * 1024 * 2.5)).toBe('2.5 interactive.gb');
       expect(formatBytes(1024 * 1024 * 1024 * 1024)).toBe('1 undefined'); // Bug: sizes array doesn't have TB
     });
   });
@@ -823,11 +844,9 @@ describe('InteractiveMode', () => {
 
       await interactiveMode.start();
 
-      expect(consoleSpy).toHaveBeenCalledWith(
-        expect.stringContaining('Headings found: 0'),
-      );
+      expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('0'));
       expect(mockSpinner.succeed).toHaveBeenCalledWith(
-        '✅ Conversion completed successfully!',
+        'interactive.conversionCompleted',
       );
     });
 
@@ -935,7 +954,9 @@ describe('InteractiveMode', () => {
 
       await interactiveMode.start();
 
-      expect(consoleSpy).toHaveBeenCalledWith('File size: 0 Bytes');
+      expect(consoleSpy).toHaveBeenCalledWith(
+        expect.stringContaining('0 interactive.bytes'),
+      );
     });
 
     it('should handle inquirer import errors', async () => {
@@ -999,17 +1020,13 @@ describe('InteractiveMode', () => {
       expect(mockLogger.info).toHaveBeenCalledWith(
         'Starting interactive conversion process',
       );
-      expect(consoleSpy).toHaveBeenCalledWith(
-        '📋 Interactive Markdown to PDF Configuration',
-      );
+      expect(consoleSpy).toHaveBeenCalledWith('interactive.title');
       expect(mockInquirerPrompt).toHaveBeenCalledTimes(3);
-      expect(consoleSpy).toHaveBeenCalledWith(
-        '📄 Conversion Configuration Summary:',
-      );
+      expect(consoleSpy).toHaveBeenCalledWith('interactive.conversionSummary');
       expect(mockSpinner.start).toHaveBeenCalled();
       expect(mockFileProcessorService.processFile).toHaveBeenCalled();
       expect(mockSpinner.succeed).toHaveBeenCalled();
-      expect(consoleSpy).toHaveBeenCalledWith('📄 Conversion Results:');
+      expect(consoleSpy).toHaveBeenCalledWith('interactive.conversionResults');
     });
 
     it('should handle complete flow with user cancellation', async () => {
@@ -1030,7 +1047,7 @@ describe('InteractiveMode', () => {
         'Starting interactive conversion process',
       );
       expect(mockLogger.info).toHaveBeenCalledWith('User cancelled conversion');
-      expect(consoleSpy).toHaveBeenCalledWith('❌ Conversion cancelled');
+      expect(consoleSpy).toHaveBeenCalledWith('interactive.cancelled');
       expect(mockFileProcessorService.processFile).not.toHaveBeenCalled();
     });
 
@@ -1053,9 +1070,8 @@ describe('InteractiveMode', () => {
         (q: PromptQuestion) => q.name === 'chineseFontSupport',
       )!;
 
-      expect(chineseFontQuestion.message).toContain('Chinese font support');
       expect(chineseFontQuestion.message).toContain(
-        'faster processing and smaller file size',
+        'interactive.chineseFontSupport',
       );
     });
   });

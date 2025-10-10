@@ -11,6 +11,7 @@ import { ConversionConfig } from '../../types';
 import type { IFileProcessorService } from '../../application/services/file-processor.service';
 import type { IErrorHandler } from '../../infrastructure/error/types';
 import type { IFileSystemManager } from '../../infrastructure/filesystem/types';
+import type { ITranslationManager } from '../../infrastructure/i18n/types';
 import type { ILogger } from '../../infrastructure/logging/types';
 import type { ServiceContainer } from '../../shared/container';
 
@@ -23,12 +24,15 @@ type InquirerModule = {
 export class InteractiveMode {
   private logger: ILogger;
   private errorHandler: IErrorHandler;
+  private translationManager: ITranslationManager;
   private fileProcessorService: IFileProcessorService;
   private fileSystemManager: IFileSystemManager | undefined;
 
   constructor(container: ServiceContainer) {
     this.logger = container.resolve<ILogger>('logger');
     this.errorHandler = container.resolve<IErrorHandler>('errorHandler');
+    this.translationManager =
+      container.resolve<ITranslationManager>('translator');
     this.fileProcessorService = container.resolve<IFileProcessorService>(
       APPLICATION_SERVICE_NAMES.FILE_PROCESSOR,
     );
@@ -43,20 +47,16 @@ export class InteractiveMode {
   async start(): Promise<void> {
     try {
       this.logger.info('Starting interactive conversion process');
-      console.log('Starting interactive conversion process');
+      console.log(this.translationManager.t('interactive.starting'));
       this.logger.info(
-        chalk.cyan('📋 Interactive Markdown to PDF Configuration'),
+        chalk.cyan(this.translationManager.t('interactive.title')),
       );
-      console.log(chalk.cyan('📋 Interactive Markdown to PDF Configuration'));
+      console.log(chalk.cyan(this.translationManager.t('interactive.title')));
       this.logger.info(
-        chalk.gray(
-          'Please answer the following questions to complete the conversion setup:',
-        ),
+        chalk.gray(this.translationManager.t('interactive.subtitle')),
       );
       console.log(
-        chalk.gray(
-          'Please answer the following questions to complete the conversion setup:',
-        ),
+        chalk.gray(this.translationManager.t('interactive.subtitle')),
       );
       this.logger.info('');
       console.log('');
@@ -71,8 +71,10 @@ export class InteractiveMode {
         await this.performConversion(config);
       } else {
         this.logger.info('User cancelled conversion');
-        console.log('❌ Conversion cancelled');
-        this.logger.warn(chalk.yellow('❌ Conversion cancelled'));
+        console.log(this.translationManager.t('interactive.cancelled'));
+        this.logger.warn(
+          chalk.yellow(this.translationManager.t('interactive.cancelled')),
+        );
       }
     } catch (error) {
       // Don't log our internal control flow errors
@@ -89,10 +91,17 @@ export class InteractiveMode {
         'InteractiveMode.start',
       );
       this.logger.error(
-        chalk.red('❌ Interactive mode error:'),
+        chalk.red(
+          this.translationManager.t('interactive.interactiveModeError'),
+        ),
         error as Error,
       );
-      console.error(chalk.red('❌ Interactive mode error:'), error as Error);
+      console.error(
+        chalk.red(
+          this.translationManager.t('interactive.interactiveModeError'),
+        ),
+        error as Error,
+      );
       throw error;
     }
   }
@@ -110,17 +119,17 @@ export class InteractiveMode {
       {
         type: 'input',
         name: 'inputPath',
-        message: 'Please enter Markdown file path or glob pattern:',
+        message: this.translationManager.t('interactive.enterFilePath'),
         validate: (input: string): boolean | string => {
           if (!input.trim()) {
-            return 'Please enter a file path';
+            return this.translationManager.t('interactive.pleaseEnterFilePath');
           }
           if (
             !input.endsWith('.md') &&
             !input.endsWith('.markdown') &&
             !input.includes('*')
           ) {
-            return 'Please enter a valid Markdown file (.md or .markdown)';
+            return this.translationManager.t('interactive.invalidMarkdownFile');
           }
 
           return true;
@@ -134,7 +143,9 @@ export class InteractiveMode {
       this.logger.warn(
         'File system manager not available, skipping file search',
       );
-      console.log('File system manager not available, skipping file search');
+      console.log(
+        this.translationManager.t('interactive.fileSystemNotAvailable'),
+      );
     } else {
       try {
         const matches = await this.fileSystemManager.findFiles(
@@ -145,12 +156,13 @@ export class InteractiveMode {
           this.logger.info(`Found ${matches.length} file(s)`);
           // If multiple matches, prompt the user to select one
           // Delegate display to shared UI helper
-          const FileSearchUI = (await import('../ui/file-search-ui')).default;
+          const { FileSearchUI } = await import('../ui/file-search-ui');
+          const searchUI = new FileSearchUI(this.translationManager);
           if (matches.length === 1) {
-            FileSearchUI.displayFiles(matches, 1);
+            searchUI.displayFiles(matches, 1);
             selectedInputPath = matches[0];
           } else {
-            FileSearchUI.displayFiles(matches);
+            searchUI.displayFiles(matches);
             const inquirer = await import('inquirer');
             const { chosen } = await (
               inquirer as InquirerModule
@@ -160,7 +172,9 @@ export class InteractiveMode {
               {
                 type: 'list',
                 name: 'chosen',
-                message: 'Select a file to convert:',
+                message: this.translationManager.t(
+                  'interactive.selectFileToConvert',
+                ),
                 choices: matches,
                 default: matches[0],
               },
@@ -169,12 +183,18 @@ export class InteractiveMode {
           }
         } else {
           console.log(
-            chalk.red('❌ Invalid Markdown file path. Please check:'),
+            chalk.red(
+              this.translationManager.t('interactive.invalidFileError'),
+            ),
           );
-          console.log(chalk.red('   • File exists'));
           console.log(
             chalk.red(
-              '   • File has .md, .markdown, .mdown, or .mkd extension',
+              `   ${this.translationManager.t('interactive.fileExists')}`,
+            ),
+          );
+          console.log(
+            chalk.red(
+              `   ${this.translationManager.t('interactive.validExtension')}`,
             ),
           );
 
@@ -184,20 +204,27 @@ export class InteractiveMode {
             {
               type: 'list',
               name: 'action',
-              message: 'What would you like to do?',
+              message: this.translationManager.t('interactive.whatToDo'),
               choices: [
                 {
-                  name: '✏️  Try entering a different file path',
+                  name: this.translationManager.t(
+                    'interactive.tryDifferentPath',
+                  ),
                   value: 'retry',
                 },
-                { name: '↩️  Return to Main Menu', value: 'exit' },
+                {
+                  name: this.translationManager.t(
+                    'interactive.returnToMainMenu',
+                  ),
+                  value: 'exit',
+                },
               ],
             },
           );
 
           if (action === 'exit') {
             this.logger.info('User chose to Return to Main Menu');
-            console.log('❌ Conversion cancelled');
+            console.log(this.translationManager.t('interactive.cancelled'));
             throw new Error('USER_CANCELLED');
           } else if (action === 'retry') {
             // Throw retry error to be handled by parent
@@ -213,7 +240,9 @@ export class InteractiveMode {
           throw err;
         }
         this.logger.warn('Error while searching for files', err as Error);
-        console.log('Error while searching for files');
+        console.log(
+          this.translationManager.t('interactive.errorSearchingFiles'),
+        );
       }
     }
 
@@ -224,7 +253,7 @@ export class InteractiveMode {
       {
         type: 'input',
         name: 'outputPath',
-        message: 'Please enter output PDF file path (press Enter for default):',
+        message: this.translationManager.t('interactive.enterOutputPath'),
         // Accept answers parameter so tests can call the default function with an answers object
         default: (answers: { inputPath?: string } = {}): string => {
           // Prefer explicit answers.inputPath (used in tests) before falling back to selectedInputPath
@@ -236,28 +265,45 @@ export class InteractiveMode {
       {
         type: 'list',
         name: 'tocDepth',
-        message: 'Please select table of contents depth:',
+        message: this.translationManager.t('interactive.selectTocDepth'),
         choices: [
-          { name: '1 level (H1 only)', value: 1 },
-          { name: '2 levels (H1-H2)', value: 2 },
-          { name: '3 levels (H1-H3)', value: 3 },
-          { name: '4 levels (H1-H4)', value: 4 },
-          { name: '5 levels (H1-H5)', value: 5 },
-          { name: '6 levels (H1-H6)', value: 6 },
+          {
+            name: this.translationManager.t('interactive.tocLevels.1'),
+            value: 1,
+          },
+          {
+            name: this.translationManager.t('interactive.tocLevels.2'),
+            value: 2,
+          },
+          {
+            name: this.translationManager.t('interactive.tocLevels.3'),
+            value: 3,
+          },
+          {
+            name: this.translationManager.t('interactive.tocLevels.4'),
+            value: 4,
+          },
+          {
+            name: this.translationManager.t('interactive.tocLevels.5'),
+            value: 5,
+          },
+          {
+            name: this.translationManager.t('interactive.tocLevels.6'),
+            value: 6,
+          },
         ],
         default: 2,
       },
       {
         type: 'confirm',
         name: 'includePageNumbers',
-        message: 'Include page numbers?',
+        message: this.translationManager.t('interactive.includePageNumbers'),
         default: true,
       },
       {
         type: 'confirm',
         name: 'chineseFontSupport',
-        message:
-          'Enable Chinese font support? (Choose "No" for faster processing and smaller file size when document contains only English text)',
+        message: this.translationManager.t('interactive.chineseFontSupport'),
         default: true,
       },
     ]);
@@ -275,24 +321,44 @@ export class InteractiveMode {
   private async confirmConfig(config: ConversionConfig): Promise<boolean> {
     this.logger.info('');
     console.log('');
-    this.logger.info(chalk.cyan('📄 Conversion Configuration Summary:'));
-    console.log(chalk.cyan('📄 Conversion Configuration Summary:'));
+    this.logger.info(
+      chalk.cyan(this.translationManager.t('interactive.conversionSummary')),
+    );
+    console.log(
+      chalk.cyan(this.translationManager.t('interactive.conversionSummary')),
+    );
     this.logger.info(chalk.gray('─'.repeat(50)));
     console.log(chalk.gray('─'.repeat(50)));
-    this.logger.info(`${chalk.bold('Input file:')} ${config.inputPath}`);
-    console.log(`Input file: ${config.inputPath}`);
-    this.logger.info(`${chalk.bold('Output file:')} ${config.outputPath}`);
-    console.log(`Output file: ${config.outputPath}`);
-    this.logger.info(`${chalk.bold('TOC depth:')} ${config.tocDepth} levels`);
-    console.log(`TOC depth: ${config.tocDepth} levels`);
     this.logger.info(
-      `${chalk.bold('Page numbers:')} ${config.includePageNumbers ? 'Yes' : 'No'}`,
+      `${chalk.bold(this.translationManager.t('interactive.inputFile'))} ${config.inputPath}`,
     );
-    console.log(`Page numbers: ${config.includePageNumbers ? 'Yes' : 'No'}`);
+    console.log(
+      `${this.translationManager.t('interactive.inputFile')} ${config.inputPath}`,
+    );
     this.logger.info(
-      `${chalk.bold('Chinese support:')} ${config.chineseFontSupport ? 'Yes' : 'No'}`,
+      `${chalk.bold(this.translationManager.t('interactive.outputFile'))} ${config.outputPath}`,
     );
-    console.log(`Chinese support: ${config.chineseFontSupport ? 'Yes' : 'No'}`);
+    console.log(
+      `${this.translationManager.t('interactive.outputFile')} ${config.outputPath}`,
+    );
+    this.logger.info(
+      `${chalk.bold(this.translationManager.t('interactive.tocDepth'))} ${config.tocDepth} ${this.translationManager.t('interactive.levels')}`,
+    );
+    console.log(
+      `${this.translationManager.t('interactive.tocDepth')} ${config.tocDepth} ${this.translationManager.t('interactive.levels')}`,
+    );
+    this.logger.info(
+      `${chalk.bold(this.translationManager.t('interactive.pageNumbers'))} ${config.includePageNumbers ? this.translationManager.t('interactive.yes') : this.translationManager.t('interactive.no')}`,
+    );
+    console.log(
+      `${this.translationManager.t('interactive.pageNumbers')} ${config.includePageNumbers ? this.translationManager.t('interactive.yes') : this.translationManager.t('interactive.no')}`,
+    );
+    this.logger.info(
+      `${chalk.bold(this.translationManager.t('interactive.chineseSupport'))} ${config.chineseFontSupport ? this.translationManager.t('interactive.yes') : this.translationManager.t('interactive.no')}`,
+    );
+    console.log(
+      `${this.translationManager.t('interactive.chineseSupport')} ${config.chineseFontSupport ? this.translationManager.t('interactive.yes') : this.translationManager.t('interactive.no')}`,
+    );
     this.logger.info(chalk.gray('─'.repeat(50)));
     console.log(chalk.gray('─'.repeat(50)));
     this.logger.info('');
@@ -305,7 +371,7 @@ export class InteractiveMode {
       {
         type: 'confirm',
         name: 'confirmed',
-        message: 'Confirm and start conversion?',
+        message: this.translationManager.t('interactive.confirmAndStart'),
         default: true,
       },
     ]);
@@ -317,7 +383,9 @@ export class InteractiveMode {
    * Perform the actual conversion process
    */
   private async performConversion(config: ConversionConfig): Promise<void> {
-    const spinner = ora('🚀 Starting conversion process...').start();
+    const spinner = ora(
+      this.translationManager.t('interactive.startingConversion'),
+    ).start();
 
     try {
       this.logger.info('Starting file conversion', {
@@ -326,7 +394,7 @@ export class InteractiveMode {
       });
 
       // Step 1: Prepare processing options
-      spinner.text = '🔧 Preparing conversion options...';
+      spinner.text = this.translationManager.t('interactive.preparingOptions');
       const outputPath =
         config.outputPath ||
         config.inputPath.replace(/\.(md|markdown)$/, '.pdf');
@@ -337,7 +405,7 @@ export class InteractiveMode {
         tocOptions: {
           maxDepth: config.tocDepth,
           includePageNumbers: config.includePageNumbers,
-          title: '目錄',
+          title: this.translationManager.t('pdfContent.tocTitle'),
         },
         pdfOptions: {
           margin: {
@@ -364,7 +432,9 @@ export class InteractiveMode {
       }
 
       // Step 3: Process the file using application service
-      spinner.text = '📖 Processing Markdown to PDF...';
+      spinner.text = this.translationManager.t(
+        'interactive.processingMarkdown',
+      );
       const result = await this.fileProcessorService.processFile(
         config.inputPath,
         processingOptions,
@@ -377,37 +447,59 @@ export class InteractiveMode {
         fileSize: result.fileSize,
       });
 
-      spinner.succeed(chalk.green('✅ Conversion completed successfully!'));
+      spinner.succeed(
+        chalk.green(
+          this.translationManager.t('interactive.conversionCompleted'),
+        ),
+      );
       this.logger.info('');
       console.log('');
-      this.logger.info(chalk.cyan('📄 Conversion Results:'));
-      console.log('📄 Conversion Results:');
+      this.logger.info(
+        chalk.cyan(this.translationManager.t('interactive.conversionResults')),
+      );
+      console.log(this.translationManager.t('interactive.conversionResults'));
       this.logger.info(chalk.gray('─'.repeat(50)));
       console.log('─'.repeat(50));
-      this.logger.info(`${chalk.bold('Input file:')} ${result.inputPath}`);
-      console.log(`Input file: ${result.inputPath}`);
-      this.logger.info(`${chalk.bold('Output file:')} ${result.outputPath}`);
-      console.log(`Output file: ${result.outputPath}`);
       this.logger.info(
-        `${chalk.bold('File size:')} ${this.formatBytes(result.fileSize)}`,
+        `${chalk.bold(this.translationManager.t('interactive.inputFile'))} ${result.inputPath}`,
       );
-      console.log(`File size: ${this.formatBytes(result.fileSize)}`);
+      console.log(
+        `${this.translationManager.t('interactive.inputFile')} ${result.inputPath}`,
+      );
       this.logger.info(
-        `${chalk.bold('Processing time:')} ${result.processingTime}ms`,
+        `${chalk.bold(this.translationManager.t('interactive.outputFile'))} ${result.outputPath}`,
       );
-      console.log(`Processing time: ${result.processingTime}ms`);
+      console.log(
+        `${this.translationManager.t('interactive.outputFile')} ${result.outputPath}`,
+      );
+      this.logger.info(
+        `${chalk.bold(this.translationManager.t('interactive.fileSize'))} ${this.formatBytes(result.fileSize)}`,
+      );
+      console.log(
+        `${this.translationManager.t('interactive.fileSize')} ${this.formatBytes(result.fileSize)}`,
+      );
+      this.logger.info(
+        `${chalk.bold(this.translationManager.t('interactive.processingTime'))} ${result.processingTime}ms`,
+      );
+      console.log(
+        `${this.translationManager.t('interactive.processingTime')} ${result.processingTime}ms`,
+      );
       if (result.parsedContent.headings) {
         this.logger.info(
-          `${chalk.bold('Headings found:')} ${result.parsedContent.headings.length}`,
+          `${chalk.bold(this.translationManager.t('interactive.headingsFound'))} ${result.parsedContent.headings.length}`,
         );
-        console.log(`Headings found: ${result.parsedContent.headings.length}`);
+        console.log(
+          `${this.translationManager.t('interactive.headingsFound')} ${result.parsedContent.headings.length}`,
+        );
       }
       this.logger.info(chalk.gray('─'.repeat(50)));
       console.log(chalk.gray('─'.repeat(50)));
       this.logger.info('');
       console.log('');
     } catch (error) {
-      spinner.fail(chalk.red('❌ Conversion failed!'));
+      spinner.fail(
+        chalk.red(this.translationManager.t('interactive.conversionFailed')),
+      );
       this.logger.error('Conversion failed in interactive mode', error);
       throw error;
     }
@@ -417,8 +509,13 @@ export class InteractiveMode {
    * Format bytes to human readable string
    */
   private formatBytes(bytes: number): string {
-    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-    if (bytes === 0) return '0 Bytes';
+    const sizes = [
+      this.translationManager.t('interactive.bytes'),
+      this.translationManager.t('interactive.kb'),
+      this.translationManager.t('interactive.mb'),
+      this.translationManager.t('interactive.gb'),
+    ];
+    if (bytes === 0) return `0 ${sizes[0]}`;
     const i = Math.floor(Math.log(bytes) / Math.log(1024));
     return Math.round((bytes / Math.pow(1024, i)) * 100) / 100 + ' ' + sizes[i];
   }

@@ -57,9 +57,11 @@ export class FileCollector {
    */
   private async findFiles(pattern: string): Promise<string[]> {
     const files: string[] = [];
+    let isExplicitFileSpecification = false;
 
     // Handle comma-separated file paths
     if (pattern.includes(',')) {
+      isExplicitFileSpecification = true;
       const filePaths = pattern
         .split(',')
         .map((p) => p.trim())
@@ -87,14 +89,18 @@ export class FileCollector {
       await this.findFilesRecursive(pattern, files);
     } else {
       // Handle single file
+      isExplicitFileSpecification = true;
       if (await this.fileExists(pattern)) {
         files.push(path.resolve(pattern));
       }
     }
 
     // Filter markdown files and exclude system directories
+    // For explicit file specifications, allow README.md
     return files.filter(
-      (file) => this.isMarkdownFile(file) && !this.shouldIgnoreFile(file),
+      (file) =>
+        this.isMarkdownFile(file) &&
+        !this.shouldIgnoreFile(file, isExplicitFileSpecification),
     );
   }
 
@@ -185,14 +191,30 @@ export class FileCollector {
   /**
    * Check if file should be ignored
    */
-  private shouldIgnoreFile(filePath: string): boolean {
+  private shouldIgnoreFile(
+    filePath: string,
+    isExplicitFileSpecification: boolean = false,
+  ): boolean {
     const fileName = path.basename(filePath);
-    return (
+
+    // Always ignore hidden files and system directories
+    if (
       fileName.startsWith('.') ||
-      fileName.toLowerCase() === 'readme.md' ||
       filePath.includes('/node_modules/') ||
       filePath.includes('/.git/')
-    );
+    ) {
+      return true;
+    }
+
+    // Don't ignore README.md if it's explicitly specified
+    if (
+      fileName.toLowerCase() === 'readme.md' &&
+      !isExplicitFileSpecification
+    ) {
+      return true;
+    }
+
+    return false;
   }
 
   /**
