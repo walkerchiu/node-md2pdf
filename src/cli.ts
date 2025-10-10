@@ -14,6 +14,7 @@ import { MainInteractiveMode } from './cli/main-interactive';
 import { validateEnvironment } from './utils/validation';
 
 import type { ILogger } from './infrastructure/logging/types';
+import type { ITranslationManager } from './infrastructure/i18n/types';
 
 const program = new Command();
 
@@ -22,25 +23,25 @@ const program = new Command();
  */
 async function main(): Promise<void> {
   let logger: ILogger | null = null;
+  let translator: ITranslationManager | null = null;
 
   try {
     // Initialize application services container
     const container = ApplicationServices.createContainer();
     logger = container.resolve<ILogger>('logger');
+    translator = container.resolve<ITranslationManager>('translator');
 
     // Environment check
-    logger!.info(chalk.cyan('🚀 MD2PDF v' + version));
-    logger!.info(
-      chalk.gray('Convert Markdown documents to professional PDF files'),
-    );
+    logger!.info(chalk.cyan(translator.t('startup.appTitle', { version })));
+    logger!.info(chalk.gray(translator.t('startup.description')));
     logger!.info('');
 
-    logger!.info(chalk.blue('Checking environment...'));
-    await validateEnvironment();
-    logger!.info(chalk.green('✅ Environment check passed'));
+    logger!.info(chalk.blue(translator.t('startup.checkingEnvironment')));
+    await validateEnvironment(translator);
+    logger!.info(chalk.green(translator.t('startup.environmentCheckPassed')));
     logger!.info('');
 
-    logger.info('Application started successfully');
+    logger.info(translator.t('startup.applicationStarted'));
 
     // Configure CLI commands
     program

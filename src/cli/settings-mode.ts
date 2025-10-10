@@ -30,7 +30,9 @@ export class SettingsMode {
    */
   async start(): Promise<void> {
     try {
-      this.logger.info('Starting settings mode');
+      this.logger.info(
+        this.translationManager.t('startup.startingSettingsMode'),
+      );
 
       let running = true;
       while (running) {
@@ -41,36 +43,30 @@ export class SettingsMode {
           case 'language':
             await this.languageSettings();
             break;
-          case 'defaults':
-            await this.defaultSettings();
-            break;
-          case 'performance':
-            await this.performanceSettings();
-            break;
-          case 'cache':
-            await this.cacheSettings();
-            break;
           case 'logging':
             await this.loggingSettings();
             break;
-          case 'reset':
-            await this.resetSettings();
-            break;
-          case 'export':
-            await this.exportSettings();
-            break;
-          case 'import':
-            await this.importSettings();
-            break;
           case 'back':
-            this.logger.info('Returning to main menu from settings');
+            this.logger.info(
+              this.translationManager.t(
+                'startup.returningToMainMenuFromSettings',
+              ),
+            );
             running = false;
             break;
         }
       }
     } catch (error) {
-      this.logger.error('Settings mode error', error);
-      console.error(chalk.red('❌ Settings error:'), error);
+      this.logger.error(
+        this.translationManager.t('startup.settingsModeError'),
+        error,
+      );
+      console.error(
+        chalk.red(
+          this.translationManager.t('customization.customizationError'),
+        ),
+        error,
+      );
       throw error;
     }
   }
@@ -83,20 +79,23 @@ export class SettingsMode {
     const currentLocale = this.translationManager.getCurrentLocale();
     const displayLanguage = this.getLanguageDisplayName(currentLocale);
 
-    console.log(chalk.blue('│           🔧 Settings & Preferences       │'));
+    console.log(
+      chalk.blue(
+        `│           ${this.translationManager.t('cli.settingsMenu.title')}       │`,
+      ),
+    );
     console.log(chalk.blue('├───────────────────────────────────────────┤'));
     console.log(
-      chalk.blue(`│  Current Language: ${displayLanguage.padEnd(20)}   │`),
+      chalk.blue(
+        `│  ${this.translationManager.t('cli.languageMenu.currentLanguage')}: ${displayLanguage.padEnd(20)}   │`,
+      ),
     );
     console.log(chalk.blue('└───────────────────────────────────────────┘'));
   }
 
   private getLanguageDisplayName(locale: SupportedLocale): string {
-    const displayNames: Record<SupportedLocale, string> = {
-      en: 'English',
-      'zh-TW': '正體中文 (Traditional Chinese)',
-    };
-    return displayNames[locale] || locale;
+    const translationKey = `cli.languages.${locale}`;
+    return this.translationManager.t(translationKey);
   }
 
   /**
@@ -109,48 +108,24 @@ export class SettingsMode {
       {
         type: 'list',
         name: 'option',
-        message: 'Select settings option:',
+        message: this.translationManager.t('cli.prompts.selectLanguage'),
         choices: [
-          { name: '0. Return to Main Menu', value: 'back', short: 'Back' },
           {
-            name: '1. Language & Localization',
+            name: this.translationManager.t('cli.settingsMenu.returnToMain'),
+            value: 'back',
+            short: this.translationManager.t('short.back'),
+          },
+          {
+            name: this.translationManager.t(
+              'cli.settingsMenu.languageSettings',
+            ),
             value: 'language',
-            short: 'Language Settings',
+            short: this.translationManager.t('short.languageSettings'),
           },
           {
-            name: '2. Default Preferences',
-            value: 'defaults',
-            short: 'Default Settings',
-          },
-          {
-            name: '3. Performance & Memory',
-            value: 'performance',
-            short: 'Performance Settings',
-          },
-          {
-            name: '4. Cache Management',
-            value: 'cache',
-            short: 'Cache Settings',
-          },
-          {
-            name: '5. Logging & Diagnostics',
+            name: this.translationManager.t('cli.settingsMenu.loggingSettings'),
             value: 'logging',
-            short: 'Logging Settings',
-          },
-          {
-            name: '6. Reset to Factory Defaults',
-            value: 'reset',
-            short: 'Reset Settings',
-          },
-          {
-            name: '7. Export Configuration',
-            value: 'export',
-            short: 'Export Settings',
-          },
-          {
-            name: '8. Import Configuration',
-            value: 'import',
-            short: 'Import Settings',
+            short: this.translationManager.t('short.loggingSettings'),
           },
         ],
         default: 'language',
@@ -174,9 +149,15 @@ export class SettingsMode {
         const supportedLocales = this.translationManager.getSupportedLocales();
 
         const choices = [
-          { name: '0. Return to Settings Menu', value: 'back', short: 'Back' },
+          {
+            name: this.translationManager.t(
+              'cli.settingsMenu.returnToSettings',
+            ),
+            value: 'back',
+            short: this.translationManager.t('cli.options.back'),
+          },
           ...supportedLocales.map((locale, index) => ({
-            name: `${index + 1}. ${this.getLanguageDisplayName(locale)} ${currentLocale === locale ? chalk.green('(Current)') : ''}`,
+            name: `${index + 1}. ${this.getLanguageDisplayName(locale)} ${currentLocale === locale ? chalk.green(`(${this.translationManager.t('cli.languageMenu.current')})`) : ''}`,
             value: locale,
             short: this.getLanguageDisplayName(locale),
           })),
@@ -187,7 +168,7 @@ export class SettingsMode {
           {
             type: 'list',
             name: 'language',
-            message: 'Select language:',
+            message: this.translationManager.t('cli.prompts.selectLanguage'),
             choices,
             default: currentLocale,
             pageSize: 10,
@@ -201,45 +182,20 @@ export class SettingsMode {
         }
       }
     } catch (error) {
-      this.logger.error('Language settings error', error);
+      this.logger.error(
+        this.translationManager.t('startup.languageSettingsError'),
+        error,
+      );
       console.error(chalk.red('❌ Language settings error:'), error);
     }
   }
 
-  private async defaultSettings(): Promise<void> {
-    console.log(chalk.yellow('Default Settings features coming soon...'));
-    await this.pressAnyKey();
-  }
-
-  private async performanceSettings(): Promise<void> {
-    console.log(
-      chalk.yellow('⚡ Performance Settings features coming soon...'),
-    );
-    await this.pressAnyKey();
-  }
-
-  private async cacheSettings(): Promise<void> {
-    console.log(chalk.yellow('🗄️ Cache Settings features coming soon...'));
-    await this.pressAnyKey();
-  }
-
   private async loggingSettings(): Promise<void> {
-    console.log(chalk.yellow('📝 Logging Settings features coming soon...'));
-    await this.pressAnyKey();
-  }
-
-  private async resetSettings(): Promise<void> {
-    console.log(chalk.yellow('🔄 Reset Settings features coming soon...'));
-    await this.pressAnyKey();
-  }
-
-  private async exportSettings(): Promise<void> {
-    console.log(chalk.yellow('📤 Export Settings features coming soon...'));
-    await this.pressAnyKey();
-  }
-
-  private async importSettings(): Promise<void> {
-    console.log(chalk.yellow('📥 Import Settings features coming soon...'));
+    console.log(
+      chalk.yellow(
+        this.translationManager.t('cli.settingsMenu.loggingComingSoon'),
+      ),
+    );
     await this.pressAnyKey();
   }
 
@@ -249,17 +205,41 @@ export class SettingsMode {
       {
         type: 'input',
         name: 'continue',
-        message: 'Press Enter to continue...',
+        message: this.translationManager.t(
+          'cli.settingsMenu.pressEnterToContinue',
+        ),
       },
     ]);
   }
 
   private showLanguageHeader(): void {
-    console.log(chalk.blue('┌───────────────────────────────────────────┐'));
-    console.log(chalk.blue('│          🌐 Language & Localization       │'));
-    console.log(chalk.blue('├───────────────────────────────────────────┤'));
-    console.log(chalk.blue('│     Choose your preferred language        │'));
-    console.log(chalk.blue('└───────────────────────────────────────────┘'));
+    const title = this.translationManager.t('cli.languageMenu.title');
+    const subtitle = this.translationManager.t('cli.languageMenu.subtitle');
+    const currentLocale = this.translationManager.getCurrentLocale();
+    const displayLanguage = this.getLanguageDisplayName(currentLocale);
+
+    // Calculate width based on the longest text
+    const maxWidth = Math.max(title.length, subtitle.length) + 4;
+    const border = '─'.repeat(maxWidth - 2);
+
+    console.log(chalk.blue(`┌${border}┐`));
+    console.log(
+      chalk.blue(
+        `│${title.padStart((maxWidth + title.length - 2) / 2).padEnd(maxWidth - 2)}│`,
+      ),
+    );
+    console.log(chalk.blue(`├${border}┤`));
+    console.log(
+      chalk.blue(
+        `│${subtitle.padStart((maxWidth + subtitle.length - 2) / 2).padEnd(maxWidth - 2)}│`,
+      ),
+    );
+    console.log(chalk.blue(`└${border}┘`));
+    console.log(
+      chalk.blue(
+        `${this.translationManager.t('cli.languageMenu.currentLanguage')}: ${displayLanguage}`,
+      ),
+    );
     console.log();
   }
 
@@ -270,17 +250,24 @@ export class SettingsMode {
       await this.configManager.save();
 
       console.log();
-      console.log(chalk.green('✅ Language changed successfully!'));
+      console.log(
+        chalk.green(
+          '✅ ' + this.translationManager.t('success.settingsUpdated'),
+        ),
+      );
       console.log(
         chalk.gray(
-          `   New language: ${this.getLanguageDisplayName(newLocale)}`,
+          `   ${this.translationManager.t('cli.prompts.selectLanguage')}: ${this.getLanguageDisplayName(newLocale)}`,
         ),
       );
       console.log();
 
       await this.pressAnyKey();
     } catch (error) {
-      this.logger.error('Failed to change language', error);
+      this.logger.error(
+        this.translationManager.t('startup.failedToChangeLanguage'),
+        error,
+      );
       console.error(chalk.red('❌ Failed to change language:'), error);
       await this.pressAnyKey();
     }

@@ -15,24 +15,31 @@ import {
   BatchError,
 } from '../../types/batch';
 
+import type { ITranslationManager } from '../../infrastructure/i18n/types';
+
 type DisplayErrorShape = { message?: string; suggestions?: string[] };
 
 export class BatchProgressUI {
   private spinner: Ora;
   private lastUpdateTime = 0;
   private updateInterval = 500; // Update every 500ms
+  private translationManager: ITranslationManager | undefined;
 
-  constructor() {
+  constructor(translationManager?: ITranslationManager) {
     this.spinner = ora();
+    this.translationManager = translationManager;
   }
 
   /**
    * Start progress display
    */
   start(totalFiles: number): void {
-    this.spinner.start(
-      chalk.cyan(`🚀 Starting batch conversion of ${totalFiles} files...`),
-    );
+    const message = this.translationManager
+      ? this.translationManager.t('batchProgress.startingConversion', {
+          count: totalFiles.toString(),
+        })
+      : `🚀 Starting batch conversion of ${totalFiles} files...`;
+    this.spinner.start(chalk.cyan(message));
   }
 
   /**
@@ -73,7 +80,21 @@ export class BatchProgressUI {
    * Display file preview
    */
   displayFilePreview(files: string[], maxDisplay = 10): void {
-    console.log(chalk.cyan('\n📁 Files to be processed:'));
+    const title = this.translationManager
+      ? this.translationManager.t('batchProgress.filesToProcess')
+      : '📁 Files to be processed:';
+    const totalText = this.translationManager
+      ? this.translationManager.t('batchProgress.totalFiles', {
+          count: files.length.toString(),
+        })
+      : `Total: ${files.length} files`;
+    const moreFilesText = this.translationManager
+      ? this.translationManager.t('batchProgress.andMoreFiles', {
+          count: (files.length - maxDisplay).toString(),
+        })
+      : `... and ${files.length - maxDisplay} more files`;
+
+    console.log(chalk.cyan(`\n${title}`));
     console.log(chalk.gray('─'.repeat(60)));
     const displayFiles = files.slice(0, maxDisplay);
     displayFiles.forEach((file, index) => {
@@ -81,11 +102,10 @@ export class BatchProgressUI {
       console.log(chalk.gray(`  ${index + 1}. `) + chalk.white(shortPath));
     });
     if (files.length > maxDisplay) {
-      const remaining = files.length - maxDisplay;
-      console.log(chalk.gray(`  ... and ${remaining} more files`));
+      console.log(chalk.gray(`  ${moreFilesText}`));
     }
     console.log(chalk.gray('─'.repeat(60)));
-    console.log(chalk.bold(`Total: ${files.length} files\n`));
+    console.log(chalk.bold(`${totalText}\n`));
   }
 
   /**
@@ -98,18 +118,49 @@ export class BatchProgressUI {
     maxConcurrentProcesses: number;
     continueOnError: boolean;
   }): void {
-    console.log(chalk.cyan('🔧  Batch Configuration:'));
+    const title = this.translationManager
+      ? this.translationManager.t('batchProgress.batchConfiguration')
+      : '🔧  Batch Configuration:';
+    const labels = {
+      inputPattern: this.translationManager
+        ? this.translationManager.t('batchProgress.inputPattern')
+        : 'Input Pattern:',
+      outputDirectory: this.translationManager
+        ? this.translationManager.t('batchProgress.outputDirectory')
+        : 'Output Directory:',
+      preserveStructure: this.translationManager
+        ? this.translationManager.t('batchProgress.preserveStructure')
+        : 'Preserve Structure:',
+      concurrentProcesses: this.translationManager
+        ? this.translationManager.t('batchProgress.concurrentProcesses')
+        : 'Concurrent Processes:',
+      continueOnError: this.translationManager
+        ? this.translationManager.t('batchProgress.continueOnError')
+        : 'Continue on Error:',
+    };
+    const yesNo = {
+      yes: this.translationManager
+        ? this.translationManager.t('common.yes')
+        : 'Yes',
+      no: this.translationManager
+        ? this.translationManager.t('common.no')
+        : 'No',
+    };
+
+    console.log(chalk.cyan(title));
     console.log(chalk.gray('─'.repeat(60)));
-    console.log(`${chalk.bold('Input Pattern:')} ${config.inputPattern}`);
-    console.log(`${chalk.bold('Output Directory:')} ${config.outputDirectory}`);
+    console.log(`${chalk.bold(labels.inputPattern)} ${config.inputPattern}`);
     console.log(
-      `${chalk.bold('Preserve Structure:')} ${config.preserveDirectoryStructure ? 'Yes' : 'No'}`,
+      `${chalk.bold(labels.outputDirectory)} ${config.outputDirectory}`,
     );
     console.log(
-      `${chalk.bold('Concurrent Processes:')} ${config.maxConcurrentProcesses}`,
+      `${chalk.bold(labels.preserveStructure)} ${config.preserveDirectoryStructure ? yesNo.yes : yesNo.no}`,
     );
     console.log(
-      `${chalk.bold('Continue on Error:')} ${config.continueOnError ? 'Yes' : 'No'}`,
+      `${chalk.bold(labels.concurrentProcesses)} ${config.maxConcurrentProcesses}`,
+    );
+    console.log(
+      `${chalk.bold(labels.continueOnError)} ${config.continueOnError ? yesNo.yes : yesNo.no}`,
     );
     console.log(chalk.gray('─'.repeat(60)));
   }
@@ -129,42 +180,75 @@ export class BatchProgressUI {
   }): void {
     console.log();
     if (result.success && result.failedFiles === 0) {
-      this.spinner.succeed(
-        chalk.green('✅ Batch conversion completed successfully!'),
-      );
+      const message = this.translationManager
+        ? this.translationManager.t('batchProgress.batchComplete')
+        : '✅ Batch conversion completed successfully!';
+      this.spinner.succeed(chalk.green(message));
     } else if (result.successfulFiles > 0) {
-      this.spinner.warn(
-        chalk.yellow('⚠️  Batch conversion completed with some failures'),
-      );
+      const message = this.translationManager
+        ? this.translationManager.t('batchProgress.batchPartialSuccess')
+        : '⚠️  Batch conversion completed with some failures';
+      this.spinner.warn(chalk.yellow(message));
     } else {
-      this.spinner.fail(chalk.red('❌ Batch conversion failed'));
+      const message = this.translationManager
+        ? this.translationManager.t('batchProgress.batchFailed')
+        : '❌ Batch conversion failed';
+      this.spinner.fail(chalk.red(message));
     }
 
     console.log();
-    console.log(chalk.cyan('📊 Batch Processing Results:'));
+    const title = this.translationManager
+      ? this.translationManager.t('batchProgress.processingResults')
+      : '📊 Batch Processing Results:';
+    const labels = {
+      totalFiles: this.translationManager
+        ? this.translationManager.t('batchProgress.totalFiles', {
+            count: result.totalFiles.toString(),
+          })
+        : `Total files: ${result.totalFiles}`,
+      successful: this.translationManager
+        ? this.translationManager.t('batchProgress.successful', {
+            count: result.successfulFiles.toString(),
+          })
+        : `Successful: ${result.successfulFiles}`,
+      failed: this.translationManager
+        ? this.translationManager.t('batchProgress.failed', {
+            count: result.failedFiles.toString(),
+          })
+        : `Failed: ${result.failedFiles}`,
+      skipped: this.translationManager
+        ? this.translationManager.t('batchProgress.skipped', {
+            count: result.skippedFiles.toString(),
+          })
+        : `Skipped: ${result.skippedFiles}`,
+      processingTime: this.translationManager
+        ? this.translationManager.t('batchProgress.processingTime', {
+            time: this.formatDuration(result.processingTime),
+          })
+        : `Processing time: ${this.formatDuration(result.processingTime)}`,
+      averagePerFile: this.translationManager
+        ? this.translationManager.t('batchProgress.averagePerFile', {
+            time: this.formatDuration(
+              result.processingTime / result.successfulFiles,
+            ),
+          })
+        : `Average per file: ${this.formatDuration(result.processingTime / result.successfulFiles)}`,
+    };
+
+    console.log(chalk.cyan(title));
     console.log(chalk.gray('─'.repeat(60)));
-    console.log(`${chalk.bold('Total files:')} ${result.totalFiles}`);
-    console.log(
-      `${chalk.bold('Successful:')} ${chalk.green(result.successfulFiles.toString())}`,
-    );
+    console.log(labels.totalFiles);
+    console.log(chalk.green(labels.successful));
 
     if (result.failedFiles > 0) {
-      console.log(
-        `${chalk.bold('Failed:')} ${chalk.red(result.failedFiles.toString())}`,
-      );
+      console.log(chalk.red(labels.failed));
     }
     if (result.skippedFiles > 0) {
-      console.log(
-        `${chalk.bold('Skipped:')} ${chalk.yellow(result.skippedFiles.toString())}`,
-      );
+      console.log(chalk.yellow(labels.skipped));
     }
-    const processingTimeText = this.formatDuration(result.processingTime);
-    console.log(`${chalk.bold('Processing time:')} ${processingTimeText}`);
+    console.log(labels.processingTime);
     if (result.successfulFiles > 0) {
-      const avgTime = result.processingTime / result.successfulFiles;
-      console.log(
-        `${chalk.bold('Average per file:')} ${this.formatDuration(avgTime)}`,
-      );
+      console.log(labels.averagePerFile);
     }
     console.log(chalk.gray('─'.repeat(60)));
 
@@ -184,7 +268,14 @@ export class BatchProgressUI {
    */
   private displayErrors(errors: BatchError[]): void {
     console.log();
-    console.log(chalk.red('❌ Errors encountered:'));
+    const title = this.translationManager
+      ? this.translationManager.t('batchProgress.errorsEncountered')
+      : '❌ Errors encountered:';
+    const suggestionsLabel = this.translationManager
+      ? this.translationManager.t('batchProgress.suggestions')
+      : 'Suggestions:';
+
+    console.log(chalk.red(title));
     console.log(chalk.gray('─'.repeat(60)));
     errors.forEach((error, index) => {
       const shortPath = this.shortenPath(error.inputPath);
@@ -196,7 +287,7 @@ export class BatchProgressUI {
           console.log(chalk.gray(`     ${e.message}`));
         }
         if (Array.isArray(e.suggestions) && e.suggestions.length > 0) {
-          console.log(chalk.gray('     Suggestions:'));
+          console.log(chalk.gray(`     ${suggestionsLabel}`));
           e.suggestions.forEach((suggestion) => {
             console.log(chalk.gray(`     • ${suggestion}`));
           });
@@ -211,7 +302,14 @@ export class BatchProgressUI {
    */
   private displaySuccessfulFiles(results: SingleBatchResult[]): void {
     console.log();
-    console.log(chalk.green('✅ Successfully converted files:'));
+    const title = this.translationManager
+      ? this.translationManager.t('batchProgress.successfullyConverted')
+      : '✅ Successfully converted files:';
+    const pagesLabel = this.translationManager
+      ? this.translationManager.t('batchProgress.pages')
+      : 'pages';
+
+    console.log(chalk.green(title));
     console.log(chalk.gray('─'.repeat(60)));
 
     results.forEach((result, index) => {
@@ -225,9 +323,7 @@ export class BatchProgressUI {
         const pages = result.stats.pageCount;
         const time = this.formatDuration(result.processingTime);
         console.log(
-          chalk.gray(
-            `     ${inputSize} → ${outputSize}, ${pages} pages, ${time}`,
-          ),
+          chalk.gray(`     ${inputSize} → ${outputSize}, ${pages} ${pagesLabel}, ${time}`)
         );
       }
     });
@@ -238,9 +334,12 @@ export class BatchProgressUI {
    * Handle start event
    */
   private handleStart(data: BatchProgressInfo): void {
-    this.spinner.text = chalk.cyan(
-      `🚀 Batch processing started (${data.totalFiles} files)`,
-    );
+    const message = this.translationManager
+      ? this.translationManager.t('batchProgress.processingStarted', {
+          count: data.totalFiles.toString(),
+        })
+      : `🚀 Batch processing started (${data.totalFiles} files)`;
+    this.spinner.text = chalk.cyan(message);
   }
 
   /**
@@ -258,7 +357,10 @@ export class BatchProgressUI {
     }
     if (data.estimatedTimeRemaining) {
       const eta = this.formatDuration(data.estimatedTimeRemaining);
-      text += ` - ETA: ${eta}`;
+      const etaLabel = this.translationManager
+        ? this.translationManager.t('batchProgress.progressEta', { eta })
+        : `ETA: ${eta}`;
+      text += ` - ${etaLabel}`;
     }
     this.spinner.text = text;
   }
@@ -288,7 +390,10 @@ export class BatchProgressUI {
       if (error && typeof error === 'object') {
         const e = error as DisplayErrorShape;
         if (e.message) {
-          console.log(chalk.gray(`   Error: ${e.message}`));
+          const errorLabel = this.translationManager
+            ? this.translationManager.t('common.error')
+            : 'Error';
+          console.log(chalk.gray(`   ${errorLabel}: ${e.message}`));
         }
       }
     }
@@ -302,17 +407,26 @@ export class BatchProgressUI {
       (data.successfulFiles / data.totalFiles) * 100,
     );
     if (successRate === 100) {
-      this.spinner.succeed(
-        chalk.green(`✅ All ${data.totalFiles} files processed successfully!`),
-      );
+      const message = this.translationManager
+        ? this.translationManager.t('batchProgress.processingComplete', {
+            count: data.totalFiles.toString(),
+          })
+        : `✅ All ${data.totalFiles} files processed successfully!`;
+      this.spinner.succeed(chalk.green(message));
     } else if (data.successfulFiles > 0) {
-      this.spinner.warn(
-        chalk.yellow(
-          `⚠️  Processed ${data.successfulFiles}/${data.totalFiles} files (${successRate}% success rate)`,
-        ),
-      );
+      const message = this.translationManager
+        ? this.translationManager.t('batchProgress.processingPartial', {
+            successful: data.successfulFiles.toString(),
+            total: data.totalFiles.toString(),
+            rate: successRate.toString(),
+          })
+        : `⚠️  Processed ${data.successfulFiles}/${data.totalFiles} files (${successRate}% success rate)`;
+      this.spinner.warn(chalk.yellow(message));
     } else {
-      this.spinner.fail(chalk.red(`❌ Failed to process any files`));
+      const message = this.translationManager
+        ? this.translationManager.t('batchProgress.processingFailed')
+        : `❌ Failed to process any files`;
+      this.spinner.fail(chalk.red(message));
     }
   }
 

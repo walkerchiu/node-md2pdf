@@ -5,14 +5,18 @@
 
 import chalk from 'chalk';
 
+import type { ITranslationManager } from '../infrastructure/i18n/types';
 import type { ILogger } from '../infrastructure/logging/types';
 import type { ServiceContainer } from '../shared/container';
 
 export class CustomizationMode {
   private logger: ILogger;
+  private translationManager: ITranslationManager;
 
   constructor(private readonly container: ServiceContainer) {
     this.logger = this.container.resolve<ILogger>('logger');
+    this.translationManager =
+      this.container.resolve<ITranslationManager>('translator');
   }
 
   /**
@@ -20,7 +24,9 @@ export class CustomizationMode {
    */
   async start(): Promise<void> {
     try {
-      this.logger.info('Starting customization mode');
+      this.logger.info(
+        this.translationManager.t('startup.startingCustomizationMode'),
+      );
 
       let running = true;
 
@@ -45,14 +51,28 @@ export class CustomizationMode {
             await this.templateManagement();
             break;
           case 'back':
-            this.logger.info('Returning to main menu from customization');
+            this.logger.info(
+              this.translationManager.t(
+                'startup.returningToMainMenuFromCustomization',
+              ),
+            );
             running = false;
             break;
         }
       }
     } catch (error) {
-      this.logger.error('Customization mode error', error);
-      console.error(chalk.red('❌ Customization error:'), error);
+      this.logger.error(
+        this.translationManager.t('startup.customizationModeError'),
+        error,
+      );
+      console.error(
+        chalk.red(
+          '❌ ' +
+            this.translationManager.t('customization.customizationError') +
+            ':',
+        ),
+        error,
+      );
       throw error;
     }
   }
@@ -61,11 +81,28 @@ export class CustomizationMode {
    * Show customization header
    */
   private showCustomizationHeader(): void {
-    console.log(chalk.magenta('┌───────────────────────────────────────────┐'));
-    console.log(chalk.magenta('│        🎨 Customization Settings          │'));
-    console.log(chalk.magenta('├───────────────────────────────────────────┤'));
-    console.log(chalk.magenta('│   Advanced styling and template options   │'));
-    console.log(chalk.magenta('└───────────────────────────────────────────┘'));
+    const title = this.translationManager.t('cli.customizationMenu.title');
+    const subtitle = this.translationManager.t(
+      'cli.customizationMenu.subtitle',
+    );
+
+    // Calculate width based on the longest text
+    const maxWidth = Math.max(title.length, subtitle.length) + 4;
+    const border = '─'.repeat(maxWidth - 2);
+
+    console.log(chalk.magenta(`┌${border}┐`));
+    console.log(
+      chalk.magenta(
+        `│${title.padStart((maxWidth + title.length - 2) / 2).padEnd(maxWidth - 2)}│`,
+      ),
+    );
+    console.log(chalk.magenta(`├${border}┤`));
+    console.log(
+      chalk.magenta(
+        `│${subtitle.padStart((maxWidth + subtitle.length - 2) / 2).padEnd(maxWidth - 2)}│`,
+      ),
+    );
+    console.log(chalk.magenta(`└${border}┘`));
     console.log();
   }
 
@@ -79,29 +116,51 @@ export class CustomizationMode {
       {
         type: 'list',
         name: 'option',
-        message: 'Select customization option:',
+        message: this.translationManager.t(
+          'customization.selectCustomizationOption',
+        ),
         choices: [
-          { name: '0. Return to Main Menu', value: 'back', short: 'Back' },
-          { name: '1. Cover Design', value: 'cover', short: 'Cover Design' },
           {
-            name: '2. Headers & Footers',
+            name: this.translationManager.t(
+              'cli.customizationMenu.returnToMain',
+            ),
+            value: 'back',
+            short: this.translationManager.t('short.back'),
+          },
+          {
+            name: this.translationManager.t(
+              'cli.customizationMenu.coverDesign',
+            ),
+            value: 'cover',
+            short: this.translationManager.t('short.coverDesign'),
+          },
+          {
+            name: this.translationManager.t(
+              'cli.customizationMenu.headersFooters',
+            ),
             value: 'headers',
-            short: 'Headers & Footers',
+            short: this.translationManager.t('short.headersFooters'),
           },
           {
-            name: '3. Document Metadata',
+            name: this.translationManager.t(
+              'cli.customizationMenu.documentMetadata',
+            ),
             value: 'metadata',
-            short: 'Document Metadata',
+            short: this.translationManager.t('short.documentMetadata'),
           },
           {
-            name: '4. Security & Watermarks',
+            name: this.translationManager.t(
+              'cli.customizationMenu.securitySettings',
+            ),
             value: 'security',
-            short: 'Security Settings',
+            short: this.translationManager.t('short.securitySettings'),
           },
           {
-            name: '5. Template Management',
+            name: this.translationManager.t(
+              'cli.customizationMenu.templateManagement',
+            ),
             value: 'templates',
-            short: 'Template Management',
+            short: this.translationManager.t('short.templateManagement'),
           },
         ],
         default: 'cover',
@@ -114,27 +173,47 @@ export class CustomizationMode {
 
   // Placeholder methods for future implementation
   private async coverDesign(): Promise<void> {
-    console.log(chalk.yellow('Cover Design features coming soon...'));
+    console.log(
+      chalk.yellow(
+        this.translationManager.t('customization.coverDesignComingSoon'),
+      ),
+    );
     await this.pressAnyKey();
   }
 
   private async headersFooters(): Promise<void> {
-    console.log(chalk.yellow('Headers & Footers features coming soon...'));
+    console.log(
+      chalk.yellow(
+        this.translationManager.t('customization.headersFootersComingSoon'),
+      ),
+    );
     await this.pressAnyKey();
   }
 
   private async documentMetadata(): Promise<void> {
-    console.log(chalk.yellow('Document Metadata features coming soon...'));
+    console.log(
+      chalk.yellow(
+        this.translationManager.t('customization.documentMetadataComingSoon'),
+      ),
+    );
     await this.pressAnyKey();
   }
 
   private async securitySettings(): Promise<void> {
-    console.log(chalk.yellow('Security & Watermarks features coming soon...'));
+    console.log(
+      chalk.yellow(
+        this.translationManager.t('customization.securitySettingsComingSoon'),
+      ),
+    );
     await this.pressAnyKey();
   }
 
   private async templateManagement(): Promise<void> {
-    console.log(chalk.yellow('Template Management features coming soon...'));
+    console.log(
+      chalk.yellow(
+        this.translationManager.t('customization.templateManagementComingSoon'),
+      ),
+    );
     await this.pressAnyKey();
   }
 
@@ -144,7 +223,9 @@ export class CustomizationMode {
       {
         type: 'input',
         name: 'continue',
-        message: 'Press Enter to continue...',
+        message: this.translationManager.t(
+          'customization.pressEnterToContinue',
+        ),
       },
     ]);
   }

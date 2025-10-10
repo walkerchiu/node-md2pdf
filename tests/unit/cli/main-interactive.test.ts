@@ -19,6 +19,7 @@ jest.mock('chalk', () => ({
 import { MainInteractiveMode } from '../../../src/cli/main-interactive';
 import { ServiceContainer } from '../../../src/shared/container';
 import type { ILogger } from '../../../src/infrastructure/logging/types';
+import type { ITranslationManager } from '../../../src/infrastructure/i18n/types';
 
 // Local private interface to access internal methods for testing without using `any`
 type PrivateMainInteractive = {
@@ -41,6 +42,7 @@ jest.mock('../../../src/cli/batch', () => ({
 describe('MainInteractiveMode', () => {
   let container: ServiceContainer;
   let mockLogger: jest.Mocked<ILogger>;
+  let mockTranslationManager: jest.Mocked<ITranslationManager>;
   let mainMode: MainInteractiveMode;
   let consoleSpy: ReturnType<typeof jest.spyOn>;
   let consoleErrorSpy: ReturnType<typeof jest.spyOn>;
@@ -60,8 +62,42 @@ describe('MainInteractiveMode', () => {
       getLevel: jest.fn(),
     };
 
+    mockTranslationManager = {
+      getCurrentLocale: jest.fn(() => 'en' as const),
+      getSupportedLocales: jest.fn(() => ['en', 'zh-TW'] as const),
+      setLocale: jest.fn(),
+      translate: jest.fn(),
+      t: jest.fn((key: string) => {
+        const translations: Record<string, string> = {
+          'cli.mainMenu.title': 'MD2PDF Main Menu',
+          'cli.mainMenu.subtitle':
+            'Convert Markdown files to professional PDF documents with table of contents',
+          'cli.mainMenu.processPrompt':
+            'How would you like to process your files?',
+          'cli.mainMenu.smartConversion': '🤖 Smart Conversion',
+          'cli.mainMenu.smartConversionDesc':
+            'AI-powered settings with 3-step workflow',
+          'cli.mainMenu.singleFile': '📄 Single File',
+          'cli.mainMenu.singleFileDesc': 'Convert one Markdown file to PDF',
+          'cli.mainMenu.batchProcessing': '📚 Batch Processing',
+          'cli.mainMenu.batchProcessingDesc': 'Convert multiple files at once',
+          'cli.mainMenu.customization': '🎨 Customization',
+          'cli.mainMenu.customizationDesc': 'Advanced styling and templates',
+          'cli.mainMenu.settings': '🔧 Settings',
+          'cli.mainMenu.settingsDesc': 'Language and preferences',
+          'cli.mainMenu.exit': '🚪 Exit',
+          'cli.options.goodbye': 'Goodbye!',
+        };
+        return translations[key] || key;
+      }),
+      hasTranslation: jest.fn(),
+      loadTranslations: jest.fn(),
+      getTranslations: jest.fn(),
+    } as any;
+
     container = new ServiceContainer();
     container.registerInstance('logger', mockLogger);
+    container.registerInstance('translator', mockTranslationManager);
 
     mainMode = new MainInteractiveMode(container);
   });
@@ -90,12 +126,12 @@ describe('MainInteractiveMode', () => {
       await mainMode.start();
 
       expect(mockLogger.info).toHaveBeenCalledWith(
-        'Starting main interactive mode',
+        'startup.startingMainInteractiveMode',
       );
       expect(mockLogger.info).toHaveBeenCalledWith(
-        'User selected single file mode',
+        'startup.userSelectedSingleMode',
       );
-      expect(mockLogger.info).toHaveBeenCalledWith('User selected exit');
+      expect(mockLogger.info).toHaveBeenCalledWith('startup.userSelectedExit');
       expect(consoleSpy).toHaveBeenCalled(); // Welcome message displayed
     });
 
@@ -109,10 +145,12 @@ describe('MainInteractiveMode', () => {
       await mainMode.start();
 
       expect(mockLogger.info).toHaveBeenCalledWith(
-        'Starting main interactive mode',
+        'startup.startingMainInteractiveMode',
       );
-      expect(mockLogger.info).toHaveBeenCalledWith('User selected batch mode');
-      expect(mockLogger.info).toHaveBeenCalledWith('User selected exit');
+      expect(mockLogger.info).toHaveBeenCalledWith(
+        'startup.userSelectedBatchMode',
+      );
+      expect(mockLogger.info).toHaveBeenCalledWith('startup.userSelectedExit');
     });
 
     it('should handle exit selection gracefully', async () => {
@@ -123,7 +161,7 @@ describe('MainInteractiveMode', () => {
 
       await mainMode.start();
 
-      expect(mockLogger.info).toHaveBeenCalledWith('User selected exit');
+      expect(mockLogger.info).toHaveBeenCalledWith('startup.userSelectedExit');
       expect(consoleSpy).toHaveBeenCalledWith('👋 Goodbye!');
     });
 
@@ -155,24 +193,16 @@ describe('MainInteractiveMode', () => {
       ).showWelcomeMessage!.bind(mainMode);
       showWelcomeMessage();
 
-      expect(consoleSpy).toHaveBeenCalledWith(
-        '┌──────────────────────────────────────────┐',
-      );
-      expect(consoleSpy).toHaveBeenCalledWith(
-        '│           MD2PDF Main Menu               │',
-      );
-      expect(consoleSpy).toHaveBeenCalledWith(
-        '├──────────────────────────────────────────┤',
-      );
-      expect(consoleSpy).toHaveBeenCalledWith(
-        '│  Convert Markdown files to professional  │',
-      );
-      expect(consoleSpy).toHaveBeenCalledWith(
-        '│  PDF documents with table of contents    │',
-      );
-      expect(consoleSpy).toHaveBeenCalledWith(
-        '└──────────────────────────────────────────┘',
-      );
+      // Check that console.log was called with header content
+      // The exact format might vary due to dynamic title generation
+      expect(consoleSpy).toHaveBeenCalled();
+
+      // Check that it includes the main components we expect
+      const allCalls = consoleSpy.mock.calls.map((call: any) => call[0]);
+      const allOutput = allCalls.join('');
+
+      expect(allOutput).toContain('MD2PDF Main Menu');
+      expect(allOutput).toContain('Convert Markdown files');
     });
   });
 
@@ -229,9 +259,9 @@ describe('MainInteractiveMode', () => {
 
       expect(selectModeSpy).toHaveBeenCalledTimes(2);
       expect(mockLogger.info).toHaveBeenCalledWith(
-        'User selected single file mode',
+        'startup.userSelectedSingleMode',
       );
-      expect(mockLogger.info).toHaveBeenCalledWith('User selected exit');
+      expect(mockLogger.info).toHaveBeenCalledWith('startup.userSelectedExit');
     });
 
     it('should handle complete batch flow then return to menu', async () => {
@@ -243,8 +273,10 @@ describe('MainInteractiveMode', () => {
       await mainMode.start();
 
       expect(selectModeSpy).toHaveBeenCalledTimes(2);
-      expect(mockLogger.info).toHaveBeenCalledWith('User selected batch mode');
-      expect(mockLogger.info).toHaveBeenCalledWith('User selected exit');
+      expect(mockLogger.info).toHaveBeenCalledWith(
+        'startup.userSelectedBatchMode',
+      );
+      expect(mockLogger.info).toHaveBeenCalledWith('startup.userSelectedExit');
     });
   });
 });

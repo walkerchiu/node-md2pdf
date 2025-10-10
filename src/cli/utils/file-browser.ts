@@ -12,6 +12,8 @@ import { FileSearchUI } from '../ui/file-search-ui';
 
 import { CliRenderer } from './cli-renderer';
 
+import type { ITranslationManager } from '../../infrastructure/i18n/types';
+
 export interface FileItem {
   name: string;
   path: string;
@@ -32,6 +34,11 @@ export interface BrowseOptions {
 export class FileBrowser {
   private readonly markdownExtensions = ['.md', '.markdown', '.mdown', '.mkd'];
   private renderer = new CliRenderer();
+  private translationManager: ITranslationManager;
+
+  constructor(translationManager: ITranslationManager) {
+    this.translationManager = translationManager;
+  }
 
   async browseDirectory(
     startPath: string = process.cwd(),
@@ -53,14 +60,16 @@ export class FileBrowser {
           chalk.cyan('┌─────────────────────────────────────────┐'),
         );
         this.renderer.info(
-          chalk.cyan('│           📁 File Browser Mode          │'),
+          chalk.cyan(
+            `│           ${this.translationManager.t('fileBrowser.title')} Mode          │`,
+          ),
         );
         this.renderer.info(
           chalk.cyan('├─────────────────────────────────────────┤'),
         );
         this.renderer.info(
           chalk.cyan(
-            `│ Current: ${FileSearchUI.shortenPath(currentPath, 28).padEnd(28)} │`,
+            `│ ${this.translationManager.t('fileBrowser.currentDirectory')}: ${FileSearchUI.shortenPath(currentPath, 28).padEnd(28)} │`,
           ),
         );
         this.renderer.info(
@@ -70,7 +79,7 @@ export class FileBrowser {
         if (items.filter((item) => item.isMarkdown).length > 0) {
           this.renderer.info(
             chalk.green(
-              `   Found ${items.filter((item) => item.isMarkdown).length} Markdown files`,
+              `   ${this.translationManager.t('fileBrowser.foundMarkdownFiles', { count: items.filter((item) => item.isMarkdown).length })}`,
             ),
           );
         }
@@ -78,7 +87,7 @@ export class FileBrowser {
         const { action } = await inquirer.default.prompt({
           type: 'list',
           name: 'action',
-          message: '🔍 Select an action:',
+          message: this.translationManager.t('fileBrowser.selectFile'),
           choices,
           pageSize: 15,
           default: '__recent__', // Select recent files by default
@@ -186,28 +195,34 @@ export class FileBrowser {
     // Navigation options
     if (dirname(currentPath) !== currentPath) {
       choices.push({
-        name: chalk.gray('📁 .. (Parent Directory)'),
+        name: chalk.gray(this.translationManager.t('fileBrowser.upOneLevel')),
         value: '__up__',
-        short: 'Parent Directory',
+        short: this.translationManager.t('fileBrowser.directory'),
       });
     }
 
     // Utility options
     choices.push(
       {
-        name: chalk.gray('🔙 Return to Main Menu'),
+        name: chalk.gray(
+          '🔙 ' + this.translationManager.t('smartConversion.returnToMainMenu'),
+        ),
         value: '__back_to_main__',
-        short: 'Return to Main',
+        short: this.translationManager.t('cli.options.back'),
       },
       {
-        name: chalk.magenta('📋 Recent files'),
+        name: chalk.magenta(
+          '📋 ' + this.translationManager.t('smartConversion.recentFiles'),
+        ),
         value: '__recent__',
-        short: 'Recent',
+        short: this.translationManager.t('cli.options.recent'),
       },
       {
-        name: chalk.blue('🔍 Search for files'),
+        name: chalk.blue(
+          '🔍 ' + this.translationManager.t('fileBrowser.searchingFiles'),
+        ),
         value: '__search__',
-        short: 'Search',
+        short: this.translationManager.t('fileBrowser.searchingFiles'),
       },
     );
 
@@ -251,14 +266,18 @@ export class FileBrowser {
     if (otherFiles.length > 0 && otherFiles.length < 5) {
       otherFiles.forEach((file) => {
         choices.push({
-          name: chalk.dim(`📄 ${file.name} (not markdown)`),
+          name: chalk.dim(
+            `📄 ${file.name} (${this.translationManager.t('fileBrowser.notMarkdown')})`,
+          ),
           value: file.path,
           short: file.name,
         });
       });
     } else if (otherFiles.length >= 5) {
       choices.push({
-        name: chalk.dim(`📄 ... and ${otherFiles.length} other files`),
+        name: chalk.dim(
+          `📄 ${this.translationManager.t('fileBrowser.andOtherFiles', { count: otherFiles.length.toString() })}`,
+        ),
         value: '__show_all__',
       });
     }
@@ -306,9 +325,10 @@ export class FileBrowser {
     const { pattern } = await inquirer.default.prompt({
       type: 'input',
       name: 'pattern',
-      message: '🔍 Enter search pattern (filename or glob pattern):',
+      message: this.translationManager.t('fileBrowser.enterSearchPattern'),
       validate: (input: string) =>
-        input.trim().length > 0 || 'Please enter a search pattern',
+        input.trim().length > 0 ||
+        this.translationManager.t('fileBrowser.pleaseEnterSearchPattern'),
     });
 
     this.renderer.info(chalk.yellow('🔍 Searching for files...'));
@@ -317,15 +337,31 @@ export class FileBrowser {
       const files = await this.findFiles(basePath, pattern, options);
 
       if (files.length === 0) {
-        this.renderer.error(chalk.red('❌ No matching files found'));
+        this.renderer.error(
+          chalk.red(
+            this.translationManager.t('fileBrowser.noMatchingFilesFound'),
+          ),
+        );
 
         const { nextAction } = await inquirer.default.prompt({
           type: 'list',
           name: 'nextAction',
-          message: 'What would you like to do?',
+          message: this.translationManager.t(
+            'fileBrowser.whatWouldYouLikeToDo',
+          ),
           choices: [
-            { name: '🔍 Search with different pattern', value: 'search_again' },
-            { name: '↩️  Go back to file browser', value: 'back' },
+            {
+              name: this.translationManager.t(
+                'fileBrowser.searchWithDifferentPattern',
+              ),
+              value: 'search_again',
+            },
+            {
+              name: this.translationManager.t(
+                'fileBrowser.goBackToFileBrowser',
+              ),
+              value: 'back',
+            },
           ],
         });
 
@@ -337,19 +373,37 @@ export class FileBrowser {
       }
 
       if (files.length === 1) {
-        this.renderer.info(chalk.green(`✅ Found 1 file: ${files[0]}`));
+        this.renderer.info(
+          chalk.green(
+            this.translationManager.t('fileBrowser.foundOneFile', {
+              filename: files[0],
+            }),
+          ),
+        );
 
         const { action } = await inquirer.default.prompt({
           type: 'list',
           name: 'action',
-          message: 'Select an action:',
+          message: this.translationManager.t('fileBrowser.selectAnAction'),
           choices: [
             {
-              name: `📄 Select: ${FileSearchUI.shortenPath(files[0])}`,
+              name: this.translationManager.t('fileBrowser.selectFile2', {
+                filename: FileSearchUI.shortenPath(files[0]),
+              }),
               value: 'select',
             },
-            { name: '🔍 Search with different pattern', value: 'search_again' },
-            { name: '↩️  Go back to file browser', value: 'back' },
+            {
+              name: this.translationManager.t(
+                'fileBrowser.searchWithDifferentPattern',
+              ),
+              value: 'search_again',
+            },
+            {
+              name: this.translationManager.t(
+                'fileBrowser.goBackToFileBrowser',
+              ),
+              value: 'back',
+            },
           ],
         });
 
@@ -363,7 +417,8 @@ export class FileBrowser {
       }
 
       // Show search results
-      FileSearchUI.displayFiles(files);
+      const searchUI = new FileSearchUI(this.translationManager);
+      searchUI.displayFiles(files);
 
       const choices = files.map((file, index) => ({
         name: `${index + 1}. ${FileSearchUI.shortenPath(file)}`,
@@ -373,14 +428,22 @@ export class FileBrowser {
       // Add option to go back or search again
       choices.push(
         { name: chalk.gray('─────────────────'), value: '__separator__' },
-        { name: '🔍 Search with different pattern', value: '__search_again__' },
-        { name: '↩️  Go back to file browser', value: '__back__' },
+        {
+          name: this.translationManager.t(
+            'fileBrowser.searchWithDifferentPattern',
+          ),
+          value: '__search_again__',
+        },
+        {
+          name: this.translationManager.t('fileBrowser.goBackToFileBrowser'),
+          value: '__back__',
+        },
       );
 
       const { selectedFile } = await inquirer.default.prompt({
         type: 'list',
         name: 'selectedFile',
-        message: 'Select a file or choose an action:',
+        message: this.translationManager.t('fileBrowser.selectFileOrAction'),
         choices: choices.filter((choice) => choice.value !== '__separator__'),
         pageSize: 12,
       });
@@ -400,10 +463,16 @@ export class FileBrowser {
       const { nextAction } = await inquirer.default.prompt({
         type: 'list',
         name: 'nextAction',
-        message: 'What would you like to do?',
+        message: this.translationManager.t('fileBrowser.whatWouldYouLikeToDo'),
         choices: [
-          { name: '🔍 Try searching again', value: 'search_again' },
-          { name: '↩️  Go back to file browser', value: 'back' },
+          {
+            name: this.translationManager.t('fileBrowser.trySearchingAgain'),
+            value: 'search_again',
+          },
+          {
+            name: this.translationManager.t('fileBrowser.goBackToFileBrowser'),
+            value: 'back',
+          },
         ],
       });
 
@@ -475,9 +544,10 @@ export class FileBrowser {
     const { filePath } = await inquirer.default.prompt({
       type: 'input',
       name: 'filePath',
-      message: '✏️  Enter the full path to your Markdown file:',
+      message: this.translationManager.t('fileBrowser.enterFullPath'),
       validate: (input: string) => {
-        if (!input.trim()) return 'Please enter a file path';
+        if (!input.trim())
+          return this.translationManager.t('fileBrowser.pleaseEnterFilePath');
         return true;
       },
     });
@@ -493,7 +563,11 @@ export class FileBrowser {
       const recentFiles = await recentFilesManager.getRecentFiles();
 
       if (recentFiles.length === 0) {
-        this.renderer.warn(chalk.yellow('📋 No recent files found'));
+        this.renderer.warn(
+          chalk.yellow(
+            this.translationManager.t('fileBrowser.noRecentFilesFound'),
+          ),
+        );
         return null;
       }
 
@@ -540,16 +614,23 @@ export class FileBrowser {
   }
 
   private formatDate(date?: Date): string {
-    if (!date) return 'Unknown';
+    if (!date) return this.translationManager.t('fileBrowser.unknown');
 
     const now = new Date();
     const diffMs = now.getTime() - date.getTime();
     const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
 
-    if (diffDays === 0) return 'Today';
-    if (diffDays === 1) return 'Yesterday';
-    if (diffDays < 7) return `${diffDays} days ago`;
-    if (diffDays < 30) return `${Math.floor(diffDays / 7)} weeks ago`;
+    if (diffDays === 0) return this.translationManager.t('fileBrowser.today');
+    if (diffDays === 1)
+      return this.translationManager.t('fileBrowser.yesterday');
+    if (diffDays < 7)
+      return this.translationManager.t('fileBrowser.daysAgo', {
+        count: diffDays,
+      });
+    if (diffDays < 30)
+      return this.translationManager.t('fileBrowser.weeksAgo', {
+        count: Math.floor(diffDays / 7),
+      });
 
     return date.toLocaleDateString();
   }

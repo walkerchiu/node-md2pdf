@@ -17,6 +17,7 @@ import { CliRenderer } from './utils/cli-renderer';
 
 import type { IFileProcessorService } from '../application/services/file-processor.service';
 import type { ISmartDefaultsService } from '../application/services/smart-defaults.service';
+import type { ITranslationManager } from '../infrastructure/i18n/types';
 import type { ILogger } from '../infrastructure/logging/types';
 import type { ServiceContainer } from '../shared/container';
 
@@ -31,6 +32,7 @@ export class SmartConversionMode {
   private smartDefaultsService: ISmartDefaultsService;
   private fileProcessorService: IFileProcessorService;
   private logger: ILogger;
+  private translationManager: ITranslationManager;
   private recentFilesManager: RecentFilesManager;
   private renderer: CliRenderer;
 
@@ -41,6 +43,7 @@ export class SmartConversionMode {
     this.smartDefaultsService = this.container.resolve('smartDefaults');
     this.fileProcessorService = this.container.resolve('fileProcessor');
     this.logger = this.container.resolve('logger');
+    this.translationManager = this.container.resolve('translator');
     this.recentFilesManager = new RecentFilesManager();
     this.renderer = new CliRenderer();
   }
@@ -51,26 +54,51 @@ export class SmartConversionMode {
    */
   async start(filePath?: string): Promise<void> {
     // Show Smart Conversion header with framework
+    const title = this.translationManager.t('smartConversion.title');
+    const subtitle = this.translationManager.t('smartConversion.subtitle');
+    const step1 = this.translationManager.t('smartConversion.step1');
+    const step2 = this.translationManager.t('smartConversion.step2');
+    const step3 = this.translationManager.t('smartConversion.step3');
+
+    // Calculate dynamic width
+    const maxWidth =
+      Math.max(
+        title.length,
+        subtitle.length,
+        step1.length,
+        step2.length,
+        step3.length,
+      ) + 4;
+    const border = '─'.repeat(maxWidth - 2);
+
     this.renderer.header([
-      '┌──────────────────────────────────────────────┐',
-      '│        🤖 Smart Conversion Mode              │',
-      '├──────────────────────────────────────────────┤',
-      '│  Intelligent configuration in 3 steps!       │',
-      '│                                              │',
-      '│  Step 1: File Selection                      │',
-      '│  Step 2: Content Analysis & Recommendations  │',
-      '│  Step 3: Configuration & Conversion          │',
-      '└──────────────────────────────────────────────┘',
+      `┌${border}┐`,
+      `│${title.padStart((maxWidth + title.length - 2) / 2).padEnd(maxWidth - 2)}│`,
+      `├${border}┤`,
+      `│${subtitle.padStart((maxWidth + subtitle.length - 2) / 2).padEnd(maxWidth - 2)}│`,
+      `│${' '.repeat(maxWidth - 2)}│`,
+      `│  ${step1.padEnd(maxWidth - 4)}│`,
+      `│  ${step2.padEnd(maxWidth - 4)}│`,
+      `│  ${step3.padEnd(maxWidth - 4)}│`,
+      `└${border}┘`,
     ]);
     this.renderer.newline();
 
     try {
       // Step 1: File Selection or Analysis
       const selectedFile = filePath || (await this.selectFile());
-      this.renderer.info(chalk.green(`📄 Selected: ${selectedFile}\n`));
+      this.renderer.info(
+        chalk.green(
+          `${this.translationManager.t('smartConversion.selected')}: ${selectedFile}\n`,
+        ),
+      );
 
       // Step 2: Content Analysis & Smart Recommendations
-      this.renderer.info(chalk.yellow('🔍 Analyzing content...'));
+      this.renderer.info(
+        chalk.yellow(
+          this.translationManager.t('smartConversion.analyzingContent'),
+        ),
+      );
       const analysis =
         await this.smartDefaultsService.analyzeContent(selectedFile);
 
@@ -83,19 +111,25 @@ export class SmartConversionMode {
       await this.confirmAndConvert(selectedFile, conversionChoice, analysis);
     } catch (error) {
       if (error instanceof Error && error.message === 'BACK_TO_MAIN_MENU') {
-        this.renderer.info(chalk.cyan('🔙 Returning to main menu...'));
+        this.renderer.info(
+          chalk.cyan(
+            this.translationManager.t('smartConversion.returningToMainMenu'),
+          ),
+        );
         return; // Exit smart conversion mode gracefully
       }
-      this.renderer.error(chalk.red(`❌ Error: ${error}`));
+      this.renderer.error(
+        chalk.red(
+          `${this.translationManager.t('smartConversion.error')}: ${error}`,
+        ),
+      );
       this.logger.error(`Smart conversion failed: ${error}`);
     }
   }
 
   private async selectFile(): Promise<string> {
     this.renderer.info(
-      chalk.gray(
-        '💡 Navigation: ↑/↓ arrows, Enter to select, Ctrl+C to Return to Main Menu',
-      ),
+      chalk.gray(this.translationManager.t('smartConversion.navigationHint')),
     );
     this.renderer.newline();
 
@@ -105,12 +139,26 @@ export class SmartConversionMode {
       {
         type: 'list',
         name: 'method',
-        message: '📁 How would you like to select a file?',
+        message: this.translationManager.t(
+          'smartConversion.fileSelectionPrompt',
+        ),
         choices: [
-          { name: '0. Return to Main Menu', value: 'back' },
-          { name: '1. Browse files interactively', value: 'browse' },
-          { name: '2. Enter file path manually', value: 'manual' },
-          { name: '3. Choose from recent files', value: 'recent' },
+          {
+            name: this.translationManager.t('smartConversion.returnToMainMenu'),
+            value: 'back',
+          },
+          {
+            name: this.translationManager.t('smartConversion.browseFiles'),
+            value: 'browse',
+          },
+          {
+            name: this.translationManager.t('smartConversion.enterManually'),
+            value: 'manual',
+          },
+          {
+            name: this.translationManager.t('smartConversion.chooseRecent'),
+            value: 'recent',
+          },
         ],
         default: 'browse',
       },
@@ -137,10 +185,14 @@ export class SmartConversionMode {
 
   private async browseFiles(): Promise<string> {
     const { FileBrowser } = await import('./utils/file-browser');
-    const browser = new FileBrowser();
+    const browser = new FileBrowser(this.translationManager);
 
     try {
-      this.renderer.info(chalk.cyan('🔍 Opening file browser...'));
+      this.renderer.info(
+        chalk.cyan(
+          this.translationManager.t('smartConversion.openingFileBrowser'),
+        ),
+      );
       return await browser.browseDirectory();
     } catch (error) {
       if (error instanceof Error && error.message === 'BACK_TO_MAIN_MENU') {
@@ -149,7 +201,7 @@ export class SmartConversionMode {
       this.logger.error(`File browsing failed: ${error}`);
       this.renderer.warn(
         chalk.yellow(
-          '⚠️  File browser unavailable, falling back to manual entry',
+          this.translationManager.t('smartConversion.fileBrowserUnavailable'),
         ),
       );
       return this.enterFilePath();
@@ -161,9 +213,12 @@ export class SmartConversionMode {
     const { filePath } = await inquirer.default.prompt({
       type: 'input',
       name: 'filePath',
-      message: '✏️  Enter the full path to your Markdown file:',
+      message: this.translationManager.t('smartConversion.enterFilePath'),
       validate: (input: string) => {
-        if (!input.trim()) return 'Please enter a file path';
+        if (!input.trim())
+          return this.translationManager.t(
+            'smartConversion.pleaseEnterFilePath',
+          );
         return true;
       },
     });
@@ -176,13 +231,21 @@ export class SmartConversionMode {
       const recentFiles = await this.recentFilesManager.getRecentFiles();
 
       if (recentFiles.length === 0) {
-        this.renderer.warn(chalk.yellow('📋 No recent files found'));
+        this.renderer.warn(
+          chalk.yellow(
+            this.translationManager.t('smartConversion.recentFilesNotFound'),
+          ),
+        );
         return this.browseFiles();
       }
 
       const inquirer = await import('inquirer');
 
-      this.renderer.info(chalk.cyan('\n📋 Recent Files:'));
+      this.renderer.info(
+        chalk.cyan(
+          '\n' + this.translationManager.t('smartConversion.recentFiles'),
+        ),
+      );
       recentFiles.slice(0, 5).forEach((file, index) => {
         const displayPath = this.recentFilesManager.formatFilePath(file.path);
         const size = this.recentFilesManager.formatFileSize(file.size);
@@ -202,14 +265,16 @@ export class SmartConversionMode {
 
       // Add option to browse for other files
       choices.push({
-        name: chalk.blue('🔍 Browse for other files...'),
+        name: chalk.blue(
+          this.translationManager.t('smartConversion.browseOtherFiles'),
+        ),
         value: '__browse__',
       });
 
       const { filePath } = await inquirer.default.prompt({
         type: 'list',
         name: 'filePath',
-        message: '📋 Select a recent file:',
+        message: this.translationManager.t('smartConversion.selectRecentFile'),
         choices,
         pageSize: 8,
       });
@@ -219,7 +284,9 @@ export class SmartConversionMode {
       return filePath;
     } catch (error) {
       this.renderer.warn(
-        chalk.yellow('⚠️  Error loading recent files, using file browser'),
+        chalk.yellow(
+          this.translationManager.t('smartConversion.recentFilesError'),
+        ),
       );
       this.logger.warn(`Recent files error: ${error}`);
       return this.browseFiles();
@@ -228,61 +295,82 @@ export class SmartConversionMode {
 
   private displayAnalysisResults(analysis: ContentAnalysis): void {
     this.renderer.newline();
+
+    const title = this.translationManager.t('smartConversion.analysisResults');
+    const titleWidth = title.length + 4;
+    const border = '─'.repeat(titleWidth - 2);
+
+    this.renderer.info(chalk.green(`┌${border}┐`));
     this.renderer.info(
-      chalk.green('┌─────────────────────────────────────────┐'),
+      chalk.green(
+        `│${title.padStart((titleWidth + title.length - 2) / 2).padEnd(titleWidth - 2)}│`,
+      ),
     );
+    this.renderer.info(chalk.green(`└${border}┘`));
     this.renderer.info(
-      chalk.green('│        📊 Content Analysis Results      │'),
-    );
-    this.renderer.info(
-      chalk.green('└─────────────────────────────────────────┘'),
-    );
-    this.renderer.info(
-      chalk.cyan(`   📄 Words: ${analysis.wordCount.toLocaleString()}`),
-    );
-    this.renderer.info(
-      chalk.cyan(`   📖 Estimated pages: ${analysis.estimatedPages}`),
-    );
-    this.renderer.info(
-      chalk.cyan(`   ⏱️  Reading time: ${analysis.readingTime} minutes`),
+      chalk.cyan(
+        `   ${this.translationManager.t('smartConversion.words')}: ${analysis.wordCount.toLocaleString()}`,
+      ),
     );
     this.renderer.info(
       chalk.cyan(
-        `   📝 Headings: ${analysis.headingStructure.totalHeadings} (max depth: ${
+        `   ${this.translationManager.t('smartConversion.estimatedPages')}: ${analysis.estimatedPages}`,
+      ),
+    );
+    this.renderer.info(
+      chalk.cyan(
+        `   ${this.translationManager.t('smartConversion.readingTime')}: ${analysis.readingTime} ${this.translationManager.t('smartConversion.minutes')}`,
+      ),
+    );
+    this.renderer.info(
+      chalk.cyan(
+        `   ${this.translationManager.t('smartConversion.headings')}: ${analysis.headingStructure.totalHeadings} (${this.translationManager.t('smartConversion.maxDepth')}: ${
           analysis.headingStructure.maxDepth
         })`,
       ),
     );
     this.renderer.info(
       chalk.cyan(
-        `   🌐 Language: ${this.getLanguageDisplay(analysis.languageDetection.primary)}`,
+        `   ${this.translationManager.t('smartConversion.language')}: ${this.getLanguageDisplay(analysis.languageDetection.primary)}`,
       ),
     );
 
     if (analysis.codeBlocks.length > 0) {
       this.renderer.info(
-        chalk.cyan(`   💻 Code blocks: ${analysis.codeBlocks.length}`),
+        chalk.cyan(
+          `   ${this.translationManager.t('smartConversion.codeBlocks')}: ${analysis.codeBlocks.length}`,
+        ),
       );
     }
 
     if (analysis.tables.length > 0) {
-      this.renderer.info(chalk.cyan(`   📊 Tables: ${analysis.tables.length}`));
+      this.renderer.info(
+        chalk.cyan(
+          `   ${this.translationManager.t('smartConversion.tables')}: ${analysis.tables.length}`,
+        ),
+      );
     }
 
     if (analysis.mediaElements.images > 0) {
-      this.renderer.info(`   🖼️  Images: ${analysis.mediaElements.images}`);
+      this.renderer.info(
+        `   ${this.translationManager.t('smartConversion.images')}: ${analysis.mediaElements.images}`,
+      );
     }
 
     this.renderer.info(
-      `   🤖 Document type: ${this.getDocumentTypeDisplay(analysis.contentComplexity.documentType)}`,
+      `   ${this.translationManager.t('smartConversion.documentType')}: ${this.getDocumentTypeDisplay(analysis.contentComplexity.documentType)}`,
     );
     this.renderer.info(
-      `   📈 Complexity: ${analysis.contentComplexity.score}/10`,
+      `   ${this.translationManager.t('smartConversion.complexity')}: ${analysis.contentComplexity.score}/10`,
     );
 
     // Show additional insights
     if (analysis.contentComplexity.factors.length > 0) {
-      this.renderer.info(chalk.cyan('   📊 Content characteristics:'));
+      this.renderer.info(
+        chalk.cyan(
+          `   ${this.translationManager.t('smartConversion.contentCharacteristics')}:`,
+        ),
+      );
       analysis.contentComplexity.factors.forEach((factor) => {
         this.renderer.info(`      • ${factor.description}`);
       });
@@ -306,24 +394,30 @@ export class SmartConversionMode {
     const choices: ConversionChoice[] = [
       {
         type: 'quick',
-        name: `Quick Conversion - "${quickConfig.name}"`,
+        name: `${this.translationManager.t('smartConversion.quickConversion')} - "${quickConfig.name}"`,
         description: quickConfig.description,
         config: quickConfig,
       },
       {
         type: 'smart',
-        name: 'Smart Recommendations (Recommended)',
-        description: `Custom configuration with ${(smartConfig.confidence * 100).toFixed(1)}% confidence`,
+        name: this.translationManager.t('smartConversion.smartRecommendations'),
+        description: `${this.translationManager.t('smartConversion.customConfiguration')} ${(smartConfig.confidence * 100).toFixed(1)}% ${this.translationManager.t('smartConversion.confidence')}`,
         config: smartConfig,
       },
       {
         type: 'custom',
-        name: 'Choose from Presets',
-        description: 'Select from predefined configurations',
+        name: this.translationManager.t('smartConversion.chooseFromPresets'),
+        description: this.translationManager.t(
+          'smartConversion.predefinedConfigurations',
+        ),
       },
     ];
 
-    this.renderer.info(chalk.cyan('🎛️  Available Conversion Options:\n'));
+    this.renderer.info(
+      chalk.cyan(
+        this.translationManager.t('smartConversion.conversionOptions') + '\n',
+      ),
+    );
 
     for (let i = 0; i < choices.length; i++) {
       const choice = choices[i];
@@ -332,7 +426,7 @@ export class SmartConversionMode {
 
       if (choice.config && choice.type !== 'custom') {
         this.renderer.info(
-          `   ${chalk.dim('⏱️  Estimated time: ~' + this.getEstimatedTime(choice.config) + ' seconds')}`,
+          `   ${chalk.dim(`⏱️  ${this.translationManager.t('smartConversion.estimatedTime')}: ~` + this.getEstimatedTime(choice.config) + ` ${this.translationManager.t('smartConversion.seconds')}`)}`,
         );
       }
       this.renderer.newline();
@@ -341,7 +435,9 @@ export class SmartConversionMode {
     const { selectedIndex } = await inquirer.default.prompt({
       type: 'list',
       name: 'selectedIndex',
-      message: '🎛️  Which conversion method would you like to use?',
+      message: this.translationManager.t(
+        'smartConversion.whichConversionMethod',
+      ),
       choices: choices.map((choice, index) => ({
         name: choice.name,
         value: index,
@@ -355,7 +451,9 @@ export class SmartConversionMode {
       const { presetName } = await inquirer.default.prompt({
         type: 'list',
         name: 'presetName',
-        message: '🔧 Select a preset configuration:',
+        message: this.translationManager.t(
+          'smartConversion.selectPresetConfiguration',
+        ),
         choices: presetConfigs.map((preset) => ({
           name: `${preset.name} - ${preset.description}`,
           value: preset.name,
@@ -381,16 +479,24 @@ export class SmartConversionMode {
   ): Promise<void> {
     const inquirer = await import('inquirer');
 
-    this.renderer.info(chalk.cyan('\n📋 Conversion Summary:'));
-    this.renderer.info(`   📁 Input: ${filePath}`);
-    this.renderer.info(`   🔧  Configuration: ${choice.name}`);
+    this.renderer.info(
+      chalk.cyan(
+        '\n' + this.translationManager.t('smartConversion.conversionSummary'),
+      ),
+    );
+    this.renderer.info(
+      `   ${this.translationManager.t('smartConversion.input')}: ${filePath}`,
+    );
+    this.renderer.info(
+      `   ${this.translationManager.t('smartConversion.configuration')}: ${choice.name}`,
+    );
     this.renderer.info(
       `   📄 ${analysis.wordCount.toLocaleString()} words → ${analysis.estimatedPages} pages (estimated)`,
     );
 
     if (choice.config) {
       this.renderer.info(
-        `   ⏱️  Estimated time: ~${this.getEstimatedTime(choice.config)} seconds`,
+        `   ⏱️  ${this.translationManager.t('smartConversion.estimatedTime')}: ~${this.getEstimatedTime(choice.config)} ${this.translationManager.t('smartConversion.seconds')}`,
       );
     }
 
@@ -401,24 +507,32 @@ export class SmartConversionMode {
       {
         type: 'input',
         name: 'finalOutputPath',
-        message: '📤 Output file path:',
+        message: this.translationManager.t('smartConversion.outputFilePath'),
         default: outputPath,
       },
       {
         type: 'confirm',
         name: 'confirmed',
-        message: '🚀 Start conversion?',
+        message: this.translationManager.t('smartConversion.startConversion'),
         default: true,
       },
     ]);
 
     if (!confirmed) {
-      this.renderer.warn(chalk.yellow('❌ Conversion cancelled'));
+      this.renderer.warn(
+        chalk.yellow(
+          this.translationManager.t('smartConversion.conversionCancelled'),
+        ),
+      );
       return;
     }
 
     // Actual conversion logic
-    this.renderer.info(chalk.green('\n🚀 Starting conversion...'));
+    this.renderer.info(
+      chalk.green(
+        '\n' + this.translationManager.t('smartConversion.startingConversion'),
+      ),
+    );
 
     try {
       const startTime = Date.now();
@@ -452,54 +566,62 @@ export class SmartConversionMode {
       }
 
       this.renderer.info(
-        chalk.green(`\n✅ Conversion completed successfully in ${duration}s!`),
+        chalk.green(
+          `\n${this.translationManager.t('smartConversion.conversionCompleted')} in ${duration}s!`,
+        ),
       );
-      this.renderer.info(chalk.gray(`📤 Output: ${finalOutputPath}`));
+      this.renderer.info(
+        chalk.gray(
+          `${this.translationManager.t('smartConversion.output')}: ${finalOutputPath}`,
+        ),
+      );
 
       if (outputStats) {
         const fileSizeKB = (outputStats.size / 1024).toFixed(1);
-        this.renderer.info(chalk.gray(`📊 File size: ${fileSizeKB} KB`));
+        this.renderer.info(
+          chalk.gray(
+            `${this.translationManager.t('smartConversion.fileSize')}: ${fileSizeKB} KB`,
+          ),
+        );
       }
 
       // Add to recent files
       await this.addToRecentFiles(filePath);
 
       // Show next steps
-      this.renderer.info(chalk.cyan('\n💡 Next steps:'));
-      this.renderer.info(`   • Open the PDF: ${chalk.white(finalOutputPath)}`);
-      this.renderer.info(`   • Convert another file: Return to Main Menu`);
+      this.renderer.info(
+        chalk.cyan(
+          '\n' + this.translationManager.t('smartConversion.nextSteps'),
+        ),
+      );
+      this.renderer.info(
+        `   ${this.translationManager.t('smartConversion.openPdf')} ${chalk.white(finalOutputPath)}`,
+      );
+      this.renderer.info(
+        `   ${this.translationManager.t('smartConversion.convertAnother')}`,
+      );
       this.renderer.newline();
     } catch (error) {
-      this.renderer.error(chalk.red(`\n❌ Conversion failed: ${error}`));
+      this.renderer.error(
+        chalk.red(
+          `\n${this.translationManager.t('smartConversion.conversionFailed')}: ${error}`,
+        ),
+      );
       this.logger.error('Smart conversion failed', error);
       throw error;
     }
   }
 
   private getLanguageDisplay(lang: string): string {
-    const langMap: Record<string, string> = {
-      'zh-TW': '🇹🇼 Traditional Chinese',
-      'zh-CN': '🇨🇳 Simplified Chinese',
-      en: '🇺🇸 English',
-      mixed: '🌐 Mixed Languages',
-    };
-    return langMap[lang] || lang;
+    const translationKey = `smartConversion.languageDisplay.${lang}`;
+    const display = this.translationManager.t(translationKey);
+    return display !== translationKey ? display : lang;
   }
 
   private getDocumentTypeDisplay(type: string): string {
-    const typeMap: Record<string, string> = {
-      'technical-manual': '🔧 Technical Manual',
-      'academic-paper': '🎓 Academic Paper',
-      'business-report': '💼 Business Report',
-      documentation: '📚 Documentation',
-      tutorial: '📖 Tutorial',
-      article: '📰 Article',
-      book: '📕 Book',
-      notes: '📝 Notes',
-      presentation: '📊 Presentation',
-      mixed: '🎭 Mixed Content',
-    };
-    return typeMap[type] || type;
+    const translationKey = `smartConversion.documentTypeDisplay.${type}`;
+    const display = this.translationManager.t(translationKey);
+    return display !== translationKey ? display : type;
   }
 
   private getEstimatedTime(config: QuickConfig | RecommendedConfig): number {
@@ -634,7 +756,9 @@ export class SmartConversionMode {
     let frameIndex = 0;
 
     return setInterval(() => {
-      process.stdout.write(`\r${chalk.cyan(frames[frameIndex])} Converting...`);
+      process.stdout.write(
+        `\r${chalk.cyan(frames[frameIndex])} ${this.translationManager.t('smartConversion.converting')}`,
+      );
       frameIndex = (frameIndex + 1) % frames.length;
     }, 100);
   }
@@ -659,9 +783,12 @@ export class SmartConversionMode {
         const { filePath } = await inquirer.default.prompt({
           type: 'input',
           name: 'filePath',
-          message: '✏️  Enter the full path to your Markdown file:',
+          message: this.translationManager.t('smartConversion.enterFilePath'),
           validate: (input: string) => {
-            if (!input.trim()) return 'Please enter a file path';
+            if (!input.trim())
+              return this.translationManager.t(
+                'smartConversion.pleaseEnterFilePath',
+              );
             return true;
           },
         });
@@ -673,20 +800,38 @@ export class SmartConversionMode {
         }
 
         this.renderer.error(
-          chalk.red('❌ Invalid Markdown file path. Please check:'),
+          chalk.red(
+            this.translationManager.t('smartConversion.invalidMarkdownFile'),
+          ),
         );
-        this.renderer.error(chalk.red('   • File exists'));
         this.renderer.error(
-          chalk.red('   • File has .md, .markdown, .mdown, or .mkd extension'),
+          chalk.red(
+            `   ${this.translationManager.t('smartConversion.fileExists')}`,
+          ),
+        );
+        this.renderer.error(
+          chalk.red(
+            `   ${this.translationManager.t('smartConversion.validExtension')}`,
+          ),
         );
 
         const { action } = await inquirer.default.prompt({
           type: 'list',
           name: 'action',
-          message: 'What would you like to do?',
+          message: this.translationManager.t('smartConversion.whatToDo'),
           choices: [
-            { name: '✏️  Try entering a different file path', value: 'retry' },
-            { name: '↩️  Return to previous menu', value: 'back' },
+            {
+              name: this.translationManager.t(
+                'smartConversion.tryDifferentPath',
+              ),
+              value: 'retry',
+            },
+            {
+              name: this.translationManager.t(
+                'smartConversion.returnToPrevious',
+              ),
+              value: 'back',
+            },
           ],
         });
 
@@ -698,7 +843,11 @@ export class SmartConversionMode {
         if (error instanceof Error && error.message === 'USER_CANCELLED') {
           throw error;
         }
-        this.renderer.error(chalk.red(`❌ Error: ${error}`));
+        this.renderer.error(
+          chalk.red(
+            `${this.translationManager.t('smartConversion.error')}: ${error}`,
+          ),
+        );
         throw new Error('USER_CANCELLED');
       }
     }

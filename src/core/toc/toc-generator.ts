@@ -1,6 +1,16 @@
 /**
- * TOC Generator
- * Generates table of contents from Markdown headings
+ * TOC Genexport class TOCGenerator {
+  private options: Required<TOCGeneratorOptions>;
+  private translator: ITranslationManager | undefined;
+
+  constructor(options: TOCGeneratorOptions, translator?: ITranslationManager) {
+    // Validate maxDepth first
+    const maxDepth = options.maxDepth || 3;
+    if (maxDepth < 1 || maxDepth > 6) {
+      throw new Error('TOC maxDepth must be between 1 and 6');
+    }
+
+    this.translator = translator;nerates table of contents from Markdown headings
  */
 
 import { Heading } from '../../types/index';
@@ -12,16 +22,20 @@ import {
   TOCItemNested,
 } from './types';
 
+import type { ITranslationManager } from '../../infrastructure/i18n/types';
+
 export class TOCGenerator {
   private options: Required<TOCGeneratorOptions>;
+  private translator: ITranslationManager | undefined;
 
-  constructor(options: TOCGeneratorOptions) {
+  constructor(options: TOCGeneratorOptions, translator?: ITranslationManager) {
     // Validate maxDepth first
     const maxDepth = options.maxDepth;
     if (maxDepth < 1 || maxDepth > 6) {
       throw new Error('TOC maxDepth must be between 1 and 6');
     }
 
+    this.translator = translator;
     this.options = {
       maxDepth,
       includePageNumbers: options.includePageNumbers || false,
@@ -136,11 +150,26 @@ export class TOCGenerator {
     const { cssClasses } = this.options;
     const listHtml = this.generateListHTML(tree, cssClasses);
 
+    // Get localized TOC title
+    const tocTitle = this.getTOCTitle();
+
     return `
 <div class="${cssClasses.container}">
-  <h2 class="${cssClasses.title}">目錄</h2>
+  <h2 class="${cssClasses.title}">${tocTitle}</h2>
   ${listHtml}
 </div>`.trim();
+  }
+
+  /**
+   * Get localized TOC title
+   */
+  private getTOCTitle(): string {
+    if (this.translator) {
+      return this.translator.t('pdfContent.tocTitle');
+    }
+
+    // Fallback to English if no translator is available
+    return 'Table of Contents';
   }
 
   /**

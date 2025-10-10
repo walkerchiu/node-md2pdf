@@ -14,6 +14,7 @@ import { BatchProgressUI } from './batch-progress-ui';
 
 import type { IBatchProcessorService } from '../../application/services/batch-processor.service';
 import type { IErrorHandler } from '../../infrastructure/error/types';
+import type { ITranslationManager } from '../../infrastructure/i18n/types';
 import type { ILogger } from '../../infrastructure/logging/types';
 import type { ServiceContainer } from '../../shared/container';
 
@@ -25,16 +26,20 @@ type InquirerModule = typeof import('inquirer');
 export class BatchInteractiveMode {
   private logger: ILogger;
   private errorHandler: IErrorHandler;
+  private translationManager: ITranslationManager;
   private batchProcessorService: IBatchProcessorService;
-  private progressUI = new BatchProgressUI();
+  private progressUI: BatchProgressUI;
   private renderer = new CliRenderer();
 
   constructor(container: ServiceContainer) {
     this.logger = container.resolve<ILogger>('logger');
     this.errorHandler = container.resolve<IErrorHandler>('errorHandler');
+    this.translationManager =
+      container.resolve<ITranslationManager>('translator');
     this.batchProcessorService = container.resolve<IBatchProcessorService>(
       APPLICATION_SERVICE_NAMES.BATCH_PROCESSOR,
     );
+    this.progressUI = new BatchProgressUI(this.translationManager);
   }
 
   /**
@@ -47,13 +52,13 @@ export class BatchInteractiveMode {
       // Show Batch Processing header with framework
       this.renderer.header([
         '┌─────────────────────────────────────────┐',
-        '│        📚 Batch Processing Mode         │',
+        `│        ${this.translationManager.t('batch.title')}         │`,
         '├─────────────────────────────────────────┤',
-        '│  Convert multiple files efficiently!    │',
+        `│  ${this.translationManager.t('batch.subtitle')}    │`,
         '│                                         │',
-        '│  Step 1: Select Files                   │',
-        '│  Step 2: Configure Settings             │',
-        '│  Step 3: Process & Monitor              │',
+        `│  ${this.translationManager.t('batch.step1')}                   │`,
+        `│  ${this.translationManager.t('batch.step2')}             │`,
+        `│  ${this.translationManager.t('batch.step3')}              │`,
         '└─────────────────────────────────────────┘',
       ]);
       this.renderer.newline();
@@ -68,8 +73,14 @@ export class BatchInteractiveMode {
       const confirmed = await this.finalConfirmation(config, files);
       if (!confirmed) {
         this.logger.info('User cancelled batch processing');
-        console.log('❌ Batch processing cancelled');
-        this.logger.warn(chalk.yellow('❌ Batch processing cancelled'));
+        console.log(
+          this.translationManager.t('batch.batchProcessingCancelled'),
+        );
+        this.logger.warn(
+          chalk.yellow(
+            this.translationManager.t('batch.batchProcessingCancelled'),
+          ),
+        );
         return;
       }
       // Step 5: Process batch
@@ -80,8 +91,14 @@ export class BatchInteractiveMode {
         error as Error,
         'BatchInteractiveMode.start',
       );
-      this.logger.error(chalk.red('❌ Batch mode error:'), error as Error);
-      console.error(chalk.red('❌ Batch mode error:'), error as Error);
+      this.logger.error(
+        chalk.red(this.translationManager.t('batch.batchModeError')),
+        error as Error,
+      );
+      console.error(
+        chalk.red(this.translationManager.t('batch.batchModeError')),
+        error as Error,
+      );
       throw error;
     } finally {
       this.progressUI.stop();
@@ -103,22 +120,22 @@ export class BatchInteractiveMode {
         type: 'input',
         name: 'inputPattern',
         message:
-          'Enter input pattern:\n' +
-          '  • Glob patterns: *.md, docs/**/*.md\n' +
-          '  • Multiple files: file1.md, file2.md (or "file1.md", "file2.md")\n' +
-          '  • Directory: docs\n' +
-          'Pattern:',
-        default: '*.md',
+          this.translationManager.t('batch.enterInputPattern') +
+          '\n' +
+          this.translationManager.t('batch.patternHints'),
+        default: this.translationManager.t('batch.patternPlaceholder'),
         validate: (input: string): boolean | string => {
           if (!input.trim()) {
-            return 'Please enter an input pattern';
+            return this.translationManager.t('batch.pleaseEnterPattern');
           }
           return true;
         },
       },
     ])) as { inputPattern: string };
 
-    this.logger.info(chalk.cyan('\n🔍 Searching for files...'));
+    this.logger.info(
+      chalk.cyan('\n' + this.translationManager.t('batch.searchingFiles')),
+    );
 
     // Step 2: Immediately search for files
     try {
@@ -163,11 +180,12 @@ export class BatchInteractiveMode {
         inputPath: path.resolve(filePath),
       }));
       // Print file list directly to stdout to avoid logger timestamps
-      FileSearchUI.displayFiles(files.map((f) => f.inputPath));
+      const searchUI = new FileSearchUI(this.translationManager);
+      searchUI.displayFiles(files.map((f) => f.inputPath));
 
       if (files.length === 0) {
         this.logger.warn(
-          chalk.yellow('\n⚠️  No Markdown files found matching the pattern.'),
+          chalk.yellow('\n' + this.translationManager.t('batch.noFilesFound')),
         );
         throw new Error('No files found');
       }
@@ -177,17 +195,25 @@ export class BatchInteractiveMode {
         {
           type: 'confirm',
           name: 'confirmFiles',
-          message: `Proceed with these ${files.length} files?`,
+          message: this.translationManager.t('batch.proceedWithFiles', {
+            count: files.length,
+          }),
           default: true,
         },
       ])) as { confirmFiles: boolean };
       if (!confirmFiles) {
-        this.logger.warn(chalk.yellow('❌ File selection cancelled'));
+        this.logger.warn(
+          chalk.yellow(
+            this.translationManager.t('batch.fileSelectionCancelled'),
+          ),
+        );
         process.exit(0);
       }
       return { inputPattern, files };
     } catch (error) {
-      this.logger.error(chalk.red('❌ Error searching for files:'));
+      this.logger.error(
+        chalk.red(this.translationManager.t('batch.errorSearchingFiles')),
+      );
       this.logger.error(
         chalk.red(
           `   ${error instanceof Error ? error.message : String(error)}`,
@@ -199,7 +225,7 @@ export class BatchInteractiveMode {
         {
           type: 'confirm',
           name: 'tryAgain',
-          message: 'Would you like to try a different pattern?',
+          message: this.translationManager.t('batch.tryDifferentPattern'),
           default: true,
         },
       ])) as { tryAgain: boolean };
@@ -220,19 +246,27 @@ export class BatchInteractiveMode {
   ): Promise<BatchConversionConfig> {
     const inquirer = (await import('inquirer')) as InquirerModule;
 
-    console.log(chalk.cyan('\n🔧  Configuration Options'));
-    console.log(chalk.gray('Configure how your files will be processed'));
+    console.log(
+      chalk.cyan(
+        '\n' + this.translationManager.t('batch.configurationOptions'),
+      ),
+    );
+    console.log(
+      chalk.gray(this.translationManager.t('batch.configurationSubtitle')),
+    );
     console.log();
 
     const answers = (await inquirer.default.prompt([
       {
         type: 'input',
         name: 'outputDirectory',
-        message: 'Enter output directory:',
+        message: this.translationManager.t('batch.enterOutputDirectory'),
         default: './output',
         validate: (input: string): boolean | string => {
           if (!input.trim()) {
-            return 'Please enter an output directory';
+            return this.translationManager.t(
+              'batch.pleaseEnterOutputDirectory',
+            );
           }
           return true;
         },
@@ -240,41 +274,45 @@ export class BatchInteractiveMode {
       {
         type: 'confirm',
         name: 'preserveDirectoryStructure',
-        message: 'Preserve original directory structure in output?',
+        message: this.translationManager.t('batch.preserveDirectoryStructure'),
         default: true,
       },
       {
         type: 'list',
         name: 'filenameFormat',
-        message: 'Select output filename format:',
+        message: this.translationManager.t('batch.selectFilenameFormat'),
         choices: [
           {
-            name: '1. Original filename (example.pdf)',
+            name: this.translationManager.t('batch.filenameFormats.original'),
             value: BatchFilenameFormat.ORIGINAL,
           },
           {
-            name: '2. With timestamp (example_1234567890.pdf)',
+            name: this.translationManager.t(
+              'batch.filenameFormats.withTimestamp',
+            ),
             value: BatchFilenameFormat.WITH_TIMESTAMP,
           },
           {
-            name: '3. With date (example_2024-01-15.pdf)',
+            name: this.translationManager.t('batch.filenameFormats.withDate'),
             value: BatchFilenameFormat.WITH_DATE,
           },
-          { name: '4. Custom pattern', value: BatchFilenameFormat.CUSTOM },
+          {
+            name: this.translationManager.t('batch.filenameFormats.custom'),
+            value: BatchFilenameFormat.CUSTOM,
+          },
         ],
         default: BatchFilenameFormat.ORIGINAL,
       },
       {
         type: 'input',
         name: 'customFilenamePattern',
-        message:
-          'Enter custom filename pattern (use {name}, {timestamp}, {date}):',
-        default: '{name}_{date}.pdf',
+        message: this.translationManager.t('batch.enterCustomPattern'),
+        default: this.translationManager.t('batch.customPatternPlaceholder'),
         when: (answers: { filenameFormat: BatchFilenameFormat }) =>
           answers.filenameFormat === BatchFilenameFormat.CUSTOM,
         validate: (input: string): boolean | string => {
           if (!input.includes('{name}')) {
-            return 'Pattern must include {name} placeholder';
+            return this.translationManager.t('batch.patternMustIncludeName');
           }
           return true;
         },
@@ -282,47 +320,63 @@ export class BatchInteractiveMode {
       {
         type: 'list',
         name: 'tocDepth',
-        message: 'Select table of contents depth:',
+        message: this.translationManager.t('batch.selectTocDepth'),
         choices: [
-          { name: '1. 1 level (H1 only)', value: 1 },
-          { name: '2. 2 levels (H1-H2)', value: 2 },
-          { name: '3. 3 levels (H1-H3)', value: 3 },
-          { name: '4. 4 levels (H1-H4)', value: 4 },
-          { name: '5. 5 levels (H1-H5)', value: 5 },
-          { name: '6. 6 levels (H1-H6)', value: 6 },
+          { name: this.translationManager.t('batch.tocLevels.1'), value: 1 },
+          { name: this.translationManager.t('batch.tocLevels.2'), value: 2 },
+          { name: this.translationManager.t('batch.tocLevels.3'), value: 3 },
+          { name: this.translationManager.t('batch.tocLevels.4'), value: 4 },
+          { name: this.translationManager.t('batch.tocLevels.5'), value: 5 },
+          { name: this.translationManager.t('batch.tocLevels.6'), value: 6 },
         ],
         default: 2,
       },
       {
         type: 'confirm',
         name: 'includePageNumbers',
-        message: 'Include page numbers?',
+        message: this.translationManager.t('batch.includePageNumbers'),
         default: true,
       },
       {
         type: 'confirm',
         name: 'chineseFontSupport',
-        message:
-          'Enable Chinese font support? (Choose "No" for faster processing and smaller file size when document contains only English text)',
+        message: this.translationManager.t('batch.chineseFontSupport'),
         default: true,
       },
       {
         type: 'list',
         name: 'maxConcurrentProcesses',
-        message: 'Select maximum concurrent processes:',
+        message: this.translationManager.t(
+          'batch.selectMaxConcurrentProcesses',
+        ),
         choices: [
-          { name: '1. 1 (Sequential)', value: 1 },
-          { name: '2. 2 (Recommended for most systems)', value: 2 },
-          { name: '3. 3', value: 3 },
-          { name: '4. 4', value: 4 },
-          { name: '5. 5 (High-end systems only)', value: 5 },
+          {
+            name: this.translationManager.t('batch.concurrentOptions.1'),
+            value: 1,
+          },
+          {
+            name: this.translationManager.t('batch.concurrentOptions.2'),
+            value: 2,
+          },
+          {
+            name: this.translationManager.t('batch.concurrentOptions.3'),
+            value: 3,
+          },
+          {
+            name: this.translationManager.t('batch.concurrentOptions.4'),
+            value: 4,
+          },
+          {
+            name: this.translationManager.t('batch.concurrentOptions.5'),
+            value: 5,
+          },
         ],
         default: 2,
       },
       {
         type: 'confirm',
         name: 'continueOnError',
-        message: 'Continue processing other files if one fails?',
+        message: this.translationManager.t('batch.continueOnError'),
         default: true,
       },
     ])) as {
@@ -361,9 +415,19 @@ export class BatchInteractiveMode {
     const inquirer = (await import('inquirer')) as InquirerModule;
 
     // Display configuration summary
-    console.log(chalk.cyan('\n📋 Configuration Summary'));
+    console.log(
+      chalk.cyan(
+        '\n' + this.translationManager.t('batch.configurationSummary'),
+      ),
+    );
     console.log('────────────────────────────────────────────────────────────');
-    console.log(chalk.white(`📁 Files to process: ${files.length}`));
+    console.log(
+      chalk.white(
+        this.translationManager.t('batch.filesToProcess', {
+          count: files.length,
+        }),
+      ),
+    );
 
     const shortFileList = files.slice(0, 3).map((f: { inputPath: string }) => {
       const relativePath = f.inputPath.replace(process.cwd() + '/', './');
@@ -373,54 +437,100 @@ export class BatchInteractiveMode {
       shortFileList.forEach((file) => console.log(chalk.gray(`   • ${file}`)));
     } else {
       shortFileList.forEach((file) => console.log(chalk.gray(`   • ${file}`)));
-      console.log(chalk.gray(`   ... and ${files.length - 3} more files`));
+      console.log(
+        chalk.gray(
+          `   ${this.translationManager.t('batch.andMoreFiles', { count: files.length - 3 })}`,
+        ),
+      );
     }
 
-    console.log(chalk.white(`📂 Output directory: ${config.outputDirectory}`));
     console.log(
       chalk.white(
-        `📝 Filename format: ${
-          config.filenameFormat === 'original'
-            ? 'Keep original names'
-            : config.filenameFormat === 'with_date'
-              ? 'Add date suffix'
-              : config.filenameFormat === 'with_timestamp'
-                ? 'Add timestamp suffix'
-                : 'Custom format'
-        }`,
+        this.translationManager.t('batch.outputDirectory', {
+          directory: config.outputDirectory,
+        }),
+      ),
+    );
+
+    const formatDisplay =
+      config.filenameFormat === 'original'
+        ? this.translationManager.t('batch.filenameFormatOptions.original')
+        : config.filenameFormat === 'with_date'
+          ? this.translationManager.t('batch.filenameFormatOptions.with_date')
+          : config.filenameFormat === 'with_timestamp'
+            ? this.translationManager.t(
+                'batch.filenameFormatOptions.with_timestamp',
+              )
+            : this.translationManager.t('batch.filenameFormatOptions.custom');
+
+    console.log(
+      chalk.white(
+        this.translationManager.t('batch.filenameFormatSummary', {
+          format: formatDisplay,
+        }),
       ),
     );
     console.log(
       chalk.white(
-        `🗂️  Preserve structure: ${config.preserveDirectoryStructure ? 'Yes' : 'No'}`,
-      ),
-    );
-    console.log(chalk.white(`📖 Table of contents: ${config.tocDepth} levels`));
-    console.log(
-      chalk.white(
-        `📄 Page numbers: ${config.includePageNumbers ? 'Yes' : 'No'}`,
+        this.translationManager.t('batch.preserveStructure', {
+          preserve: config.preserveDirectoryStructure
+            ? this.translationManager.t('batch.yes')
+            : this.translationManager.t('batch.no'),
+        }),
       ),
     );
     console.log(
       chalk.white(
-        `🈳 Chinese support: ${config.chineseFontSupport ? 'Enabled' : 'Disabled'}`,
+        this.translationManager.t('batch.tableOfContents', {
+          depth: config.tocDepth,
+        }),
       ),
     );
     console.log(
-      chalk.white(`⚡ Concurrent processes: ${config.maxConcurrentProcesses}`),
+      chalk.white(
+        this.translationManager.t('batch.pageNumbers', {
+          include: config.includePageNumbers
+            ? this.translationManager.t('batch.yes')
+            : this.translationManager.t('batch.no'),
+        }),
+      ),
     );
     console.log(
       chalk.white(
-        `🔄 Continue on error: ${config.continueOnError ? 'Yes' : 'No'}`,
+        this.translationManager.t('batch.chineseSupport', {
+          enabled: config.chineseFontSupport
+            ? this.translationManager.t('batch.enabled')
+            : this.translationManager.t('batch.disabled'),
+        }),
+      ),
+    );
+    console.log(
+      chalk.white(
+        this.translationManager.t('batch.concurrentProcesses', {
+          count: config.maxConcurrentProcesses,
+        }),
+      ),
+    );
+    console.log(
+      chalk.white(
+        this.translationManager.t('batch.continueOnErrorSummary', {
+          continue: config.continueOnError
+            ? this.translationManager.t('batch.yes')
+            : this.translationManager.t('batch.no'),
+        }),
       ),
     );
     console.log('────────────────────────────────────────────────────────────');
-    console.log(chalk.yellow('\n⚠️  Final Confirmation:'));
-    console.log(chalk.gray('Batch processing will create multiple PDF files.'));
     console.log(
-      chalk.gray(
-        'This operation may take several minutes depending on file size and count.',
+      chalk.yellow(
+        '\n' + this.translationManager.t('batch.finalConfirmationWarning'),
       ),
+    );
+    console.log(
+      chalk.gray(this.translationManager.t('batch.finalConfirmationNote')),
+    );
+    console.log(
+      chalk.gray(this.translationManager.t('batch.processingTimeNote')),
     );
     console.log();
 
@@ -428,7 +538,7 @@ export class BatchInteractiveMode {
       {
         type: 'confirm',
         name: 'finalConfirm',
-        message: 'Start batch processing with the above configuration?',
+        message: this.translationManager.t('batch.startBatchProcessing'),
         default: false,
       },
     ])) as { finalConfirm: boolean };
@@ -440,7 +550,11 @@ export class BatchInteractiveMode {
    * Process the batch with progress tracking
    */
   private async processBatch(config: BatchConversionConfig): Promise<void> {
-    console.log(chalk.cyan('\n🚀 Starting batch processing...'));
+    console.log(
+      chalk.cyan(
+        '\n' + this.translationManager.t('batch.startingBatchProcessing'),
+      ),
+    );
 
     // Set up progress tracking
     const progressUI = this.progressUI;
@@ -448,7 +562,11 @@ export class BatchInteractiveMode {
 
     // Handle Ctrl+C for graceful cancellation
     const handleCancel = () => {
-      console.log(chalk.yellow('\n⚠️  Cancelling batch processing...'));
+      console.log(
+        chalk.yellow(
+          '\n' + this.translationManager.t('batch.cancellingBatchProcessing'),
+        ),
+      );
       abortController.abort();
     };
 
@@ -462,7 +580,7 @@ export class BatchInteractiveMode {
         tocOptions: {
           maxDepth: config.tocDepth,
           includePageNumbers: config.includePageNumbers,
-          title: '目錄',
+          title: this.translationManager.t('pdfContent.tocTitle'),
         },
         pdfOptions: {
           margin: {
@@ -502,11 +620,20 @@ export class BatchInteractiveMode {
       // Display final results
       progressUI.displayResults(result);
       if (result.success && result.failedFiles === 0) {
-        console.log(chalk.green('\n🎉 All files processed successfully!'));
+        console.log(
+          chalk.green(
+            '\n' +
+              this.translationManager.t('batch.allFilesProcessedSuccessfully'),
+          ),
+        );
       } else if (result.successfulFiles > 0) {
         console.log(
           chalk.yellow(
-            `\n⚠️  Processed ${result.successfulFiles} out of ${result.totalFiles} files successfully.`,
+            '\n' +
+              this.translationManager.t('batch.partiallyProcessed', {
+                successful: result.successfulFiles,
+                total: result.totalFiles,
+              }),
           ),
         );
         if (result.errors.length > 0) {
@@ -517,7 +644,9 @@ export class BatchInteractiveMode {
               {
                 type: 'confirm',
                 name: 'retry',
-                message: `${retryableErrors.length} files failed but can be retried. Retry failed files?`,
+                message: this.translationManager.t('batch.retryFailedFiles', {
+                  count: retryableErrors.length,
+                }),
                 default: false,
               },
             ])) as { retry: boolean };
@@ -530,18 +659,32 @@ export class BatchInteractiveMode {
           }
         }
       } else {
-        console.log(chalk.red('\n❌ No files were processed successfully.'));
+        console.log(
+          chalk.red('\n' + this.translationManager.t('batch.noFilesProcessed')),
+        );
         if (result.errors.length > 0) {
           console.log(
-            chalk.yellow('Please check the errors above and try again.'),
+            chalk.yellow(
+              this.translationManager.t('batch.checkErrorsAndRetry'),
+            ),
           );
         }
       }
     } catch (error) {
       if (abortController.signal.aborted) {
-        console.log(chalk.yellow('\n⚠️  Batch processing was cancelled.'));
+        console.log(
+          chalk.yellow(
+            '\n' +
+              this.translationManager.t('batch.batchProcessingCancelledByUser'),
+          ),
+        );
       } else {
-        console.error(chalk.red('\n❌ Batch processing failed:'), error);
+        console.error(
+          chalk.red(
+            '\n' + this.translationManager.t('batch.batchProcessingFailed'),
+          ),
+          error,
+        );
       }
     } finally {
       process.off('SIGINT', handleCancel);
@@ -557,7 +700,12 @@ export class BatchInteractiveMode {
     failedFiles: string[],
   ): Promise<void> {
     console.log(
-      chalk.cyan(`\n🔄 Retrying ${failedFiles.length} failed files...`),
+      chalk.cyan(
+        '\n' +
+          this.translationManager.t('batch.retryingFailedFiles', {
+            count: failedFiles.length,
+          }),
+      ),
     );
 
     // Create a new config for retry with only failed files
@@ -589,16 +737,22 @@ export class BatchInteractiveMode {
       if (result.successfulFiles > 0) {
         console.log(
           chalk.green(
-            `\n✅ Retry completed: ${result.successfulFiles} additional files processed.`,
+            '\n' +
+              this.translationManager.t('batch.retryCompleted', {
+                count: result.successfulFiles,
+              }),
           ),
         );
       } else {
         console.log(
-          chalk.red('\n❌ Retry failed: No additional files were processed.'),
+          chalk.red('\n' + this.translationManager.t('batch.retryFailed')),
         );
       }
     } catch (error) {
-      console.error(chalk.red('\n❌ Retry failed:'), error);
+      console.error(
+        chalk.red('\n' + this.translationManager.t('batch.retryError')),
+        error,
+      );
     }
   }
 }

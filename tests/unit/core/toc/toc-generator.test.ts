@@ -137,7 +137,9 @@ describe('TOCGenerator', () => {
       const result = tocGenerator.generateTOC(sampleHeadings.slice(0, 3)); // First 3 headings
 
       expect(result.html).toContain('<div class="toc-container">');
-      expect(result.html).toContain('<h2 class="toc-title">目錄</h2>');
+      expect(result.html).toContain(
+        '<h2 class="toc-title">Table of Contents</h2>',
+      );
       expect(result.html).toContain('<ul class="toc-list">');
       expect(result.html).toContain('<a href="#introduction"');
       expect(result.html).toContain('Introduction');

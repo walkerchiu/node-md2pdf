@@ -30,7 +30,7 @@ export class TranslationManager implements ITranslationManager {
       return options.defaultLocale;
     }
 
-    if (options.useEnvironmentLocale !== false) {
+    if (options.useEnvironmentLocale === true) {
       // Check environment variables
       const envLocale =
         process.env.MD2PDF_LOCALE || process.env.LANG || process.env.LANGUAGE;

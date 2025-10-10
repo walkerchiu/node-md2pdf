@@ -11,6 +11,7 @@ import { Heading } from '../../types/index';
 
 import type { IConfigManager } from '../../infrastructure/config/types';
 import type { IErrorHandler } from '../../infrastructure/error/types';
+import type { ITranslationManager } from '../../infrastructure/i18n/types';
 import type { ILogger } from '../../infrastructure/logging/types';
 
 export interface ITOCGeneratorService {
@@ -39,6 +40,7 @@ export class TOCGeneratorService implements ITOCGeneratorService {
     private readonly logger: ILogger,
     private readonly errorHandler: IErrorHandler,
     private readonly configManager: IConfigManager,
+    private readonly translationManager: ITranslationManager,
   ) {}
 
   private async initialize(): Promise<void> {
@@ -62,7 +64,7 @@ export class TOCGeneratorService implements ITOCGeneratorService {
         },
       }) as TOCGeneratorOptions;
 
-      this.tocGenerator = new TOCGenerator(tocConfig);
+      this.tocGenerator = new TOCGenerator(tocConfig, this.translationManager);
       this.pageEstimator = new PageEstimator();
 
       this.isInitialized = true;
@@ -103,7 +105,7 @@ export class TOCGeneratorService implements ITOCGeneratorService {
           ...options,
         } as TOCGeneratorOptions;
 
-        generator = new TOCGenerator(mergedOptions);
+        generator = new TOCGenerator(mergedOptions, this.translationManager);
       }
 
       const startTime = Date.now();
@@ -158,7 +160,7 @@ export class TOCGeneratorService implements ITOCGeneratorService {
         includePageNumbers: true,
       } as TOCGeneratorOptions;
 
-      const generator = new TOCGenerator(tocOptions);
+      const generator = new TOCGenerator(tocOptions, this.translationManager);
       const startTime = Date.now();
       const result = generator.generateTOCWithPageNumbers(
         headings,

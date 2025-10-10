@@ -3,6 +3,7 @@
  */
 
 import { FileBrowser } from '../../../../src/cli/utils/file-browser';
+import type { ITranslationManager } from '../../../../src/infrastructure/i18n/types';
 
 // Mock chalk
 jest.mock('chalk', () => ({
@@ -32,6 +33,7 @@ jest.mock('../../../../src/cli/ui/file-search-ui', () => ({
 
 describe('FileBrowser - Simple Tests', () => {
   let fileBrowser: FileBrowser;
+  let mockTranslator: jest.Mocked<ITranslationManager>;
 
   beforeEach(() => {
     jest.clearAllMocks();
@@ -41,7 +43,24 @@ describe('FileBrowser - Simple Tests', () => {
     jest.spyOn(console, 'warn').mockImplementation(() => {});
     jest.spyOn(console, 'error').mockImplementation(() => {});
 
-    fileBrowser = new FileBrowser();
+    // Create mock translator
+    mockTranslator = {
+      t: jest.fn((key: string, params?: Record<string, string | number>) => {
+        if (params && typeof params.count === 'number') {
+          return key.replace('{{count}}', params.count.toString());
+        }
+        return key;
+      }),
+      getCurrentLocale: jest.fn(() => 'en'),
+      setLocale: jest.fn(),
+      getSupportedLocales: jest.fn(() => ['en', 'zh-TW']),
+      translate: jest.fn(),
+      hasTranslation: jest.fn((_key: string, _locale?: any) => true),
+      loadTranslations: jest.fn(),
+      getTranslations: jest.fn(),
+    };
+
+    fileBrowser = new FileBrowser(mockTranslator);
   });
 
   afterEach(() => {
@@ -94,13 +113,13 @@ describe('FileBrowser - Simple Tests', () => {
       const twoWeeksAgo = new Date(today.getTime() - 14 * 24 * 60 * 60 * 1000);
       const lastMonth = new Date(today.getTime() - 32 * 24 * 60 * 60 * 1000);
 
-      expect(formatDate(today)).toBe('Today');
-      expect(formatDate(yesterday)).toBe('Yesterday');
-      expect(formatDate(fiveDaysAgo)).toContain('days ago');
-      expect(formatDate(lastWeek)).toBe('1 weeks ago');
-      expect(formatDate(twoWeeksAgo)).toBe('2 weeks ago');
+      expect(formatDate(today)).toBe('fileBrowser.today');
+      expect(formatDate(yesterday)).toBe('fileBrowser.yesterday');
+      expect(formatDate(fiveDaysAgo)).toBe('fileBrowser.daysAgo');
+      expect(formatDate(lastWeek)).toBe('fileBrowser.weeksAgo');
+      expect(formatDate(twoWeeksAgo)).toBe('fileBrowser.weeksAgo');
       expect(formatDate(lastMonth)).toMatch(/\d+\/\d+\/\d+/);
-      expect(formatDate(undefined)).toBe('Unknown');
+      expect(formatDate(undefined)).toBe('fileBrowser.unknown');
     });
 
     it('should sort items correctly by name ascending', () => {
@@ -457,7 +476,7 @@ describe('FileBrowser - Simple Tests', () => {
       ).toBe(true);
       expect(
         choices.some((choice: any) =>
-          choice.name.includes('and 10 other files'),
+          choice.name.includes('fileBrowser.andOtherFiles'),
         ),
       ).toBe(true);
     });
@@ -595,7 +614,7 @@ describe('FileBrowser - Simple Tests', () => {
   describe('error handling scenarios', () => {
     it('should handle missing CliRenderer gracefully', () => {
       // Test that even if renderer is undefined, the class doesn't crash
-      const instance = new FileBrowser();
+      const instance = new FileBrowser(mockTranslator);
       expect(instance).toBeInstanceOf(FileBrowser);
 
       // Access private renderer to ensure it exists

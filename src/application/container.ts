@@ -97,6 +97,7 @@ export class ApplicationServices {
           c.resolve('logger'),
           c.resolve('errorHandler'),
           c.resolve('config'),
+          c.resolve('translator'),
         ),
     );
 

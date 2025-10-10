@@ -4,6 +4,7 @@
 
 import { SmartConversionMode } from '../../../src/cli/smart-conversion-mode';
 import type { ServiceContainer } from '../../../src/shared/container';
+import { createMockTranslator } from '../helpers/mock-translator';
 
 // Mock inquirer
 const mockPrompt = jest.fn();
@@ -49,6 +50,7 @@ describe('SmartConversionMode', () => {
   let smartConversionMode: SmartConversionMode;
   let mockContainer: ServiceContainer;
   let mockLogger: any;
+  let mockTranslationManager: any;
   let mockSmartDefaultsService: any;
   let mockFileProcessorService: any;
   let mockAnalysis: any;
@@ -97,6 +99,8 @@ describe('SmartConversionMode', () => {
       debug: jest.fn(),
     };
 
+    mockTranslationManager = createMockTranslator();
+
     mockSmartDefaultsService = {
       analyzeContent: jest.fn().mockResolvedValue(mockAnalysis),
       getQuickConversionConfig: jest.fn().mockResolvedValue({
@@ -131,6 +135,8 @@ describe('SmartConversionMode', () => {
         switch (key) {
           case 'logger':
             return mockLogger;
+          case 'translator':
+            return mockTranslationManager;
           case 'smartDefaults':
             return mockSmartDefaultsService;
           case 'fileProcessor':
@@ -178,10 +184,10 @@ describe('SmartConversionMode', () => {
         testFilePath,
       );
       expect(console.log).toHaveBeenCalledWith(
-        expect.stringContaining('Smart Conversion Mode'),
+        expect.stringContaining('smartConversion.title'),
       );
       expect(console.log).toHaveBeenCalledWith(
-        expect.stringContaining('Content Analysis Results'),
+        expect.stringContaining('smartConversion.analysisResults'),
       );
     });
 
@@ -199,7 +205,7 @@ describe('SmartConversionMode', () => {
 
       expect(mockFileProcessorService.processFile).not.toHaveBeenCalled();
       expect(console.warn).toHaveBeenCalledWith(
-        expect.stringContaining('Conversion cancelled'),
+        expect.stringContaining('smartConversion.conversionCancelled'),
       );
     });
 
@@ -219,7 +225,7 @@ describe('SmartConversionMode', () => {
       expect(mockPrompt).toHaveBeenCalledWith([
         expect.objectContaining({
           message: expect.stringContaining(
-            'How would you like to select a file?',
+            'smartConversion.fileSelectionPrompt',
           ),
         }),
       ]);
@@ -249,7 +255,7 @@ describe('SmartConversionMode', () => {
 
       expect(mockBrowseDirectory).toHaveBeenCalled();
       expect(console.log).toHaveBeenCalledWith(
-        expect.stringContaining('Returning to main menu'),
+        expect.stringContaining('smartConversion.returningToMainMenu'),
       );
     });
 
@@ -275,7 +281,7 @@ describe('SmartConversionMode', () => {
       );
 
       expect(console.log).toHaveBeenCalledWith(
-        expect.stringContaining('Conversion completed successfully'),
+        expect.stringContaining('smartConversion.conversionCompleted'),
       );
     });
 
@@ -292,15 +298,13 @@ describe('SmartConversionMode', () => {
       await smartConversionMode.start(testFilePath);
 
       expect(console.log).toHaveBeenCalledWith(
-        expect.stringContaining('Content Analysis Results'),
+        expect.stringContaining('smartConversion.analysisResults'),
       );
       expect(console.log).toHaveBeenCalledWith(
         expect.stringContaining('1,000'),
       ); // Word count with formatting
       expect(console.log).toHaveBeenCalledWith(expect.stringContaining('5')); // Estimated pages
-      expect(console.log).toHaveBeenCalledWith(
-        expect.stringContaining('English'),
-      ); // Language
+      expect(console.log).toHaveBeenCalledWith(expect.stringContaining('en')); // Language
     });
 
     it('should handle manual file path entry', async () => {
@@ -325,7 +329,7 @@ describe('SmartConversionMode', () => {
 
       expect(mockPrompt).toHaveBeenCalledWith(
         expect.objectContaining({
-          message: expect.stringContaining('Enter the full path'),
+          message: expect.stringContaining('smartConversion.enterFilePath'),
         }),
       );
     });
@@ -345,7 +349,9 @@ describe('SmartConversionMode', () => {
 
       expect(mockPrompt).toHaveBeenCalledWith(
         expect.objectContaining({
-          message: expect.stringContaining('Select a preset configuration'),
+          message: expect.stringContaining(
+            'smartConversion.selectPresetConfiguration',
+          ),
         }),
       );
     });
@@ -379,7 +385,7 @@ describe('SmartConversionMode', () => {
       await smartConversionMode.start('/test/file.md');
 
       expect(console.error).toHaveBeenCalledWith(
-        expect.stringContaining('Conversion failed'),
+        expect.stringContaining('smartConversion.conversionFailed'),
       );
     });
 
@@ -402,7 +408,7 @@ describe('SmartConversionMode', () => {
         expect.stringContaining('File browsing failed: Error: Browser error'),
       );
       expect(console.warn).toHaveBeenCalledWith(
-        expect.stringContaining('File browser unavailable'),
+        expect.stringContaining('smartConversion.fileBrowserUnavailable'),
       );
     });
   });
