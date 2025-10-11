@@ -2,6 +2,8 @@
  * Simple console-based logger implementation
  */
 
+import { EnvironmentConfig } from '../config/environment';
+
 import { shouldLog, formatLevel } from './levels';
 
 import type { ILogger, LogLevel, LoggerOptions, LogEntry } from './types';
@@ -24,11 +26,8 @@ export class ConsoleLogger implements ILogger {
     };
     this.level = this.options.level;
 
-    // Respect environment variables
-    const envLevel = process.env.MD2PDF_LOG_LEVEL?.toLowerCase() as LogLevel;
-    if (envLevel && ['error', 'warn', 'info', 'debug'].includes(envLevel)) {
-      this.level = envLevel;
-    }
+    // Use centralized environment configuration
+    this.level = EnvironmentConfig.getLogLevel();
   }
 
   error(message: string, ...args: unknown[]): void {

@@ -3,18 +3,17 @@
  * Presents options for single file or batch processing
  */
 
-import chalk from 'chalk';
-
 import { BatchInteractiveMode } from './batch';
 import { CustomizationMode } from './customization-mode';
 import { InteractiveMode } from './interactive';
 import { SettingsMode } from './settings-mode';
 import { SmartConversionMode } from './smart-conversion-mode';
+import { CliUIManager } from './ui/cli-ui-manager';
 import { CliRenderer } from './utils/cli-renderer';
 import { I18nHelpers } from './utils/i18n-helpers';
 
-import type { ILogger } from '../infrastructure/logging/types';
 import type { ITranslationManager } from '../infrastructure/i18n/types';
+import type { ILogger } from '../infrastructure/logging/types';
 import type { ServiceContainer } from '../shared/container';
 
 export class MainInteractiveMode {
@@ -22,12 +21,14 @@ export class MainInteractiveMode {
   private renderer: CliRenderer;
   private translator: ITranslationManager;
   private i18nHelpers: I18nHelpers;
+  private uiManager: CliUIManager;
 
   constructor(private readonly container: ServiceContainer) {
     this.logger = container.resolve<ILogger>('logger');
     this.renderer = new CliRenderer();
     this.translator = container.resolve<ITranslationManager>('translator');
     this.i18nHelpers = new I18nHelpers(this.translator);
+    this.uiManager = new CliUIManager(this.translator, this.logger);
   }
 
   /**
@@ -35,9 +36,7 @@ export class MainInteractiveMode {
    */
   async start(): Promise<void> {
     try {
-      this.logger.info(
-        this.translator.t('startup.startingMainInteractiveMode'),
-      );
+      this.uiManager.showDebug('Starting main interactive mode');
 
       // Main menu loop - keep showing menu until user exits
       // eslint-disable-next-line no-constant-condition
@@ -47,18 +46,14 @@ export class MainInteractiveMode {
 
         switch (mode) {
           case 'smart': {
-            this.logger.info(
-              this.translator.t('startup.userSelectedSmartMode'),
-            );
+            this.uiManager.showDebug('User selected smart mode');
             const smartMode = new SmartConversionMode(this.container);
             await smartMode.start();
             // After smart conversion, continue to main menu
             break;
           }
           case 'single': {
-            this.logger.info(
-              this.translator.t('startup.userSelectedSingleMode'),
-            );
+            this.uiManager.showDebug('User selected single file mode');
             const singleMode = new InteractiveMode(this.container);
             let retryCount = 0;
             const maxRetries = 5;
@@ -72,18 +67,20 @@ export class MainInteractiveMode {
                   error instanceof Error &&
                   error.message === 'USER_CANCELLED'
                 ) {
-                  this.logger.info('Single file mode cancelled by user');
+                  this.uiManager.showDebug(
+                    'Single file mode cancelled by user',
+                  );
                   break; // User cancelled, exit retry loop and continue to main menu
                 } else if (
                   error instanceof Error &&
                   error.message === 'USER_RETRY'
                 ) {
                   retryCount++;
-                  this.logger.info(
+                  this.uiManager.showDebug(
                     `User requested retry (attempt ${retryCount}/${maxRetries})`,
                   );
                   if (retryCount >= maxRetries) {
-                    this.logger.warn('Max retry attempts reached');
+                    this.uiManager.showDebug('Max retry attempts reached');
                     break; // Exit retry loop after max attempts
                   }
                   // Continue retry loop
@@ -96,43 +93,36 @@ export class MainInteractiveMode {
             break;
           }
           case 'batch': {
-            this.logger.info(
-              this.translator.t('startup.userSelectedBatchMode'),
-            );
+            this.uiManager.showDebug('User selected batch mode');
             const batchMode = new BatchInteractiveMode(this.container);
             await batchMode.start();
             // After batch conversion, continue to main menu
             break;
           }
           case 'customization': {
-            this.logger.info(
-              this.translator.t('startup.userSelectedCustomizationMode'),
-            );
+            this.uiManager.showDebug('User selected customization mode');
             const customizationMode = new CustomizationMode(this.container);
             await customizationMode.start();
             // After customization, continue to main menu
             break;
           }
           case 'settings': {
-            this.logger.info(
-              this.translator.t('startup.userSelectedSettingsMode'),
-            );
+            this.uiManager.showDebug('User selected settings mode');
             const settingsMode = new SettingsMode(this.container);
             await settingsMode.start();
             // After settings, continue to main menu
             break;
           }
           case 'exit':
-            this.logger.info(this.translator.t('startup.userSelectedExit'));
-            this.renderer.info(
-              chalk.cyan('👋 ' + this.translator.t('cli.options.goodbye')),
+            this.uiManager.showDebug('User selected exit');
+            this.uiManager.showMessage(
+              '👋 ' + this.translator.t('cli.options.goodbye'),
             );
             return;
         }
       }
     } catch (error) {
-      this.logger.error('Main interactive mode error', error);
-      this.renderer.error(chalk.red('❌ Main interactive mode error:'), error);
+      this.uiManager.showError('Main interactive mode error', error as Error);
       throw error;
     }
   }
