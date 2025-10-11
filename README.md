@@ -145,6 +145,10 @@ npm run build
 ### Available Commands
 
 ```bash
+# Development
+npm run dev           # Development mode with TypeScript
+npm start             # Run built version
+
 # Testing
 npm test              # Fast unit tests (~4 seconds)
 npm run test:all      # Full test suite (~3 minutes)
@@ -159,6 +163,52 @@ npm run clean         # Clean build files
 npx lint-staged       # Run linting on staged files
 npx husky init        # Initialize Husky
 npm run prepare       # Run the prepare script
+```
+
+### Environment Variables
+
+Configure the application behavior with environment variables:
+
+#### Logging & Development
+
+```bash
+# Enable verbose terminal output (shows debug messages and detailed info)
+MD2PDF_VERBOSE=true npm run dev
+
+# Development mode (sets default log level to debug, but no verbose output)
+NODE_ENV=development npm run dev
+
+# Set specific logging level (overrides environment defaults)
+MD2PDF_LOG_LEVEL=debug npm run dev
+
+# Combined: Development mode with verbose output
+NODE_ENV=development MD2PDF_VERBOSE=true npm run dev
+```
+
+#### Installation & Build
+
+```bash
+# Skip Puppeteer download during installation
+PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true npm install
+```
+
+**Understanding Environment Variables:**
+
+- **`MD2PDF_VERBOSE=true`**: Enables detailed terminal output with timestamps and debug info.
+- **`NODE_ENV=development`**: Sets default log level to `debug` (more detailed than `info`).
+- **`MD2PDF_LOG_LEVEL=level`**: Override log level regardless of `NODE_ENV` setting.
+
+**When to use verbose mode:**
+
+- 🐞 **Debugging issues**: Get detailed error information and internal flow.
+- 🔍 **Troubleshooting**: See environment checks, file operations, and timing.
+- 👨‍💻 **Development**: Monitor application behavior and performance.
+
+**Example with multiple options:**
+
+```bash
+# Full diagnostic mode with maximum detail
+NODE_ENV=development MD2PDF_VERBOSE=true MD2PDF_LOG_LEVEL=debug npm run dev
 ```
 
 ## 🚨 Troubleshooting

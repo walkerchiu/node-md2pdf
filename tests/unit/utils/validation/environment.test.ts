@@ -60,7 +60,7 @@ describe('Environment Validation', () => {
       });
     });
 
-    it('should return true for Node.js 18+', async () => {
+    it('should return success object for Node.js 18+', async () => {
       Object.defineProperty(process, 'version', {
         value: 'v18.0.0',
         writable: true,
@@ -68,13 +68,10 @@ describe('Environment Validation', () => {
 
       const result = await validateNodeVersion();
 
-      expect(result).toBe(true);
-      expect(consoleSpy.log).toHaveBeenCalledWith(
-        expect.stringContaining('v18.0.0 (meets requirements)'),
-      );
+      expect(result).toEqual({ success: true, version: 'v18.0.0' });
     });
 
-    it('should return true for Node.js 20+', async () => {
+    it('should return success object for Node.js 20+', async () => {
       Object.defineProperty(process, 'version', {
         value: 'v20.1.0',
         writable: true,
@@ -82,13 +79,10 @@ describe('Environment Validation', () => {
 
       const result = await validateNodeVersion();
 
-      expect(result).toBe(true);
-      expect(consoleSpy.log).toHaveBeenCalledWith(
-        expect.stringContaining('v20.1.0 (meets requirements)'),
-      );
+      expect(result).toEqual({ success: true, version: 'v20.1.0' });
     });
 
-    it('should return false for Node.js < 18', async () => {
+    it('should return failure object for Node.js < 18', async () => {
       Object.defineProperty(process, 'version', {
         value: 'v16.14.0',
         writable: true,
@@ -96,13 +90,14 @@ describe('Environment Validation', () => {
 
       const result = await validateNodeVersion();
 
-      expect(result).toBe(false);
-      expect(consoleSpy.error).toHaveBeenCalledWith(
-        expect.stringContaining('v16.14.0, requires >= 18.0.0'),
-      );
+      expect(result).toEqual({
+        success: false,
+        version: 'v16.14.0',
+        message: 'Node.js version too old: v16.14.0, requires >= 18.0.0',
+      });
     });
 
-    it('should return false for very old Node.js versions', async () => {
+    it('should return failure object for very old Node.js versions', async () => {
       Object.defineProperty(process, 'version', {
         value: 'v14.21.0',
         writable: true,
@@ -110,34 +105,32 @@ describe('Environment Validation', () => {
 
       const result = await validateNodeVersion();
 
-      expect(result).toBe(false);
-      expect(consoleSpy.error).toHaveBeenCalledWith(
-        expect.stringContaining('v14.21.0, requires >= 18.0.0'),
-      );
+      expect(result).toEqual({
+        success: false,
+        version: 'v14.21.0',
+        message: 'Node.js version too old: v14.21.0, requires >= 18.0.0',
+      });
     });
   });
 
   describe('validatePuppeteer', () => {
-    it('should return true when Puppeteer is available', async () => {
+    it('should return success object when Puppeteer is available', async () => {
       const result = await validatePuppeteer();
 
-      expect(result).toBe(true);
-      expect(consoleSpy.log).toHaveBeenCalledWith(
-        expect.stringContaining('Puppeteer is ready'),
-      );
+      expect(result).toEqual({ success: true });
     });
   });
 
   describe('checkSystemResources', () => {
-    it('should return true (mocking complex behavior)', async () => {
+    it('should return result object with warning when exec fails', async () => {
       // Skip complex exec mocking for now - focus on basic functionality
       const result = await checkSystemResources();
 
-      expect(result).toBe(true);
-      // The actual function will call console.warn due to mock failing
-      expect(consoleSpy.warn).toHaveBeenCalledWith(
-        expect.stringContaining('Unable to check system resources'),
-      );
+      expect(result).toEqual({
+        success: true,
+        memoryMB: 0,
+        warning: 'Unable to check system resources',
+      });
     });
   });
 
@@ -158,9 +151,17 @@ describe('Environment Validation', () => {
       });
     });
 
-    it('should pass when Node.js version is valid', async () => {
+    it('should return environment results when Node.js version is valid', async () => {
       // Since memory check will fail in mock environment, but should not block
-      await expect(validateEnvironment()).resolves.not.toThrow();
+      const result = await validateEnvironment();
+
+      expect(result).toEqual({
+        nodeVersion: 'v18.0.0',
+        memoryMB: 0,
+        puppeteerReady: true,
+        errors: [],
+        warnings: ['Unable to check system resources'],
+      });
     });
 
     it('should throw error when Node.js version check fails', async () => {

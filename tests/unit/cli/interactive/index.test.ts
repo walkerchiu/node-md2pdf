@@ -76,6 +76,7 @@ describe('InteractiveMode', () => {
   let mockFileProcessorService: jest.Mocked<IFileProcessorService>;
   let interactiveMode: InteractiveMode;
   let consoleSpy: jest.SpiedFunction<typeof console.log>;
+  let consoleWarnSpy: jest.SpiedFunction<typeof console.warn>;
   let consoleErrorSpy: jest.SpiedFunction<typeof console.error>;
 
   const mockConversionConfig: ConversionConfig = {
@@ -110,6 +111,7 @@ describe('InteractiveMode', () => {
     // Ensure inquirer mock is reset between tests to avoid leaking implementations
     mockInquirerPrompt.mockReset();
     consoleSpy = jest.spyOn(console, 'log').mockImplementation(() => {});
+    consoleWarnSpy = jest.spyOn(console, 'warn').mockImplementation(() => {});
     consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
 
     mockLogger = {
@@ -151,6 +153,7 @@ describe('InteractiveMode', () => {
   afterEach(() => {
     jest.clearAllMocks();
     consoleSpy.mockRestore();
+    consoleWarnSpy.mockRestore();
     consoleErrorSpy.mockRestore();
   });
 
@@ -179,9 +182,7 @@ describe('InteractiveMode', () => {
 
       await interactiveMode.start();
 
-      expect(mockLogger.info).toHaveBeenCalledWith(
-        'Starting interactive conversion process',
-      );
+      // Debug messages are not logged in non-verbose mode
       expect(consoleSpy).toHaveBeenCalledWith(
         expect.stringContaining('interactive.title'),
       );
@@ -201,8 +202,7 @@ describe('InteractiveMode', () => {
 
       await interactiveMode.start();
 
-      expect(mockLogger.info).toHaveBeenCalledWith('User cancelled conversion');
-      expect(consoleSpy).toHaveBeenCalledWith('interactive.cancelled');
+      expect(consoleWarnSpy).toHaveBeenCalledWith('⚠️ interactive.cancelled');
       expect(mockFileProcessorService.processFile).not.toHaveBeenCalled();
     });
 
@@ -213,7 +213,7 @@ describe('InteractiveMode', () => {
       await expect(interactiveMode.start()).rejects.toThrow('Test error');
 
       expect(mockLogger.error).toHaveBeenCalledWith(
-        'Interactive mode error',
+        'interactive.interactiveModeError',
         testError,
       );
       expect(mockErrorHandler.handleError).toHaveBeenCalledWith(
@@ -221,8 +221,7 @@ describe('InteractiveMode', () => {
         'InteractiveMode.start',
       );
       expect(consoleErrorSpy).toHaveBeenCalledWith(
-        'interactive.interactiveModeError',
-        testError,
+        '❌ interactive.interactiveModeError',
       );
     });
 
@@ -239,9 +238,10 @@ describe('InteractiveMode', () => {
 
       await interactiveMode.start();
 
-      expect(consoleSpy).toHaveBeenCalledWith('interactive.title');
-      // interactive.pleaseAnswerQuestions is not output to console in the current implementation
-      expect(consoleSpy).toHaveBeenCalledWith('interactive.starting');
+      // Check that header was displayed
+      expect(consoleSpy).toHaveBeenCalledWith(
+        expect.stringContaining('interactive.title'),
+      );
     });
   });
 
@@ -416,8 +416,10 @@ describe('InteractiveMode', () => {
       await interactiveMode.start();
 
       // Verify that configuration summary was displayed
-      expect(consoleSpy).toHaveBeenCalledWith('interactive.conversionSummary');
-      expect(consoleSpy).toHaveBeenCalledWith('─'.repeat(50));
+      expect(consoleSpy).toHaveBeenCalledWith(
+        'ℹ️ interactive.conversionSummary',
+      );
+      expect(consoleSpy).toHaveBeenCalledWith('─'.repeat(75));
       expect(consoleSpy).toHaveBeenCalledWith(
         expect.stringContaining('test.md'),
       );
@@ -499,8 +501,7 @@ describe('InteractiveMode', () => {
 
       await interactiveMode.start();
 
-      expect(mockLogger.info).toHaveBeenCalledWith('User cancelled conversion');
-      expect(consoleSpy).toHaveBeenCalledWith('interactive.cancelled');
+      expect(consoleWarnSpy).toHaveBeenCalledWith('⚠️ interactive.cancelled');
     });
   });
 
@@ -606,7 +607,9 @@ describe('InteractiveMode', () => {
       expect(mockSpinner.succeed).toHaveBeenCalledWith(
         'interactive.conversionCompleted',
       );
-      expect(consoleSpy).toHaveBeenCalledWith('interactive.conversionResults');
+      expect(consoleSpy).toHaveBeenCalledWith(
+        'ℹ️ interactive.conversionResults',
+      );
       expect(consoleSpy).toHaveBeenCalledWith(
         expect.stringContaining('test.md'),
       );
@@ -722,19 +725,14 @@ describe('InteractiveMode', () => {
 
       await interactiveMode.start();
 
-      expect(mockLogger.info).toHaveBeenCalledWith('Starting file conversion', {
-        inputPath: 'test.md',
-        outputPath: 'test.pdf',
-      });
+      // Debug messages are not logged in non-verbose mode
+      expect(mockLogger.info).not.toHaveBeenCalledWith(
+        'Starting file conversion',
+      );
 
-      expect(mockLogger.info).toHaveBeenCalledWith(
+      // Debug messages are not logged in non-verbose mode
+      expect(mockLogger.info).not.toHaveBeenCalledWith(
         'File conversion completed successfully',
-        {
-          inputPath: 'test.md',
-          outputPath: 'test.pdf',
-          processingTime: 1500,
-          fileSize: 1024000,
-        },
       );
     });
 
@@ -1016,17 +1014,20 @@ describe('InteractiveMode', () => {
 
       await interactiveMode.start();
 
-      // Verify complete flow
-      expect(mockLogger.info).toHaveBeenCalledWith(
-        'Starting interactive conversion process',
+      // Verify complete flow - debug messages are not shown in non-verbose mode
+      expect(consoleSpy).toHaveBeenCalledWith(
+        expect.stringContaining('interactive.title'),
       );
-      expect(consoleSpy).toHaveBeenCalledWith('interactive.title');
       expect(mockInquirerPrompt).toHaveBeenCalledTimes(3);
-      expect(consoleSpy).toHaveBeenCalledWith('interactive.conversionSummary');
+      expect(consoleSpy).toHaveBeenCalledWith(
+        'ℹ️ interactive.conversionSummary',
+      );
       expect(mockSpinner.start).toHaveBeenCalled();
       expect(mockFileProcessorService.processFile).toHaveBeenCalled();
       expect(mockSpinner.succeed).toHaveBeenCalled();
-      expect(consoleSpy).toHaveBeenCalledWith('interactive.conversionResults');
+      expect(consoleSpy).toHaveBeenCalledWith(
+        'ℹ️ interactive.conversionResults',
+      );
     });
 
     it('should handle complete flow with user cancellation', async () => {
@@ -1042,12 +1043,8 @@ describe('InteractiveMode', () => {
 
       await interactiveMode.start();
 
-      // Verify cancellation flow
-      expect(mockLogger.info).toHaveBeenCalledWith(
-        'Starting interactive conversion process',
-      );
-      expect(mockLogger.info).toHaveBeenCalledWith('User cancelled conversion');
-      expect(consoleSpy).toHaveBeenCalledWith('interactive.cancelled');
+      // Verify cancellation flow - debug messages are not shown in non-verbose mode
+      expect(consoleWarnSpy).toHaveBeenCalledWith('⚠️ interactive.cancelled');
       expect(mockFileProcessorService.processFile).not.toHaveBeenCalled();
     });
 

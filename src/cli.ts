@@ -11,10 +11,12 @@ import { version } from '../package.json';
 
 import { ApplicationServices } from './application/container';
 import { MainInteractiveMode } from './cli/main-interactive';
+import { StartupUI } from './cli/ui/startup-ui';
+import { EnvironmentConfig } from './infrastructure/config/environment';
 import { validateEnvironment } from './utils/validation';
 
-import type { ILogger } from './infrastructure/logging/types';
 import type { ITranslationManager } from './infrastructure/i18n/types';
+import type { ILogger } from './infrastructure/logging/types';
 
 const program = new Command();
 
@@ -31,17 +33,43 @@ async function main(): Promise<void> {
     logger = container.resolve<ILogger>('logger');
     translator = container.resolve<ITranslationManager>('translator');
 
-    // Environment check
-    logger!.info(chalk.cyan(translator.t('startup.appTitle', { version })));
-    logger!.info(chalk.gray(translator.t('startup.description')));
-    logger!.info('');
+    // Initialize startup UI
+    const startupUI = new StartupUI(translator);
 
-    logger!.info(chalk.blue(translator.t('startup.checkingEnvironment')));
-    await validateEnvironment(translator);
-    logger!.info(chalk.green(translator.t('startup.environmentCheckPassed')));
-    logger!.info('');
+    // Show welcome banner
+    startupUI.showBanner(version);
 
-    logger.info(translator.t('startup.applicationStarted'));
+    // Environment check with clean output
+    try {
+      const envResults = await validateEnvironment(translator);
+
+      // Show warnings if any
+      envResults.warnings.forEach((warning) => {
+        if (startupUI.isVerbose()) {
+          startupUI.showWarning(warning);
+        }
+      });
+
+      // Show environment status in clean format
+      await startupUI.showEnvironmentCheck(
+        envResults.nodeVersion,
+        envResults.memoryMB,
+        envResults.puppeteerReady,
+      );
+
+      // Log to logger only in verbose mode
+      if (startupUI.isVerbose()) {
+        logger.info(translator.t('startup.applicationStarted'));
+      } else {
+        startupUI.showStarting();
+      }
+    } catch (envError) {
+      startupUI.showError(
+        'Environment check failed',
+        envError instanceof Error ? envError : new Error(String(envError)),
+      );
+      throw envError;
+    }
 
     // Configure CLI commands
     program
@@ -65,17 +93,29 @@ async function main(): Promise<void> {
     // Parse command line arguments
     await program.parseAsync(process.argv);
   } catch (error) {
-    if (logger) {
+    // Use consistent error formatting
+    if (translator) {
+      const startupUI = new StartupUI(translator);
+      startupUI.showError(
+        'Startup failed',
+        error instanceof Error ? error : new Error(String(error)),
+      );
+    } else {
+      process.stderr.write(
+        chalk.red('❌ Startup failed:') +
+          ' ' +
+          (error instanceof Error
+            ? error.stack || error.message
+            : String(error)) +
+          '\n',
+      );
+    }
+
+    // Log detailed error only in verbose mode
+    if (logger && EnvironmentConfig.isVerboseEnabled()) {
       logger.error('Application startup failed', error);
     }
-    process.stderr.write(
-      chalk.red('❌ Startup failed:') +
-        ' ' +
-        (error instanceof Error
-          ? error.stack || error.message
-          : String(error)) +
-        '\n',
-    );
+
     process.exit(1);
   }
 }
