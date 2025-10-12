@@ -14,6 +14,7 @@ import FileSearchUI from '../ui/file-search-ui';
 import { BatchProgressUI } from './batch-progress-ui';
 
 import type { IBatchProcessorService } from '../../application/services/batch-processor.service';
+import type { IConfigManager } from '../../infrastructure/config/types';
 import type { IErrorHandler } from '../../infrastructure/error/types';
 import type { ITranslationManager } from '../../infrastructure/i18n/types';
 import type { ILogger } from '../../infrastructure/logging/types';
@@ -41,7 +42,13 @@ export class BatchInteractiveMode {
       APPLICATION_SERVICE_NAMES.BATCH_PROCESSOR,
     );
     this.progressUI = new BatchProgressUI(this.translationManager);
-    this.uiManager = new CliUIManager(this.translationManager, this.logger);
+    const configManager = container.resolve<IConfigManager>('config');
+    this.uiManager = new CliUIManager(
+      this.translationManager,
+      this.logger,
+      {},
+      configManager,
+    );
   }
 
   /**

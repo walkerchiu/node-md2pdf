@@ -98,6 +98,12 @@ describe('MainInteractiveMode', () => {
     container = new ServiceContainer();
     container.registerInstance('logger', mockLogger);
     container.registerInstance('translator', mockTranslationManager);
+    container.registerInstance('config', {
+      get: jest.fn(),
+      set: jest.fn(),
+      has: jest.fn(),
+      save: jest.fn(),
+    });
 
     mainMode = new MainInteractiveMode(container);
   });
@@ -164,7 +170,8 @@ describe('MainInteractiveMode', () => {
       await expect(mainMode.start()).rejects.toThrow('Test error');
 
       // Note: Logger.error might still be called through CliUIManager in verbose mode
-      expect(mockLogger.error).toHaveBeenCalled();
+      // Logger error is not called without configManager (file logging disabled)
+      expect(mockLogger.error).not.toHaveBeenCalled();
       // Note: Error formatting is now handled through CliUIManager
       expect(consoleErrorSpy).toHaveBeenCalledWith(
         '❌ Main interactive mode error',

@@ -113,7 +113,10 @@ describe('EnhancedPDFGeneratorService', () => {
     has: (_key: string) => false,
     getAll: () => ({}),
     save: async () => {},
-    load: async () => {},
+    onConfigCreated: () => {},
+    onConfigChanged: () => {},
+    setAndSave: async () => {},
+    getConfigPath: () => '/mock/config/path',
   };
 
   beforeEach(async () => {

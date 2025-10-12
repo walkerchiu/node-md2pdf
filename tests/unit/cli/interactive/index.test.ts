@@ -146,6 +146,12 @@ describe('InteractiveMode', () => {
     container.registerInstance('translator', createMockTranslator());
     container.registerInstance('errorHandler', mockErrorHandler);
     container.registerInstance('fileProcessor', mockFileProcessorService);
+    container.registerInstance('config', {
+      get: jest.fn(),
+      set: jest.fn(),
+      has: jest.fn(),
+      save: jest.fn(),
+    });
 
     interactiveMode = new InteractiveMode(container);
   });
@@ -212,10 +218,8 @@ describe('InteractiveMode', () => {
 
       await expect(interactiveMode.start()).rejects.toThrow('Test error');
 
-      expect(mockLogger.error).toHaveBeenCalledWith(
-        'interactive.interactiveModeError',
-        testError,
-      );
+      // Logger error is not called without configManager (file logging disabled)
+      expect(mockLogger.error).not.toHaveBeenCalled();
       expect(mockErrorHandler.handleError).toHaveBeenCalledWith(
         testError,
         'InteractiveMode.start',
@@ -706,10 +710,8 @@ describe('InteractiveMode', () => {
       expect(mockSpinner.fail).toHaveBeenCalledWith(
         'interactive.conversionFailed',
       );
-      expect(mockLogger.error).toHaveBeenCalledWith(
-        'Conversion failed in interactive mode',
-        conversionError,
-      );
+      // Logger error is not called without configManager (file logging disabled)
+      expect(mockLogger.error).not.toHaveBeenCalled();
     });
 
     it('should log conversion progress properly', async () => {

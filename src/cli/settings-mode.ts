@@ -5,6 +5,9 @@
 
 import chalk from 'chalk';
 
+import { LoggingSettings } from './logging-settings';
+import { CliUIManager } from './ui/cli-ui-manager';
+
 import type { IConfigManager } from '../infrastructure/config/types';
 import type {
   ITranslationManager,
@@ -17,12 +20,19 @@ export class SettingsMode {
   private logger: ILogger;
   private translationManager: ITranslationManager;
   private configManager: IConfigManager;
+  private uiManager: CliUIManager;
 
   constructor(private readonly container: ServiceContainer) {
     this.logger = this.container.resolve<ILogger>('logger');
     this.translationManager =
       this.container.resolve<ITranslationManager>('translator');
     this.configManager = this.container.resolve<IConfigManager>('config');
+    this.uiManager = new CliUIManager(
+      this.translationManager,
+      this.logger,
+      {},
+      this.configManager,
+    );
   }
 
   /**
@@ -139,6 +149,11 @@ export class SettingsMode {
   // Language settings implementation
   private async languageSettings(): Promise<void> {
     try {
+      // Log user access to language settings
+      this.uiManager.logUserAccess('LanguageSettings', 'Enter', {
+        timestamp: new Date().toISOString(),
+      });
+
       let running = true;
 
       while (running) {
@@ -191,12 +206,17 @@ export class SettingsMode {
   }
 
   private async loggingSettings(): Promise<void> {
-    console.log(
-      chalk.yellow(
-        this.translationManager.t('cli.settingsMenu.loggingComingSoon'),
-      ),
-    );
-    await this.pressAnyKey();
+    try {
+      const loggingSettings = new LoggingSettings(this.container);
+      await loggingSettings.start();
+    } catch (error) {
+      this.logger.error(
+        this.translationManager.t('startup.loggingSettingsError'),
+        error,
+      );
+      console.error(chalk.red('❌ Logging settings error:'), error);
+      await this.pressAnyKey();
+    }
   }
 
   private async pressAnyKey(): Promise<void> {
@@ -245,6 +265,15 @@ export class SettingsMode {
 
   private async changeLanguage(newLocale: SupportedLocale): Promise<void> {
     try {
+      const currentLocale = this.translationManager.getCurrentLocale();
+
+      // Log the configuration change
+      this.uiManager.logConfigChange(
+        'language.default',
+        currentLocale,
+        newLocale,
+      );
+
       this.translationManager.setLocale(newLocale);
       this.configManager.set('language.default', newLocale);
       await this.configManager.save();

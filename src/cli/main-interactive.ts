@@ -12,6 +12,7 @@ import { CliUIManager } from './ui/cli-ui-manager';
 import { CliRenderer } from './utils/cli-renderer';
 import { I18nHelpers } from './utils/i18n-helpers';
 
+import type { IConfigManager } from '../infrastructure/config/types';
 import type { ITranslationManager } from '../infrastructure/i18n/types';
 import type { ILogger } from '../infrastructure/logging/types';
 import type { ServiceContainer } from '../shared/container';
@@ -28,7 +29,13 @@ export class MainInteractiveMode {
     this.renderer = new CliRenderer();
     this.translator = container.resolve<ITranslationManager>('translator');
     this.i18nHelpers = new I18nHelpers(this.translator);
-    this.uiManager = new CliUIManager(this.translator, this.logger);
+    const configManager = container.resolve<IConfigManager>('config');
+    this.uiManager = new CliUIManager(
+      this.translator,
+      this.logger,
+      {},
+      configManager,
+    );
   }
 
   /**

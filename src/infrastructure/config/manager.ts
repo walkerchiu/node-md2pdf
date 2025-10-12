@@ -1,5 +1,12 @@
 /**
- * Configuration Manager implementation
+ * Improved Configuration Manager implementation
+ *
+ * Core principles:
+ * 1. Single source of truth: User preferences file (~/.md2pdf/config.json)
+ * 2. Default configuration used only for initialization
+ * 3. All system behavior follows user preferences
+ * 4. Changes immediately persisted
+ * 5. UI display matches actual configuration
  */
 
 import * as os from 'os';
@@ -12,9 +19,14 @@ import { defaultConfig, environmentMappings } from './defaults';
 import type { IConfigManager, ConfigOptions } from './types';
 
 export class ConfigManager implements IConfigManager {
-  private config: Record<string, unknown>;
+  private config!: Record<string, unknown>;
   private configPath: string;
   private options: ConfigOptions;
+  private configCreatedCallbacks: ((path: string) => void)[] = [];
+  private configChangedCallbacks: Map<
+    string,
+    ((newValue: unknown, oldValue: unknown, key: string) => void)[]
+  > = new Map();
 
   constructor(options: ConfigOptions = {}) {
     this.options = {
@@ -24,12 +36,9 @@ export class ConfigManager implements IConfigManager {
     };
     this.configPath =
       options.configPath || path.join(os.homedir(), '.md2pdf', 'config.json');
-    this.config = this.deepClone(defaultConfig) as Record<string, unknown>;
 
-    // Load environment variables if enabled
-    if (this.options.useEnvironmentVariables) {
-      this.loadEnvironmentVariables();
-    }
+    // Initialize configuration with proper user preferences management
+    this.initializeConfiguration();
   }
 
   get<T = unknown>(key: string, defaultValue?: T): T {
@@ -59,23 +68,73 @@ export class ConfigManager implements IConfigManager {
     }
   }
 
-  async load(): Promise<void> {
-    try {
-      if (await fs.pathExists(this.configPath)) {
-        const savedConfig = await fs.readJson(this.configPath);
-        this.config = this.mergeDeep(this.config, savedConfig) as Record<
-          string,
-          unknown
-        >;
-      }
-    } catch (error) {
-      // Silently fail and use defaults
-      // In a real implementation, we might want to log this
+  /**
+   * Initialize configuration with proper user preferences management
+   *
+   * Configuration loading priority:
+   * 1. Check if user preferences file exists
+   * 2. If not exists: Create user preferences file from defaults
+   * 3. If exists: Load user preferences as primary source
+   * 4. Apply environment variable overrides
+   */
+  private initializeConfiguration(): void {
+    // Start with default configuration
+    this.config = this.deepClone(defaultConfig) as Record<string, unknown>;
+
+    // Check if user preferences file exists
+    if (!fs.pathExistsSync(this.configPath)) {
+      // User preferences file doesn't exist, create it from defaults
+      this.createUserPreferencesFromDefaultsSync();
+    } else {
+      // User preferences file exists, load it as the primary source
+      this.loadUserConfigSync();
     }
 
-    // Reload environment variables to override file config
+    // Apply environment variable overrides
     if (this.options.useEnvironmentVariables) {
       this.loadEnvironmentVariables();
+    }
+  }
+
+  /**
+   * Synchronously create user preferences file from default configuration
+   * This ensures the user has a preferences file they can modify
+   */
+  private createUserPreferencesFromDefaultsSync(): void {
+    try {
+      // Ensure the directory exists
+      fs.ensureDirSync(path.dirname(this.configPath));
+
+      // Write the default configuration as user preferences
+      fs.writeJsonSync(this.configPath, this.config, { spaces: 2 });
+
+      // Notify listeners that config file was created
+      this.notifyConfigCreated();
+    } catch (error) {
+      // If creation fails, continue with default config in memory
+      console.warn(
+        `Failed to create user preferences file: ${error instanceof Error ? error.message : 'Unknown error'}`,
+      );
+    }
+  }
+
+  /**
+   * Synchronously load user configuration file
+   * This is called during construction to ensure config is available immediately
+   */
+  private loadUserConfigSync(): void {
+    try {
+      const userConfig = fs.readJsonSync(this.configPath);
+      this.config = this.mergeDeep(this.config, userConfig) as Record<
+        string,
+        unknown
+      >;
+    } catch (error) {
+      // If loading fails, fall back to creating from defaults
+      console.warn(
+        `Failed to load user preferences, recreating from defaults: ${error instanceof Error ? error.message : 'Unknown error'}`,
+      );
+      this.createUserPreferencesFromDefaultsSync();
     }
   }
 
@@ -161,5 +220,102 @@ export class ConfigManager implements IConfigManager {
     }
 
     return result;
+  }
+
+  /**
+   * Register a callback to be called when user preferences file is created
+   * This allows other components to react to config file creation
+   */
+  onConfigCreated(callback: (path: string) => void): void {
+    this.configCreatedCallbacks.push(callback);
+  }
+
+  /**
+   * Register a callback to be called when specific configuration values change
+   * Supports both single key and multiple keys monitoring
+   */
+  onConfigChanged(
+    key: string | string[],
+    callback: (newValue: unknown, oldValue: unknown, key: string) => void,
+  ): void {
+    const keys = Array.isArray(key) ? key : [key];
+
+    keys.forEach((k) => {
+      if (!this.configChangedCallbacks.has(k)) {
+        this.configChangedCallbacks.set(k, []);
+      }
+      this.configChangedCallbacks.get(k)!.push(callback);
+    });
+  }
+
+  /**
+   * Enhanced setAndSave with change notification
+   */
+  async setAndSave<T = unknown>(key: string, value: T): Promise<void> {
+    const oldValue = this.getNestedValue(this.config, key);
+    this.setNestedValue(this.config, key, value);
+    await this.save();
+
+    // Notify listeners of the change
+    this.notifyConfigChanged(key, value, oldValue);
+  }
+
+  /**
+   * Notify all listeners that config file was created
+   * This follows the observer pattern for better decoupling
+   */
+  private notifyConfigCreated(): void {
+    this.configCreatedCallbacks.forEach((callback) => {
+      try {
+        callback(this.configPath);
+      } catch (error) {
+        // Silently handle callback errors to prevent system disruption
+        // In production, this could be logged
+      }
+    });
+  }
+
+  /**
+   * Notify all listeners that a configuration value has changed
+   * Supports nested key change notifications (e.g., 'logging.fileEnabled')
+   */
+  private notifyConfigChanged(
+    key: string,
+    newValue: unknown,
+    oldValue: unknown,
+  ): void {
+    // Direct key match
+    if (this.configChangedCallbacks.has(key)) {
+      this.configChangedCallbacks.get(key)!.forEach((callback) => {
+        try {
+          callback(newValue, oldValue, key);
+        } catch (error) {
+          // Silently handle callback errors to prevent system disruption
+        }
+      });
+    }
+
+    // Check for parent key matches (e.g., 'logging' matches 'logging.fileEnabled')
+    const keyParts = key.split('.');
+    for (let i = 1; i < keyParts.length; i++) {
+      const parentKey = keyParts.slice(0, i).join('.');
+      if (this.configChangedCallbacks.has(parentKey)) {
+        this.configChangedCallbacks.get(parentKey)!.forEach((callback) => {
+          try {
+            callback(newValue, oldValue, key);
+          } catch (error) {
+            // Silently handle callback errors
+          }
+        });
+      }
+    }
+  }
+
+  /**
+   * Get the path where user preferences are stored
+   * Useful for external components that need to know the config location
+   */
+  getConfigPath(): string {
+    return this.configPath;
   }
 }

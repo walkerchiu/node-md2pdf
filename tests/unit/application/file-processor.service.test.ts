@@ -106,8 +106,11 @@ describe('FileProcessorService', () => {
       set: jest.fn(),
       has: jest.fn(),
       getAll: jest.fn(),
-      save: jest.fn(),
-      load: jest.fn(),
+      save: jest.fn().mockResolvedValue(undefined),
+      onConfigCreated: jest.fn(),
+      onConfigChanged: jest.fn(),
+      setAndSave: jest.fn().mockResolvedValue(undefined),
+      getConfigPath: jest.fn().mockReturnValue('/mock/config/path'),
     };
 
     mockFileSystemManager = {

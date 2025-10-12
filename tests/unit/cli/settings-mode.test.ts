@@ -81,7 +81,10 @@ describe('SettingsMode', () => {
       has: jest.fn(),
       getAll: jest.fn(),
       save: jest.fn().mockResolvedValue(undefined),
-      load: jest.fn().mockResolvedValue(undefined),
+      onConfigCreated: jest.fn(),
+      onConfigChanged: jest.fn(),
+      setAndSave: jest.fn().mockResolvedValue(undefined),
+      getConfigPath: jest.fn().mockReturnValue('/mock/config/path'),
     };
 
     mockContainer = {
@@ -152,7 +155,7 @@ describe('SettingsMode', () => {
       await settingsMode.start();
 
       expect(console.log).toHaveBeenCalledWith(
-        expect.stringContaining('cli.settingsMenu.loggingComingSoon'),
+        expect.stringContaining('Settings & Preferences'),
       );
     });
 

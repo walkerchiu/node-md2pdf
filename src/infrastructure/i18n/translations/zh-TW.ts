@@ -88,7 +88,7 @@ export const zhTWTranslations: TranslationKey = {
 
   // Smart conversion mode
   smartConversion: {
-    title: '🤖 智能轉換模式',
+    title: '🤖 智能轉換',
     subtitle: '透過智能配置進行 3 步驟轉換！',
     step1: '步驟 1：檔案選擇',
     step2: '步驟 2：內容分析與推薦',
@@ -251,7 +251,7 @@ export const zhTWTranslations: TranslationKey = {
 
   // Batch processing mode
   batch: {
-    title: '📚 批次處理模式',
+    title: '📚 批次處理',
     subtitle: '高效率轉換多個檔案！',
     step1: '步驟 1：選擇檔案',
     step2: '步驟 2：配置設定',
@@ -423,6 +423,7 @@ export const zhTWTranslations: TranslationKey = {
     customizationModeError: '客製化設定錯誤',
     settingsModeError: '設定模式錯誤',
     languageSettingsError: '語言設定錯誤',
+    loggingSettingsError: '日誌設定錯誤',
     failedToChangeLanguage: '切換語言失敗',
   },
 
@@ -540,6 +541,89 @@ export const zhTWTranslations: TranslationKey = {
     modern: '現代',
   },
 
+  // Logging settings
+  logging: {
+    header: {
+      title: '日誌設定',
+      currentLevel: '當前等級',
+      fileLogging: '檔案日誌',
+      logFormat: '日誌格式',
+    },
+    menu: {
+      selectOption: '選擇日誌選項：',
+      returnToSettings: '返回設定選單',
+      changeLogLevel: '變更日誌等級',
+      toggleFileLogging: '切換檔案日誌',
+      changeLogFormat: '變更日誌格式',
+      viewLogDirectory: '檢視日誌目錄',
+      testLoggingFunctions: '測試日誌功能',
+    },
+    level: {
+      title: '變更日誌等級',
+      description: '日誌等級控制要顯示哪些訊息',
+      errorDesc: '僅顯示嚴重錯誤和失敗訊息',
+      warnDesc: '警告和所有更高優先級的訊息',
+      infoDesc: '一般資訊和所有更高優先級的訊息',
+      debugDesc: '所有訊息，包含詳細的除錯資訊',
+      errorShort: '僅嚴重錯誤',
+      warnShort: '警告及以上',
+      infoShort: '一般資訊',
+      debugShort: '所有訊息',
+      selectPrompt: '選擇日誌等級：',
+      updateSuccess: '日誌等級已更新為',
+      unchanged: '日誌等級未變更',
+    },
+    file: {
+      title: '檔案日誌設定',
+      description: '檔案日誌將所有日誌訊息儲存到磁碟',
+      benefit1: '持久化日誌用於除錯和故障排除',
+      benefit2: '自動日誌輪轉以管理磁碟空間',
+      location: '日誌儲存到專案 logs/ 目錄',
+      rotation: '達到大小限制時舊日誌自動歸檔',
+      currentStatus: '當前狀態',
+      enablePrompt: '啟用檔案日誌',
+      disablePrompt: '停用檔案日誌',
+      enabledSuccess: '檔案日誌已啟用',
+      enabledNote: '檔案日誌將在下次應用程式啟動時自動使用',
+      disabledSuccess: '檔案日誌已停用',
+      disabledNote: '僅會使用終端輸出',
+      unchanged: '檔案日誌設定未變更',
+      outputLocation: '檔案輸出',
+      sessionEnableNote: '注意：無法為當前會話啟用檔案日誌，將在重啟後生效',
+    },
+    format: {
+      title: '變更日誌格式',
+      description: '日誌格式控制訊息的結構化方式',
+      textDesc: '人類可讀格式，在終端中更容易閱讀',
+      jsonDesc: '結構化格式，更適合日誌分析工具',
+      selectPrompt: '選擇日誌格式：',
+      textChoice: '人類可讀格式',
+      jsonChoice: '結構化格式',
+      updateSuccess: '日誌格式已更新為',
+      unchanged: '日誌格式未變更',
+    },
+    directory: {
+      title: '日誌目錄資訊',
+      path: '日誌目錄',
+      exists: '目錄存在',
+      filesShowing: '日誌檔案（顯示前',
+      noFiles: '目錄中沒有找到日誌檔案',
+      readError: '無法讀取目錄內容',
+      notExists: '目錄不存在（首次使用時將會建立）',
+    },
+    test: {
+      title: '測試日誌功能',
+      infoMessage: '這是一條資訊日誌訊息',
+      warnMessage: '這是一條警告日誌訊息',
+      errorMessage: '這是一條錯誤日誌訊息',
+      debugMessage: '這是一條除錯日誌訊息',
+      sending: '正在發送測試日誌訊息',
+      sendingLevel: '發送',
+      sent: '測試日誌已發送',
+      checkOutput: '請檢查終端輸出和日誌檔案（如果已啟用）',
+    },
+  },
+
   // Common messages
   common: {
     back: '返回',
@@ -562,6 +646,10 @@ export const zhTWTranslations: TranslationKey = {
     failed: '失敗',
     yes: '是',
     no: '否',
+    current: '當前',
+    enabled: '已啟用',
+    disabled: '已停用',
+    pressEnter: '按 Enter 鍵繼續...',
   },
 
   // Short text (used for menu abbreviations)

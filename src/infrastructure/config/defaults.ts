@@ -33,6 +33,14 @@ export const defaultConfig: ConfigSchema = {
     timeout: 120000, // 2 minutes
     memoryLimit: '2GB',
   },
+  logging: {
+    level: 'info',
+    fileEnabled: true,
+    format: 'text',
+    maxFileSize: 10485760, // 10MB
+    maxBackupFiles: 5,
+    enableRotation: true,
+  },
   features: {
     enhancedServices: process.env.MD2PDF_USE_ENHANCED_SERVICES !== 'false',
     enhancedCli: process.env.MD2PDF_USE_ENHANCED_CLI !== 'false',
@@ -51,6 +59,12 @@ export const environmentMappings: Record<string, string> = {
   MD2PDF_TOC_DEPTH: 'toc.depth',
   MD2PDF_MAX_WORKERS: 'performance.maxWorkers',
   MD2PDF_TIMEOUT: 'performance.timeout',
+  MD2PDF_LOG_LEVEL: 'logging.level',
+  MD2PDF_LOG_FILE_ENABLED: 'logging.fileEnabled',
+  MD2PDF_LOG_FORMAT: 'logging.format',
+  MD2PDF_LOG_MAX_FILE_SIZE: 'logging.maxFileSize',
+  MD2PDF_LOG_MAX_BACKUP_FILES: 'logging.maxBackupFiles',
+  MD2PDF_LOG_ENABLE_ROTATION: 'logging.enableRotation',
   MD2PDF_USE_ENHANCED_SERVICES: 'features.enhancedServices',
   MD2PDF_USE_ENHANCED_CLI: 'features.enhancedCli',
   MD2PDF_USE_NEW_ORCHESTRATOR: 'features.newOrchestrator',

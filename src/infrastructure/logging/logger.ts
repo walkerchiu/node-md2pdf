@@ -1,16 +1,28 @@
 /**
- * Simple console-based logger implementation
+ * Unified logger implementation with both basic and enhanced capabilities
+ * Uses strategy pattern for flexible output options
  */
 
 import { EnvironmentConfig } from '../config/environment';
 
-import { shouldLog, formatLevel } from './levels';
+import { shouldLog } from './levels';
+import { ConsoleLoggerStrategy, HybridLoggerStrategy } from './strategies';
 
-import type { ILogger, LogLevel, LoggerOptions, LogEntry } from './types';
+import type {
+  IEnhancedLogger,
+  LogLevel,
+  LoggerOptions,
+  LogEntry,
+  FileLoggingConfig,
+  LogStats,
+  ILoggerStrategy,
+} from './types';
 
-export class ConsoleLogger implements ILogger {
+export class Logger implements IEnhancedLogger {
   private level: LogLevel;
   private options: Required<LoggerOptions>;
+  private strategy: ILoggerStrategy;
+  private fileLoggingEnabled = false;
 
   constructor(options: LoggerOptions = {}) {
     this.options = {
@@ -24,10 +36,18 @@ export class ConsoleLogger implements ILogger {
       },
       ...options,
     };
+
     this.level = this.options.level;
 
     // Use centralized environment configuration
     this.level = EnvironmentConfig.getLogLevel();
+
+    // Initialize with console strategy
+    this.strategy = new ConsoleLoggerStrategy({
+      enableColors: this.options.format.colors ?? true,
+      enableTimestamp: this.options.format.timestamp ?? true,
+      prefix: this.options.format.prefix ?? '[MD2PDF]',
+    });
   }
 
   error(message: string, ...args: unknown[]): void {
@@ -52,26 +72,15 @@ export class ConsoleLogger implements ILogger {
     }
 
     const entry = this.createLogEntry(level, message, args);
-    const formattedMessage = this.formatMessage(entry);
 
-    // Route to appropriate console method
-    switch (level) {
-      case 'error':
-        // eslint-disable-next-line no-console
-        console.error(formattedMessage, ...args);
-        break;
-      case 'warn':
-        // eslint-disable-next-line no-console
-        console.warn(formattedMessage, ...args);
-        break;
-      case 'debug':
-        // eslint-disable-next-line no-console
-        console.debug(formattedMessage, ...args);
-        break;
-      default:
-        // eslint-disable-next-line no-console
-        console.log(formattedMessage, ...args);
-    }
+    // Use strategy pattern for output
+    this.strategy.write(entry).catch((error) => {
+      // Fallback to console on error
+      // eslint-disable-next-line no-console
+      console.error(`[Logger] Failed to write log: ${error.message}`);
+      // eslint-disable-next-line no-console
+      console.error(`[Logger] Original message: ${message}`, ...args);
+    });
   }
 
   setLevel(level: LogLevel): void {
@@ -80,6 +89,99 @@ export class ConsoleLogger implements ILogger {
 
   getLevel(): LogLevel {
     return this.level;
+  }
+
+  async enableFileLogging(config: FileLoggingConfig): Promise<void> {
+    try {
+      // Create hybrid strategy that writes to both console and file
+      this.strategy = new HybridLoggerStrategy(
+        {
+          enableColors: this.options.format.colors ?? true,
+          enableTimestamp: this.options.format.timestamp ?? true,
+          prefix: this.options.format.prefix ?? '[MD2PDF]',
+        },
+        config,
+      );
+
+      this.fileLoggingEnabled = true;
+
+      // Log the enabling of file logging
+      this.info(`File logging enabled: ${config.filePath}`);
+    } catch (error) {
+      throw new Error(
+        `Failed to enable file logging: ${error instanceof Error ? error.message : 'Unknown error'}`,
+      );
+    }
+  }
+
+  async disableFileLogging(): Promise<void> {
+    try {
+      // Cleanup current strategy
+      await this.strategy.cleanup();
+
+      // Revert to console-only strategy
+      this.strategy = new ConsoleLoggerStrategy({
+        enableColors: this.options.format.colors ?? true,
+        enableTimestamp: this.options.format.timestamp ?? true,
+        prefix: this.options.format.prefix ?? '[MD2PDF]',
+      });
+
+      this.fileLoggingEnabled = false;
+
+      this.info('File logging disabled');
+    } catch (error) {
+      throw new Error(
+        `Failed to disable file logging: ${error instanceof Error ? error.message : 'Unknown error'}`,
+      );
+    }
+  }
+
+  async rotateLogs(): Promise<void> {
+    if (!this.fileLoggingEnabled) {
+      throw new Error('File logging is not enabled');
+    }
+
+    if (this.strategy instanceof HybridLoggerStrategy) {
+      await this.strategy.rotate();
+      this.info('Log rotation completed');
+    } else {
+      throw new Error('Current strategy does not support log rotation');
+    }
+  }
+
+  async getLogStats(): Promise<LogStats> {
+    if (!this.fileLoggingEnabled) {
+      return {
+        totalEntries: 0,
+        currentFileSize: 0,
+        rotationCount: 0,
+        isRotationNeeded: false,
+      };
+    }
+
+    if (this.strategy instanceof HybridLoggerStrategy) {
+      return this.strategy.getStats();
+    } else {
+      throw new Error('Current strategy does not support log statistics');
+    }
+  }
+
+  isFileLoggingEnabled(): boolean {
+    return this.fileLoggingEnabled;
+  }
+
+  /**
+   * Graceful cleanup - ensures all pending writes complete
+   */
+  async cleanup(): Promise<void> {
+    try {
+      await this.strategy.cleanup();
+    } catch (error) {
+      // eslint-disable-next-line no-console
+      console.error(
+        `[Logger] Cleanup failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
+      );
+    }
   }
 
   private createLogEntry(
@@ -93,30 +195,5 @@ export class ConsoleLogger implements ILogger {
       timestamp: new Date(),
       args,
     };
-  }
-
-  private formatMessage(entry: LogEntry): string {
-    const parts: string[] = [];
-
-    // Add timestamp if enabled
-    if (this.options.format.timestamp) {
-      const timestamp = entry.timestamp.toISOString();
-      parts.push(`[${timestamp}]`);
-    }
-
-    // Add prefix if provided
-    if (this.options.format.prefix) {
-      parts.push(this.options.format.prefix);
-    }
-
-    // Add level
-    const useColors = this.options.format.colors && process.stdout.isTTY;
-    const levelStr = formatLevel(entry.level, useColors);
-    parts.push(`[${levelStr}]`);
-
-    // Add message
-    parts.push(entry.message);
-
-    return parts.join(' ');
   }
 }

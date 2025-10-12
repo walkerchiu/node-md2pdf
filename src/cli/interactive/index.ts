@@ -10,6 +10,7 @@ import { ConversionConfig } from '../../types';
 import { CliUIManager } from '../ui/cli-ui-manager';
 
 import type { IFileProcessorService } from '../../application/services/file-processor.service';
+import type { IConfigManager } from '../../infrastructure/config/types';
 import type { IErrorHandler } from '../../infrastructure/error/types';
 import type { IFileSystemManager } from '../../infrastructure/filesystem/types';
 import type { ITranslationManager } from '../../infrastructure/i18n/types';
@@ -41,7 +42,13 @@ export class InteractiveMode {
     // fileSystem is optional in some test setups, tryResolve will return undefined when not registered
     this.fileSystemManager =
       container.tryResolve<IFileSystemManager>('fileSystem');
-    this.uiManager = new CliUIManager(this.translationManager, this.logger);
+    const configManager = container.resolve<IConfigManager>('config');
+    this.uiManager = new CliUIManager(
+      this.translationManager,
+      this.logger,
+      {},
+      configManager,
+    );
   }
 
   /**
