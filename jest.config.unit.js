@@ -67,6 +67,10 @@ module.exports = {
   // Ignore patterns
   testPathIgnorePatterns: ['/node_modules/', '/dist/', '/coverage/'],
 
+  // Transform ES modules from chalk
+  transformIgnorePatterns: [
+    'node_modules/(?!(chalk|#ansi-styles|strip-ansi|ansi-regex)/)',
+  ],
   // Minimal setup for speed
   setupFilesAfterEnv: ['<rootDir>/tests/setup-quick.ts'],
   verbose: false,

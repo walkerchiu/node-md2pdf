@@ -46,7 +46,7 @@ export const enTranslations: TranslationKey = {
       selectLanguage: 'Select your preferred language',
     },
     customizationMenu: {
-      title: '🎨 Customization Settings',
+      title: '🎨 Customization',
       subtitle: 'Advanced styling and template management options',
       returnToMain: '0. Return to Main Menu',
       coverDesign: '1. Cover Design',
@@ -56,7 +56,7 @@ export const enTranslations: TranslationKey = {
       templateManagement: '5. Template Management',
     },
     settingsMenu: {
-      title: '🔧 Settings & Preferences',
+      title: '🔧 Settings',
       returnToMain: '0. Return to Main Menu',
       returnToSettings: '0. Return to Settings Menu',
       languageSettings: '1. Language & Localization',
@@ -89,7 +89,7 @@ export const enTranslations: TranslationKey = {
 
   // Smart Conversion Mode
   smartConversion: {
-    title: '🤖 Smart Conversion Mode',
+    title: '🤖 Smart Conversion',
     subtitle: 'Intelligent configuration in 3 steps!',
     step1: 'Step 1: File Selection',
     step2: 'Step 2: Content Analysis & Recommendations',
@@ -252,7 +252,7 @@ export const enTranslations: TranslationKey = {
 
   // Batch Processing Mode
   batch: {
-    title: '📚 Batch Processing Mode',
+    title: '📚 Batch Processing',
     subtitle: 'Convert multiple files efficiently!',
     step1: 'Step 1: Select Files',
     step2: 'Step 2: Configure Settings',
@@ -424,6 +424,7 @@ export const enTranslations: TranslationKey = {
     customizationModeError: 'Customization mode error',
     settingsModeError: 'Settings mode error',
     languageSettingsError: 'Language settings error',
+    loggingSettingsError: 'Logging settings error',
     failedToChangeLanguage: 'Failed to change language',
   },
 
@@ -541,6 +542,97 @@ export const enTranslations: TranslationKey = {
     modern: 'Modern',
   },
 
+  // Logging Settings
+  logging: {
+    header: {
+      title: 'Logging Settings',
+      currentLevel: 'Current level',
+      fileLogging: 'File logging',
+      logFormat: 'Log format',
+    },
+    menu: {
+      selectOption: 'Select logging option',
+      returnToSettings: 'Return to Settings Menu',
+      changeLogLevel: 'Change Log Level',
+      toggleFileLogging: 'Toggle File Logging',
+      changeLogFormat: 'Change Log Format',
+      viewLogDirectory: 'View Log Directory',
+      testLoggingFunctions: 'Test Logging Functions',
+    },
+    level: {
+      title: 'Configure Log Level',
+      description: 'Log levels determine which messages are displayed',
+      selectPrompt: 'Select the minimum log level to display',
+      errorDesc:
+        'Only critical errors that prevent the application from functioning',
+      errorShort: 'Critical errors only',
+      warnDesc: 'Errors and warnings about potential issues',
+      warnShort: 'Errors and warnings',
+      infoDesc:
+        'General information messages along with errors and warnings (Recommended)',
+      infoShort: 'Information and above (Recommended)',
+      debugDesc: 'Detailed debugging information for troubleshooting',
+      debugShort: 'All messages including debug output',
+      updateSuccess: 'Log level updated successfully to',
+      unchanged: 'Log level unchanged (already set to',
+    },
+    file: {
+      title: 'Configure File Logging',
+      description: 'File logging allows you to save log messages to disk',
+      benefit1: 'Persistent storage of log messages for later review',
+      benefit2: 'Automatic log rotation to prevent disk space issues',
+      location: 'Log files are stored in the logs directory',
+      rotation: 'Old log files are automatically archived',
+      currentStatus: 'File logging is currently',
+      enablePrompt: 'Would you like to enable file logging',
+      disablePrompt: 'Would you like to disable file logging',
+      enabledSuccess: 'File logging has been enabled',
+      enabledNote:
+        'Log messages will now be written to files in addition to the console',
+      disabledSuccess: 'File logging has been disabled',
+      disabledNote: 'Log messages will only be displayed in the console',
+      unchanged: 'File logging setting unchanged',
+      outputLocation: 'Log output will be written to',
+      sessionEnableNote: 'File logging is enabled for this session',
+    },
+    format: {
+      title: 'Configure Log Format',
+      description: 'Choose how log messages are formatted',
+      selectPrompt: 'Select the log message format',
+      textDesc: 'Human-readable format with timestamps',
+      textChoice: 'Human-readable format (Recommended)',
+      jsonDesc: 'Machine-readable JSON format for analysis tools',
+      jsonChoice: 'JSON format for automated processing',
+      updateSuccess: 'Log format updated successfully to',
+      unchanged: 'Log format unchanged (already set to',
+    },
+    directory: {
+      title: 'View Log Directory',
+      path: 'Log directory location',
+      exists: 'Log directory exists',
+      notExists:
+        'Log directory does not exist yet (will be created when file logging is enabled)',
+      filesShowing: 'Log files found (showing first',
+      noFiles: 'No log files found in the directory',
+      readError: 'Unable to read directory contents',
+    },
+    test: {
+      title: 'Test Logging Functions',
+      infoMessage:
+        'This is a test INFO message from the logging settings panel',
+      warnMessage:
+        'This is a test WARN message to demonstrate warning level logging',
+      errorMessage: 'This is a test ERROR message to show error level output',
+      debugMessage:
+        'This is a test DEBUG message with detailed information for troubleshooting',
+      sending: 'Sending test messages at different log levels',
+      sendingLevel: 'Sending',
+      sent: 'Test messages sent successfully!',
+      checkOutput:
+        'Check your console and log files (if file logging is enabled) to see the output',
+    },
+  },
+
   // Common messages
   common: {
     back: 'Back',
@@ -563,6 +655,10 @@ export const enTranslations: TranslationKey = {
     failed: 'Failed',
     yes: 'Yes',
     no: 'No',
+    current: 'Current',
+    enabled: 'Enabled',
+    disabled: 'Disabled',
+    pressEnter: 'Press Enter to continue...',
   },
 
   // Short text (for menu shortcuts)

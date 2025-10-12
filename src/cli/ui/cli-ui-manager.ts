@@ -7,6 +7,7 @@ import chalk from 'chalk';
 
 import { EnvironmentConfig } from '../../infrastructure/config/environment';
 
+import type { IConfigManager } from '../../infrastructure/config/types';
 import type { ITranslationManager } from '../../infrastructure/i18n/types';
 import type { ILogger } from '../../infrastructure/logging/types';
 
@@ -17,14 +18,17 @@ export interface CliUIManagerOptions {
 
 export class CliUIManager {
   private logger: ILogger | undefined;
+  private configManager: IConfigManager | undefined;
   private options: Required<CliUIManagerOptions>;
 
   constructor(
     _translator: ITranslationManager,
     logger?: ILogger,
     options: CliUIManagerOptions = {},
+    configManager?: IConfigManager,
   ) {
     this.logger = logger;
+    this.configManager = configManager;
     this.options = {
       verbose: options.verbose ?? EnvironmentConfig.isVerboseEnabled(),
       colors: options.colors ?? process.stdout.isTTY,
@@ -64,7 +68,8 @@ export class CliUIManager {
       : message;
     console.log(`${icon} ${formattedMessage}`);
 
-    if (this.options.verbose && this.logger) {
+    // Log to file only if file logging is enabled
+    if (this.logger && this.isFileLoggingEnabled()) {
       this.logger.info(`Success: ${message}`);
     }
   }
@@ -85,7 +90,7 @@ export class CliUIManager {
       console.error(formattedDetail);
     }
 
-    if (this.logger) {
+    if (this.logger && this.isFileLoggingEnabled()) {
       this.logger.error(message, error);
     }
   }
@@ -100,7 +105,8 @@ export class CliUIManager {
       : message;
     console.warn(`${icon} ${formattedMessage}`);
 
-    if (this.options.verbose && this.logger) {
+    // Log to file only if file logging is enabled
+    if (this.logger && this.isFileLoggingEnabled()) {
       this.logger.warn(message);
     }
   }
@@ -115,7 +121,8 @@ export class CliUIManager {
       : message;
     console.log(`${icon} ${formattedMessage}`);
 
-    if (this.options.verbose && this.logger) {
+    // Log to file only if file logging is enabled
+    if (this.logger && this.isFileLoggingEnabled()) {
       this.logger.info(message);
     }
   }
@@ -130,7 +137,8 @@ export class CliUIManager {
       : message;
     console.log(`${icon} ${formattedMessage}`);
 
-    if (this.options.verbose && this.logger) {
+    // Log to file only if file logging is enabled
+    if (this.logger && this.isFileLoggingEnabled()) {
       this.logger.info(`Progress: ${message}`);
     }
   }
@@ -145,7 +153,8 @@ export class CliUIManager {
       : message;
     console.log(`${icon} ${formattedMessage}`);
 
-    if (this.options.verbose && this.logger) {
+    // Log to file only if file logging is enabled
+    if (this.logger && this.isFileLoggingEnabled()) {
       this.logger.info(`Complete: ${message}`);
     }
   }
@@ -156,7 +165,8 @@ export class CliUIManager {
   showMessage(message: string): void {
     console.log(message);
 
-    if (this.options.verbose && this.logger) {
+    // Log to file only if file logging is enabled
+    if (this.logger && this.isFileLoggingEnabled()) {
       this.logger.info(message);
     }
   }
@@ -216,6 +226,18 @@ export class CliUIManager {
   }
 
   /**
+   * Check if file logging is enabled
+   */
+  private isFileLoggingEnabled(): boolean {
+    if (!this.configManager) {
+      return false;
+    }
+    return (
+      this.configManager.get<boolean>('logging.fileEnabled', true) || false
+    );
+  }
+
+  /**
    * Update verbose mode setting
    */
   setVerbose(verbose: boolean): void {
@@ -227,5 +249,69 @@ export class CliUIManager {
    */
   isVerboseMode(): boolean {
     return this.options.verbose;
+  }
+
+  /**
+   * Log user navigation/access activity
+   */
+  logUserAccess(
+    module: string,
+    action: string,
+    details?: Record<string, unknown>,
+  ): void {
+    if (this.logger && this.isFileLoggingEnabled()) {
+      const logMessage = `User Access - Module: ${module}, Action: ${action}`;
+      if (details) {
+        this.logger.info(logMessage, details);
+      } else {
+        this.logger.info(logMessage);
+      }
+    }
+  }
+
+  /**
+   * Log user configuration changes
+   */
+  logConfigChange(setting: string, oldValue: unknown, newValue: unknown): void {
+    if (this.logger && this.isFileLoggingEnabled()) {
+      this.logger.info(`Config Change - Setting: ${setting}`, {
+        old: oldValue,
+        new: newValue,
+      });
+    }
+  }
+
+  /**
+   * Log file processing activity
+   */
+  logFileOperation(
+    operation: string,
+    files: string[],
+    parameters?: Record<string, unknown>,
+  ): void {
+    if (this.logger && this.isFileLoggingEnabled()) {
+      this.logger.info(`File Operation - ${operation}`, {
+        files: files,
+        parameters: parameters || {},
+        fileCount: files.length,
+      });
+    }
+  }
+
+  /**
+   * Log conversion activity with detailed parameters
+   */
+  logConversion(
+    inputFile: string,
+    outputFile: string,
+    parameters: Record<string, unknown>,
+  ): void {
+    if (this.logger && this.isFileLoggingEnabled()) {
+      this.logger.info('PDF Conversion', {
+        input: inputFile,
+        output: outputFile,
+        parameters: parameters,
+      });
+    }
   }
 }

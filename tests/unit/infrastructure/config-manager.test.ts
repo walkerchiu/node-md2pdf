@@ -243,66 +243,33 @@ describe('ConfigManager', () => {
     });
   });
 
-  describe('load method', () => {
-    it('should load configuration from file when it exists', async () => {
-      const mockConfigContent = {
-        custom: { setting: 'loaded' },
-        pdf: { margin: { top: '3in' } },
-      };
-
-      mockFs.pathExists.mockResolvedValue(true);
-      mockFs.readJson.mockResolvedValue(mockConfigContent);
-
-      await configManager.load();
-
-      expect(configManager.get('custom.setting')).toBe('loaded');
-      expect(configManager.get('pdf.margin.top')).toBe('3in'); // Should override default
-    });
-
-    it('should handle non-existent config file gracefully', async () => {
-      mockFs.pathExists.mockResolvedValue(false);
-
-      await configManager.load();
-
-      // Should maintain existing config
-      expect(configManager.get('pdf.margin.top')).toBe(
-        defaultConfig.pdf.margin.top,
-      );
-    });
-
-    it('should handle file read errors', async () => {
-      const readError = new Error('Permission denied');
-      mockFs.pathExists.mockResolvedValue(true);
-      mockFs.readJson.mockRejectedValue(readError);
-
-      // Should not throw - errors are silently handled and defaults are used
-      await expect(configManager.load()).resolves.not.toThrow();
-    });
-  });
-
-  describe('configuration merging', () => {
-    it('should merge loaded configuration with existing defaults', async () => {
+  describe('configuration merging during initialization', () => {
+    it('should merge loaded configuration with existing defaults', () => {
       const partialConfig = {
         pdf: { margin: { top: '2in' } }, // Only override top margin
         custom: { newSetting: 'value' },
       };
 
-      mockFs.pathExists.mockResolvedValue(true);
-      mockFs.readJson.mockResolvedValue(partialConfig);
+      jest.clearAllMocks();
+      mockFs.pathExistsSync.mockReturnValue(true);
+      mockFs.readJsonSync.mockReturnValue(partialConfig);
 
-      await configManager.load();
+      const manager = new ConfigManager({
+        configPath: '/test/config.json',
+        useEnvironmentVariables: false,
+      });
 
       // Should override existing setting
-      expect(configManager.get('pdf.margin.top')).toBe('2in');
+      expect(manager.get('pdf.margin.top')).toBe('2in');
       // Should keep other existing settings
-      expect(configManager.get('pdf.margin.right')).toBe(
+      expect(manager.get('pdf.margin.right')).toBe(
         defaultConfig.pdf.margin.right,
       );
       // Should add new settings
-      expect(configManager.get('custom.newSetting')).toBe('value');
+      expect(manager.get('custom.newSetting')).toBe('value');
     });
 
-    it('should handle deep merging correctly', async () => {
+    it('should handle deep merging correctly during initialization', () => {
       const deepConfig = {
         pdf: {
           fonts: {
@@ -312,14 +279,18 @@ describe('ConfigManager', () => {
         },
       };
 
-      mockFs.pathExists.mockResolvedValue(true);
-      mockFs.readJson.mockResolvedValue(deepConfig);
+      jest.clearAllMocks();
+      mockFs.pathExistsSync.mockReturnValue(true);
+      mockFs.readJsonSync.mockReturnValue(deepConfig);
 
-      await configManager.load();
+      const manager = new ConfigManager({
+        configPath: '/test/config.json',
+        useEnvironmentVariables: false,
+      });
 
-      expect(configManager.get('pdf.fonts.chinese.name')).toBe('CustomFont');
+      expect(manager.get('pdf.fonts.chinese.name')).toBe('CustomFont');
       // Should preserve other default font settings
-      expect(configManager.get('pdf.fonts')).toBeDefined();
+      expect(manager.get('pdf.fonts')).toBeDefined();
     });
   });
 

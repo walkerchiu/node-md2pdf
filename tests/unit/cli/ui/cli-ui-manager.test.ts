@@ -210,13 +210,23 @@ describe('CliUIManager', () => {
   });
 
   describe('Logger integration', () => {
-    it('should call logger methods in verbose mode', () => {
+    it('should call logger methods in verbose mode with file logging enabled', () => {
+      const mockConfigManager = {
+        get: jest.fn((key: string, defaultValue: any) => {
+          if (key === 'logging.fileEnabled') {
+            return true; // Enable file logging
+          }
+          return defaultValue;
+        }),
+      };
+
       const uiManager = new CliUIManager(
         mockTranslator as any,
         mockLogger as any,
         {
           verbose: true,
         },
+        mockConfigManager as any,
       );
 
       uiManager.showSuccess('Test success');

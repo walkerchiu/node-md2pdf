@@ -3,12 +3,21 @@
  */
 
 export { LOG_LEVELS, LOG_COLORS, shouldLog, formatLevel } from './levels';
-export { ConsoleLogger } from './logger';
+export { Logger } from './logger';
+export {
+  ConsoleLoggerStrategy,
+  FileLoggerStrategy,
+  HybridLoggerStrategy,
+} from './strategies';
 
 export type {
   ILogger,
-  LogEntry,
-  LogFormat,
-  LoggerOptions,
+  IEnhancedLogger,
+  ILoggerStrategy,
   LogLevel,
+  LoggerOptions,
+  LogFormat,
+  LogEntry,
+  FileLoggingConfig,
+  LogStats,
 } from './types';

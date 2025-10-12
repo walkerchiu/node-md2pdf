@@ -108,6 +108,13 @@ describe('BatchInteractiveMode', () => {
         if (service === 'translator') return createMockTranslator();
         if (service === 'errorHandler') return { handleError: jest.fn() };
         if (service === 'batchProcessor') return mockBatchProcessorService;
+        if (service === 'config')
+          return {
+            get: jest.fn(),
+            set: jest.fn(),
+            has: jest.fn(),
+            save: jest.fn(),
+          };
         return {};
       }),
     };
@@ -173,7 +180,8 @@ describe('BatchInteractiveMode', () => {
 
       // Note: Error handling is now done through CliUIManager
       // The logger.error might still be called through the error handler chain
-      expect(mockLogger.error).toHaveBeenCalled();
+      // Logger error is not called without configManager (file logging disabled)
+      expect(mockLogger.error).not.toHaveBeenCalled();
     });
   });
 

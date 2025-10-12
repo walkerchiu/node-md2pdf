@@ -8,7 +8,13 @@ export interface IConfigManager {
   has(key: string): boolean;
   getAll(): Record<string, unknown>;
   save(): Promise<void>;
-  load(): Promise<void>;
+  onConfigCreated(callback: (path: string) => void): void;
+  onConfigChanged(
+    key: string | string[],
+    callback: (newValue: unknown, oldValue: unknown, key: string) => void,
+  ): void;
+  setAndSave<T = unknown>(key: string, value: T): Promise<void>;
+  getConfigPath(): string;
 }
 
 export interface ConfigOptions {
@@ -52,6 +58,17 @@ export interface ConfigSchema {
     maxWorkers: number;
     timeout: number;
     memoryLimit: string;
+  };
+
+  // Logging settings (optional for backward compatibility)
+  logging?: {
+    level: 'error' | 'warn' | 'info' | 'debug';
+    fileEnabled: boolean;
+    filePath?: string;
+    format: 'text' | 'json';
+    maxFileSize: number;
+    maxBackupFiles: number;
+    enableRotation: boolean;
   };
 
   // Feature flags

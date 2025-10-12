@@ -139,7 +139,7 @@ describe('TranslationManager', () => {
     it('should have settings menu translations in English', () => {
       translationManager.setLocale('en');
       expect(translationManager.t('cli.settingsMenu.title')).toBe(
-        '🔧 Settings & Preferences',
+        '🔧 Settings',
       );
       expect(translationManager.t('cli.settingsMenu.returnToMain')).toBe(
         '0. Return to Main Menu',
