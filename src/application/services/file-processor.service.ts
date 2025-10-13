@@ -12,6 +12,7 @@ import {
   FileNotFoundError,
 } from '../../infrastructure/error/errors';
 import { ParsedMarkdown } from '../../types/index';
+import { ImagePathResolver } from '../../utils/image-path-resolver';
 
 import { IMarkdownParserService } from './markdown-parser.service';
 import { IPDFGeneratorService } from './pdf-generator.service';
@@ -114,6 +115,12 @@ export class FileProcessorService implements IFileProcessorService {
           tocResult.html,
         );
       }
+
+      // Process image paths before PDF generation
+      finalHtmlContent = ImagePathResolver.processImagePaths(
+        finalHtmlContent,
+        inputPath,
+      );
 
       // Apply custom styles if provided
       if (options.customStyles) {

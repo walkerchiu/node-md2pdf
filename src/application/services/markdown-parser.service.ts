@@ -13,6 +13,7 @@ import {
   MarkdownParsingError,
 } from '../../infrastructure/error/errors';
 import { ParsedMarkdown, Heading } from '../../types/index';
+import { ImagePathResolver } from '../../utils/image-path-resolver';
 
 import type { IConfigManager } from '../../infrastructure/config/types';
 import type { IErrorHandler } from '../../infrastructure/error/types';
@@ -128,8 +129,15 @@ export class MarkdownParserService implements IMarkdownParserService {
 
       this.logger.info(`Markdown file parsed successfully: ${filePath}`);
 
+      // Process image paths in HTML content
+      const processedContent = ImagePathResolver.processImagePaths(
+        result.content,
+        filePath,
+      );
+
       return {
         ...result,
+        content: processedContent,
         metadata: {
           ...result.metadata,
           filePath,

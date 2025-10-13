@@ -19,6 +19,21 @@ export const defaultConfig: ConfigSchema = {
     },
     displayHeaderFooter: false,
     printBackground: true,
+    useEnhancedEngine: true,
+    engines: {
+      primary: 'puppeteer',
+      fallback: ['chrome-headless'],
+      strategy: 'health-first',
+      healthCheck: {
+        interval: 30000,
+        enabled: true,
+      },
+      resourceLimits: {
+        maxConcurrentTasks: 3,
+        taskTimeout: 120000,
+        memoryLimit: '2GB',
+      },
+    },
   },
   toc: {
     enabled: true,
@@ -69,4 +84,12 @@ export const environmentMappings: Record<string, string> = {
   MD2PDF_USE_ENHANCED_CLI: 'features.enhancedCli',
   MD2PDF_USE_NEW_ORCHESTRATOR: 'features.newOrchestrator',
   MD2PDF_FORCE_LEGACY: 'features.forceLegacyMode',
+  MD2PDF_PDF_USE_ENHANCED_ENGINE: 'pdf.useEnhancedEngine',
+  MD2PDF_PDF_PRIMARY_ENGINE: 'pdf.engines.primary',
+  MD2PDF_PDF_ENGINE_STRATEGY: 'pdf.engines.strategy',
+  MD2PDF_PDF_HEALTH_CHECK_ENABLED: 'pdf.engines.healthCheck.enabled',
+  MD2PDF_PDF_HEALTH_CHECK_INTERVAL: 'pdf.engines.healthCheck.interval',
+  MD2PDF_PDF_MAX_CONCURRENT_TASKS:
+    'pdf.engines.resourceLimits.maxConcurrentTasks',
+  MD2PDF_PDF_TASK_TIMEOUT: 'pdf.engines.resourceLimits.taskTimeout',
 };
