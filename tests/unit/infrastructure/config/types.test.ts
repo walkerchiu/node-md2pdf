@@ -24,6 +24,21 @@ describe('ConfigSchema', () => {
           format: 'A4',
           displayHeaderFooter: false,
           printBackground: true,
+          useEnhancedEngine: true,
+          engines: {
+            primary: 'puppeteer',
+            fallback: ['chrome-headless'],
+            strategy: 'health-first',
+            healthCheck: {
+              interval: 30000,
+              enabled: true,
+            },
+            resourceLimits: {
+              maxConcurrentTasks: 3,
+              taskTimeout: 120000,
+              memoryLimit: '2GB',
+            },
+          },
         },
         toc: {
           enabled: true,
@@ -135,7 +150,7 @@ describe('ConfigSchema', () => {
       expect(minimalLoggingConfig.logging?.level).toBe('info');
     });
 
-    it('should support pdf configuration structure', () => {
+    it('should support pdf configuration with engine settings', () => {
       const pdfConfig: Partial<ConfigSchema> = {
         pdf: {
           margin: {
@@ -147,12 +162,32 @@ describe('ConfigSchema', () => {
           format: 'A3',
           displayHeaderFooter: true,
           printBackground: false,
+          useEnhancedEngine: false,
+          engines: {
+            primary: 'chrome-headless',
+            fallback: ['puppeteer'],
+            strategy: 'primary-first',
+            healthCheck: {
+              interval: 60000,
+              enabled: false,
+            },
+            resourceLimits: {
+              maxConcurrentTasks: 1,
+              taskTimeout: 60000,
+              memoryLimit: '1GB',
+            },
+          },
         },
       };
 
       expect(pdfConfig.pdf?.margin.top).toBe('2cm');
       expect(pdfConfig.pdf?.format).toBe('A3');
       expect(pdfConfig.pdf?.displayHeaderFooter).toBe(true);
+      expect(pdfConfig.pdf?.useEnhancedEngine).toBe(false);
+      expect(pdfConfig.pdf?.engines.primary).toBe('chrome-headless');
+      expect(pdfConfig.pdf?.engines.strategy).toBe('primary-first');
+      expect(pdfConfig.pdf?.engines.healthCheck.enabled).toBe(false);
+      expect(pdfConfig.pdf?.engines.resourceLimits.maxConcurrentTasks).toBe(1);
     });
 
     it('should support performance configuration structure', () => {

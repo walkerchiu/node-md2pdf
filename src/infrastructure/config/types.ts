@@ -23,6 +23,13 @@ export interface ConfigOptions {
   environmentPrefix?: string;
 }
 
+export type PDFEngineStrategy =
+  | 'health-first'
+  | 'primary-first'
+  | 'load-balanced'
+  | 'capability-based'
+  | 'adaptive';
+
 export interface ConfigSchema {
   // Core settings
   language: {
@@ -41,6 +48,26 @@ export interface ConfigSchema {
     };
     displayHeaderFooter: boolean;
     printBackground: boolean;
+    useEnhancedEngine: boolean;
+    engines: {
+      primary: string;
+      fallback: string[];
+      strategy:
+        | 'health-first'
+        | 'primary-first'
+        | 'load-balanced'
+        | 'capability-based'
+        | 'adaptive';
+      healthCheck: {
+        interval: number;
+        enabled: boolean;
+      };
+      resourceLimits: {
+        maxConcurrentTasks: number;
+        taskTimeout: number;
+        memoryLimit: string;
+      };
+    };
   };
 
   // TOC settings
