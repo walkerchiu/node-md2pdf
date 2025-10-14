@@ -385,9 +385,7 @@ describe('FileBrowser - Simple Tests', () => {
       expect(choices.some((choice: any) => choice.value === '__search__')).toBe(
         true,
       );
-      expect(choices.some((choice: any) => choice.value === '__recent__')).toBe(
-        true,
-      );
+      // __recent__ option removed - no longer testing for it
       expect(choices.some((choice: any) => choice.value === '__up__')).toBe(
         true,
       ); // Parent directory
@@ -457,7 +455,7 @@ describe('FileBrowser - Simple Tests', () => {
       ).toBe(true);
     });
 
-    it('should build choices with many other files showing summary', () => {
+    it('should not show other files when there are many (5+) to keep interface clean', () => {
       const buildChoices = (fileBrowser as any).buildChoices.bind(fileBrowser);
 
       const items = Array.from({ length: 10 }, (_, i) => ({
@@ -471,14 +469,14 @@ describe('FileBrowser - Simple Tests', () => {
 
       const choices = buildChoices(items, '/test');
 
+      // Should not show individual non-markdown files when there are many
+      expect(
+        choices.some((choice: any) => choice.value.includes('file0.txt')),
+      ).toBe(false);
+      // Should not show the old summary option (which was non-functional)
       expect(
         choices.some((choice: any) => choice.value === '__show_all__'),
-      ).toBe(true);
-      expect(
-        choices.some((choice: any) =>
-          choice.name.includes('fileBrowser.andOtherFiles'),
-        ),
-      ).toBe(true);
+      ).toBe(false);
     });
 
     it('should show individual other files when count is small', () => {

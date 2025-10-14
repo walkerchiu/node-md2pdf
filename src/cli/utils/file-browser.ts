@@ -90,7 +90,7 @@ export class FileBrowser {
           message: this.translationManager.t('fileBrowser.selectFile'),
           choices,
           pageSize: 15,
-          default: '__recent__', // Select recent files by default
+          default: '__search__',
         });
 
         if (action === '__up__') {
@@ -103,11 +103,6 @@ export class FileBrowser {
           const searchResult = await this.searchFiles(currentPath, options);
           if (searchResult) {
             return searchResult;
-          }
-        } else if (action === '__recent__') {
-          const recentFile = await this.selectFromRecent();
-          if (recentFile) {
-            return recentFile;
           }
         } else if (action === '__back_to_main__') {
           throw new Error('BACK_TO_MAIN_MENU');
@@ -205,17 +200,10 @@ export class FileBrowser {
     choices.push(
       {
         name: chalk.gray(
-          '🔙 ' + this.translationManager.t('smartConversion.returnToMainMenu'),
+          this.translationManager.t('fileBrowser.returnToMainMenu'),
         ),
         value: '__back_to_main__',
         short: this.translationManager.t('cli.options.back'),
-      },
-      {
-        name: chalk.magenta(
-          '📋 ' + this.translationManager.t('smartConversion.recentFiles'),
-        ),
-        value: '__recent__',
-        short: this.translationManager.t('cli.options.recent'),
       },
       {
         name: chalk.blue(
@@ -262,7 +250,7 @@ export class FileBrowser {
       });
     });
 
-    // Add other files (dimmed)
+    // Add other files (dimmed) - only show first few to avoid cluttering
     if (otherFiles.length > 0 && otherFiles.length < 5) {
       otherFiles.forEach((file) => {
         choices.push({
@@ -273,14 +261,9 @@ export class FileBrowser {
           short: file.name,
         });
       });
-    } else if (otherFiles.length >= 5) {
-      choices.push({
-        name: chalk.dim(
-          `📄 ${this.translationManager.t('fileBrowser.andOtherFiles', { count: otherFiles.length.toString() })}`,
-        ),
-        value: '__show_all__',
-      });
     }
+    // Note: When there are 5+ other files, we simply don't show them to keep the interface clean
+    // Users can use the search function to find specific non-markdown files if needed
 
     return choices.filter((choice) => choice.value !== '__separator__');
   }
@@ -553,54 +536,6 @@ export class FileBrowser {
     });
 
     return resolve(filePath.trim());
-  }
-  private async selectFromRecent(): Promise<string | null> {
-    const inquirer = await import('inquirer');
-
-    try {
-      const { RecentFilesManager } = await import('../config/recent-files');
-      const recentFilesManager = new RecentFilesManager();
-      const recentFiles = await recentFilesManager.getRecentFiles();
-
-      if (recentFiles.length === 0) {
-        this.renderer.warn(
-          chalk.yellow(
-            this.translationManager.t('fileBrowser.noRecentFilesFound'),
-          ),
-        );
-        return null;
-      }
-
-      this.renderer.info(chalk.cyan('\n📋 Recent Files:'));
-      recentFiles.slice(0, 5).forEach((file, index) => {
-        const displayPath = recentFilesManager.formatFilePath(file.path);
-        const size = recentFilesManager.formatFileSize(file.size);
-        const lastUsed = recentFilesManager.formatLastUsed(file.lastUsed);
-
-        this.renderer.info(`   ${index + 1}. ${chalk.green(displayPath)}`);
-        this.renderer.info(`      ${chalk.gray(`${size} • ${lastUsed}`)}`);
-      });
-
-      this.renderer.newline();
-
-      const { filePath } = await inquirer.default.prompt({
-        type: 'list',
-        name: 'filePath',
-        message: '📋 Select from recent files:',
-        choices: recentFiles.map((file, index) => ({
-          name: `${index + 1}. ${recentFilesManager.formatFilePath(file.path)} ${chalk.gray(
-            `(${recentFilesManager.formatLastUsed(file.lastUsed)})`,
-          )}`,
-          value: file.path,
-        })),
-        pageSize: 8,
-      });
-
-      return filePath;
-    } catch (error) {
-      this.renderer.warn(chalk.yellow('⚠️  Error loading recent files'));
-      return null;
-    }
   }
 
   private formatFileSize(bytes: number): string {
