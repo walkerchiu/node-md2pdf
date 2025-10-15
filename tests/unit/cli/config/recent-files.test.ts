@@ -4,7 +4,6 @@
 
 import { RecentFilesManager } from '../../../../src/cli/config/recent-files';
 import { promises as fs } from 'fs';
-import { homedir } from 'os';
 import { join } from 'path';
 
 // Mock fs promises
@@ -18,23 +17,18 @@ jest.mock('fs', () => ({
   },
 }));
 
-// Mock os module
-jest.mock('os', () => ({
-  homedir: jest.fn(),
-}));
-
 // Mock path module
 jest.mock('path', () => ({
   join: jest.fn(),
 }));
 
 const mockFs = fs as jest.Mocked<typeof fs>;
-const mockHomedir = homedir as jest.MockedFunction<typeof homedir>;
 const mockJoin = join as jest.MockedFunction<typeof join>;
 
 describe('RecentFilesManager', () => {
   let recentFilesManager: RecentFilesManager;
   let consoleSpy: jest.SpyInstance;
+  let originalCwd: () => string;
 
   beforeEach(() => {
     jest.clearAllMocks();
@@ -42,8 +36,11 @@ describe('RecentFilesManager', () => {
     // Mock console.warn to prevent output during tests
     consoleSpy = jest.spyOn(console, 'warn').mockImplementation(() => {});
 
+    // Mock process.cwd to return a consistent test path
+    originalCwd = process.cwd;
+    process.cwd = jest.fn().mockReturnValue('/test/current/dir');
+
     // Setup default mocks
-    mockHomedir.mockReturnValue('/home/user');
     mockJoin.mockImplementation((...args) => args.join('/'));
 
     recentFilesManager = new RecentFilesManager();
@@ -51,6 +48,7 @@ describe('RecentFilesManager', () => {
 
   afterEach(() => {
     consoleSpy.mockRestore();
+    process.cwd = originalCwd;
   });
 
   describe('constructor', () => {
@@ -179,11 +177,11 @@ describe('RecentFilesManager', () => {
 
       await recentFilesManager.addFile(testPath);
 
-      expect(mockFs.mkdir).toHaveBeenCalledWith('/home/user/.md2pdf', {
+      expect(mockFs.mkdir).toHaveBeenCalledWith('/test/current/dir', {
         recursive: true,
       });
       expect(mockFs.writeFile).toHaveBeenCalledWith(
-        '/home/user/.md2pdf/recent-files.json',
+        '/test/current/dir/recent-files.json',
         expect.stringContaining(testPath),
         'utf-8',
       );
@@ -403,7 +401,7 @@ describe('RecentFilesManager', () => {
 
       expect(result).toHaveLength(1);
       expect(mockFs.writeFile).toHaveBeenCalledWith(
-        '/home/user/.md2pdf/recent-files.json',
+        '/test/current/dir/recent-files.json',
         expect.stringContaining('/exists/file.md'),
         'utf-8',
       );
@@ -418,7 +416,7 @@ describe('RecentFilesManager', () => {
       await recentFilesManager.clearRecentFiles();
 
       expect(mockFs.writeFile).toHaveBeenCalledWith(
-        '/home/user/.md2pdf/recent-files.json',
+        '/test/current/dir/recent-files.json',
         expect.stringContaining('"files": []'),
         'utf-8',
       );
@@ -488,11 +486,11 @@ describe('RecentFilesManager', () => {
 
       await recentFilesManager.addFile('/test/file.md');
 
-      expect(mockFs.mkdir).toHaveBeenCalledWith('/home/user/.md2pdf', {
+      expect(mockFs.mkdir).toHaveBeenCalledWith('/test/current/dir', {
         recursive: true,
       });
       expect(mockFs.readFile).toHaveBeenCalledWith(
-        '/home/user/.md2pdf/recent-files.json',
+        '/test/current/dir/recent-files.json',
         'utf-8',
       );
     });
