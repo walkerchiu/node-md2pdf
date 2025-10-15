@@ -63,3 +63,7 @@ package-lock.json
 test-results/
 test-output/
 tests/temp/
+
+# User configuration files
+config.json
+recent-files.json

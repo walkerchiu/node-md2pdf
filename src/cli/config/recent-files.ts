@@ -4,7 +4,6 @@
  */
 
 import { promises as fs } from 'fs';
-import { homedir } from 'os';
 import { join } from 'path';
 
 export interface RecentFile {
@@ -26,7 +25,7 @@ export class RecentFilesManager {
   private config: RecentFilesConfig | null = null;
 
   constructor() {
-    this.configDir = join(homedir(), '.md2pdf');
+    this.configDir = process.cwd();
     this.configFile = join(this.configDir, 'recent-files.json');
   }
 

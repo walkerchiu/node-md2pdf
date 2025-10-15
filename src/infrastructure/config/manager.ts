@@ -2,14 +2,13 @@
  * Improved Configuration Manager implementation
  *
  * Core principles:
- * 1. Single source of truth: User preferences file (~/.md2pdf/config.json)
+ * 1. Single source of truth: User preferences file (config.json in current directory)
  * 2. Default configuration used only for initialization
  * 3. All system behavior follows user preferences
  * 4. Changes immediately persisted
  * 5. UI display matches actual configuration
  */
 
-import * as os from 'os';
 import * as path from 'path';
 
 import * as fs from 'fs-extra';
@@ -35,7 +34,7 @@ export class ConfigManager implements IConfigManager {
       ...options,
     };
     this.configPath =
-      options.configPath || path.join(os.homedir(), '.md2pdf', 'config.json');
+      options.configPath || path.join(process.cwd(), 'config.json');
 
     // Initialize configuration with proper user preferences management
     this.initializeConfiguration();
