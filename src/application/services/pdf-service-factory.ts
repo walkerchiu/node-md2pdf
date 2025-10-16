@@ -4,13 +4,13 @@
  */
 
 import {
-  EnhancedPDFGeneratorService,
-  type IEnhancedPDFGeneratorService,
-} from './enhanced-pdf-generator.service';
+  AdvancedPDFGeneratorService,
+  type IAdvancedPDFGeneratorService,
+} from './advanced-pdf-generator.service';
 import {
-  PDFGeneratorService,
-  type IPDFGeneratorService,
-} from './pdf-generator.service';
+  BasicPDFGeneratorService,
+  type IBasicPDFGeneratorService,
+} from './basic-pdf-generator.service';
 
 import type { IConfigManager } from '../../infrastructure/config/types';
 import type { IErrorHandler } from '../../infrastructure/error/types';
@@ -18,9 +18,9 @@ import type { ILogger } from '../../infrastructure/logging/types';
 
 export interface IPDFServiceFactory {
   createPDFGenerator(): Promise<
-    IPDFGeneratorService | IEnhancedPDFGeneratorService
+    IBasicPDFGeneratorService | IAdvancedPDFGeneratorService
   >;
-  getEngineType(): 'legacy' | 'enhanced';
+  getEngineType(): 'basic' | 'advanced';
 }
 
 export class PDFServiceFactory implements IPDFServiceFactory {
@@ -31,47 +31,47 @@ export class PDFServiceFactory implements IPDFServiceFactory {
   ) {}
 
   async createPDFGenerator(): Promise<
-    IPDFGeneratorService | IEnhancedPDFGeneratorService
+    IBasicPDFGeneratorService | IAdvancedPDFGeneratorService
   > {
-    const useEnhancedEngine = this.configManager.get(
+    const useAdvancedEngine = this.configManager.get(
       'pdf.useEnhancedEngine',
       false,
     );
 
-    if (useEnhancedEngine) {
+    if (useAdvancedEngine) {
       this.logger.info(
-        'Creating Enhanced PDF Generator Service with engine abstraction layer',
+        'Creating Advanced PDF Generator Service with engine abstraction layer',
       );
-      const enhancedService = new EnhancedPDFGeneratorService(
+      const advancedService = new AdvancedPDFGeneratorService(
         this.logger,
         this.errorHandler,
         this.configManager,
       );
 
       try {
-        await enhancedService.initialize();
-        return enhancedService;
+        await advancedService.initialize();
+        return advancedService;
       } catch (error) {
         this.logger.warn(
-          'Failed to initialize Enhanced PDF Generator Service, falling back to legacy',
+          'Failed to initialize Advanced PDF Generator Service, falling back to basic',
           { error },
         );
-        return this.createLegacyService();
+        return this.createBasicService();
       }
     }
 
-    return this.createLegacyService();
+    return this.createBasicService();
   }
 
-  getEngineType(): 'legacy' | 'enhanced' {
+  getEngineType(): 'basic' | 'advanced' {
     return this.configManager.get('pdf.useEnhancedEngine', false)
-      ? 'enhanced'
-      : 'legacy';
+      ? 'advanced'
+      : 'basic';
   }
 
-  private createLegacyService(): PDFGeneratorService {
-    this.logger.info('Creating Legacy PDF Generator Service');
-    return new PDFGeneratorService(
+  private createBasicService(): BasicPDFGeneratorService {
+    this.logger.info('Creating Basic PDF Generator Service');
+    return new BasicPDFGeneratorService(
       this.logger,
       this.errorHandler,
       this.configManager,

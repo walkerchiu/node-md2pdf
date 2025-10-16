@@ -2,8 +2,8 @@
  * Application services exports
  */
 
-export * from './pdf-generator.service';
-export * from './enhanced-pdf-generator.service';
+export * from './basic-pdf-generator.service';
+export * from './advanced-pdf-generator.service';
 export * from './markdown-parser.service';
 export * from './toc-generator.service';
 export * from './file-processor.service';

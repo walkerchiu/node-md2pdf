@@ -1,5 +1,6 @@
 /**
- * Application service for PDF generation
+ * Basic PDF Generator Service
+ * Provides simple PDF generation using single engine approach
  * Integrates core PDF functionality with infrastructure services
  */
 
@@ -11,7 +12,7 @@ import type { IConfigManager } from '../../infrastructure/config/types';
 import type { IErrorHandler } from '../../infrastructure/error/types';
 import type { ILogger } from '../../infrastructure/logging/types';
 
-export interface IPDFGeneratorService {
+export interface IBasicPDFGeneratorService {
   generatePDF(
     htmlContent: string,
     outputPath: string,
@@ -21,7 +22,7 @@ export interface IPDFGeneratorService {
   cleanup(): Promise<void>;
 }
 
-export class PDFGeneratorService implements IPDFGeneratorService {
+export class BasicPDFGeneratorService implements IBasicPDFGeneratorService {
   private pdfGenerator: PDFGenerator | null = null;
   private isInitialized = false;
 
@@ -37,7 +38,7 @@ export class PDFGeneratorService implements IPDFGeneratorService {
     }
 
     try {
-      this.logger.info('Initializing PDF generator service');
+      this.logger.info('Initializing basic PDF generator service');
 
       const pdfConfig = this.configManager.get('pdf', {
         format: 'A4',
@@ -58,10 +59,10 @@ export class PDFGeneratorService implements IPDFGeneratorService {
       await this.pdfGenerator.initialize();
 
       this.isInitialized = true;
-      this.logger.info('PDF generator service initialized successfully');
+      this.logger.info('Basic PDF generator service initialized successfully');
     } catch (error) {
       const wrappedError = new MD2PDFError(
-        `Failed to initialize PDF generator service: ${(error as Error).message}`,
+        `Failed to initialize basic PDF generator service: ${(error as Error).message}`,
         'PDF_INIT_ERROR',
         'pdf_generation',
         false,
@@ -70,7 +71,7 @@ export class PDFGeneratorService implements IPDFGeneratorService {
 
       await this.errorHandler.handleError(
         wrappedError,
-        'PDFGeneratorService.initialize',
+        'BasicPDFGeneratorService.initialize',
       );
       throw wrappedError;
     }
@@ -118,7 +119,7 @@ export class PDFGeneratorService implements IPDFGeneratorService {
 
       await this.errorHandler.handleError(
         wrappedError,
-        'PDFGeneratorService.generatePDF',
+        'BasicPDFGeneratorService.generatePDF',
       );
       throw wrappedError;
     }
@@ -130,14 +131,14 @@ export class PDFGeneratorService implements IPDFGeneratorService {
     }
 
     try {
-      this.logger.info('Cleaning up PDF generator service');
+      this.logger.info('Cleaning up basic PDF generator service');
       await this.pdfGenerator.close();
       this.pdfGenerator = null;
       this.isInitialized = false;
-      this.logger.info('PDF generator service cleaned up successfully');
+      this.logger.info('Basic PDF generator service cleaned up successfully');
     } catch (error) {
       this.logger.warn(
-        `Error during PDF generator cleanup: ${(error as Error).message}`,
+        `Error during basic PDF generator cleanup: ${(error as Error).message}`,
       );
       // Don't throw on cleanup errors, just log them
     }

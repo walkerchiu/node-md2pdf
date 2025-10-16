@@ -1,26 +1,26 @@
 /**
- * Unit tests for PDFGeneratorService
+ * Unit tests for BasicPDFGeneratorService
  */
 
 import {
-  PDFGeneratorService,
-  IPDFGeneratorService,
-} from '../../../src/application/services/pdf-generator.service';
-import { PDFGenerator } from '../../../src/core/pdf/pdf-generator';
+  BasicPDFGeneratorService,
+  IBasicPDFGeneratorService,
+} from '../../../../src/application/services/basic-pdf-generator.service';
+import { PDFGenerator } from '../../../../src/core/pdf/pdf-generator';
 import {
   PDFGeneratorOptions,
   PDFGenerationResult,
-} from '../../../src/core/pdf/types';
-import type { ILogger } from '../../../src/infrastructure/logging/types';
-import type { IErrorHandler } from '../../../src/infrastructure/error/types';
-import type { IConfigManager } from '../../../src/infrastructure/config/types';
-import { MD2PDFError } from '../../../src/infrastructure/error/errors';
+} from '../../../../src/core/pdf/types';
+import type { ILogger } from '../../../../src/infrastructure/logging/types';
+import type { IErrorHandler } from '../../../../src/infrastructure/error/types';
+import type { IConfigManager } from '../../../../src/infrastructure/config/types';
+import { MD2PDFError } from '../../../../src/infrastructure/error/errors';
 
 // Mock the PDFGenerator
-jest.mock('../../../src/core/pdf/pdf-generator');
+jest.mock('../../../../src/core/pdf/pdf-generator');
 
-describe('PDFGeneratorService', () => {
-  let service: IPDFGeneratorService;
+describe('BasicPDFGeneratorService', () => {
+  let service: IBasicPDFGeneratorService;
   let mockLogger: jest.Mocked<ILogger>;
   let mockErrorHandler: jest.Mocked<IErrorHandler>;
   let mockConfigManager: jest.Mocked<IConfigManager>;
@@ -121,7 +121,7 @@ describe('PDFGeneratorService', () => {
     mockPDFGeneratorInstance.close.mockResolvedValue(undefined);
 
     // Create service instance
-    service = new PDFGeneratorService(
+    service = new BasicPDFGeneratorService(
       mockLogger,
       mockErrorHandler,
       mockConfigManager,
@@ -139,10 +139,10 @@ describe('PDFGeneratorService', () => {
         expect.any(Object),
       );
       expect(mockLogger.info).toHaveBeenCalledWith(
-        'Initializing PDF generator service',
+        'Initializing basic PDF generator service',
       );
       expect(mockLogger.info).toHaveBeenCalledWith(
-        'PDF generator service initialized successfully',
+        'Basic PDF generator service initialized successfully',
       );
     });
 
@@ -161,7 +161,7 @@ describe('PDFGeneratorService', () => {
       await expect(service.initialize()).rejects.toThrow(MD2PDFError);
       expect(mockErrorHandler.handleError).toHaveBeenCalledWith(
         expect.any(MD2PDFError),
-        'PDFGeneratorService.initialize',
+        'BasicPDFGeneratorService.initialize',
       );
     });
 
@@ -198,7 +198,7 @@ describe('PDFGeneratorService', () => {
     });
 
     it('should initialize if not already initialized', async () => {
-      const uninitializedService = new PDFGeneratorService(
+      const uninitializedService = new BasicPDFGeneratorService(
         mockLogger,
         mockErrorHandler,
         mockConfigManager,
@@ -220,7 +220,7 @@ describe('PDFGeneratorService', () => {
 
       expect(mockErrorHandler.handleError).toHaveBeenCalledWith(
         expect.any(MD2PDFError),
-        'PDFGeneratorService.generatePDF',
+        'BasicPDFGeneratorService.generatePDF',
       );
     });
 
@@ -282,10 +282,10 @@ describe('PDFGeneratorService', () => {
 
       expect(mockPDFGeneratorInstance.close).toHaveBeenCalled();
       expect(mockLogger.info).toHaveBeenCalledWith(
-        'Cleaning up PDF generator service',
+        'Cleaning up basic PDF generator service',
       );
       expect(mockLogger.info).toHaveBeenCalledWith(
-        'PDF generator service cleaned up successfully',
+        'Basic PDF generator service cleaned up successfully',
       );
     });
 
@@ -306,7 +306,7 @@ describe('PDFGeneratorService', () => {
       await expect(service.cleanup()).resolves.toBeUndefined();
 
       expect(mockLogger.warn).toHaveBeenCalledWith(
-        `Error during PDF generator cleanup: ${cleanupError.message}`,
+        `Error during basic PDF generator cleanup: ${cleanupError.message}`,
       );
     });
 
@@ -340,7 +340,7 @@ describe('PDFGeneratorService', () => {
 
       mockConfigManager.get.mockReturnValue(customConfig);
 
-      const customService = new PDFGeneratorService(
+      const customService = new BasicPDFGeneratorService(
         mockLogger,
         mockErrorHandler,
         mockConfigManager,
@@ -354,7 +354,7 @@ describe('PDFGeneratorService', () => {
     it('should use default configuration when config manager returns undefined', async () => {
       mockConfigManager.get.mockReturnValue(undefined);
 
-      const service = new PDFGeneratorService(
+      const service = new BasicPDFGeneratorService(
         mockLogger,
         mockErrorHandler,
         mockConfigManager,
@@ -377,7 +377,7 @@ describe('PDFGeneratorService', () => {
         throw originalError;
       });
 
-      const service = new PDFGeneratorService(
+      const service = new BasicPDFGeneratorService(
         mockLogger,
         mockErrorHandler,
         mockConfigManager,
@@ -387,7 +387,7 @@ describe('PDFGeneratorService', () => {
 
       expect(mockErrorHandler.handleError).toHaveBeenCalledWith(
         expect.any(MD2PDFError),
-        'PDFGeneratorService.initialize',
+        'BasicPDFGeneratorService.initialize',
       );
     });
 
@@ -403,7 +403,7 @@ describe('PDFGeneratorService', () => {
 
       expect(mockErrorHandler.handleError).toHaveBeenCalledWith(
         expect.any(MD2PDFError),
-        'PDFGeneratorService.generatePDF',
+        'BasicPDFGeneratorService.generatePDF',
       );
     });
   });

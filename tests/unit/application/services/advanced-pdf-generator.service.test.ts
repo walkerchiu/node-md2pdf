@@ -1,7 +1,7 @@
 /**
- * Enhanced PDF Generator Service Unit Tests
+ * Advanced PDF Generator Service Unit Tests
  *
- * Tests the enhanced PDF generation service functionality including:
+ * Tests the advanced PDF generation service functionality including:
  * - Service initialization
  * - PDF generation with engine abstraction
  * - Engine selection strategies
@@ -12,9 +12,9 @@
 
 import { jest } from '@jest/globals';
 import type {
-  EnhancedPDFGeneratorService as EnhancedPDFGeneratorServiceClass,
-  IEnhancedPDFGeneratorService,
-} from '../../../../src/application/services/enhanced-pdf-generator.service';
+  AdvancedPDFGeneratorService as AdvancedPDFGeneratorServiceClass,
+  IAdvancedPDFGeneratorService,
+} from '../../../../src/application/services/advanced-pdf-generator.service';
 import type { ILogger } from '../../../../src/infrastructure/logging/types';
 import type { IErrorHandler } from '../../../../src/infrastructure/error/types';
 import type { IConfigManager } from '../../../../src/infrastructure/config/types';
@@ -66,10 +66,10 @@ jest.mock('../../../../src/core/pdf/engines', () => {
   };
 });
 
-describe('EnhancedPDFGeneratorService', () => {
-  let EnhancedPDFGeneratorService: typeof EnhancedPDFGeneratorServiceClass;
+describe('AdvancedPDFGeneratorService', () => {
+  let AdvancedPDFGeneratorService: typeof AdvancedPDFGeneratorServiceClass;
 
-  let service: IEnhancedPDFGeneratorService;
+  let service: IAdvancedPDFGeneratorService;
 
   // Mock services
   const mockLogger = {
@@ -124,11 +124,11 @@ describe('EnhancedPDFGeneratorService', () => {
 
     // Dynamically import to avoid circular dependencies
     const module = await import(
-      '../../../../src/application/services/enhanced-pdf-generator.service'
+      '../../../../src/application/services/advanced-pdf-generator.service'
     );
-    EnhancedPDFGeneratorService = module.EnhancedPDFGeneratorService;
+    AdvancedPDFGeneratorService = module.AdvancedPDFGeneratorService;
 
-    service = new EnhancedPDFGeneratorService(
+    service = new AdvancedPDFGeneratorService(
       mockLogger,
       mockErrorHandler,
       mockConfigManager,
@@ -138,14 +138,14 @@ describe('EnhancedPDFGeneratorService', () => {
   describe('Service Lifecycle', () => {
     it('should create service instance', () => {
       expect(service).toBeDefined();
-      expect(service).toBeInstanceOf(EnhancedPDFGeneratorService);
+      expect(service).toBeInstanceOf(AdvancedPDFGeneratorService);
     });
 
     it('should initialize successfully', async () => {
       await service.initialize();
 
       expect(mockLogger.info).toHaveBeenCalledWith(
-        'Enhanced PDF generator service initialized successfully',
+        'Advanced PDF generator service initialized successfully',
       );
     });
 
@@ -156,7 +156,7 @@ describe('EnhancedPDFGeneratorService', () => {
 
       // Should not initialize again
       expect(mockLogger.info).not.toHaveBeenCalledWith(
-        'Initializing enhanced PDF generator service',
+        'Initializing advanced PDF generator service',
       );
     });
 
@@ -165,7 +165,7 @@ describe('EnhancedPDFGeneratorService', () => {
       await service.cleanup();
 
       expect(mockLogger.info).toHaveBeenCalledWith(
-        'Enhanced PDF generator service cleaned up successfully',
+        'Advanced PDF generator service cleaned up successfully',
       );
     });
 
@@ -174,7 +174,7 @@ describe('EnhancedPDFGeneratorService', () => {
 
       // Should not log anything if not initialized
       expect(mockLogger.info).not.toHaveBeenCalledWith(
-        'Cleaning up enhanced PDF generator service',
+        'Cleaning up advanced PDF generator service',
       );
     });
   });
@@ -223,7 +223,7 @@ describe('EnhancedPDFGeneratorService', () => {
     });
 
     it('should auto-initialize if not initialized', async () => {
-      const newService = new EnhancedPDFGeneratorService(
+      const newService = new AdvancedPDFGeneratorService(
         mockLogger,
         mockErrorHandler,
         mockConfigManager,
@@ -250,7 +250,7 @@ describe('EnhancedPDFGeneratorService', () => {
     });
 
     it('should return empty map when not initialized', async () => {
-      const newService = new EnhancedPDFGeneratorService(
+      const newService = new AdvancedPDFGeneratorService(
         mockLogger,
         mockErrorHandler,
         mockConfigManager,
@@ -347,7 +347,7 @@ describe('EnhancedPDFGeneratorService', () => {
       await service.cleanup();
 
       expect(mockLogger.warn).toHaveBeenCalledWith(
-        'Error during enhanced PDF generator cleanup: Cleanup failed',
+        'Error during advanced PDF generator cleanup: Cleanup failed',
       );
     });
   });

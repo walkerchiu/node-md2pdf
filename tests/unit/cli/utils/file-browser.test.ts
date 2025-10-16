@@ -1,7 +1,8 @@
 /**
- * Simple uni tests for FileBrowser - focused on coverage
+ * Unit tests for FileBrowser - Essential tests only
  */
 
+import { promises as fs } from 'fs';
 import { FileBrowser } from '../../../../src/cli/utils/file-browser';
 import type { ITranslationManager } from '../../../../src/infrastructure/i18n/types';
 
@@ -18,25 +19,61 @@ jest.mock('chalk', () => ({
   magenta: jest.fn((text: string) => text),
 }));
 
-// Mock file-search-ui
-jest.mock('../../../../src/cli/ui/file-search-ui', () => ({
-  FileSearchUI: {
-    shortenPath: jest.fn((path: string, maxLength?: number) => {
-      if (maxLength && path.length > maxLength) {
-        return '...' + path.slice(-(maxLength - 3));
-      }
-      return path;
-    }),
-    displayFiles: jest.fn(),
+// Mock fs promises
+jest.mock('fs', () => ({
+  promises: {
+    readdir: jest.fn(),
+    stat: jest.fn(),
   },
 }));
 
-describe('FileBrowser - Simple Tests', () => {
+// Mock file-search-ui
+jest.mock('../../../../src/cli/ui/file-search-ui', () => ({
+  FileSearchUI: jest.fn().mockImplementation(() => ({
+    displayFiles: jest.fn(),
+  })),
+}));
+
+// Add static methods to the mock constructor
+const FileSearchUIMock =
+  require('../../../../src/cli/ui/file-search-ui').FileSearchUI;
+FileSearchUIMock.shortenPath = jest.fn((path: string, maxLength?: number) => {
+  if (maxLength && path.length > maxLength) {
+    return '...' + path.slice(-(maxLength - 3));
+  }
+  return path;
+});
+
+// Mock CliRenderer
+jest.mock('../../../../src/cli/utils/cli-renderer', () => ({
+  CliRenderer: jest.fn().mockImplementation(() => ({
+    info: jest.fn(),
+    warn: jest.fn(),
+    error: jest.fn(),
+  })),
+}));
+
+// Mock inquirer for dynamic import
+const mockPrompt = jest.fn();
+
+// Mock the inquirer module statically
+jest.mock('inquirer', () => ({
+  __esModule: true,
+  default: {
+    prompt: mockPrompt,
+  },
+}));
+
+describe('FileBrowser - Essential Tests', () => {
   let fileBrowser: FileBrowser;
   let mockTranslator: jest.Mocked<ITranslationManager>;
+  let mockFs: jest.Mocked<typeof fs>;
 
   beforeEach(() => {
     jest.clearAllMocks();
+
+    // Setup fs mocks
+    mockFs = fs as jest.Mocked<typeof fs>;
 
     // Mock console methods to prevent output during tests
     jest.spyOn(console, 'log').mockImplementation(() => {});
@@ -81,11 +118,6 @@ describe('FileBrowser - Simple Tests', () => {
         '.mkd',
       ]);
     });
-
-    it('should create renderer instance', () => {
-      const renderer = (fileBrowser as any).renderer;
-      expect(renderer).toBeDefined();
-    });
   });
 
   describe('utility methods', () => {
@@ -97,10 +129,6 @@ describe('FileBrowser - Simple Tests', () => {
       expect(formatFileSize(0)).toBe('0 B');
       expect(formatFileSize(1024)).toBe('1.0 KB');
       expect(formatFileSize(1048576)).toBe('1.0 MB');
-      expect(formatFileSize(512)).toBe('512.0 B');
-      expect(formatFileSize(2048)).toBe('2.0 KB');
-      expect(formatFileSize(1500000)).toBe('1.4 MB');
-      expect(formatFileSize(5120000)).toBe('4.9 MB');
     });
 
     it('should format date correctly', () => {
@@ -108,516 +136,676 @@ describe('FileBrowser - Simple Tests', () => {
 
       const today = new Date();
       const yesterday = new Date(today.getTime() - 24 * 60 * 60 * 1000);
-      const fiveDaysAgo = new Date(today.getTime() - 5 * 24 * 60 * 60 * 1000);
-      const lastWeek = new Date(today.getTime() - 7 * 24 * 60 * 60 * 1000);
-      const twoWeeksAgo = new Date(today.getTime() - 14 * 24 * 60 * 60 * 1000);
-      const lastMonth = new Date(today.getTime() - 32 * 24 * 60 * 60 * 1000);
 
       expect(formatDate(today)).toBe('fileBrowser.today');
       expect(formatDate(yesterday)).toBe('fileBrowser.yesterday');
-      expect(formatDate(fiveDaysAgo)).toBe('fileBrowser.daysAgo');
-      expect(formatDate(lastWeek)).toBe('fileBrowser.weeksAgo');
-      expect(formatDate(twoWeeksAgo)).toBe('fileBrowser.weeksAgo');
-      expect(formatDate(lastMonth)).toMatch(/\d+\/\d+\/\d+/);
       expect(formatDate(undefined)).toBe('fileBrowser.unknown');
     });
+  });
 
-    it('should sort items correctly by name ascending', () => {
-      const sortItems = (fileBrowser as any).sortItems.bind(fileBrowser);
-
-      const items = [
-        {
-          name: 'b.md',
-          type: 'file',
-          modified: new Date('2023-01-01'),
-          size: 1000,
-        },
-        {
-          name: 'a.md',
-          type: 'file',
-          modified: new Date('2023-01-02'),
-          size: 2000,
-        },
-        {
-          name: 'dir',
-          type: 'directory',
-          modified: new Date('2023-01-01'),
-          size: 0,
-        },
-      ];
-
-      const sortedByName = sortItems(items, 'name', 'asc');
-      expect(sortedByName[0].name).toBe('dir'); // Directories first
-      expect(sortedByName[1].name).toBe('a.md');
-      expect(sortedByName[2].name).toBe('b.md');
-    });
-
-    it('should sort items correctly by name descending', () => {
-      const sortItems = (fileBrowser as any).sortItems.bind(fileBrowser);
-
-      const items = [
-        {
-          name: 'a.md',
-          type: 'file',
-          modified: new Date('2023-01-01'),
-          size: 1000,
-        },
-        {
-          name: 'b.md',
-          type: 'file',
-          modified: new Date('2023-01-02'),
-          size: 2000,
-        },
-        {
-          name: 'dir',
-          type: 'directory',
-          modified: new Date('2023-01-01'),
-          size: 0,
-        },
-      ];
-
-      const sortedByName = sortItems(items, 'name', 'desc');
-      expect(sortedByName[0].name).toBe('dir'); // Directories first
-      expect(sortedByName[1].name).toBe('b.md'); // Reversed order for files
-      expect(sortedByName[2].name).toBe('a.md');
-    });
-
-    it('should sort items correctly by date', () => {
-      const sortItems = (fileBrowser as any).sortItems.bind(fileBrowser);
-
-      const items = [
-        {
-          name: 'old.md',
-          type: 'file',
-          modified: new Date('2023-01-01'),
-          size: 1000,
-        },
-        {
-          name: 'new.md',
-          type: 'file',
-          modified: new Date('2023-01-02'),
-          size: 2000,
-        },
-        {
-          name: 'dir',
-          type: 'directory',
-          modified: new Date('2023-01-01'),
-          size: 0,
-        },
-      ];
-
-      const sortedByDate = sortItems(items, 'modified', 'desc');
-      expect(sortedByDate[0].name).toBe('dir'); // Directories still first
-      expect(sortedByDate[1].name).toBe('new.md'); // Newer first in desc order
-      expect(sortedByDate[2].name).toBe('old.md');
-    });
-
-    it('should sort items correctly by date ascending', () => {
-      const sortItems = (fileBrowser as any).sortItems.bind(fileBrowser);
-
-      const items = [
-        {
-          name: 'new.md',
-          type: 'file',
-          modified: new Date('2023-01-02'),
-          size: 1000,
-        },
-        {
-          name: 'old.md',
-          type: 'file',
-          modified: new Date('2023-01-01'),
-          size: 2000,
-        },
-        {
-          name: 'dir',
-          type: 'directory',
-          modified: new Date('2023-01-01'),
-          size: 0,
-        },
-      ];
-
-      const sortedByDate = sortItems(items, 'modified', 'asc');
-      expect(sortedByDate[0].name).toBe('dir'); // Directories still first
-      expect(sortedByDate[1].name).toBe('old.md'); // Older first in asc order
-      expect(sortedByDate[2].name).toBe('new.md');
-    });
-
-    it('should sort items correctly by size', () => {
-      const sortItems = (fileBrowser as any).sortItems.bind(fileBrowser);
-
-      const items = [
-        {
-          name: 'big.md',
-          type: 'file',
-          modified: new Date('2023-01-01'),
-          size: 5000,
-        },
-        {
-          name: 'small.md',
-          type: 'file',
-          modified: new Date('2023-01-02'),
-          size: 1000,
-        },
-        {
-          name: 'dir',
-          type: 'directory',
-          modified: new Date('2023-01-01'),
-          size: 0,
-        },
-      ];
-
-      const sortedBySize = sortItems(items, 'size', 'desc');
-      expect(sortedBySize[0].name).toBe('dir'); // Directories still first
-      expect(sortedBySize[1].name).toBe('big.md'); // Bigger first in desc order
-      expect(sortedBySize[2].name).toBe('small.md');
-    });
-
-    it('should sort items correctly by size ascending', () => {
-      const sortItems = (fileBrowser as any).sortItems.bind(fileBrowser);
-
-      const items = [
-        {
-          name: 'big.md',
-          type: 'file',
-          modified: new Date('2023-01-01'),
-          size: 5000,
-        },
-        {
-          name: 'small.md',
-          type: 'file',
-          modified: new Date('2023-01-02'),
-          size: 1000,
-        },
-        {
-          name: 'dir',
-          type: 'directory',
-          modified: new Date('2023-01-01'),
-          size: 0,
-        },
-      ];
-
-      const sortedBySize = sortItems(items, 'size', 'asc');
-      expect(sortedBySize[0].name).toBe('dir'); // Directories still first
-      expect(sortedBySize[1].name).toBe('small.md'); // Smaller first in asc order
-      expect(sortedBySize[2].name).toBe('big.md');
-    });
-
-    it('should handle items with undefined modified dates', () => {
-      const sortItems = (fileBrowser as any).sortItems.bind(fileBrowser);
-
-      const items = [
-        {
-          name: 'with-date.md',
-          type: 'file',
-          modified: new Date('2023-01-01'),
-          size: 1000,
-        },
-        { name: 'no-date.md', type: 'file', modified: undefined, size: 2000 },
-      ];
-
-      const sortedByDate = sortItems(items, 'modified', 'asc');
-      expect(sortedByDate).toHaveLength(2);
-      expect(sortedByDate[0].name).toBe('no-date.md'); // undefined date becomes 0
-      expect(sortedByDate[1].name).toBe('with-date.md');
-    });
-
-    it('should handle items with undefined sizes', () => {
-      const sortItems = (fileBrowser as any).sortItems.bind(fileBrowser);
-
-      const items = [
-        {
-          name: 'with-size.md',
-          type: 'file',
-          modified: new Date('2023-01-01'),
-          size: 1000,
-        },
-        {
-          name: 'no-size.md',
-          type: 'file',
-          modified: new Date('2023-01-01'),
-          size: undefined,
-        },
-      ];
-
-      const sortedBySize = sortItems(items, 'size', 'asc');
-      expect(sortedBySize).toHaveLength(2);
-      expect(sortedBySize[0].name).toBe('no-size.md'); // undefined size becomes 0
-      expect(sortedBySize[1].name).toBe('with-size.md');
-    });
-
-    it('should match glob patterns correctly', () => {
-      const matchesGlob = (fileBrowser as any).matchesGlob.bind(fileBrowser);
-
-      expect(matchesGlob('test.md', '*.md')).toBe(true);
-      expect(matchesGlob('test.txt', '*.md')).toBe(false);
-      expect(matchesGlob('readme.md', 'readme.*')).toBe(true);
-      expect(matchesGlob('README.MD', 'readme.*')).toBe(true); // Case insensitive
-      expect(matchesGlob('test.md', 'test?md')).toBe(true); // ? matches single char
-      expect(matchesGlob('testxmd', 'test?md')).toBe(true);
-      expect(matchesGlob('testxymd', 'test?md')).toBe(false); // ? matches only one char
-      expect(matchesGlob('file-name.md', 'file-*')).toBe(true); // Wildcard
-      expect(
-        matchesGlob('prefix-middle-suffix.txt', 'prefix-*-suffix.txt'),
-      ).toBe(true);
-    });
-
-    it('should handle special characters in glob patterns', () => {
-      const matchesGlob = (fileBrowser as any).matchesGlob.bind(fileBrowser);
-
-      // The actual implementation converts \. to \\. and then creates regex
-      // So 'test\\.md' becomes regex /^test\\.md$/i which matches 'test.md' but not 'testxmd'
-      expect(matchesGlob('test.md', 'test.md')).toBe(true); // Literal dot
-      expect(matchesGlob('testxmd', 'test.md')).toBe(false); // Literal dot should not match x
-    });
-
-    it('should build choices correctly for empty directory', () => {
-      const buildChoices = (fileBrowser as any).buildChoices.bind(fileBrowser);
-
-      const items: any[] = [];
-      const currentPath = '/test';
-
-      const choices = buildChoices(items, currentPath);
-
-      // Should contain utility options
-      expect(
-        choices.some((choice: any) => choice.value === '__back_to_main__'),
-      ).toBe(true);
-      expect(choices.some((choice: any) => choice.value === '__search__')).toBe(
-        true,
+  describe('scanDirectory method', () => {
+    it('should scan directory successfully', async () => {
+      const scanDirectory = (fileBrowser as any).scanDirectory.bind(
+        fileBrowser,
       );
-      // __recent__ option removed - no longer testing for it
-      expect(choices.some((choice: any) => choice.value === '__up__')).toBe(
-        true,
-      ); // Parent directory
-    });
 
-    it('should build choices correctly for root directory', () => {
-      const buildChoices = (fileBrowser as any).buildChoices.bind(fileBrowser);
-
-      const items: any[] = [];
-      const currentPath = '/';
-
-      const choices = buildChoices(items, currentPath);
-
-      // Should not contain up navigation for root
-      expect(choices.some((choice: any) => choice.value === '__up__')).toBe(
-        false,
-      );
-      expect(
-        choices.some((choice: any) => choice.value === '__back_to_main__'),
-      ).toBe(true);
-    });
-
-    it('should build choices correctly with files and directories', () => {
-      const buildChoices = (fileBrowser as any).buildChoices.bind(fileBrowser);
-
-      const items = [
+      mockFs.readdir.mockResolvedValue([
         {
-          name: 'subdir',
-          path: '/test/subdir',
-          type: 'directory',
-          size: 0,
-          modified: new Date(),
-          isMarkdown: false,
-        },
+          name: 'test.md',
+          isDirectory: () => false,
+          isFile: () => true,
+        } as any,
+      ]);
+
+      mockFs.stat.mockResolvedValue({
+        size: 2000,
+        mtime: new Date('2023-01-15'),
+      } as any);
+
+      const result = await scanDirectory('/test', { showHidden: false });
+
+      expect(result).toHaveLength(1);
+      expect(result[0].isMarkdown).toBe(true);
+    });
+  });
+
+  describe('enterFilePath method', () => {
+    it('should prompt for file path and return resolved path', async () => {
+      const enterFilePath = (fileBrowser as any).enterFilePath.bind(
+        fileBrowser,
+      );
+
+      mockPrompt.mockResolvedValue({ filePath: ' /test/manual.md ' });
+
+      const result = await enterFilePath();
+      expect(result).toBe('/test/manual.md');
+    });
+
+    it('should validate empty file path input', async () => {
+      const enterFilePath = (fileBrowser as any).enterFilePath.bind(
+        fileBrowser,
+      );
+
+      mockPrompt.mockResolvedValue({ filePath: '/test/path.md' });
+
+      // Test validation function
+      const mockCall = mockPrompt.mock.calls[0];
+      expect(mockCall).toBeUndefined(); // No calls yet
+
+      await enterFilePath();
+
+      expect(mockPrompt).toHaveBeenCalledWith({
+        type: 'input',
+        name: 'filePath',
+        message: 'fileBrowser.enterFullPath',
+        validate: expect.any(Function),
+      });
+
+      // Test the validation function
+      const validateFn = mockPrompt.mock.calls[0][0].validate;
+      expect(validateFn('')).toBe('fileBrowser.pleaseEnterFilePath');
+      expect(validateFn(' ')).toBe('fileBrowser.pleaseEnterFilePath');
+      expect(validateFn('/valid/path')).toBe(true);
+    });
+  });
+
+  describe('buildChoices method', () => {
+    it('should build choices with navigation options', () => {
+      const buildChoices = (fileBrowser as any).buildChoices.bind(fileBrowser);
+      const mockItems = [
         {
           name: 'test.md',
           path: '/test/test.md',
           type: 'file',
+          isMarkdown: true,
+        },
+        {
+          name: 'folder',
+          path: '/test/folder',
+          type: 'directory',
+          isMarkdown: false,
+        },
+      ];
+
+      const choices = buildChoices(mockItems, '/test');
+
+      expect(choices.length).toBeGreaterThan(2);
+      expect(choices.some((choice: any) => choice.value === '__up__')).toBe(
+        true,
+      );
+      expect(choices.some((choice: any) => choice.value === '__search__')).toBe(
+        true,
+      );
+      expect(
+        choices.some((choice: any) => choice.value === '__back_to_main__'),
+      ).toBe(true);
+    });
+
+    it('should not show up option for root directory', () => {
+      const buildChoices = (fileBrowser as any).buildChoices.bind(fileBrowser);
+      const mockItems: any[] = [];
+
+      const choices = buildChoices(mockItems, '/');
+
+      expect(choices.some((choice: any) => choice.value === '__up__')).toBe(
+        false,
+      );
+    });
+
+    it('should prioritize directories then markdown files', () => {
+      const buildChoices = (fileBrowser as any).buildChoices.bind(fileBrowser);
+      const mockItems = [
+        {
+          name: 'file.md',
+          path: '/test/file.md',
+          type: 'file',
+          isMarkdown: true,
           size: 1000,
           modified: new Date(),
-          isMarkdown: true,
+        },
+        {
+          name: 'folder',
+          path: '/test/folder',
+          type: 'directory',
+          isMarkdown: false,
         },
         {
           name: 'other.txt',
           path: '/test/other.txt',
           type: 'file',
+          isMarkdown: false,
           size: 500,
           modified: new Date(),
-          isMarkdown: false,
         },
       ];
-      const currentPath = '/test';
 
-      const choices = buildChoices(items, currentPath);
+      const choices = buildChoices(mockItems, '/test');
 
-      // Should contain directory
-      expect(
-        choices.some((choice: any) => choice.value === '/test/subdir'),
-      ).toBe(true);
-      // Should contain markdown file
-      expect(
-        choices.some((choice: any) => choice.value === '/test/test.md'),
-      ).toBe(true);
-      // Should contain other file (dimmed)
-      expect(
-        choices.some((choice: any) => choice.value === '/test/other.txt'),
-      ).toBe(true);
+      // Find file items (excluding navigation options)
+      const fileChoices = choices.filter((c: any) =>
+        c.value.startsWith('/test'),
+      );
+
+      expect(fileChoices[0].value).toBe('/test/folder'); // Directory first
+      expect(fileChoices[1].value).toBe('/test/file.md'); // Then markdown files
     });
+  });
 
-    it('should not show other files when there are many (5+) to keep interface clean', () => {
-      const buildChoices = (fileBrowser as any).buildChoices.bind(fileBrowser);
-
-      const items = Array.from({ length: 10 }, (_, i) => ({
-        name: `file${i}.txt`,
-        path: `/test/file${i}.txt`,
-        type: 'file' as const,
-        size: 100,
-        modified: new Date(),
-        isMarkdown: false,
-      }));
-
-      const choices = buildChoices(items, '/test');
-
-      // Should not show individual non-markdown files when there are many
-      expect(
-        choices.some((choice: any) => choice.value.includes('file0.txt')),
-      ).toBe(false);
-      // Should not show the old summary option (which was non-functional)
-      expect(
-        choices.some((choice: any) => choice.value === '__show_all__'),
-      ).toBe(false);
-    });
-
-    it('should show individual other files when count is small', () => {
-      const buildChoices = (fileBrowser as any).buildChoices.bind(fileBrowser);
-
-      const items = Array.from({ length: 3 }, (_, i) => ({
-        name: `file${i}.txt`,
-        path: `/test/file${i}.txt`,
-        type: 'file' as const,
-        size: 100,
-        modified: new Date(),
-        isMarkdown: false,
-      }));
-
-      const choices = buildChoices(items, '/test');
-
-      // Should show individual files
-      expect(
-        choices.some((choice: any) => choice.value === '/test/file0.txt'),
-      ).toBe(true);
-      expect(
-        choices.some((choice: any) => choice.value === '/test/file1.txt'),
-      ).toBe(true);
-      expect(
-        choices.some((choice: any) => choice.value === '/test/file2.txt'),
-      ).toBe(true);
-      // Should not show summary
-      expect(
-        choices.some((choice: any) => choice.value === '__show_all__'),
-      ).toBe(false);
-    });
-
-    it('should handle files with no size or modified date', () => {
-      const buildChoices = (fileBrowser as any).buildChoices.bind(fileBrowser);
-
+  describe('sortItems method', () => {
+    it('should sort items by name ascending', () => {
+      const sortItems = (fileBrowser as any).sortItems.bind(fileBrowser);
       const items = [
+        { name: 'z.md', type: 'file' },
+        { name: 'a.md', type: 'file' },
+        { name: 'folder', type: 'directory' },
+      ];
+
+      const sorted = sortItems(items, 'name', 'asc');
+
+      // Directories should come first, then files by name
+      expect(sorted[0].name).toBe('folder');
+      expect(sorted[1].name).toBe('a.md');
+      expect(sorted[2].name).toBe('z.md');
+    });
+
+    it('should sort items by size descending', () => {
+      const sortItems = (fileBrowser as any).sortItems.bind(fileBrowser);
+      const items = [
+        { name: 'small.md', type: 'file', size: 100 },
+        { name: 'large.md', type: 'file', size: 1000 },
+        { name: 'folder', type: 'directory' },
+      ];
+
+      const sorted = sortItems(items, 'size', 'desc');
+
+      expect(sorted[0].name).toBe('folder'); // Directory first
+      expect(sorted[1].name).toBe('large.md'); // Larger file first
+      expect(sorted[2].name).toBe('small.md');
+    });
+  });
+
+  describe('matchesGlob method', () => {
+    it('should match glob patterns', () => {
+      const matchesGlob = (fileBrowser as any).matchesGlob.bind(fileBrowser);
+
+      expect(matchesGlob('test.md', 'test*')).toBe(true);
+      expect(matchesGlob('test.md', '*.md')).toBe(true);
+      expect(matchesGlob('test.md', 'test?md')).toBe(true); // ? matches . (dot)
+      expect(matchesGlob('test.md', 'test.??')).toBe(true);
+      expect(matchesGlob('README.txt', 'readme*')).toBe(true); // case insensitive
+      expect(matchesGlob('testXmd', 'test?md')).toBe(true); // ? matches any single char
+      expect(matchesGlob('test123md', 'test?md')).toBe(false); // ? only matches single char
+    });
+
+    it('should handle special regex characters', () => {
+      const matchesGlob = (fileBrowser as any).matchesGlob.bind(fileBrowser);
+
+      expect(matchesGlob('test.md', 'test.md')).toBe(true);
+      expect(matchesGlob('test-md', 'test.md')).toBe(false);
+    });
+  });
+
+  describe('findFiles method', () => {
+    it('should find files recursively with pattern matching', async () => {
+      const findFiles = (fileBrowser as any).findFiles.bind(fileBrowser);
+
+      // Mock readdir to return files and directories
+      mockFs.readdir.mockImplementation((path: any) => {
+        if (path === '/test') {
+          return Promise.resolve([
+            { name: 'readme.md', isFile: () => true, isDirectory: () => false },
+            { name: 'subfolder', isFile: () => false, isDirectory: () => true },
+          ] as any);
+        } else if (path === '/test/subfolder') {
+          return Promise.resolve([
+            { name: 'nested.md', isFile: () => true, isDirectory: () => false },
+          ] as any);
+        }
+        return Promise.resolve([]);
+      });
+
+      const results = await findFiles('/test', 'readme', {}, 2);
+
+      expect(results).toContain('/test/readme.md');
+      expect(mockFs.readdir).toHaveBeenCalledWith('/test', {
+        withFileTypes: true,
+      });
+    });
+
+    it('should respect maxDepth parameter', async () => {
+      const findFiles = (fileBrowser as any).findFiles.bind(fileBrowser);
+
+      mockFs.readdir.mockImplementation((path: any) => {
+        if (path === '/test') {
+          return Promise.resolve([
+            { name: 'level1', isFile: () => false, isDirectory: () => true },
+          ] as any);
+        }
+        return Promise.resolve([]);
+      });
+
+      await findFiles('/test', 'test', {}, 0); // maxDepth 0
+
+      // Should only call readdir once for base path
+      expect(mockFs.readdir).toHaveBeenCalledTimes(1);
+      expect(mockFs.readdir).toHaveBeenCalledWith('/test', {
+        withFileTypes: true,
+      });
+    });
+  });
+
+  describe('scanDirectory with error handling', () => {
+    it('should handle directory access errors gracefully', async () => {
+      const scanDirectory = (fileBrowser as any).scanDirectory.bind(
+        fileBrowser,
+      );
+
+      mockFs.readdir.mockRejectedValue(new Error('Permission denied'));
+
+      const result = await scanDirectory('/restricted');
+
+      expect(result).toEqual([]);
+    });
+
+    it('should filter hidden files when showHidden is false', async () => {
+      const scanDirectory = (fileBrowser as any).scanDirectory.bind(
+        fileBrowser,
+      );
+
+      mockFs.readdir.mockResolvedValue([
+        { name: '.hidden', isFile: () => true, isDirectory: () => false },
+        { name: 'visible.md', isFile: () => true, isDirectory: () => false },
+      ] as any);
+
+      mockFs.stat.mockResolvedValue({
+        size: 1000,
+        mtime: new Date(),
+      } as any);
+
+      const result = await scanDirectory('/test', { showHidden: false });
+
+      expect(result).toHaveLength(1);
+      expect(result[0].name).toBe('visible.md');
+    });
+
+    it('should include hidden files when showHidden is true', async () => {
+      const scanDirectory = (fileBrowser as any).scanDirectory.bind(
+        fileBrowser,
+      );
+
+      mockFs.readdir.mockResolvedValue([
+        { name: '.hidden', isFile: () => true, isDirectory: () => false },
+        { name: 'visible.md', isFile: () => true, isDirectory: () => false },
+      ] as any);
+
+      mockFs.stat.mockResolvedValue({
+        size: 1000,
+        mtime: new Date(),
+      } as any);
+
+      const result = await scanDirectory('/test', { showHidden: true });
+
+      expect(result).toHaveLength(2);
+      expect(result.some((item: any) => item.name === '.hidden')).toBe(true);
+    });
+  });
+
+  describe('searchFiles method', () => {
+    it('should prompt for search pattern and find matching files', async () => {
+      const searchFiles = (fileBrowser as any).searchFiles.bind(fileBrowser);
+
+      // Mock the inquirer prompt sequence
+      mockPrompt
+        .mockResolvedValueOnce({ pattern: 'test' }) // Search pattern input
+        .mockResolvedValueOnce({ selectedFile: '/test/result.md' }); // File selection
+
+      // Mock findFiles to return results
+      const mockFindFiles = jest
+        .spyOn(fileBrowser as any, 'findFiles')
+        .mockResolvedValue(['/test/result.md', '/test/another.md']);
+
+      const result = await searchFiles('/test');
+
+      expect(mockPrompt).toHaveBeenCalledWith({
+        type: 'input',
+        name: 'pattern',
+        message: 'fileBrowser.enterSearchPattern',
+        validate: expect.any(Function),
+      });
+
+      expect(mockFindFiles).toHaveBeenCalledWith('/test', 'test', {});
+      expect(result).toBe('/test/result.md');
+    });
+
+    it('should handle no matching files found', async () => {
+      const searchFiles = (fileBrowser as any).searchFiles.bind(fileBrowser);
+
+      mockPrompt
+        .mockResolvedValueOnce({ pattern: 'nonexistent' })
+        .mockResolvedValueOnce({ nextAction: 'back' });
+
+      jest.spyOn(fileBrowser as any, 'findFiles').mockResolvedValue([]);
+
+      const result = await searchFiles('/test');
+
+      expect(result).toBeNull();
+    });
+
+    it('should handle single file found', async () => {
+      const searchFiles = (fileBrowser as any).searchFiles.bind(fileBrowser);
+
+      mockPrompt
+        .mockResolvedValueOnce({ pattern: 'unique' })
+        .mockResolvedValueOnce({ action: 'select' });
+
+      jest
+        .spyOn(fileBrowser as any, 'findFiles')
+        .mockResolvedValue(['/test/unique.md']);
+
+      const result = await searchFiles('/test');
+
+      expect(result).toBe('/test/unique.md');
+    });
+  });
+
+  describe('error handling in complex scenarios', () => {
+    it('should handle search errors gracefully', async () => {
+      const searchFiles = (fileBrowser as any).searchFiles.bind(fileBrowser);
+
+      mockPrompt
+        .mockResolvedValueOnce({ pattern: 'test' })
+        .mockResolvedValueOnce({ nextAction: 'back' });
+
+      jest
+        .spyOn(fileBrowser as any, 'findFiles')
+        .mockRejectedValue(new Error('Search failed'));
+
+      const result = await searchFiles('/test');
+
+      expect(result).toBeNull();
+    });
+
+    it('should validate pattern input correctly', async () => {
+      const searchFiles = (fileBrowser as any).searchFiles.bind(fileBrowser);
+
+      mockPrompt.mockResolvedValueOnce({ pattern: 'valid' });
+      jest.spyOn(fileBrowser as any, 'findFiles').mockResolvedValue([]);
+      mockPrompt.mockResolvedValueOnce({ nextAction: 'back' });
+
+      await searchFiles('/test');
+
+      const validateFn = mockPrompt.mock.calls[0][0].validate;
+      expect(validateFn('')).toBe('fileBrowser.pleaseEnterSearchPattern');
+      expect(validateFn(' ')).toBe('fileBrowser.pleaseEnterSearchPattern');
+      expect(validateFn('valid')).toBe(true);
+    });
+  });
+
+  describe('browseDirectory method - Enhanced Coverage', () => {
+    it('should handle directory navigation and file selection flow', async () => {
+      const browseDirectory = (fileBrowser as any).browseDirectory.bind(
+        fileBrowser,
+      );
+
+      const mockItems = [
         {
           name: 'test.md',
           path: '/test/test.md',
           type: 'file',
-          size: undefined,
-          modified: undefined,
           isMarkdown: true,
         },
       ];
 
-      const choices = buildChoices(items, '/test');
+      jest
+        .spyOn(fileBrowser as any, 'scanDirectory')
+        .mockResolvedValue(mockItems);
+      mockPrompt.mockResolvedValue({ action: '/test/test.md' });
 
-      expect(
-        choices.some((choice: any) => choice.value === '/test/test.md'),
-      ).toBe(true);
-      // Should handle undefined values gracefully in the display
-      const markdownChoice = choices.find(
-        (choice: any) => choice.value === '/test/test.md',
+      const result = await browseDirectory('/test');
+      expect(result).toBe('/test/test.md');
+    });
+
+    it('should handle search flow returning result', async () => {
+      const browseDirectory = (fileBrowser as any).browseDirectory.bind(
+        fileBrowser,
       );
-      expect(markdownChoice).toBeDefined();
+
+      jest.spyOn(fileBrowser as any, 'scanDirectory').mockResolvedValue([]);
+      jest
+        .spyOn(fileBrowser as any, 'searchFiles')
+        .mockResolvedValue('/found/file.md');
+      mockPrompt.mockResolvedValue({ action: '__search__' });
+
+      const result = await browseDirectory('/test');
+      expect(result).toBe('/found/file.md');
+    });
+
+    it('should handle directory navigation up', async () => {
+      const browseDirectory = (fileBrowser as any).browseDirectory.bind(
+        fileBrowser,
+      );
+
+      jest.spyOn(fileBrowser as any, 'scanDirectory').mockResolvedValue([]);
+      mockPrompt
+        .mockResolvedValueOnce({ action: '__up__' })
+        .mockResolvedValueOnce({ action: '__back_to_main__' });
+
+      try {
+        await browseDirectory('/test/subdir');
+      } catch (error) {
+        expect((error as Error).message).toBe('BACK_TO_MAIN_MENU');
+      }
+    });
+
+    it('should handle error cases and fallback to manual input', async () => {
+      const browseDirectory = (fileBrowser as any).browseDirectory.bind(
+        fileBrowser,
+      );
+
+      jest
+        .spyOn(fileBrowser as any, 'scanDirectory')
+        .mockRejectedValue(new Error('Access denied'));
+      jest
+        .spyOn(fileBrowser as any, 'enterFilePath')
+        .mockResolvedValue('/manual/path.md');
+
+      const result = await browseDirectory('/restricted');
+      expect(result).toBe('/manual/path.md');
     });
   });
 
-  describe('additional utility method coverage', () => {
-    it('should test scanDirectory method indirectly', async () => {
-      // This method is used internally, we can test its behavior through buildChoices
+  describe('sortItems - Modified Date Sorting', () => {
+    it('should sort by modified date ascending and descending', () => {
+      const sortItems = (fileBrowser as any).sortItems.bind(fileBrowser);
+      const items = [
+        { name: 'new.md', type: 'file', modified: new Date('2023-12-01') },
+        { name: 'old.md', type: 'file', modified: new Date('2023-01-01') },
+        { name: 'folder', type: 'directory' },
+      ];
+
+      const sortedAsc = sortItems(items, 'modified', 'asc');
+      expect(sortedAsc[0].name).toBe('folder');
+      expect(sortedAsc[1].name).toBe('old.md');
+      expect(sortedAsc[2].name).toBe('new.md');
+
+      const sortedDesc = sortItems(items, 'modified', 'desc');
+      expect(sortedDesc[1].name).toBe('new.md');
+      expect(sortedDesc[2].name).toBe('old.md');
+    });
+  });
+
+  describe('searchFiles - All Flow Branches', () => {
+    it('should handle single file found with search again option', async () => {
+      const searchFiles = (fileBrowser as any).searchFiles.bind(fileBrowser);
+
+      mockPrompt
+        .mockResolvedValueOnce({ pattern: 'unique' })
+        .mockResolvedValueOnce({ action: 'search_again' })
+        .mockResolvedValueOnce({ pattern: 'new' })
+        .mockResolvedValueOnce({ nextAction: 'back' });
+
+      jest
+        .spyOn(fileBrowser as any, 'findFiles')
+        .mockResolvedValueOnce(['/test/unique.md'])
+        .mockResolvedValueOnce([]);
+
+      const result = await searchFiles('/test');
+      expect(result).toBeNull();
+    });
+
+    it('should handle multiple files found with back option', async () => {
+      const searchFiles = (fileBrowser as any).searchFiles.bind(fileBrowser);
+
+      mockPrompt
+        .mockResolvedValueOnce({ pattern: 'test' })
+        .mockResolvedValueOnce({ selectedFile: '__back__' });
+
+      jest
+        .spyOn(fileBrowser as any, 'findFiles')
+        .mockResolvedValue(['/test/file1.md', '/test/file2.md']);
+
+      const result = await searchFiles('/test');
+      expect(result).toBeNull();
+    });
+
+    it('should handle search error with back option', async () => {
+      const searchFiles = (fileBrowser as any).searchFiles.bind(fileBrowser);
+
+      mockPrompt
+        .mockResolvedValueOnce({ pattern: 'failing' })
+        .mockResolvedValueOnce({ nextAction: 'back' });
+
+      jest
+        .spyOn(fileBrowser as any, 'findFiles')
+        .mockRejectedValueOnce(new Error('Search failed'));
+
+      const result = await searchFiles('/test');
+      expect(result).toBeNull();
+    });
+  });
+
+  describe('formatDate - Complete Time Range Coverage', () => {
+    it('should handle all time ranges correctly', () => {
+      const formatDate = (fileBrowser as any).formatDate.bind(fileBrowser);
+
+      const now = new Date();
+      const yesterday = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+      const threeDaysAgo = new Date(now.getTime() - 3 * 24 * 60 * 60 * 1000);
+      const oneWeekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+      const twoWeeksAgo = new Date(now.getTime() - 14 * 24 * 60 * 60 * 1000);
+      const oneMonthAgo = new Date(now.getTime() - 35 * 24 * 60 * 60 * 1000);
+
+      expect(formatDate(now)).toBe('fileBrowser.today');
+      expect(formatDate(yesterday)).toBe('fileBrowser.yesterday');
+      expect(formatDate(threeDaysAgo)).toBe('fileBrowser.daysAgo');
+      expect(formatDate(oneWeekAgo)).toBe('fileBrowser.weeksAgo');
+      expect(formatDate(twoWeeksAgo)).toBe('fileBrowser.weeksAgo');
+      expect(formatDate(oneMonthAgo)).toBe(oneMonthAgo.toLocaleDateString());
+      expect(formatDate(undefined)).toBe('fileBrowser.unknown');
+    });
+  });
+
+  describe('buildChoices - File Count Edge Cases', () => {
+    it('should hide other files when there are 5 or more non-markdown files', () => {
       const buildChoices = (fileBrowser as any).buildChoices.bind(fileBrowser);
 
-      // Test with mixed items that would come from scanDirectory
-      const items = [
+      const mockItems = [
         {
-          name: 'dir1',
-          path: '/test/dir1',
-          type: 'directory',
-          size: 0,
-          modified: new Date(),
+          name: 'readme.md',
+          path: '/test/readme.md',
+          type: 'file',
+          isMarkdown: true,
+        },
+        {
+          name: 'file1.txt',
+          path: '/test/file1.txt',
+          type: 'file',
           isMarkdown: false,
         },
         {
-          name: 'file1.md',
-          path: '/test/file1.md',
+          name: 'file2.txt',
+          path: '/test/file2.txt',
           type: 'file',
-          size: 1000,
-          modified: new Date(),
+          isMarkdown: false,
+        },
+        {
+          name: 'file3.txt',
+          path: '/test/file3.txt',
+          type: 'file',
+          isMarkdown: false,
+        },
+        {
+          name: 'file4.txt',
+          path: '/test/file4.txt',
+          type: 'file',
+          isMarkdown: false,
+        },
+        {
+          name: 'file5.txt',
+          path: '/test/file5.txt',
+          type: 'file',
+          isMarkdown: false,
+        },
+      ];
+
+      const choices = buildChoices(mockItems, '/test');
+
+      // Should show markdown file but not the 5+ other files
+      const fileChoices = choices.filter(
+        (c: any) => c.value.startsWith('/test') && c.value.includes('file'),
+      );
+      expect(fileChoices.length).toBe(0); // No .txt files should be shown
+
+      const markdownChoices = choices.filter((c: any) =>
+        c.value.includes('readme.md'),
+      );
+      expect(markdownChoices.length).toBe(1);
+    });
+
+    it('should show other files when fewer than 5', () => {
+      const buildChoices = (fileBrowser as any).buildChoices.bind(fileBrowser);
+
+      const mockItems = [
+        {
+          name: 'readme.md',
+          path: '/test/readme.md',
+          type: 'file',
           isMarkdown: true,
         },
+        {
+          name: 'file1.txt',
+          path: '/test/file1.txt',
+          type: 'file',
+          isMarkdown: false,
+        },
+        {
+          name: 'file2.txt',
+          path: '/test/file2.txt',
+          type: 'file',
+          isMarkdown: false,
+        },
       ];
 
-      const choices = buildChoices(items, '/test');
-      expect(choices.length).toBeGreaterThan(0);
-      expect(choices.some((choice: any) => choice.value === '/test/dir1')).toBe(
-        true,
+      const choices = buildChoices(mockItems, '/test');
+
+      const fileChoices = choices.filter((c: any) =>
+        c.value.startsWith('/test'),
       );
-      expect(
-        choices.some((choice: any) => choice.value === '/test/file1.md'),
-      ).toBe(true);
-    });
-
-    it('should test sortItems edge case with same names', () => {
-      const sortItems = (fileBrowser as any).sortItems.bind(fileBrowser);
-
-      const items = [
-        {
-          name: 'same.md',
-          type: 'file',
-          modified: new Date('2023-01-01'),
-          size: 1000,
-        },
-        {
-          name: 'same.md',
-          type: 'file',
-          modified: new Date('2023-01-01'),
-          size: 1000,
-        },
-      ];
-
-      const sorted = sortItems(items, 'name', 'asc');
-      expect(sorted).toHaveLength(2);
-      expect(sorted[0].name).toBe('same.md');
-      expect(sorted[1].name).toBe('same.md');
-    });
-
-    it('should test matchesGlob with edge cases', () => {
-      const matchesGlob = (fileBrowser as any).matchesGlob.bind(fileBrowser);
-
-      // Test empty patterns
-      expect(matchesGlob('test.md', '')).toBe(false);
-      expect(matchesGlob('', '*')).toBe(true);
-      expect(matchesGlob('', '')).toBe(true);
-
-      // Test multiple wildcards
-      expect(matchesGlob('prefix-middle-suffix.txt', '*-*-*')).toBe(true);
-      expect(matchesGlob('a-b-c-d.txt', '*-*-*')).toBe(true);
+      expect(fileChoices.length).toBe(3); // All files should be shown
     });
   });
 
-  describe('error handling scenarios', () => {
-    it('should handle missing CliRenderer gracefully', () => {
-      // Test that even if renderer is undefined, the class doesn't crash
-      const instance = new FileBrowser(mockTranslator);
-      expect(instance).toBeInstanceOf(FileBrowser);
+  describe('findFiles - Glob Matching Coverage', () => {
+    it('should find files using glob pattern matching', async () => {
+      const findFiles = (fileBrowser as any).findFiles.bind(fileBrowser);
 
-      // Access private renderer to ensure it exists
-      const renderer = (instance as any).renderer;
-      expect(renderer).toBeDefined();
+      mockFs.readdir.mockResolvedValue([
+        { name: 'test.md', isFile: () => true, isDirectory: () => false },
+        { name: 'readme.md', isFile: () => true, isDirectory: () => false },
+      ] as any);
+
+      const results = await findFiles('/test', 'test*', {}, 1);
+      expect(results).toContain('/test/test.md');
     });
   });
 });

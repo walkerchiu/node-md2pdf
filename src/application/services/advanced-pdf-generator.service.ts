@@ -1,6 +1,7 @@
 /**
- * Enhanced PDF Generator Service
- * Uses the new PDF Engine abstraction layer with failover and health monitoring
+ * Advanced PDF Generator Service
+ * Uses the PDF Engine abstraction layer with failover and health monitoring
+ * Provides enterprise-grade PDF generation with multi-engine support
  */
 
 import {
@@ -23,7 +24,7 @@ import type { IConfigManager } from '../../infrastructure/config/types';
 import type { IErrorHandler } from '../../infrastructure/error/types';
 import type { ILogger } from '../../infrastructure/logging/types';
 
-export interface IEnhancedPDFGeneratorService {
+export interface IAdvancedPDFGeneratorService {
   generatePDF(
     htmlContent: string,
     outputPath: string,
@@ -49,8 +50,8 @@ export interface IEnhancedPDFGeneratorService {
   forceHealthCheck(engineName?: string): Promise<void>;
 }
 
-export class EnhancedPDFGeneratorService
-  implements IEnhancedPDFGeneratorService
+export class AdvancedPDFGeneratorService
+  implements IAdvancedPDFGeneratorService
 {
   private engineManager: PDFEngineManager | null = null;
   private isInitialized = false;
@@ -67,7 +68,7 @@ export class EnhancedPDFGeneratorService
     }
 
     try {
-      this.logger.info('Initializing enhanced PDF generator service');
+      this.logger.info('Initializing advanced PDF generator service');
 
       // Get configuration from config manager
       const engineConfig = this.buildEngineConfig();
@@ -86,7 +87,7 @@ export class EnhancedPDFGeneratorService
 
       this.isInitialized = true;
       this.logger.info(
-        'Enhanced PDF generator service initialized successfully',
+        'Advanced PDF generator service initialized successfully',
       );
 
       // Log available engines
@@ -94,7 +95,7 @@ export class EnhancedPDFGeneratorService
       this.logger.info(`Available PDF engines: ${availableEngines.join(', ')}`);
     } catch (error) {
       const wrappedError = new MD2PDFError(
-        `Failed to initialize enhanced PDF generator service: ${(error as Error).message}`,
+        `Failed to initialize advanced PDF generator service: ${(error as Error).message}`,
         'PDF_ENGINE_INIT_ERROR',
         'pdf_generation',
         false,
@@ -103,7 +104,7 @@ export class EnhancedPDFGeneratorService
 
       await this.errorHandler.handleError(
         wrappedError,
-        'EnhancedPDFGeneratorService.initialize',
+        'AdvancedPDFGeneratorService.initialize',
       );
       throw wrappedError;
     }
@@ -172,7 +173,7 @@ export class EnhancedPDFGeneratorService
     }
 
     try {
-      this.logger.debug(`Generating PDF with enhanced service: ${outputPath}`);
+      this.logger.debug(`Generating PDF with advanced service: ${outputPath}`);
       const startTime = Date.now();
 
       // Build generation context
@@ -230,7 +231,7 @@ export class EnhancedPDFGeneratorService
       }
     } catch (error) {
       const wrappedError = new MD2PDFError(
-        `Enhanced PDF generation failed: ${(error as Error).message}`,
+        `Advanced PDF generation failed: ${(error as Error).message}`,
         'PDF_GENERATION_ERROR',
         'pdf_generation',
         true,
@@ -244,7 +245,7 @@ export class EnhancedPDFGeneratorService
 
       await this.errorHandler.handleError(
         wrappedError,
-        'EnhancedPDFGeneratorService.generatePDF',
+        'AdvancedPDFGeneratorService.generatePDF',
       );
 
       return {
@@ -303,16 +304,16 @@ export class EnhancedPDFGeneratorService
     }
 
     try {
-      this.logger.info('Cleaning up enhanced PDF generator service');
+      this.logger.info('Cleaning up advanced PDF generator service');
       await this.engineManager.cleanup();
       this.engineManager = null;
       this.isInitialized = false;
       this.logger.info(
-        'Enhanced PDF generator service cleaned up successfully',
+        'Advanced PDF generator service cleaned up successfully',
       );
     } catch (error) {
       this.logger.warn(
-        `Error during enhanced PDF generator cleanup: ${(error as Error).message}`,
+        `Error during advanced PDF generator cleanup: ${(error as Error).message}`,
       );
       // Don't throw on cleanup errors, just log them
     }

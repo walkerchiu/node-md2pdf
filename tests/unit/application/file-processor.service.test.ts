@@ -4,7 +4,7 @@ import {
 } from '../../../src/application/services/file-processor.service';
 import { IMarkdownParserService } from '../../../src/application/services/markdown-parser.service';
 import { ITOCGeneratorService } from '../../../src/application/services/toc-generator.service';
-import { IPDFGeneratorService } from '../../../src/application/services/pdf-generator.service';
+import { IBasicPDFGeneratorService } from '../../../src/application/services/basic-pdf-generator.service';
 import { ILogger } from '../../../src/infrastructure/logging/types';
 import { IErrorHandler } from '../../../src/infrastructure/error/types';
 import { IConfigManager } from '../../../src/infrastructure/config/types';
@@ -28,7 +28,7 @@ describe('FileProcessorService', () => {
   let mockFileSystemManager: jest.Mocked<IFileSystemManager>;
   let mockMarkdownParserService: jest.Mocked<IMarkdownParserService>;
   let mockTOCGeneratorService: jest.Mocked<ITOCGeneratorService>;
-  let mockPDFGeneratorService: jest.Mocked<IPDFGeneratorService>;
+  let mockPDFGeneratorService: jest.Mocked<IBasicPDFGeneratorService>;
 
   const mockParsedContent: ParsedMarkdown = {
     content: '<h1>Test Document</h1><p>This is a test document.</p>',

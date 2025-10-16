@@ -14,8 +14,8 @@ import {
 import { ParsedMarkdown } from '../../types/index';
 import { ImagePathResolver } from '../../utils/image-path-resolver';
 
+import { IBasicPDFGeneratorService } from './basic-pdf-generator.service';
 import { IMarkdownParserService } from './markdown-parser.service';
-import { IPDFGeneratorService } from './pdf-generator.service';
 import { ITOCGeneratorService } from './toc-generator.service';
 
 import type { IConfigManager } from '../../infrastructure/config/types';
@@ -58,7 +58,7 @@ export class FileProcessorService implements IFileProcessorService {
     private readonly fileSystemManager: IFileSystemManager,
     private readonly markdownParserService: IMarkdownParserService,
     private readonly tocGeneratorService: ITOCGeneratorService,
-    private readonly pdfGeneratorService: IPDFGeneratorService,
+    private readonly pdfGeneratorService: IBasicPDFGeneratorService,
   ) {
     // _configManager is reserved for future configuration options
     void this._configManager;
