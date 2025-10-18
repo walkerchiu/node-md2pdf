@@ -1,9 +1,15 @@
 /**
- * Advanced PDF Generator Service
+ * PDF Generator Service
  * Uses the PDF Engine abstraction layer with failover and health monitoring
  * Provides enterprise-grade PDF generation with multi-engine support
  */
 
+import {
+  ConversionStartedEvent,
+  ConversionCompletedEvent,
+  ConversionFailedEvent,
+  InMemoryEventPublisher,
+} from '../../core/domain/events';
 import {
   PDFEngineManager,
   PDFEngineFactory,
@@ -24,7 +30,7 @@ import type { IConfigManager } from '../../infrastructure/config/types';
 import type { IErrorHandler } from '../../infrastructure/error/types';
 import type { ILogger } from '../../infrastructure/logging/types';
 
-export interface IAdvancedPDFGeneratorService {
+export interface IPDFGeneratorService {
   generatePDF(
     htmlContent: string,
     outputPath: string,
@@ -50,17 +56,18 @@ export interface IAdvancedPDFGeneratorService {
   forceHealthCheck(engineName?: string): Promise<void>;
 }
 
-export class AdvancedPDFGeneratorService
-  implements IAdvancedPDFGeneratorService
-{
+export class PDFGeneratorService implements IPDFGeneratorService {
   private engineManager: PDFEngineManager | null = null;
   private isInitialized = false;
+  private eventPublisher: InMemoryEventPublisher;
 
   constructor(
     private readonly logger: ILogger,
     private readonly errorHandler: IErrorHandler,
     private readonly configManager: IConfigManager,
-  ) {}
+  ) {
+    this.eventPublisher = new InMemoryEventPublisher();
+  }
 
   async initialize(): Promise<void> {
     if (this.isInitialized) {
@@ -104,7 +111,7 @@ export class AdvancedPDFGeneratorService
 
       await this.errorHandler.handleError(
         wrappedError,
-        'AdvancedPDFGeneratorService.initialize',
+        'PDFGeneratorService.initialize',
       );
       throw wrappedError;
     }
@@ -176,6 +183,17 @@ export class AdvancedPDFGeneratorService
       this.logger.debug(`Generating PDF with advanced service: ${outputPath}`);
       const startTime = Date.now();
 
+      // Publish conversion started event
+      // For Domain Events, we'll use string paths directly since FilePath has validation constraints
+      const inputPath = outputPath.replace('.pdf', '.md');
+      const outputPath_ = outputPath;
+      const startedEvent = new ConversionStartedEvent(
+        inputPath,
+        outputPath_,
+        options,
+      );
+      await this.eventPublisher.publish(startedEvent);
+
       // Build generation context
       const context: PDFGenerationContext = {
         htmlContent,
@@ -206,6 +224,15 @@ export class AdvancedPDFGeneratorService
           `PDF generated successfully with ${result.metadata?.engineUsed || 'unknown'} engine: ${outputPath} (${duration}ms)`,
         );
 
+        // Publish conversion completed event
+        const completedEvent = new ConversionCompletedEvent(
+          inputPath,
+          outputPath_,
+          duration,
+          result.metadata?.fileSize || 0,
+        );
+        await this.eventPublisher.publish(completedEvent);
+
         // Convert to legacy format
         return {
           success: true,
@@ -224,6 +251,14 @@ export class AdvancedPDFGeneratorService
         };
       } else {
         this.logger.error(`PDF generation failed: ${result.error}`);
+
+        // Publish conversion failed event
+        const failedEvent = new ConversionFailedEvent(
+          inputPath,
+          result.error || 'PDF generation failed',
+        );
+        await this.eventPublisher.publish(failedEvent);
+
         return {
           success: false,
           error: result.error || 'PDF generation failed',
@@ -243,9 +278,24 @@ export class AdvancedPDFGeneratorService
         },
       );
 
+      // Publish conversion failed event for exceptions
+      try {
+        const inputPath = outputPath.replace('.pdf', '.md');
+        const failedEvent = new ConversionFailedEvent(
+          inputPath,
+          wrappedError.message,
+        );
+        await this.eventPublisher.publish(failedEvent);
+      } catch (eventError) {
+        this.logger.warn(
+          'Failed to publish conversion failed event',
+          eventError,
+        );
+      }
+
       await this.errorHandler.handleError(
         wrappedError,
-        'AdvancedPDFGeneratorService.generatePDF',
+        'PDFGeneratorService.generatePDF',
       );
 
       return {

@@ -14,8 +14,8 @@ import {
 import { ParsedMarkdown } from '../../types/index';
 import { ImagePathResolver } from '../../utils/image-path-resolver';
 
-import { IBasicPDFGeneratorService } from './basic-pdf-generator.service';
 import { IMarkdownParserService } from './markdown-parser.service';
+import { IPDFGeneratorService } from './pdf-generator.service';
 import { ITOCGeneratorService } from './toc-generator.service';
 
 import type { IConfigManager } from '../../infrastructure/config/types';
@@ -58,7 +58,7 @@ export class FileProcessorService implements IFileProcessorService {
     private readonly fileSystemManager: IFileSystemManager,
     private readonly markdownParserService: IMarkdownParserService,
     private readonly tocGeneratorService: ITOCGeneratorService,
-    private readonly pdfGeneratorService: IBasicPDFGeneratorService,
+    private readonly pdfGeneratorService: IPDFGeneratorService,
   ) {
     // _configManager is reserved for future configuration options
     void this._configManager;
@@ -135,7 +135,26 @@ export class FileProcessorService implements IFileProcessorService {
       const pdfResult = await this.pdfGeneratorService.generatePDF(
         finalHtmlContent,
         outputPath,
-        options.pdfOptions,
+        {
+          ...(options.customStyles && { customCSS: options.customStyles }),
+          title:
+            (parsedContent.metadata?.title as string) || 'Markdown Document',
+          headings: parsedContent.headings,
+          markdownContent: finalHtmlContent,
+          enableChineseSupport: true,
+          ...(options.tocOptions && {
+            tocOptions: {
+              enabled: options.includeTOC || false,
+              maxDepth: options.tocOptions.maxDepth || 3,
+              includePageNumbers:
+                options.tocOptions.includePageNumbers !== false,
+              ...(options.tocOptions &&
+                'title' in options.tocOptions && {
+                  title: (options.tocOptions as any).title,
+                }),
+            },
+          }),
+        },
       );
 
       // Get file size

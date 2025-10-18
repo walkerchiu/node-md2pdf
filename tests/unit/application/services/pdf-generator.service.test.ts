@@ -12,9 +12,9 @@
 
 import { jest } from '@jest/globals';
 import type {
-  AdvancedPDFGeneratorService as AdvancedPDFGeneratorServiceClass,
-  IAdvancedPDFGeneratorService,
-} from '../../../../src/application/services/advanced-pdf-generator.service';
+  PDFGeneratorService as PDFGeneratorServiceClass,
+  IPDFGeneratorService,
+} from '../../../../src/application/services/pdf-generator.service';
 import type { ILogger } from '../../../../src/infrastructure/logging/types';
 import type { IErrorHandler } from '../../../../src/infrastructure/error/types';
 import type { IConfigManager } from '../../../../src/infrastructure/config/types';
@@ -66,10 +66,10 @@ jest.mock('../../../../src/core/pdf/engines', () => {
   };
 });
 
-describe('AdvancedPDFGeneratorService', () => {
-  let AdvancedPDFGeneratorService: typeof AdvancedPDFGeneratorServiceClass;
+describe('PDFGeneratorService', () => {
+  let PDFGeneratorService: typeof PDFGeneratorServiceClass;
 
-  let service: IAdvancedPDFGeneratorService;
+  let service: IPDFGeneratorService;
 
   // Mock services
   const mockLogger = {
@@ -124,11 +124,11 @@ describe('AdvancedPDFGeneratorService', () => {
 
     // Dynamically import to avoid circular dependencies
     const module = await import(
-      '../../../../src/application/services/advanced-pdf-generator.service'
+      '../../../../src/application/services/pdf-generator.service'
     );
-    AdvancedPDFGeneratorService = module.AdvancedPDFGeneratorService;
+    PDFGeneratorService = module.PDFGeneratorService;
 
-    service = new AdvancedPDFGeneratorService(
+    service = new PDFGeneratorService(
       mockLogger,
       mockErrorHandler,
       mockConfigManager,
@@ -138,7 +138,7 @@ describe('AdvancedPDFGeneratorService', () => {
   describe('Service Lifecycle', () => {
     it('should create service instance', () => {
       expect(service).toBeDefined();
-      expect(service).toBeInstanceOf(AdvancedPDFGeneratorService);
+      expect(service).toBeInstanceOf(PDFGeneratorService);
     });
 
     it('should initialize successfully', async () => {
@@ -223,7 +223,7 @@ describe('AdvancedPDFGeneratorService', () => {
     });
 
     it('should auto-initialize if not initialized', async () => {
-      const newService = new AdvancedPDFGeneratorService(
+      const newService = new PDFGeneratorService(
         mockLogger,
         mockErrorHandler,
         mockConfigManager,
@@ -250,7 +250,7 @@ describe('AdvancedPDFGeneratorService', () => {
     });
 
     it('should return empty map when not initialized', async () => {
-      const newService = new AdvancedPDFGeneratorService(
+      const newService = new PDFGeneratorService(
         mockLogger,
         mockErrorHandler,
         mockConfigManager,

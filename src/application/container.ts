@@ -8,15 +8,13 @@ import { InfrastructureServices } from '../infrastructure/services';
 import { ServiceContainer, IServiceContainer } from '../shared/container';
 
 import {
-  BasicPDFGeneratorService,
-  AdvancedPDFGeneratorService,
+  PDFGeneratorService,
   MarkdownParserService,
   TOCGeneratorService,
   FileProcessorService,
   BatchProcessorService,
   SmartDefaultsService,
-  type IBasicPDFGeneratorService,
-  type IAdvancedPDFGeneratorService,
+  type IPDFGeneratorService,
   type IMarkdownParserService,
   type ITOCGeneratorService,
   type IFileProcessorService,
@@ -29,7 +27,6 @@ import type { ILogger } from '../infrastructure/logging/types';
 
 export const APPLICATION_SERVICE_NAMES = {
   PDF_GENERATOR: 'pdfGenerator',
-  ADVANCED_PDF_GENERATOR: 'advancedPdfGenerator',
   MARKDOWN_PARSER: 'markdownParser',
   TOC_GENERATOR: 'tocGenerator',
   FILE_PROCESSOR: 'fileProcessor',
@@ -59,18 +56,7 @@ export class ApplicationServices {
     container.registerSingleton(
       APPLICATION_SERVICE_NAMES.PDF_GENERATOR,
       (c) =>
-        new BasicPDFGeneratorService(
-          c.resolve('logger'),
-          c.resolve('errorHandler'),
-          c.resolve('config'),
-        ),
-    );
-
-    // Register Advanced PDF Generator Service (new engine-based)
-    container.registerSingleton(
-      APPLICATION_SERVICE_NAMES.ADVANCED_PDF_GENERATOR,
-      (c) =>
-        new AdvancedPDFGeneratorService(
+        new PDFGeneratorService(
           c.resolve('logger'),
           c.resolve('errorHandler'),
           c.resolve('config'),
@@ -140,9 +126,10 @@ export class ApplicationServices {
   /**
    * Enhanced service factory methods for easier access
    */
-  static createBasicPDFGeneratorService(
+
+  static createPDFGeneratorService(
     logLevel: 'error' | 'warn' | 'info' | 'debug' = 'info',
-  ): IBasicPDFGeneratorService {
+  ): IPDFGeneratorService {
     const container = ApplicationServices.createContainer();
 
     // Configure logging level
@@ -150,18 +137,6 @@ export class ApplicationServices {
     logger.setLevel(logLevel);
 
     return container.resolve(APPLICATION_SERVICE_NAMES.PDF_GENERATOR);
-  }
-
-  static createAdvancedPDFGeneratorService(
-    logLevel: 'error' | 'warn' | 'info' | 'debug' = 'info',
-  ): IAdvancedPDFGeneratorService {
-    const container = ApplicationServices.createContainer();
-
-    // Configure logging level
-    const logger = container.resolve<ILogger>('logger');
-    logger.setLevel(logLevel);
-
-    return container.resolve(APPLICATION_SERVICE_NAMES.ADVANCED_PDF_GENERATOR);
   }
 
   static createMarkdownParserService(
