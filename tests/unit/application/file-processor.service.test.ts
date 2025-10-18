@@ -4,7 +4,7 @@ import {
 } from '../../../src/application/services/file-processor.service';
 import { IMarkdownParserService } from '../../../src/application/services/markdown-parser.service';
 import { ITOCGeneratorService } from '../../../src/application/services/toc-generator.service';
-import { IBasicPDFGeneratorService } from '../../../src/application/services/basic-pdf-generator.service';
+import { IPDFGeneratorService } from '../../../src/application/services/pdf-generator.service';
 import { ILogger } from '../../../src/infrastructure/logging/types';
 import { IErrorHandler } from '../../../src/infrastructure/error/types';
 import { IConfigManager } from '../../../src/infrastructure/config/types';
@@ -28,7 +28,7 @@ describe('FileProcessorService', () => {
   let mockFileSystemManager: jest.Mocked<IFileSystemManager>;
   let mockMarkdownParserService: jest.Mocked<IMarkdownParserService>;
   let mockTOCGeneratorService: jest.Mocked<ITOCGeneratorService>;
-  let mockPDFGeneratorService: jest.Mocked<IBasicPDFGeneratorService>;
+  let mockPDFGeneratorService: jest.Mocked<IPDFGeneratorService>;
 
   const mockParsedContent: ParsedMarkdown = {
     content: '<h1>Test Document</h1><p>This is a test document.</p>',
@@ -157,6 +157,9 @@ describe('FileProcessorService', () => {
       generatePDF: jest.fn(),
       initialize: jest.fn(),
       cleanup: jest.fn(),
+      getEngineStatus: jest.fn(),
+      getAvailableEngines: jest.fn(),
+      forceHealthCheck: jest.fn(),
     };
 
     service = new FileProcessorService(
@@ -216,7 +219,12 @@ describe('FileProcessorService', () => {
       expect(mockPDFGeneratorService.generatePDF).toHaveBeenCalledWith(
         mockParsedContent.content,
         outputPath,
-        undefined,
+        {
+          enableChineseSupport: true,
+          headings: mockParsedContent.headings,
+          markdownContent: mockParsedContent.content,
+          title: 'Test Document',
+        },
       );
     });
 
@@ -246,7 +254,17 @@ describe('FileProcessorService', () => {
       expect(mockPDFGeneratorService.generatePDF).toHaveBeenCalledWith(
         expectedContent,
         outputPath,
-        undefined,
+        {
+          enableChineseSupport: true,
+          headings: mockParsedContent.headings,
+          markdownContent: expectedContent,
+          title: 'Test Document',
+          tocOptions: {
+            enabled: true,
+            includePageNumbers: true,
+            maxDepth: 2,
+          },
+        },
       );
     });
 
@@ -263,7 +281,13 @@ describe('FileProcessorService', () => {
       expect(mockPDFGeneratorService.generatePDF).toHaveBeenCalledWith(
         expectedContent,
         outputPath,
-        undefined,
+        {
+          customCSS: customStyles,
+          enableChineseSupport: true,
+          headings: mockParsedContent.headings,
+          markdownContent: expectedContent,
+          title: 'Test Document',
+        },
       );
     });
 
@@ -275,7 +299,12 @@ describe('FileProcessorService', () => {
       expect(mockPDFGeneratorService.generatePDF).toHaveBeenCalledWith(
         mockParsedContent.content,
         '/test/input.pdf',
-        undefined,
+        {
+          enableChineseSupport: true,
+          headings: mockParsedContent.headings,
+          markdownContent: mockParsedContent.content,
+          title: 'Test Document',
+        },
       );
     });
 

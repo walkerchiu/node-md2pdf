@@ -69,7 +69,7 @@ describe('ApplicationServices Integration', () => {
 
   describe('Factory Methods', () => {
     it('should create PDF generator service', () => {
-      const service = ApplicationServices.createBasicPDFGeneratorService();
+      const service = ApplicationServices.createPDFGeneratorService();
       expect(service).toBeDefined();
       expect(typeof service.generatePDF).toBe('function');
       expect(typeof service.initialize).toBe('function');
