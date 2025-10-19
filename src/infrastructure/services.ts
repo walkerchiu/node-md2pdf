@@ -8,11 +8,15 @@ import { join, dirname, resolve } from 'path';
 import { ServiceContainer } from '../shared/container';
 
 import { ConfigManager } from './config';
-import { createConfigNotificationService } from './config/notification-service';
+import { createConfigNotificationService } from './config/notification.service';
 import { ErrorHandler } from './error';
 import { FileSystemManager } from './filesystem';
 import { TranslationManager } from './i18n';
 import { Logger } from './logging';
+import {
+  LogManagementService,
+  LogManagementServiceFactory,
+} from './logging/log-management.service';
 
 import type { IConfigManager } from './config';
 import type { IErrorHandler } from './error';
@@ -25,6 +29,25 @@ import type {
   FileLoggingConfig,
 } from './logging';
 import type { IServiceContainer } from '../shared/container';
+import type { LogManagementConfig } from './logging/log-management.service';
+
+/**
+ * Log management service interface
+ */
+export interface ILogManagementService {
+  getStats(): Promise<any>;
+  getDiskUsage(): Promise<any>;
+  searchLogs(criteria: any): Promise<any>;
+  analyzeLogs(timeRange?: { from: Date; to: Date }): Promise<any>;
+  rotateLogs(): Promise<void>;
+  archiveLogs(): Promise<string[]>;
+  cleanupOldLogs(): Promise<number>;
+  runMaintenance(): Promise<any>;
+  checkHealth(): Promise<void>;
+  getStatus(): any;
+  initialize(): Promise<void>;
+  shutdown(): Promise<void>;
+}
 
 export class InfrastructureServices {
   /**
@@ -231,6 +254,66 @@ export class InfrastructureServices {
         fallbackLocale: 'en',
       });
     });
+
+    // Register log management service as singleton
+    container.registerSingleton<ILogManagementService>('logManagement', (c) => {
+      const config = c.tryResolve<IConfigManager>('config');
+      const logger = c.tryResolve<ILogger>('logger');
+
+      // Get logging configuration from config manager
+      const loggingEnabled =
+        config?.get<boolean>('logging.enabled', true) ?? true;
+
+      if (!loggingEnabled) {
+        // Return a no-op service if logging is disabled
+        return createNoOpLogManagementService();
+      }
+
+      // Determine environment and create appropriate service
+      const isProduction = process.env.NODE_ENV === 'production';
+
+      const logManagementConfig: LogManagementConfig = {
+        // Required base configuration
+        filePath: join(process.cwd(), 'logs', 'md2pdf.log'),
+        maxFileSize:
+          config?.get<number>('logging.maxFileSize') ?? 10 * 1024 * 1024,
+        maxBackupFiles: config?.get<number>('logging.maxBackupFiles') ?? 5,
+        format: (config?.get<string>('logging.format') ?? 'text') as
+          | 'text'
+          | 'json',
+        enableRotation: config?.get<boolean>('logging.enableRotation') ?? true,
+        async: config?.get<boolean>('logging.async') ?? true,
+        // Management configuration
+        autoMaintenance:
+          config?.get<boolean>('logging.autoMaintenance') ?? isProduction,
+        enableHealthCheck:
+          config?.get<boolean>('logging.enableHealthCheck') ?? isProduction,
+      };
+
+      // Create service based on environment
+      const service = isProduction
+        ? LogManagementServiceFactory.createProductionService(
+            logManagementConfig,
+            logger,
+          )
+        : LogManagementServiceFactory.createDevelopmentService(
+            logManagementConfig,
+            logger,
+          );
+
+      // Setup event handlers
+      setupLogManagementEventHandlers(service, logger);
+
+      // Initialize the service
+      service.initialize().catch((error) => {
+        logger?.warn('Failed to initialize log management service:', error);
+      });
+
+      // Setup graceful shutdown
+      setupGracefulShutdown(service, logger);
+
+      return service as ILogManagementService;
+    });
   }
 
   /**
@@ -253,6 +336,7 @@ export const SERVICE_NAMES = {
   ERROR_HANDLER: 'errorHandler',
   FILE_SYSTEM: 'fileSystem',
   TRANSLATOR: 'translator',
+  LOG_MANAGEMENT: 'logManagement',
 } as const;
 
 /**
@@ -496,3 +580,318 @@ export class FileLoggingServices {
     return this.createFileLogger(level, fileConfig);
   }
 }
+
+/**
+ * Setup event handlers for log management service
+ */
+function setupLogManagementEventHandlers(
+  service: LogManagementService,
+  logger?: ILogger,
+): void {
+  // Maintenance events
+  service.on('maintenance:started', () => {
+    logger?.debug('Log maintenance started');
+  });
+
+  service.on('maintenance:completed', (result) => {
+    logger?.info('Log maintenance completed', {
+      duration: result.duration,
+      actions: result.actions,
+      spaceFreed: result.diskSpace.spaceFreed,
+    });
+  });
+
+  service.on('maintenance:failed', (error) => {
+    logger?.error('Log maintenance failed:', error.message);
+  });
+
+  // Health monitoring events
+  service.on('health:warning', (warning) => {
+    logger?.warn(`Log health warning: ${warning.message}`, {
+      type: warning.type,
+      currentValue: warning.currentValue,
+      threshold: warning.threshold,
+    });
+  });
+
+  service.on('health:critical', (critical) => {
+    logger?.error(`Log health critical: ${critical.message}`, {
+      type: critical.type,
+      details: critical.details,
+    });
+  });
+
+  // Cleanup events
+  service.on('cleanup:completed', (filesRemoved) => {
+    if (filesRemoved > 0) {
+      logger?.info(`Log cleanup completed: ${filesRemoved} files removed`);
+    }
+  });
+
+  service.on('archive:completed', (archivedFiles) => {
+    if (archivedFiles.length > 0) {
+      logger?.info(
+        `Log archiving completed: ${archivedFiles.length} files archived`,
+      );
+    }
+  });
+}
+
+/**
+ * Setup graceful shutdown for log management service
+ */
+function setupGracefulShutdown(
+  service: LogManagementService,
+  logger?: ILogger,
+): void {
+  const shutdownHandler = async (signal: string) => {
+    logger?.info(`Received ${signal}, shutting down log management service...`);
+    try {
+      await service.shutdown();
+      logger?.info('Log management service shut down gracefully');
+    } catch (error) {
+      logger?.error('Error during log management shutdown:', error);
+    }
+  };
+
+  // Handle various shutdown signals
+  process.on('SIGINT', () => shutdownHandler('SIGINT'));
+  process.on('SIGTERM', () => shutdownHandler('SIGTERM'));
+  process.on('SIGHUP', () => shutdownHandler('SIGHUP'));
+
+  // Handle uncaught exceptions
+  process.on('uncaughtException', async (error) => {
+    logger?.error('Uncaught exception, shutting down log management:', error);
+    try {
+      await service.shutdown();
+    } catch (shutdownError) {
+      logger?.error('Error during emergency shutdown:', shutdownError);
+    }
+    process.exit(1);
+  });
+
+  process.on('unhandledRejection', async (reason, promise) => {
+    logger?.error('Unhandled rejection at:', promise, 'reason:', reason);
+    try {
+      await service.shutdown();
+    } catch (shutdownError) {
+      logger?.error('Error during emergency shutdown:', shutdownError);
+    }
+    process.exit(1);
+  });
+}
+
+/**
+ * Create a no-op log management service for when advanced features are disabled
+ */
+function createNoOpLogManagementService(): ILogManagementService {
+  return {
+    async getStats() {
+      return {
+        totalEntries: 0,
+        currentFileSize: 0,
+        rotationCount: 0,
+        isRotationNeeded: false,
+      };
+    },
+    async getDiskUsage() {
+      return {
+        totalSpace: 0,
+        usedSpace: 0,
+        availableSpace: 0,
+        usagePercentage: 0,
+        logDirectorySize: 0,
+      };
+    },
+    async searchLogs() {
+      console.warn(
+        '[MD2PDF] Log search skipped: Log management is disabled in configuration',
+      );
+      return {
+        entries: [],
+        totalCount: 0,
+        hasMore: false,
+        searchStats: {
+          filesSearched: 0,
+          totalLines: 0,
+          searchDuration: 0,
+        },
+        warning: 'Log management is disabled in configuration',
+      };
+    },
+    async analyzeLogs() {
+      console.warn(
+        '[MD2PDF] Log analysis skipped: Log management is disabled in configuration',
+      );
+      return {
+        totalLogs: 0,
+        logsByLevel: { error: 0, warn: 0, info: 0, debug: 0 },
+        timeRange: { earliest: new Date(), latest: new Date() },
+        topMessages: [],
+        errorPatterns: [],
+        performanceMetrics: {
+          averageWriteTime: 0,
+          maxWriteTime: 0,
+          queueFullEvents: 0,
+          logFrequency: { hour: 0, day: 0, total: 0 },
+        },
+        fileStatistics: [],
+        insights: {
+          errorRate: 0,
+          warningRate: 0,
+          busiestHour: { hour: 0, count: 0 },
+          commonErrors: [],
+          recommendations: ['Log management is disabled in configuration'],
+        },
+        warning: 'Log management is disabled in configuration',
+      };
+    },
+    async rotateLogs() {
+      console.warn(
+        '[MD2PDF] Log rotation skipped: Log management is disabled in configuration',
+      );
+    },
+    async archiveLogs() {
+      console.warn(
+        '[MD2PDF] Log archival skipped: Log management is disabled in configuration',
+      );
+      return [];
+    },
+    async cleanupOldLogs() {
+      console.warn(
+        '[MD2PDF] Log cleanup skipped: Log management is disabled in configuration',
+      );
+      return 0;
+    },
+    async runMaintenance() {
+      return {
+        timestamp: new Date(),
+        duration: 0,
+        actions: { rotations: 0, compressions: 0, archives: 0, cleanups: 0 },
+        diskSpace: {
+          before: {
+            totalSpace: 0,
+            usedSpace: 0,
+            availableSpace: 0,
+            usagePercentage: 0,
+            logDirectorySize: 0,
+          },
+          after: {
+            totalSpace: 0,
+            usedSpace: 0,
+            availableSpace: 0,
+            usagePercentage: 0,
+            logDirectorySize: 0,
+          },
+          spaceFreed: 0,
+        },
+      };
+    },
+    async checkHealth() {
+      console.warn(
+        '[MD2PDF] Health check skipped: Log management is disabled in configuration',
+      );
+    },
+    getStatus() {
+      return {
+        initialized: false,
+        config: { autoMaintenance: false, enableHealthCheck: false },
+        timers: { maintenance: false, healthCheck: false },
+      };
+    },
+    async initialize() {
+      console.warn(
+        '[MD2PDF] Log management initialization skipped: Log management is disabled in configuration',
+      );
+    },
+    async shutdown() {
+      console.warn(
+        '[MD2PDF] Log management shutdown skipped: Log management is disabled in configuration',
+      );
+    },
+  };
+}
+
+/**
+ * Service utilities for checking and managing services
+ */
+export class ServiceUtils {
+  /**
+   * Check if services are available and properly configured
+   */
+  static async checkServicesHealth(container: IServiceContainer): Promise<{
+    logManagement: boolean;
+    overall: boolean;
+  }> {
+    try {
+      const logManagement =
+        container.tryResolve<ILogManagementService>('logManagement');
+      const logManagementHealthy = logManagement !== null;
+
+      if (logManagementHealthy && logManagement) {
+        // Perform basic health check
+        await logManagement.checkHealth();
+      }
+
+      return {
+        logManagement: logManagementHealthy,
+        overall: logManagementHealthy,
+      };
+    } catch (error) {
+      return {
+        logManagement: false,
+        overall: false,
+      };
+    }
+  }
+
+  /**
+   * Get services status report
+   */
+  static getServicesStatus(container: IServiceContainer): {
+    logManagement: any;
+    timestamp: Date;
+  } {
+    const logManagement =
+      container.tryResolve<ILogManagementService>('logManagement');
+
+    return {
+      logManagement: logManagement
+        ? logManagement.getStatus()
+        : { available: false },
+      timestamp: new Date(),
+    };
+  }
+
+  /**
+   * Perform services maintenance
+   */
+  static async performServicesMaintenance(
+    container: IServiceContainer,
+  ): Promise<{
+    logManagement: any;
+    timestamp: Date;
+  }> {
+    const results = {
+      logManagement: null as any,
+      timestamp: new Date(),
+    };
+
+    try {
+      const logManagement =
+        container.tryResolve<ILogManagementService>('logManagement');
+      if (logManagement) {
+        results.logManagement = await logManagement.runMaintenance();
+      }
+    } catch (error) {
+      results.logManagement = {
+        error: error instanceof Error ? error.message : 'Unknown error',
+      };
+    }
+
+    return results;
+  }
+}
+
+// Export functions for testing
+export { setupLogManagementEventHandlers, createNoOpLogManagementService };

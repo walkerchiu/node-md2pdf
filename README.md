@@ -14,7 +14,8 @@ Transform your Markdown documents into beautiful PDFs with automatic table of co
 📚 **Batch Processing** - Process multiple files at once efficiently.<br/>
 🎨 **Customization** - Adjust styling, covers, headers, and footers.<br/>
 🔧 **Settings** - Save preferences for future use.<br/>
-📑 **Auto TOC** - Generate clickable table of contents from headings.
+📑 **Auto TOC** - Generate clickable table of contents from headings.<br/>
+📝 **File Logging** - Advanced logging with rotation and monitoring.
 
 ## 🚀 Quick Start
 
@@ -169,7 +170,38 @@ npm run prepare       # Run the prepare script
 
 Configure the application behavior with environment variables:
 
-#### Logging & Development
+#### File Logging System
+
+MD2PDF includes a comprehensive file logging system with rotation and advanced management features:
+
+```bash
+# Basic Logging Control
+MD2PDF_LOG_FILE_ENABLED=true          # Enable file logging (default: true)
+MD2PDF_LOG_DIR=./logs                 # Log directory (default: ./logs)
+MD2PDF_LOG_LEVEL=info                 # Log level: error|warn|info|debug
+MD2PDF_LOG_FORMAT=text                # Log format: text|json
+
+# File Management
+MD2PDF_LOG_MAX_SIZE=10MB              # Maximum file size (supports KB/MB/GB)
+MD2PDF_LOG_MAX_FILES=5                # Number of backup files to keep
+MD2PDF_LOG_MAX_AGE=7d                 # Maximum file age (supports d/h/m)
+MD2PDF_LOG_ENABLE_ROTATION=true       # Enable log rotation
+
+# Performance Optimization
+MD2PDF_LOG_BUFFER_ENABLED=false       # Enable write buffering
+MD2PDF_LOG_BUFFER_SIZE=100            # Buffer size (number of entries)
+MD2PDF_LOG_FLUSH_INTERVAL=5000        # Flush interval in milliseconds
+```
+
+**Advanced Features:**
+
+- 🗂️ **Automatic Log Rotation**: Size and time-based rotation.
+- 📊 **Performance Monitoring**: Write performance tracking and metrics.
+- 🧹 **Maintenance**: Automatic cleanup of old logs and health checks.
+- 🔍 **Search & Analysis**: Log search API and basic analytics.
+- 📈 **Statistics**: Real-time logging statistics and health status.
+
+#### Legacy Logging Options
 
 ```bash
 # Enable verbose terminal output (shows debug messages and detailed info)
@@ -181,8 +213,8 @@ NODE_ENV=development npm run dev
 # Set specific logging level (overrides environment defaults)
 MD2PDF_LOG_LEVEL=debug npm run dev
 
-# Combined: Development mode with verbose output
-NODE_ENV=development MD2PDF_VERBOSE=true npm run dev
+# Combined: Development mode with verbose output and file logging
+NODE_ENV=development MD2PDF_VERBOSE=true MD2PDF_LOG_FILE_ENABLED=true npm run dev
 ```
 
 #### Installation & Build
@@ -197,6 +229,7 @@ PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true npm install
 - **`MD2PDF_VERBOSE=true`**: Enables detailed terminal output with timestamps and debug info.
 - **`NODE_ENV=development`**: Sets default log level to `debug` (more detailed than `info`).
 - **`MD2PDF_LOG_LEVEL=level`**: Override log level regardless of `NODE_ENV` setting.
+- **`MD2PDF_LOG_FILE_ENABLED=true`**: Enable advanced file logging with rotation.
 
 **When to use verbose mode:**
 
@@ -207,8 +240,29 @@ PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true npm install
 **Example with multiple options:**
 
 ```bash
-# Full diagnostic mode with maximum detail
-NODE_ENV=development MD2PDF_VERBOSE=true MD2PDF_LOG_LEVEL=debug npm run dev
+# Full diagnostic mode with maximum detail and file logging
+NODE_ENV=development MD2PDF_VERBOSE=true MD2PDF_LOG_LEVEL=debug MD2PDF_LOG_FILE_ENABLED=true npm run dev
+```
+
+**Advanced Configuration Examples:**
+
+```bash
+# Development with detailed file logging
+NODE_ENV=development \
+MD2PDF_LOG_LEVEL=debug \
+MD2PDF_LOG_FORMAT=text \
+MD2PDF_LOG_FILE_ENABLED=true \
+npm run dev
+
+# Production with optimized logging
+NODE_ENV=production \
+MD2PDF_LOG_LEVEL=info \
+MD2PDF_LOG_FORMAT=json \
+MD2PDF_LOG_MAX_SIZE=50MB \
+MD2PDF_LOG_MAX_FILES=10 \
+MD2PDF_LOG_MAX_AGE=30d \
+MD2PDF_LOG_BUFFER_ENABLED=true \
+npm start
 ```
 
 ## 🚨 Troubleshooting
@@ -250,16 +304,33 @@ Check file permissions:
 chmod 644 your-markdown-file.md
 ```
 
+### Logging Issues?
+
+Common logging troubleshooting:
+
+```bash
+# Check if logs directory exists and is writable
+ls -la logs/
+
+# Enable debug mode to see logging details
+MD2PDF_LOG_LEVEL=debug MD2PDF_VERBOSE=true npm run dev
+
+# Check log file content
+tail -f logs/md2pdf.log
+```
+
 ## 🎯 Best Practices
 
 1. **File Size**: Keep files under 10MB for best performance.
 2. **Images**: Use relative paths for image references.
 3. **TOC Settings**: 2-3 levels work best for most documents.
 4. **Batch Mode**: Use batch processing for multiple files - it's more efficient.
+5. **Logging**: Use file logging in production for better troubleshooting.
 
 ## 📊 What Makes This Special
 
 - **Clean Architecture**: Built with modern TypeScript and dependency injection.
+- **Advanced Logging**: File logging system with rotation and monitoring.
 - **Robust Testing**: 60%+ test coverage with comprehensive test suite.
 - **Error Recovery**: Smart error handling and recovery mechanisms.
 - **Performance**: Optimized for both single files and batch processing.

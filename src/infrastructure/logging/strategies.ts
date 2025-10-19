@@ -82,6 +82,8 @@ export class FileLoggerStrategy implements ILoggerStrategy {
   private config: Required<FileLoggingConfig>;
   private stats: LogStats;
   private writeQueue: Promise<void> = Promise.resolve();
+  private buffer: LogEntry[] = [];
+  private flushTimer?: NodeJS.Timeout | undefined;
 
   constructor(config: FileLoggingConfig) {
     this.config = {
@@ -90,6 +92,12 @@ export class FileLoggerStrategy implements ILoggerStrategy {
       format: 'text',
       enableRotation: true,
       async: true,
+      maxAge: '7d',
+      enableTimeBasedRotation: false,
+      rotationInterval: 24, // 24 hours default
+      bufferEnabled: false,
+      bufferSize: 100,
+      flushInterval: 5000,
       ...config,
     };
 
@@ -99,20 +107,57 @@ export class FileLoggerStrategy implements ILoggerStrategy {
       rotationCount: 0,
       isRotationNeeded: false,
     };
+
+    // Setup automatic buffer flushing if buffering is enabled
+    if (this.config.bufferEnabled && this.config.flushInterval > 0) {
+      this.flushTimer = setInterval(() => {
+        this.flush().catch((error) => {
+          console.error('Automatic buffer flush failed:', error);
+        });
+      }, this.config.flushInterval);
+
+      // Unref the timer so it doesn't prevent Node.js from exiting
+      this.flushTimer.unref();
+    }
   }
 
   async write(entry: LogEntry): Promise<void> {
-    if (this.config.async) {
-      // Async write - queue the operation
-      this.writeQueue = this.writeQueue.then(() => this.performWrite(entry));
-      return this.writeQueue;
+    // Enhance log entry with additional metadata
+    const enhancedEntry = this.enhanceLogEntry(entry);
+
+    if (this.config.bufferEnabled) {
+      // Add to buffer
+      this.buffer.push(enhancedEntry);
+
+      // Flush if buffer size limit reached
+      if (this.buffer.length >= this.config.bufferSize) {
+        await this.flush();
+      }
     } else {
-      // Sync write
-      return this.performWrite(entry);
+      // Direct write
+      if (this.config.async) {
+        this.writeQueue = this.writeQueue.then(() =>
+          this.performWrite(enhancedEntry),
+        );
+        return this.writeQueue;
+      } else {
+        return this.performWrite(enhancedEntry);
+      }
     }
   }
 
   async cleanup(): Promise<void> {
+    // Flush any remaining buffer
+    if (this.config.bufferEnabled && this.buffer.length > 0) {
+      await this.flush();
+    }
+
+    // Clear flush timer
+    if (this.flushTimer) {
+      clearInterval(this.flushTimer);
+      this.flushTimer = undefined;
+    }
+
     // Wait for any pending writes to complete
     await this.writeQueue;
   }
@@ -147,6 +192,140 @@ export class FileLoggerStrategy implements ILoggerStrategy {
 
   getStats(): LogStats {
     return { ...this.stats };
+  }
+
+  /**
+   * Get current buffer size
+   */
+  getBufferSize(): number {
+    return this.buffer.length;
+  }
+
+  /**
+   * Flush buffer to file immediately
+   */
+  async flush(): Promise<void> {
+    if (this.buffer.length === 0) {
+      return;
+    }
+
+    const entriesToFlush = [...this.buffer];
+    this.buffer = [];
+
+    for (const entry of entriesToFlush) {
+      await this.performWrite(entry);
+    }
+  }
+
+  /**
+   * Rotate logs based on time
+   */
+  async rotateByTime(): Promise<void> {
+    // Only perform time-based rotation if enabled
+    if (!this.config.enableTimeBasedRotation) {
+      return;
+    }
+
+    const now = new Date();
+    const lastRotation = this.stats.lastRotation;
+
+    if (!lastRotation) {
+      // No previous rotation recorded, check if we should do initial rotation
+      // For safety, don't rotate immediately on first run
+      return;
+    }
+
+    // Calculate hours since last rotation
+    const hoursSinceLastRotation =
+      (now.getTime() - lastRotation.getTime()) / (1000 * 60 * 60);
+
+    // Use configured rotation interval (default 24 hours)
+    const rotationIntervalHours = this.config.rotationInterval || 24;
+
+    if (hoursSinceLastRotation >= rotationIntervalHours) {
+      try {
+        await this.rotate();
+        console.info(
+          `Time-based log rotation completed after ${hoursSinceLastRotation.toFixed(1)} hours`,
+        );
+      } catch (error) {
+        console.error(
+          'Time-based log rotation failed:',
+          error instanceof Error ? error.message : 'Unknown error',
+        );
+        throw error;
+      }
+    }
+  }
+
+  /**
+   * Clean up old log files based on max age
+   */
+  async cleanupOldLogs(maxAge: string): Promise<number> {
+    try {
+      const maxAgeMs = this.parseMaxAge(maxAge);
+      const now = Date.now();
+
+      let cleanedCount = 0;
+
+      // Find and clean old log files
+      for (let i = 1; i <= this.config.maxBackupFiles; i++) {
+        const backupFile = `${this.config.filePath}.${i}`;
+        try {
+          const stat = await fs.stat(backupFile);
+          const fileAge = now - stat.mtime.getTime();
+
+          if (fileAge > maxAgeMs) {
+            await fs.unlink(backupFile);
+            cleanedCount++;
+          }
+        } catch {
+          // File doesn't exist, ignore
+        }
+      }
+
+      return cleanedCount;
+    } catch (error) {
+      console.error('Error cleaning old logs:', error);
+      return 0;
+    }
+  }
+
+  /**
+   * Enhance log entry with additional metadata
+   */
+  private enhanceLogEntry(entry: LogEntry): LogEntry {
+    const enhanced: LogEntry = {
+      ...entry,
+      processId: process.pid,
+      writeStartTime: Date.now(),
+    };
+
+    return enhanced;
+  }
+
+  /**
+   * Parse max age string to milliseconds
+   */
+  private parseMaxAge(maxAge: string): number {
+    const units: Record<string, number> = {
+      s: 1000,
+      m: 60 * 1000,
+      h: 60 * 60 * 1000,
+      d: 24 * 60 * 60 * 1000,
+    };
+
+    const match = maxAge.match(/^(\d+)([smhd])$/);
+    if (!match) {
+      throw new Error(
+        `Invalid max age format: ${maxAge}. Use format like '7d', '24h', '60m', '30s'`,
+      );
+    }
+
+    const value = parseInt(match[1], 10);
+    const unit = match[2];
+
+    return value * units[unit];
   }
 
   private async performWrite(entry: LogEntry): Promise<void> {
@@ -203,16 +382,33 @@ export class FileLoggerStrategy implements ILoggerStrategy {
 
   private formatFileMessage(entry: LogEntry): string {
     if (this.config.format === 'json') {
-      return JSON.stringify({
+      const jsonData: any = {
         timestamp: entry.timestamp.toISOString(),
         level: entry.level.toUpperCase(),
         message: entry.message,
         args: entry.args.length > 0 ? entry.args : undefined,
-      });
+      };
+
+      // Add optional metadata if present
+      if (entry.processId !== undefined) {
+        jsonData.processId = entry.processId;
+      }
+      if (entry.writeStartTime !== undefined) {
+        jsonData.writeStartTime = entry.writeStartTime;
+      }
+      if (entry.correlationId !== undefined) {
+        jsonData.correlationId = entry.correlationId;
+      }
+
+      return JSON.stringify(jsonData);
     } else {
       // Text format
       const timestamp = entry.timestamp.toISOString();
       const level = entry.level.toUpperCase().padEnd(5);
+
+      // Include process ID if available
+      const processIdStr = entry.processId ? `[${entry.processId}]` : '';
+
       const argsStr =
         entry.args.length > 0
           ? ` ${entry.args
@@ -222,7 +418,7 @@ export class FileLoggerStrategy implements ILoggerStrategy {
               .join(' ')}`
           : '';
 
-      return `${timestamp} [${level}] ${entry.message}${argsStr}`;
+      return `${timestamp} [${level}]${processIdStr} ${entry.message}${argsStr}`;
     }
   }
 }
@@ -267,5 +463,33 @@ export class HybridLoggerStrategy implements ILoggerStrategy {
 
   getStats(): LogStats {
     return this.fileStrategy.getStats();
+  }
+
+  /**
+   * Get current buffer size
+   */
+  getBufferSize(): number {
+    return this.fileStrategy.getBufferSize();
+  }
+
+  /**
+   * Flush buffer to file immediately
+   */
+  async flush(): Promise<void> {
+    return this.fileStrategy.flush();
+  }
+
+  /**
+   * Rotate logs based on time
+   */
+  async rotateByTime(): Promise<void> {
+    return this.fileStrategy.rotateByTime();
+  }
+
+  /**
+   * Clean up old log files based on max age
+   */
+  async cleanupOldLogs(maxAge: string): Promise<number> {
+    return this.fileStrategy.cleanupOldLogs(maxAge);
   }
 }
