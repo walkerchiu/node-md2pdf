@@ -32,6 +32,12 @@ export interface LogEntry {
   message: string;
   timestamp: Date;
   args: unknown[];
+  // Additional metadata fields (optional for backward compatibility)
+  processId?: number;
+  writeStartTime?: number;
+  correlationId?: string;
+  userId?: string;
+  sessionId?: string;
 }
 
 /**
@@ -50,6 +56,18 @@ export interface FileLoggingConfig {
   enableRotation?: boolean;
   /** Write logs asynchronously (default: true) */
   async?: boolean;
+  /** Maximum file age before cleanup (default: '7d') */
+  maxAge?: string;
+  /** Enable time-based rotation (default: false) */
+  enableTimeBasedRotation?: boolean;
+  /** Time interval for rotation in hours (default: 24) */
+  rotationInterval?: number;
+  /** Enable write buffering for performance (default: false) */
+  bufferEnabled?: boolean;
+  /** Buffer size in number of entries (default: 100) */
+  bufferSize?: number;
+  /** Buffer flush interval in milliseconds (default: 5000) */
+  flushInterval?: number;
 }
 
 /**
@@ -81,4 +99,18 @@ export interface LogStats {
 export interface ILoggerStrategy {
   write(entry: LogEntry): Promise<void>;
   cleanup(): Promise<void>;
+
+  // Buffering features (optional, not all strategies need to implement)
+  getBufferSize?(): number;
+  flush?(): Promise<void>;
+
+  // Rotation features (optional, mainly for file-based strategies)
+  rotate?(): Promise<void>;
+  rotateByTime?(): Promise<void>;
+
+  // Maintenance features (optional, mainly for file-based strategies)
+  cleanupOldLogs?(maxAge: string): Promise<number>;
+
+  // Statistics (optional, mainly for file-based strategies)
+  getStats?(): LogStats;
 }

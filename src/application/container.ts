@@ -4,7 +4,7 @@
  */
 
 import { FileCollector } from '../core/batch/file-collector';
-import { InfrastructureServices } from '../infrastructure/services';
+import { EnvironmentAwareServices } from '../infrastructure/logging/environment-aware.services';
 import { ServiceContainer, IServiceContainer } from '../shared/container';
 
 import {
@@ -40,7 +40,7 @@ export class ApplicationServices {
    */
   static createContainer(): ServiceContainer {
     // Start with infrastructure container
-    const container = InfrastructureServices.createContainer();
+    const container = EnvironmentAwareServices.createContainer();
 
     // Register application services
     ApplicationServices.registerServices(container as ServiceContainer);

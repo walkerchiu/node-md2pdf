@@ -9,7 +9,7 @@ import {
   ConfigNotificationService,
   createConfigNotificationService,
   type IConfigNotificationService,
-} from '../../../../src/infrastructure/config/notification-service';
+} from '../../../../src/infrastructure/config/notification.service';
 import type { ILogger } from '../../../../src/infrastructure/logging/types';
 import type { ITranslationManager } from '../../../../src/infrastructure/i18n/types';
 import chalk from 'chalk';
