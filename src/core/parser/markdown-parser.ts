@@ -165,12 +165,34 @@ export class MarkdownParser {
     const headings: Heading[] = [];
     const usedIds: Record<string, number> = {}; // Track used IDs for uniqueness
     const lines = content.split('\n');
+    let inCodeBlock = false;
+    let codeBlockFence = '';
 
     for (let i = 0; i < lines.length; i++) {
-      const line = lines[i].trim();
+      const line = lines[i];
+      const trimmedLine = line.trim();
+
+      // Check for code block boundaries
+      const fenceMatch = trimmedLine.match(/^(`{3,}|~{3,})/);
+      if (fenceMatch) {
+        const currentFence = fenceMatch[1][0]; // Get the fence character (` or ~)
+        if (!inCodeBlock) {
+          inCodeBlock = true;
+          codeBlockFence = currentFence;
+        } else if (currentFence === codeBlockFence) {
+          inCodeBlock = false;
+          codeBlockFence = '';
+        }
+        continue;
+      }
+
+      // Skip processing if we're inside a code block
+      if (inCodeBlock) {
+        continue;
+      }
 
       // ATX-style headings (# ## ### etc.)
-      const atxMatch = line.match(/^(#{1,6})\s+(.+)$/);
+      const atxMatch = trimmedLine.match(/^(#{1,6})\s+(.+)$/);
       if (atxMatch) {
         const level = atxMatch[1].length;
         const text = atxMatch[2].trim();
@@ -188,11 +210,11 @@ export class MarkdownParser {
 
       // Setext-style headings (underlined with = or -)
       // Only process if current line has content (not empty/whitespace only)
-      if (i + 1 < lines.length && line.trim().length > 0) {
+      if (i + 1 < lines.length && trimmedLine.length > 0) {
         const nextLine = lines[i + 1].trim();
         if (nextLine.match(/^=+$/)) {
           // H1 - underlined with ===
-          const text = line.trim();
+          const text = trimmedLine;
           const baseId = this.slugify(text);
           const uniqueId = this.generateUniqueId(baseId, usedIds);
           headings.push({
@@ -204,7 +226,7 @@ export class MarkdownParser {
           i++; // Skip the underline
         } else if (nextLine.match(/^-{3,}$/)) {
           // H2 - underlined with --- (must be 3 or more dashes to avoid conflicts with horizontal rules)
-          const text = line.trim();
+          const text = trimmedLine;
           const baseId = this.slugify(text);
           const uniqueId = this.generateUniqueId(baseId, usedIds);
           headings.push({

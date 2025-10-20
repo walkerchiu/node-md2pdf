@@ -114,6 +114,91 @@ Heading 2
       expect(result.headings[0].id).toBe('test');
       // Note: markdown-it-anchor handles duplicates automatically
     });
+
+    it('should ignore headings inside code blocks', () => {
+      const markdown = `# Real Heading
+
+\`\`\`bash
+# This is not a heading
+mkdir -p src/core/page-structure/
+# Another fake heading
+\`\`\`
+
+## Another Real Heading
+
+\`\`\`typescript
+// This code block contains fake headings
+class HeaderFooterManager {
+  // ### This is also not a heading
+  generateHeader(): string;
+}
+\`\`\`
+
+### Final Real Heading`;
+
+      const result = parser.parse(markdown);
+
+      expect(result.headings).toHaveLength(3);
+      expect(result.headings[0]).toEqual({
+        level: 1,
+        text: 'Real Heading',
+        id: 'real-heading',
+        anchor: '#real-heading',
+      });
+      expect(result.headings[1]).toEqual({
+        level: 2,
+        text: 'Another Real Heading',
+        id: 'another-real-heading',
+        anchor: '#another-real-heading',
+      });
+      expect(result.headings[2]).toEqual({
+        level: 3,
+        text: 'Final Real Heading',
+        id: 'final-real-heading',
+        anchor: '#final-real-heading',
+      });
+    });
+
+    it('should ignore headings inside inline code but process regular headings', () => {
+      const markdown = `# Real Heading
+
+Use \`# inline code heading\` which should not be extracted.
+
+## Another Heading
+
+The command \`mkdir -p src/core/\` creates directories.`;
+
+      const result = parser.parse(markdown);
+
+      expect(result.headings).toHaveLength(2);
+      expect(result.headings[0].text).toBe('Real Heading');
+      expect(result.headings[1].text).toBe('Another Heading');
+    });
+
+    it('should handle multiple code blocks correctly', () => {
+      const markdown = `# Outer Heading
+
+\`\`\`bash
+# This should not be extracted
+mkdir -p src/core/
+\`\`\`
+
+## Real Heading Between Blocks
+
+\`\`\`typescript
+# This is also not a heading
+class Example {}
+\`\`\`
+
+### Final Real Heading`;
+
+      const result = parser.parse(markdown);
+
+      expect(result.headings).toHaveLength(3);
+      expect(result.headings[0].text).toBe('Outer Heading');
+      expect(result.headings[1].text).toBe('Real Heading Between Blocks');
+      expect(result.headings[2].text).toBe('Final Real Heading');
+    });
   });
 
   describe('Markdown syntax support', () => {
