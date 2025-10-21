@@ -179,7 +179,7 @@ describe('InteractiveMode', () => {
       mockInquirerPrompt
         .mockResolvedValueOnce({ inputPath: 'test.md' })
         .mockResolvedValueOnce({
-          outputPath: 'test.pdf',
+          outputPath: expect.stringContaining('test.pdf'),
           tocDepth: 2,
           includePageNumbers: true,
           chineseFontSupport: true,
@@ -525,9 +525,9 @@ describe('InteractiveMode', () => {
 
       expect(mockSpinner.text).toBe('interactive.processingMarkdown');
       expect(mockFileProcessorService.processFile).toHaveBeenCalledWith(
-        'test.md',
+        expect.stringContaining('test.md'),
         expect.objectContaining({
-          outputPath: 'test.pdf',
+          outputPath: expect.stringContaining('test.pdf'),
           includeTOC: true,
           tocOptions: {
             maxDepth: 2,
@@ -535,7 +535,7 @@ describe('InteractiveMode', () => {
             title: expect.any(String), // Now uses translation manager
           },
           pdfOptions: expect.objectContaining({
-            displayHeaderFooter: true,
+            displayHeaderFooter: false, // Changed to false due to CSS @page approach
             printBackground: true,
           }),
           customStyles: expect.stringContaining('Noto Sans CJK SC'),
@@ -562,7 +562,7 @@ describe('InteractiveMode', () => {
       await interactiveMode.start();
 
       expect(mockFileProcessorService.processFile).toHaveBeenCalledWith(
-        'test.md',
+        expect.stringContaining('test.md'),
         expect.not.objectContaining({
           customStyles: expect.stringContaining('Noto Sans CJK SC'),
         }),
@@ -588,9 +588,9 @@ describe('InteractiveMode', () => {
       await interactiveMode.start();
 
       expect(mockFileProcessorService.processFile).toHaveBeenCalledWith(
-        'test.md',
+        expect.stringContaining('test.md'),
         expect.objectContaining({
-          outputPath: 'test.pdf', // Should default to input.pdf
+          outputPath: expect.stringContaining('test.pdf'), // Should default to input.pdf
         }),
       );
     });
@@ -648,11 +648,11 @@ describe('InteractiveMode', () => {
       await interactiveMode.start();
 
       expect(mockFileProcessorService.processFile).toHaveBeenCalledWith(
-        'test.md',
+        expect.stringContaining('test.md'),
         expect.objectContaining({
           pdfOptions: expect.objectContaining({
-            displayHeaderFooter: true,
-            footerTemplate: expect.stringContaining('pageNumber'),
+            displayHeaderFooter: false, // Changed to false due to CSS @page approach
+            footerTemplate: '', // Empty due to CSS @page approach
           }),
         }),
       );
@@ -679,7 +679,7 @@ describe('InteractiveMode', () => {
       await interactiveMode.start();
 
       expect(mockFileProcessorService.processFile).toHaveBeenCalledWith(
-        'test.md',
+        expect.stringContaining('test.md'),
         expect.objectContaining({
           pdfOptions: expect.objectContaining({
             displayHeaderFooter: false,
@@ -869,7 +869,7 @@ describe('InteractiveMode', () => {
       await interactiveMode.start();
 
       expect(mockFileProcessorService.processFile).toHaveBeenCalledWith(
-        'test.md',
+        expect.stringContaining('test.md'),
         expect.objectContaining({
           tocOptions: expect.objectContaining({
             maxDepth: 6,
@@ -902,7 +902,7 @@ describe('InteractiveMode', () => {
       await interactiveMode.start();
 
       expect(mockFileProcessorService.processFile).toHaveBeenCalledWith(
-        'document.markdown',
+        expect.stringContaining('document.markdown'),
         expect.any(Object),
       );
     });
@@ -926,9 +926,9 @@ describe('InteractiveMode', () => {
       await interactiveMode.start();
 
       expect(mockFileProcessorService.processFile).toHaveBeenCalledWith(
-        'test.md',
+        expect.stringContaining('test.md'),
         expect.objectContaining({
-          outputPath: 'test.pdf', // Should use fallback logic
+          outputPath: expect.stringContaining('test.pdf'), // Should use fallback logic
         }),
       );
     });
@@ -986,7 +986,7 @@ describe('InteractiveMode', () => {
       await interactiveMode.start();
 
       expect(mockFileProcessorService.processFile).toHaveBeenCalledWith(
-        'test.md',
+        expect.stringContaining('test.md'),
         expect.objectContaining({
           pdfOptions: expect.objectContaining({
             margin: {

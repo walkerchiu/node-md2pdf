@@ -503,6 +503,7 @@ export const enTranslations: TranslationKey = {
   // PDF Content (content that appears in the generated PDF)
   pdfContent: {
     tocTitle: 'Table of Contents',
+    pageNumber: 'Page {{page}} of {{totalPages}}',
   },
 
   // Error messages

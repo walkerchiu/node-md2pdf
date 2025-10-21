@@ -7,6 +7,7 @@ import ora from 'ora';
 
 import { APPLICATION_SERVICE_NAMES } from '../../application/container';
 import { ConversionConfig } from '../../types';
+import { PathCleaner } from '../../utils/path-cleaner';
 import { CliUIManager } from '../ui/cli-ui-manager';
 
 import type { IFileProcessorService } from '../../application/services/file-processor.service';
@@ -24,11 +25,12 @@ type InquirerModule = {
 };
 
 export class InteractiveMode {
-  private logger: ILogger;
+  private configManager: IConfigManager;
   private errorHandler: IErrorHandler;
-  private translationManager: ITranslationManager;
   private fileProcessorService: IFileProcessorService;
   private fileSystemManager: IFileSystemManager | undefined;
+  private logger: ILogger;
+  private translationManager: ITranslationManager;
   private uiManager: CliUIManager;
 
   constructor(container: ServiceContainer) {
@@ -42,12 +44,12 @@ export class InteractiveMode {
     // fileSystem is optional in some test setups, tryResolve will return undefined when not registered
     this.fileSystemManager =
       container.tryResolve<IFileSystemManager>('fileSystem');
-    const configManager = container.resolve<IConfigManager>('config');
+    this.configManager = container.resolve<IConfigManager>('config');
     this.uiManager = new CliUIManager(
       this.translationManager,
       this.logger,
       {},
-      configManager,
+      this.configManager,
     );
   }
 
@@ -105,7 +107,9 @@ export class InteractiveMode {
     const inquirer = await import('inquirer');
 
     // First prompt only for inputPath so we can search and show matching files.
-    const { inputPath } = await (inquirer as InquirerModule).default.prompt<{
+    const { inputPath: rawInputPath } = await (
+      inquirer as InquirerModule
+    ).default.prompt<{
       inputPath: string;
     }>([
       {
@@ -116,10 +120,13 @@ export class InteractiveMode {
           if (!input.trim()) {
             return this.translationManager.t('interactive.pleaseEnterFilePath');
           }
+
+          // Clean the path first before validation
+          const cleanedPath = PathCleaner.cleanPath(input);
           if (
-            !input.endsWith('.md') &&
-            !input.endsWith('.markdown') &&
-            !input.includes('*')
+            !cleanedPath.endsWith('.md') &&
+            !cleanedPath.endsWith('.markdown') &&
+            !cleanedPath.includes('*')
           ) {
             return this.translationManager.t('interactive.invalidMarkdownFile');
           }
@@ -128,6 +135,9 @@ export class InteractiveMode {
         },
       },
     ]);
+
+    // Clean the input path to handle drag-and-drop cases
+    const inputPath = PathCleaner.cleanPath(rawInputPath);
 
     // Search for matching files and display results if a file system manager is available
     let selectedInputPath = inputPath;
@@ -369,6 +379,7 @@ export class InteractiveMode {
       const processingOptions: Record<string, unknown> = {
         outputPath,
         includeTOC: true,
+        includePageNumbers: config.includePageNumbers, // Add this setting for CSS @page rules
         tocOptions: {
           maxDepth: config.tocDepth,
           includePageNumbers: config.includePageNumbers,
@@ -381,13 +392,17 @@ export class InteractiveMode {
             bottom: '1in',
             left: '1in',
           },
-          displayHeaderFooter: config.includePageNumbers,
-          footerTemplate: config.includePageNumbers
-            ? '<div style="font-size:10px; width:100%; text-align:center;">Page <span class="pageNumber"></span> of <span class="totalPages"></span></div>'
-            : '',
+          displayHeaderFooter: false, // Force disable - using CSS @page instead
+          footerTemplate: '', // Disable Puppeteer templates - using CSS @page instead
           printBackground: true,
         },
       };
+
+      // Since we use CSS @page rules for header/footer, we no longer need page structure config
+      // Header and footer are handled automatically via CSS injection in pdf-generator.service.ts
+      this.logger.info(
+        `Header/footer ${config.includePageNumbers ? 'enabled' : 'disabled'} via CSS @page rules`,
+      );
 
       // Step 2: Add Chinese font support CSS if needed
       if (config.chineseFontSupport) {

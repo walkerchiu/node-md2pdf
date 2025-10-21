@@ -11,6 +11,7 @@ import {
   RecommendedConfig,
   QuickConfig,
 } from '../core/analysis/types';
+import { PathCleaner } from '../utils/path-cleaner';
 
 import { RecentFilesManager } from './config/recent-files';
 import { CliRenderer } from './utils/cli-renderer';
@@ -210,7 +211,7 @@ export class SmartConversionMode {
 
   private async enterFilePath(): Promise<string> {
     const inquirer = await import('inquirer');
-    const { filePath } = await inquirer.default.prompt({
+    const { filePath: rawFilePath } = await inquirer.default.prompt({
       type: 'input',
       name: 'filePath',
       message: this.translationManager.t('smartConversion.enterFilePath'),
@@ -223,7 +224,8 @@ export class SmartConversionMode {
       },
     });
 
-    return filePath.trim();
+    // Clean the path to handle drag-and-drop cases
+    return PathCleaner.cleanPath(rawFilePath);
   }
 
   private async selectRecentFile(): Promise<string> {
@@ -780,12 +782,11 @@ export class SmartConversionMode {
 
   private async enterFilePathWithValidation(): Promise<string> {
     const inquirer = await import('inquirer');
-    const { resolve } = await import('path');
 
     // eslint-disable-next-line no-constant-condition
     while (true) {
       try {
-        const { filePath } = await inquirer.default.prompt({
+        const { filePath: rawFilePath } = await inquirer.default.prompt({
           type: 'input',
           name: 'filePath',
           message: this.translationManager.t('smartConversion.enterFilePath'),
@@ -798,7 +799,8 @@ export class SmartConversionMode {
           },
         });
 
-        const resolvedPath = resolve(filePath.trim());
+        // Clean the path to handle drag-and-drop cases
+        const resolvedPath = PathCleaner.cleanPath(rawFilePath);
 
         if (await this.isValidMarkdownFile(resolvedPath)) {
           return resolvedPath;

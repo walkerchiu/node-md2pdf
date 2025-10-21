@@ -18,6 +18,10 @@ import type {
 import type { ILogger } from '../../../../src/infrastructure/logging/types';
 import type { IErrorHandler } from '../../../../src/infrastructure/error/types';
 import type { IConfigManager } from '../../../../src/infrastructure/config/types';
+import type {
+  ITranslationManager,
+  SupportedLocale,
+} from '../../../../src/infrastructure/i18n/types';
 
 // Mock all external dependencies to avoid compilation issues
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -89,6 +93,29 @@ describe('PDFGeneratorService', () => {
     categorizeError: jest.fn(),
   } as unknown as jest.Mocked<IErrorHandler>;
 
+  const mockTranslationManager: ITranslationManager = {
+    setLocale: jest.fn(),
+    getCurrentLocale: jest.fn((): SupportedLocale => 'zh-TW'),
+    getSupportedLocales: jest.fn((): SupportedLocale[] => ['en', 'zh-TW']),
+    t: jest.fn((key: string) => {
+      if (key === 'pdfContent.pageNumber') {
+        return '第 {{page}} 頁 / 共 {{totalPages}} 頁';
+      }
+      return key;
+    }),
+    translate: jest.fn((key: string, locale: SupportedLocale) => {
+      if (key === 'pdfContent.pageNumber') {
+        return locale === 'en'
+          ? 'Page {{page}} of {{totalPages}}'
+          : '第 {{page}} 頁 / 共 {{totalPages}} 頁';
+      }
+      return key;
+    }),
+    hasTranslation: jest.fn(() => true),
+    loadTranslations: jest.fn(),
+    getTranslations: jest.fn(() => ({})),
+  };
+
   const mockConfigManager: IConfigManager = {
     get<T = unknown>(key: string, defaultValue?: T): T {
       const configs: Record<string, unknown> = {
@@ -132,6 +159,7 @@ describe('PDFGeneratorService', () => {
       mockLogger,
       mockErrorHandler,
       mockConfigManager,
+      mockTranslationManager,
     );
   });
 
@@ -227,6 +255,7 @@ describe('PDFGeneratorService', () => {
         mockLogger,
         mockErrorHandler,
         mockConfigManager,
+        mockTranslationManager,
       );
 
       const result = await newService.generatePDF(
@@ -254,6 +283,7 @@ describe('PDFGeneratorService', () => {
         mockLogger,
         mockErrorHandler,
         mockConfigManager,
+        mockTranslationManager,
       );
 
       const status = await newService.getEngineStatus();

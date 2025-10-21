@@ -8,18 +8,20 @@ import { EnvironmentAwareServices } from '../infrastructure/logging/environment-
 import { ServiceContainer, IServiceContainer } from '../shared/container';
 
 import {
-  PDFGeneratorService,
-  MarkdownParserService,
-  TOCGeneratorService,
-  FileProcessorService,
   BatchProcessorService,
+  FileProcessorService,
+  MarkdownParserService,
+  PageStructureService,
+  PDFGeneratorService,
   SmartDefaultsService,
-  type IPDFGeneratorService,
-  type IMarkdownParserService,
-  type ITOCGeneratorService,
-  type IFileProcessorService,
+  TOCGeneratorService,
   type IBatchProcessorService,
+  type IFileProcessorService,
+  type IMarkdownParserService,
+  type IPageStructureService,
+  type IPDFGeneratorService,
   type ISmartDefaultsService,
+  type ITOCGeneratorService,
 } from './services';
 
 import type { IConfigManager } from '../infrastructure/config/types';
@@ -32,6 +34,7 @@ export const APPLICATION_SERVICE_NAMES = {
   FILE_PROCESSOR: 'fileProcessor',
   BATCH_PROCESSOR: 'batchProcessor',
   SMART_DEFAULTS: 'smartDefaults',
+  PAGE_STRUCTURE: 'pageStructure',
 } as const;
 
 export class ApplicationServices {
@@ -52,6 +55,17 @@ export class ApplicationServices {
    * Register all application services in the container
    */
   static registerServices(container: IServiceContainer): void {
+    // Register Page Structure Service
+    container.registerSingleton(
+      APPLICATION_SERVICE_NAMES.PAGE_STRUCTURE,
+      (c) =>
+        new PageStructureService(
+          c.resolve('logger'),
+          c.resolve('errorHandler'),
+          c.resolve('config'),
+        ),
+    );
+
     // Register PDF Generator Service
     container.registerSingleton(
       APPLICATION_SERVICE_NAMES.PDF_GENERATOR,
@@ -60,6 +74,8 @@ export class ApplicationServices {
           c.resolve('logger'),
           c.resolve('errorHandler'),
           c.resolve('config'),
+          c.resolve('translator'),
+          c.resolve(APPLICATION_SERVICE_NAMES.PAGE_STRUCTURE),
         ),
     );
 
@@ -197,6 +213,18 @@ export class ApplicationServices {
     logger.setLevel(logLevel);
 
     return container.resolve(APPLICATION_SERVICE_NAMES.SMART_DEFAULTS);
+  }
+
+  static createPageStructureService(
+    logLevel: 'error' | 'warn' | 'info' | 'debug' = 'info',
+  ): IPageStructureService {
+    const container = ApplicationServices.createContainer();
+
+    // Configure logging level
+    const logger = container.resolve<ILogger>('logger');
+    logger.setLevel(logLevel);
+
+    return container.resolve(APPLICATION_SERVICE_NAMES.PAGE_STRUCTURE);
   }
 
   /**

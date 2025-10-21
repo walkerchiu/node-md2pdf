@@ -8,6 +8,7 @@ import chalk from 'chalk';
 import { APPLICATION_SERVICE_NAMES } from '../../application/container';
 import { FileCollector } from '../../core/batch/file-collector';
 import { BatchConversionConfig, BatchFilenameFormat } from '../../types/batch';
+import { PathCleaner } from '../../utils/path-cleaner';
 import { CliUIManager } from '../ui/cli-ui-manager';
 import FileSearchUI from '../ui/file-search-ui';
 
@@ -113,7 +114,7 @@ export class BatchInteractiveMode {
     const inquirer = (await import('inquirer')) as InquirerModule;
 
     // Step 1: Ask for input pattern
-    const { inputPattern } = (await inquirer.default.prompt([
+    const { inputPattern: rawInputPattern } = (await inquirer.default.prompt([
       {
         type: 'input',
         name: 'inputPattern',
@@ -122,14 +123,24 @@ export class BatchInteractiveMode {
           '\n' +
           this.translationManager.t('batch.patternHints'),
         default: this.translationManager.t('batch.patternPlaceholder'),
-        validate: (input: string): boolean | string => {
-          if (!input.trim()) {
-            return this.translationManager.t('batch.pleaseEnterPattern');
-          }
+        validate: (): boolean => {
+          // Always allow input (including empty input for default)
           return true;
         },
       },
     ])) as { inputPattern: string };
+
+    // Clean the input pattern to handle drag-and-drop cases
+    // If user didn't input anything, use the default pattern
+    const inputPattern =
+      rawInputPattern.trim() ||
+      this.translationManager.t('batch.patternPlaceholder');
+
+    // Don't clean glob patterns or patterns with wildcards
+    const cleanedPattern =
+      inputPattern.includes('*') || inputPattern.includes('?')
+        ? inputPattern
+        : PathCleaner.cleanPath(inputPattern);
 
     this.logger.info(
       chalk.cyan('\n' + this.translationManager.t('batch.searchingFiles')),
@@ -139,7 +150,7 @@ export class BatchInteractiveMode {
     try {
       const path = await import('path');
       const fileCollector = new FileCollector();
-      const fileList = await fileCollector.findFilesByPattern(inputPattern);
+      const fileList = await fileCollector.findFilesByPattern(cleanedPattern);
 
       const files = fileList.map((filePath) => ({
         inputPath: path.resolve(filePath),
@@ -174,7 +185,7 @@ export class BatchInteractiveMode {
         );
         process.exit(0);
       }
-      return { inputPattern, files };
+      return { inputPattern: cleanedPattern, files };
     } catch (error) {
       this.logger.error(
         chalk.red(this.translationManager.t('batch.errorSearchingFiles')),
