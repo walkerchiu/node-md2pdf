@@ -230,6 +230,8 @@ describe('ApplicationServices', () => {
         expect.any(Object), // logger
         expect.any(Object), // errorHandler
         expect.any(Object), // config
+        expect.any(Object), // translationManager
+        expect.any(Object), // pageStructureService
       );
     });
 

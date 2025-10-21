@@ -132,13 +132,20 @@ export class FileProcessorService implements IFileProcessorService {
 
       // Generate PDF
       this.logger.debug(`Generating PDF: ${outputPath}`);
+
+      // Extract title: prioritize first H1 heading, then metadata title, then default
+      const firstH1 = parsedContent.headings.find((h) => h.level === 1);
+      const documentTitle =
+        firstH1?.text ||
+        (parsedContent.metadata?.title as string) ||
+        'Markdown Document';
+
       const pdfResult = await this.pdfGeneratorService.generatePDF(
         finalHtmlContent,
         outputPath,
         {
           ...(options.customStyles && { customCSS: options.customStyles }),
-          title:
-            (parsedContent.metadata?.title as string) || 'Markdown Document',
+          title: documentTitle,
           headings: parsedContent.headings,
           markdownContent: finalHtmlContent,
           enableChineseSupport: true,

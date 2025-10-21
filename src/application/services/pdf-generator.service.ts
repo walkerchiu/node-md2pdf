@@ -29,6 +29,8 @@ import { Heading } from '../../types';
 import type { IConfigManager } from '../../infrastructure/config/types';
 import type { IErrorHandler } from '../../infrastructure/error/types';
 import type { ILogger } from '../../infrastructure/logging/types';
+import type { ITranslationManager } from '../../infrastructure/i18n/types';
+import type { IPageStructureService } from './page-structure.service';
 
 export interface IPDFGeneratorService {
   generatePDF(
@@ -65,6 +67,9 @@ export class PDFGeneratorService implements IPDFGeneratorService {
     private readonly logger: ILogger,
     private readonly errorHandler: IErrorHandler,
     private readonly configManager: IConfigManager,
+    private readonly translationManager: ITranslationManager,
+    // pageStructureService is no longer used since we switched to CSS @page approach
+    _pageStructureService?: IPageStructureService,
   ) {
     this.eventPublisher = new InMemoryEventPublisher();
   }
@@ -194,9 +199,20 @@ export class PDFGeneratorService implements IPDFGeneratorService {
       );
       await this.eventPublisher.publish(startedEvent);
 
+      // Check if page numbers should be included - priority: tocOptions > global config
+      const includePageNumbers =
+        options.tocOptions?.includePageNumbers ?? false;
+
+      // Inject CSS @page rules for header/footer directly into HTML content
+      const enhancedHtmlContent = this.injectCSSPageRules(
+        htmlContent,
+        options,
+        includePageNumbers,
+      );
+
       // Build generation context
       const context: PDFGenerationContext = {
-        htmlContent,
+        htmlContent: enhancedHtmlContent,
         outputPath,
         title: options.title || '',
         customCSS: options.customCSS || '',
@@ -209,7 +225,8 @@ export class PDFGeneratorService implements IPDFGeneratorService {
       };
 
       // Build engine options from legacy format
-      const engineOptions: PDFEngineOptions = this.convertToEngineOptions();
+      const engineOptions: PDFEngineOptions =
+        await this.convertToEngineOptions(context);
 
       // Generate PDF using engine manager
       const result = await this.engineManager!.generatePDF(
@@ -305,11 +322,14 @@ export class PDFGeneratorService implements IPDFGeneratorService {
     }
   }
 
-  private convertToEngineOptions(): PDFEngineOptions {
+  private async convertToEngineOptions(
+    _context: PDFGenerationContext,
+  ): Promise<PDFEngineOptions> {
     // Get PDF configuration from config manager
     const pdfConfig = this.configManager.get('pdf', {}) as PDFGeneratorOptions;
 
-    return {
+    // Base options from configuration - Force disable displayHeaderFooter
+    const baseOptions: PDFEngineOptions = {
       format: pdfConfig.format || 'A4',
       orientation: pdfConfig.orientation || 'portrait',
       margin: pdfConfig.margin || {
@@ -318,13 +338,157 @@ export class PDFGeneratorService implements IPDFGeneratorService {
         bottom: '1in',
         left: '1in',
       },
-      displayHeaderFooter: pdfConfig.displayHeaderFooter || false,
-      headerTemplate: pdfConfig.headerTemplate || '',
-      footerTemplate: pdfConfig.footerTemplate || '',
+      displayHeaderFooter: false, // Force disable Puppeteer's header/footer system
+      headerTemplate: '', // Disable Puppeteer templates
+      footerTemplate: '', // Disable Puppeteer templates
       printBackground: pdfConfig.printBackground ?? true,
       scale: pdfConfig.scale || 1,
       preferCSSPageSize: pdfConfig.preferCSSPageSize || false,
     };
+
+    // Since we're using CSS @page approach, we no longer use Puppeteer's header/footer templates
+    // The header/footer will be injected directly into the HTML content via CSS
+    this.logger.debug(
+      'Using CSS @page approach - Puppeteer header/footer templates disabled',
+    );
+
+    return baseOptions;
+  }
+
+  /**
+   * Inject CSS @page rules directly into HTML content for header/footer
+   */
+  private injectCSSPageRules(
+    htmlContent: string,
+    options: {
+      title?: string;
+      headings?: Heading[];
+      markdownContent?: string;
+      enableChineseSupport?: boolean;
+      tocOptions?: {
+        enabled: boolean;
+        maxDepth: number;
+        includePageNumbers: boolean;
+        title?: string;
+      };
+    },
+    includePageNumbers: boolean = false,
+  ): string {
+    try {
+      this.logger.debug('Injecting CSS @page rules for header/footer');
+
+      // Only generate CSS if page numbers are requested
+      if (!includePageNumbers) {
+        // No header/footer needed - just return the original content
+        return htmlContent;
+      }
+
+      // Get the document title - prioritize first H1 heading
+      const firstH1 = options.headings?.find((h) => h.level === 1);
+      const documentTitle =
+        firstH1?.text || options.title || 'Markdown Document';
+
+      // Escape quotes in document title for CSS content property
+      const escapedTitle = documentTitle.replace(/"/g, '\\"');
+
+      // Generate CSS for header and footer using @page rules
+      const cssPageRules = `
+        <style>
+          @media print {
+            @page {
+              margin-top: 1.5in;
+              margin-bottom: 1.5in;
+              margin-left: 1in;
+              margin-right: 1in;
+
+              @top-left {
+                content: "${escapedTitle}";
+                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+                font-size: 12px;
+                color: #333;
+                text-align: left;
+                padding: 0;
+                border: none;
+                background: none;
+              }
+
+              @bottom-right {
+                content: "${this.getPageNumberFormat()}";
+                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+                font-size: 12px;
+                color: #333;
+                text-align: right;
+                padding: 0;
+                border: none;
+                background: none;
+              }
+            }
+
+            /* Ensure body content doesn't interfere with header/footer */
+            body {
+              margin: 0;
+              padding: 0;
+            }
+          }
+        </style>
+      `;
+
+      // Check if HTML already has a <head> section
+      if (htmlContent.includes('<head>')) {
+        // Insert CSS rules into existing <head>
+        return htmlContent.replace('</head>', `${cssPageRules}</head>`);
+      } else if (htmlContent.includes('<html>')) {
+        // Add <head> section with CSS rules after <html> tag
+        return htmlContent.replace(
+          '<html>',
+          `<html><head>${cssPageRules}</head>`,
+        );
+      } else {
+        // Wrap content with full HTML structure
+        return `
+          <!DOCTYPE html>
+          <html>
+            <head>
+              <meta charset="UTF-8">
+              <meta name="viewport" content="width=device-width, initial-scale=1.0">
+              ${cssPageRules}
+            </head>
+            <body>
+              ${htmlContent}
+            </body>
+          </html>
+        `;
+      }
+    } catch (error) {
+      this.logger.warn(
+        `Failed to inject CSS @page rules: ${(error as Error).message}`,
+        error,
+      );
+      // Return original content if injection fails
+      return htmlContent;
+    }
+  }
+
+  /**
+   * Get internationalized page number format for CSS @page rules
+   */
+  private getPageNumberFormat(): string {
+    try {
+      // Get localized page number format
+      const pageTemplate = this.translationManager.t('pdfContent.pageNumber');
+
+      // Replace placeholders with CSS counter values
+      // CSS counter(page) and counter(pages) will be replaced at render time
+      return pageTemplate
+        .replace(/\{\{page\}\}/g, '" counter(page) "')
+        .replace(/\{\{totalPages\}\}/g, '" counter(pages) "');
+    } catch (error) {
+      // Fallback to default format if translation fails
+      this.logger.warn(
+        `Failed to get internationalized page number format: ${(error as Error).message}`,
+      );
+      return '"Page " counter(page) " of " counter(pages)';
+    }
   }
 
   getEngineStatus(): Map<string, PDFEngineHealthStatus> {

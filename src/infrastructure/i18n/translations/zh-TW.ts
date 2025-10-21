@@ -502,6 +502,7 @@ export const zhTWTranslations: TranslationKey = {
   // PDF content (content displayed in generated PDF)
   pdfContent: {
     tocTitle: '目錄',
+    pageNumber: '第 {{page}} 頁／共 {{totalPages}} 頁',
   },
 
   // Error messages

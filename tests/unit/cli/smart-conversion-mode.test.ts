@@ -943,6 +943,9 @@ describe('SmartConversionMode', () => {
 
         mockPrompt.mockResolvedValue({ filePath: '/fallback/file.md' });
 
+        const path = require('path');
+        path.resolve.mockReturnValue('/fallback/file.md');
+
         const result = await (smartConversionMode as any).browseFiles();
 
         expect(result).toBe('/fallback/file.md');
@@ -1018,6 +1021,9 @@ describe('SmartConversionMode', () => {
     describe('enterFilePath', () => {
       it('should return trimmed file path', async () => {
         mockPrompt.mockResolvedValue({ filePath: '  /test/file.md  ' });
+
+        const path = require('path');
+        path.resolve.mockReturnValue('/test/file.md');
 
         const result = await (smartConversionMode as any).enterFilePath();
 
