@@ -8,7 +8,7 @@ export const zhTWTranslations: TranslationKey = {
   // Application information
   app: {
     name: 'MD2PDF',
-    description: '將 Markdown 文件轉換為專業 PDF 文件的工具，支援目錄生成功能',
+    description: '將 Markdown 文件轉換為專業 PDF 文件的工具',
     version: '版本',
   },
 
@@ -16,7 +16,7 @@ export const zhTWTranslations: TranslationKey = {
   cli: {
     mainMenu: {
       title: 'MD2PDF 主選單',
-      subtitle: '將 Markdown 文件轉換為專業 PDF 文件，支援目錄生成功能',
+      subtitle: '將 Markdown 文件轉換為專業 PDF 文件',
       processPrompt: '您想要如何處理您的檔案？',
       smartConversion: '🤖 智能轉換',
       smartConversionDesc: 'AI 驅動的三步驟智能設定流程',
@@ -27,7 +27,7 @@ export const zhTWTranslations: TranslationKey = {
       customization: '🎨 客製化設定',
       customizationDesc: '進階樣式、範本與安全設定',
       settings: '🔧 偏好設定',
-      settingsDesc: '語言與偏好設定',
+      settingsDesc: '偏好語言與設定',
       exit: '🚪 離開',
     },
     prompts: {

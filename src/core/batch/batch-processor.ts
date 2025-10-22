@@ -6,6 +6,7 @@
 import * as fs from 'fs';
 import * as path from 'path';
 
+import { DEFAULT_MARGINS } from '../../infrastructure/config/constants';
 import { ErrorType, MD2PDFError } from '../../types';
 import { Heading } from '../../types';
 import {
@@ -233,12 +234,7 @@ export class BatchProcessor {
       );
       // Generate PDF
       const pdfGenerator = new PDFGenerator({
-        margin: {
-          top: '1in',
-          right: '1in',
-          bottom: '1in',
-          left: '1in',
-        },
+        margin: DEFAULT_MARGINS.NORMAL,
         displayHeaderFooter: config.includePageNumbers,
         footerTemplate: config.includePageNumbers
           ? '<div style="font-size:10px; width:100%; text-align:center;">Page <span class="pageNumber"></span> of <span class="totalPages"></span></div>'

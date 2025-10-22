@@ -8,6 +8,7 @@ import { dirname, resolve } from 'path';
 
 import puppeteer, { Browser, Page, PDFOptions } from 'puppeteer';
 
+import { DEFAULT_MARGINS } from '../../../infrastructure/config/constants';
 import { PDFTemplates } from '../templates';
 
 import {
@@ -241,12 +242,7 @@ export class PuppeteerPDFEngine implements IPDFEngine {
       path: outputPath,
       format: options.format as 'A4' | 'A3' | 'A5' | 'Legal' | 'Letter',
       landscape: options.orientation === 'landscape',
-      margin: options.margin || {
-        top: '1in',
-        right: '1in',
-        bottom: '1in',
-        left: '1in',
-      },
+      margin: options.margin || DEFAULT_MARGINS.NORMAL,
       displayHeaderFooter: options.displayHeaderFooter || false,
       headerTemplate: options.headerTemplate || '',
       footerTemplate: options.footerTemplate || '',

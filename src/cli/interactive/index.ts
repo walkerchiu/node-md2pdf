@@ -6,6 +6,7 @@ import chalk from 'chalk';
 import ora from 'ora';
 
 import { APPLICATION_SERVICE_NAMES } from '../../application/container';
+import { DEFAULT_MARGINS } from '../../infrastructure/config/constants';
 import { ConversionConfig } from '../../types';
 import { PathCleaner } from '../../utils/path-cleaner';
 import { CliUIManager } from '../ui/cli-ui-manager';
@@ -386,12 +387,7 @@ export class InteractiveMode {
           title: this.translationManager.t('pdfContent.tocTitle'),
         },
         pdfOptions: {
-          margin: {
-            top: '1in',
-            right: '1in',
-            bottom: '1in',
-            left: '1in',
-          },
+          margin: DEFAULT_MARGINS.NORMAL,
           displayHeaderFooter: false, // Force disable - using CSS @page instead
           footerTemplate: '', // Disable Puppeteer templates - using CSS @page instead
           printBackground: true,

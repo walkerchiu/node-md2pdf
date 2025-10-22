@@ -8,8 +8,7 @@ export const enTranslations: TranslationKey = {
   // Application info
   app: {
     name: 'MD2PDF',
-    description:
-      'A tool for converting Markdown documents to PDF files with professional table of contents',
+    description: 'A tool for converting Markdown documents to PDF files',
     version: 'Version',
   },
 
@@ -26,7 +25,7 @@ export const enTranslations: TranslationKey = {
       batchProcessing: '📚 Batch Processing',
       batchProcessingDesc: 'Convert multiple files at once',
       customization: '🎨 Customization',
-      customizationDesc: 'Advanced styling and templates',
+      customizationDesc: 'Advanced styling, template and security',
       settings: '🔧 Settings',
       settingsDesc: 'Language and preferences',
       exit: '🚪 Exit',
@@ -47,7 +46,7 @@ export const enTranslations: TranslationKey = {
     },
     customizationMenu: {
       title: '🎨 Customization',
-      subtitle: 'Advanced styling and template management options',
+      subtitle: 'Advanced styling, template and security management options',
       returnToMain: '0. Return to Main Menu',
       coverDesign: '1. Cover Design',
       headersFooters: '2. Headers & Footers',
@@ -565,13 +564,11 @@ export const enTranslations: TranslationKey = {
       title: 'Configure Log Level',
       description: 'Log levels determine which messages are displayed',
       selectPrompt: 'Select the minimum log level to display',
-      errorDesc:
-        'Only critical errors that prevent the application from functioning',
+      errorDesc: 'Only critical errors that prevent the application from functioning',
       errorShort: 'Critical errors only',
       warnDesc: 'Errors and warnings about potential issues',
       warnShort: 'Errors and warnings',
-      infoDesc:
-        'General information messages along with errors and warnings (Recommended)',
+      infoDesc: 'General information messages along with errors and warnings (Recommended)',
       infoShort: 'Information and above (Recommended)',
       debugDesc: 'Detailed debugging information for troubleshooting',
       debugShort: 'All messages including debug output',
@@ -589,8 +586,7 @@ export const enTranslations: TranslationKey = {
       enablePrompt: 'Would you like to enable file logging',
       disablePrompt: 'Would you like to disable file logging',
       enabledSuccess: 'File logging has been enabled',
-      enabledNote:
-        'Log messages will now be written to files in addition to the console',
+      enabledNote: 'Log messages will now be written to files in addition to the console',
       disabledSuccess: 'File logging has been disabled',
       disabledNote: 'Log messages will only be displayed in the console',
       unchanged: 'File logging setting unchanged',
@@ -612,21 +608,17 @@ export const enTranslations: TranslationKey = {
       title: 'View Log Directory',
       path: 'Log directory location',
       exists: 'Log directory exists',
-      notExists:
-        'Log directory does not exist yet (will be created when file logging is enabled)',
+      notExists: 'Log directory does not exist yet (will be created when file logging is enabled)',
       filesShowing: 'Log files found (showing first',
       noFiles: 'No log files found in the directory',
       readError: 'Unable to read directory contents',
     },
     test: {
       title: 'Test Logging Functions',
-      infoMessage:
-        'This is a test INFO message from the logging settings panel',
-      warnMessage:
-        'This is a test WARN message to demonstrate warning level logging',
+      infoMessage: 'This is a test INFO message from the logging settings panel',
+      warnMessage: 'This is a test WARN message to demonstrate warning level logging',
       errorMessage: 'This is a test ERROR message to show error level output',
-      debugMessage:
-        'This is a test DEBUG message with detailed information for troubleshooting',
+      debugMessage: 'This is a test DEBUG message with detailed information for troubleshooting',
       sending: 'Sending test messages at different log levels',
       sendingLevel: 'Sending',
       sent: 'Test messages sent successfully!',

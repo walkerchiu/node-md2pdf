@@ -24,6 +24,7 @@ import {
 } from '../../core/pdf/engines';
 import { PDFGeneratorOptions, PDFGenerationResult } from '../../core/pdf/types';
 import { MD2PDFError } from '../../infrastructure/error/errors';
+import { DEFAULT_MARGINS } from '../../infrastructure/config/constants';
 import { Heading } from '../../types';
 
 import type { IConfigManager } from '../../infrastructure/config/types';
@@ -332,12 +333,7 @@ export class PDFGeneratorService implements IPDFGeneratorService {
     const baseOptions: PDFEngineOptions = {
       format: pdfConfig.format || 'A4',
       orientation: pdfConfig.orientation || 'portrait',
-      margin: pdfConfig.margin || {
-        top: '1in',
-        right: '1in',
-        bottom: '1in',
-        left: '1in',
-      },
+      margin: pdfConfig.margin || DEFAULT_MARGINS.NORMAL,
       displayHeaderFooter: false, // Force disable Puppeteer's header/footer system
       headerTemplate: '', // Disable Puppeteer templates
       footerTemplate: '', // Disable Puppeteer templates
@@ -391,15 +387,18 @@ export class PDFGeneratorService implements IPDFGeneratorService {
       // Escape quotes in document title for CSS content property
       const escapedTitle = documentTitle.replace(/"/g, '\\"');
 
+      // Get appropriate margins for pages with header/footer
+      const marginsWithHeaderFooter = DEFAULT_MARGINS.WITH_HEADER_FOOTER;
+
       // Generate CSS for header and footer using @page rules
       const cssPageRules = `
         <style>
           @media print {
             @page {
-              margin-top: 1.5in;
-              margin-bottom: 1.5in;
-              margin-left: 1in;
-              margin-right: 1in;
+              margin-top: ${marginsWithHeaderFooter.top};
+              margin-bottom: ${marginsWithHeaderFooter.bottom};
+              margin-left: ${marginsWithHeaderFooter.left};
+              margin-right: ${marginsWithHeaderFooter.right};
 
               @top-left {
                 content: "${escapedTitle}";

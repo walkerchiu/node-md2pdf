@@ -30,6 +30,22 @@ export type PDFEngineStrategy =
   | 'capability-based'
   | 'adaptive';
 
+export interface PDFMarginConfig {
+  top?: string;
+  right?: string;
+  bottom?: string;
+  left?: string;
+}
+
+export interface CSSTemplateConfig {
+  fontFamily?: string;
+  fontSize?: string;
+  lineHeight?: number;
+  maxWidth?: string;
+  margin?: string;
+  padding?: string;
+}
+
 export interface ConfigSchema {
   // Core settings
   language: {
@@ -40,6 +56,7 @@ export interface ConfigSchema {
   // PDF generation settings
   pdf: {
     format: 'A4' | 'A3' | 'Letter';
+    orientation?: 'portrait' | 'landscape';
     margin: {
       top: string;
       right: string;
@@ -48,6 +65,8 @@ export interface ConfigSchema {
     };
     displayHeaderFooter: boolean;
     printBackground: boolean;
+    scale?: number;
+    preferCSSPageSize?: boolean;
     useEnhancedEngine: boolean;
     engines: {
       primary: string;
@@ -67,6 +86,18 @@ export interface ConfigSchema {
         taskTimeout: number;
         memoryLimit: string;
       };
+    };
+  };
+
+  // Template settings
+  template?: {
+    css?: {
+      fontFamily?: string;
+      fontSize?: string;
+      lineHeight?: number;
+      maxWidth?: string;
+      margin?: string;
+      padding?: string;
     };
   };
 

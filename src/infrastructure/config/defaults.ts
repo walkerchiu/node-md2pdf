@@ -1,6 +1,14 @@
 /**
  * Default configuration values
+ * Single source of truth for all default settings
  */
+
+import {
+  DEFAULT_MARGINS,
+  DEFAULT_CSS_TEMPLATE,
+  DEFAULT_PDF_OPTIONS,
+  CONFIG_KEYS,
+} from './constants';
 
 import type { ConfigSchema } from './types';
 
@@ -10,15 +18,13 @@ export const defaultConfig: ConfigSchema = {
     available: ['en', 'zh-TW'],
   },
   pdf: {
-    format: 'A4',
-    margin: {
-      top: '1in',
-      right: '1in',
-      bottom: '1in',
-      left: '1in',
-    },
-    displayHeaderFooter: false,
-    printBackground: true,
+    format: DEFAULT_PDF_OPTIONS.FORMAT,
+    orientation: DEFAULT_PDF_OPTIONS.ORIENTATION,
+    margin: DEFAULT_MARGINS.NORMAL,
+    displayHeaderFooter: DEFAULT_PDF_OPTIONS.DISPLAY_HEADER_FOOTER,
+    printBackground: DEFAULT_PDF_OPTIONS.PRINT_BACKGROUND,
+    scale: DEFAULT_PDF_OPTIONS.SCALE,
+    preferCSSPageSize: DEFAULT_PDF_OPTIONS.PREFER_CSS_PAGE_SIZE,
     useEnhancedEngine: true,
     engines: {
       primary: 'puppeteer',
@@ -33,6 +39,16 @@ export const defaultConfig: ConfigSchema = {
         taskTimeout: 120000,
         memoryLimit: '2GB',
       },
+    },
+  },
+  template: {
+    css: {
+      fontFamily: DEFAULT_CSS_TEMPLATE.FONT_FAMILY,
+      fontSize: DEFAULT_CSS_TEMPLATE.FONT_SIZE,
+      lineHeight: DEFAULT_CSS_TEMPLATE.LINE_HEIGHT,
+      maxWidth: DEFAULT_CSS_TEMPLATE.MAX_WIDTH,
+      margin: DEFAULT_CSS_TEMPLATE.MARGIN,
+      padding: DEFAULT_CSS_TEMPLATE.PADDING,
     },
   },
   toc: {
@@ -62,6 +78,14 @@ export const defaultConfig: ConfigSchema = {
     newOrchestrator: process.env.MD2PDF_USE_NEW_ORCHESTRATOR !== 'false',
     forceLegacyMode: process.env.MD2PDF_FORCE_LEGACY === 'true',
   },
+};
+
+// Export constants for use in other parts of the system
+export {
+  DEFAULT_MARGINS,
+  DEFAULT_CSS_TEMPLATE,
+  DEFAULT_PDF_OPTIONS,
+  CONFIG_KEYS,
 };
 
 /**
