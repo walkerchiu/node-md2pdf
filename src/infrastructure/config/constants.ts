@@ -1,0 +1,105 @@
+/**
+ * Configuration constants
+ * Pure constants without dependencies to avoid test issues
+ */
+
+// Default margin values
+export const DEFAULT_MARGINS = {
+  NORMAL: {
+    top: '0.75in',
+    right: '0.75in',
+    bottom: '0.75in',
+    left: '0.75in',
+  },
+  WITH_HEADER_FOOTER: {
+    top: '1.25in',
+    right: '0.75in',
+    bottom: '1.25in',
+    left: '0.75in',
+  },
+} as const;
+
+// Default CSS template values
+export const DEFAULT_CSS_TEMPLATE = {
+  FONT_FAMILY:
+    'system-ui, -apple-system, "Segoe UI", "Noto Sans", "Helvetica Neue", Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji"',
+  FONT_SIZE: '16px',
+  LINE_HEIGHT: 1.6,
+  MAX_WIDTH: '800px',
+  MARGIN: '0 auto',
+  PADDING: '1.5rem',
+} as const;
+
+// Default PDF generator options
+export const DEFAULT_PDF_OPTIONS = {
+  FORMAT: 'A4' as const,
+  ORIENTATION: 'portrait' as const,
+  DISPLAY_HEADER_FOOTER: false,
+  PRINT_BACKGROUND: true,
+  SCALE: 1,
+  PREFER_CSS_PAGE_SIZE: false,
+} as const;
+
+/**
+ * Configuration constants and keys for type-safe access
+ */
+export const CONFIG_KEYS = {
+  PDF: {
+    FORMAT: 'pdf.format',
+    ORIENTATION: 'pdf.orientation',
+    MARGIN: {
+      TOP: 'pdf.margin.top',
+      RIGHT: 'pdf.margin.right',
+      BOTTOM: 'pdf.margin.bottom',
+      LEFT: 'pdf.margin.left',
+      ALL: 'pdf.margin',
+    },
+    DISPLAY_HEADER_FOOTER: 'pdf.displayHeaderFooter',
+    PRINT_BACKGROUND: 'pdf.printBackground',
+    USE_ENHANCED_ENGINE: 'pdf.useEnhancedEngine',
+    ENGINES: {
+      PRIMARY: 'pdf.engines.primary',
+      FALLBACK: 'pdf.engines.fallback',
+      STRATEGY: 'pdf.engines.strategy',
+      HEALTH_CHECK: {
+        INTERVAL: 'pdf.engines.healthCheck.interval',
+        ENABLED: 'pdf.engines.healthCheck.enabled',
+      },
+      RESOURCE_LIMITS: {
+        MAX_CONCURRENT_TASKS: 'pdf.engines.resourceLimits.maxConcurrentTasks',
+        TASK_TIMEOUT: 'pdf.engines.resourceLimits.taskTimeout',
+        MEMORY_LIMIT: 'pdf.engines.resourceLimits.memoryLimit',
+      },
+    },
+  },
+  TEMPLATE: {
+    CSS: {
+      FONT_FAMILY: 'template.css.fontFamily',
+      FONT_SIZE: 'template.css.fontSize',
+      LINE_HEIGHT: 'template.css.lineHeight',
+      MAX_WIDTH: 'template.css.maxWidth',
+      MARGIN: 'template.css.margin',
+      PADDING: 'template.css.padding',
+    },
+  },
+  TOC: {
+    ENABLED: 'toc.enabled',
+    DEPTH: 'toc.depth',
+    TITLE: 'toc.title',
+  },
+  LANGUAGE: {
+    DEFAULT: 'language.default',
+    AVAILABLE: 'language.available',
+  },
+  PERFORMANCE: {
+    MAX_WORKERS: 'performance.maxWorkers',
+    TIMEOUT: 'performance.timeout',
+    MEMORY_LIMIT: 'performance.memoryLimit',
+  },
+  FEATURES: {
+    ENHANCED_SERVICES: 'features.enhancedServices',
+    ENHANCED_CLI: 'features.enhancedCli',
+    NEW_ORCHESTRATOR: 'features.newOrchestrator',
+    FORCE_LEGACY_MODE: 'features.forceLegacyMode',
+  },
+} as const;

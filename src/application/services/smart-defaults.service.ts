@@ -18,6 +18,7 @@ import {
   ConfigReasoning,
   PotentialIssue,
 } from '../../core/analysis/types';
+import { DEFAULT_MARGINS } from '../../infrastructure/config/constants';
 
 import type { ILogger } from '../../infrastructure/logging/types';
 
@@ -297,10 +298,7 @@ export class SmartDefaultsService implements ISmartDefaultsService {
         impact: 'medium',
       });
       return {
-        top: '1.5in',
-        right: '1in',
-        bottom: '1.5in',
-        left: '1.5in',
+        ...DEFAULT_MARGINS.WITH_HEADER_FOOTER,
         reasoning: 'Academic format with wider margins',
       };
     }
@@ -750,10 +748,7 @@ export class SmartDefaultsService implements ISmartDefaultsService {
           format: 'A4',
           orientation: 'portrait',
           margins: {
-            top: '1.5in',
-            right: '1in',
-            bottom: '1.5in',
-            left: '1.5in',
+            ...DEFAULT_MARGINS.WITH_HEADER_FOOTER,
             reasoning: 'Academic standard margins',
           },
           theme: 'academic',

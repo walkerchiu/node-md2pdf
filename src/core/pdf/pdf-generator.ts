@@ -3,6 +3,10 @@ import { dirname, resolve } from 'path';
 
 import puppeteer, { Browser, Page, PDFOptions } from 'puppeteer';
 
+import {
+  DEFAULT_MARGINS,
+  DEFAULT_PDF_OPTIONS,
+} from '../../infrastructure/config/constants';
 import { Heading } from '../../types/index';
 import { TOCGenerator, PageEstimator } from '../toc';
 
@@ -19,18 +23,13 @@ export class PDFGenerator {
 
   constructor(options: PDFGeneratorOptions = {}) {
     this.options = {
-      format: 'A4',
-      orientation: 'portrait',
-      margin: {
-        top: '1in',
-        right: '1in',
-        bottom: '1in',
-        left: '1in',
-      },
-      displayHeaderFooter: false,
-      printBackground: true,
-      scale: 1,
-      preferCSSPageSize: false,
+      format: DEFAULT_PDF_OPTIONS.FORMAT,
+      orientation: DEFAULT_PDF_OPTIONS.ORIENTATION,
+      margin: DEFAULT_MARGINS.NORMAL,
+      displayHeaderFooter: DEFAULT_PDF_OPTIONS.DISPLAY_HEADER_FOOTER,
+      printBackground: DEFAULT_PDF_OPTIONS.PRINT_BACKGROUND,
+      scale: DEFAULT_PDF_OPTIONS.SCALE,
+      preferCSSPageSize: DEFAULT_PDF_OPTIONS.PREFER_CSS_PAGE_SIZE,
       ...options,
     };
   }
@@ -223,18 +222,19 @@ export class PDFGenerator {
             | 'Letter'
             | 'Tabloid',
           landscape: this.options.orientation === 'landscape',
-          margin: this.options.margin || {
-            top: '1in',
-            right: '1in',
-            bottom: '1in',
-            left: '1in',
-          },
-          displayHeaderFooter: this.options.displayHeaderFooter || false,
+          margin: this.options.margin || DEFAULT_MARGINS.NORMAL,
+          displayHeaderFooter:
+            this.options.displayHeaderFooter ||
+            DEFAULT_PDF_OPTIONS.DISPLAY_HEADER_FOOTER,
           headerTemplate: this.options.headerTemplate || '',
           footerTemplate: this.options.footerTemplate || '',
-          printBackground: this.options.printBackground || true,
-          scale: this.options.scale || 1,
-          preferCSSPageSize: this.options.preferCSSPageSize || false,
+          printBackground:
+            this.options.printBackground ??
+            DEFAULT_PDF_OPTIONS.PRINT_BACKGROUND,
+          scale: this.options.scale || DEFAULT_PDF_OPTIONS.SCALE,
+          preferCSSPageSize:
+            this.options.preferCSSPageSize ??
+            DEFAULT_PDF_OPTIONS.PREFER_CSS_PAGE_SIZE,
         };
 
         const pdfBuffer = await page.pdf(pdfOptions);

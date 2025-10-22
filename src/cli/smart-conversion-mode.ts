@@ -11,6 +11,7 @@ import {
   RecommendedConfig,
   QuickConfig,
 } from '../core/analysis/types';
+import { DEFAULT_MARGINS } from '../infrastructure/config/constants';
 import { PathCleaner } from '../utils/path-cleaner';
 
 import { RecentFilesManager } from './config/recent-files';
@@ -650,12 +651,7 @@ export class SmartConversionMode {
           title: '目錄',
         },
         pdfOptions: {
-          margin: {
-            top: '1in',
-            right: '1in',
-            bottom: '1in',
-            left: '1in',
-          },
+          margin: DEFAULT_MARGINS.NORMAL,
           displayHeaderFooter: true,
           footerTemplate:
             '<div style="font-size:10px; width:100%; text-align:center;">Page <span class="pageNumber"></span> of <span class="totalPages"></span></div>',
@@ -670,12 +666,7 @@ export class SmartConversionMode {
       includeTOC: false,
       tocOptions: {},
       pdfOptions: {
-        margin: {
-          top: '1in',
-          right: '1in',
-          bottom: '1in',
-          left: '1in',
-        },
+        margin: DEFAULT_MARGINS.NORMAL,
         printBackground: true,
       },
     };

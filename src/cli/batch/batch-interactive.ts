@@ -7,6 +7,7 @@ import chalk from 'chalk';
 
 import { APPLICATION_SERVICE_NAMES } from '../../application/container';
 import { FileCollector } from '../../core/batch/file-collector';
+import { DEFAULT_MARGINS } from '../../infrastructure/config/constants';
 import { BatchConversionConfig, BatchFilenameFormat } from '../../types/batch';
 import { PathCleaner } from '../../utils/path-cleaner';
 import { CliUIManager } from '../ui/cli-ui-manager';
@@ -551,12 +552,7 @@ export class BatchInteractiveMode {
           title: this.translationManager.t('pdfContent.tocTitle'),
         },
         pdfOptions: {
-          margin: {
-            top: '1in',
-            right: '1in',
-            bottom: '1in',
-            left: '1in',
-          },
+          margin: DEFAULT_MARGINS.NORMAL,
           displayHeaderFooter: config.includePageNumbers,
           footerTemplate: config.includePageNumbers
             ? '<div style="font-size:10px; width:100%; text-align:center;">Page <span class="pageNumber"></span> of <span class="totalPages"></span></div>'

@@ -1,14 +1,36 @@
+import { DEFAULT_CSS_TEMPLATE } from '../../infrastructure/config/constants';
+import { ConfigAccessor } from '../../infrastructure/config';
+
 import { StyleOptions } from './types';
 
 export class PDFTemplates {
-  static getDefaultCSS(options: StyleOptions = {}): string {
+  /**
+   * Get default CSS with configuration support
+   * @param options Style options override
+   * @param configAccessor Optional configuration accessor for dynamic config
+   */
+  static getDefaultCSS(
+    options: StyleOptions = {},
+    configAccessor?: ConfigAccessor,
+  ): string {
+    // Get configuration from ConfigAccessor if available, otherwise use defaults
+    const config = configAccessor?.getCSSTemplateConfig() || {
+      fontFamily: DEFAULT_CSS_TEMPLATE.FONT_FAMILY,
+      fontSize: DEFAULT_CSS_TEMPLATE.FONT_SIZE,
+      lineHeight: DEFAULT_CSS_TEMPLATE.LINE_HEIGHT,
+      maxWidth: DEFAULT_CSS_TEMPLATE.MAX_WIDTH,
+      margin: DEFAULT_CSS_TEMPLATE.MARGIN,
+      padding: DEFAULT_CSS_TEMPLATE.PADDING,
+    };
+
+    // Override with provided options (maintains backward compatibility)
     const {
-      fontFamily = 'system-ui, -apple-system, "Segoe UI", "Noto Sans", "Helvetica Neue", Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji"',
-      fontSize = '16px',
-      lineHeight = 1.6,
-      maxWidth = '800px',
-      margin = '0 auto',
-      padding = '2rem',
+      fontFamily = config.fontFamily,
+      fontSize = config.fontSize,
+      lineHeight = config.lineHeight,
+      maxWidth = config.maxWidth,
+      margin = config.margin,
+      padding = config.padding,
     } = options;
 
     return `
@@ -166,10 +188,7 @@ export class PDFTemplates {
       /* Table of Contents Styles */
       .toc-container {
         margin-bottom: 3em;
-        padding: 1.5em;
         background: #f9f9f9;
-        border-radius: 8px;
-        border: 1px solid #e5e5e5;
         page-break-after: always;
       }
 
@@ -252,7 +271,6 @@ export class PDFTemplates {
       @media print {
         .toc-container {
           background: white;
-          border: 1px solid #ddd;
         }
 
         .toc-link:hover {
@@ -268,8 +286,9 @@ export class PDFTemplates {
     title?: string,
     customCSS?: string,
     enableChineseSupport: boolean = false,
+    configAccessor?: ConfigAccessor,
   ): string {
-    const baseCSS = this.getDefaultCSS();
+    const baseCSS = this.getDefaultCSS({}, configAccessor);
     const chineseCSS = enableChineseSupport ? this.getChineseCSS() : '';
     const tocCSS = this.getTOCCSS();
     const css = customCSS
@@ -300,8 +319,9 @@ export class PDFTemplates {
     title?: string,
     customCSS?: string,
     enableChineseSupport: boolean = false,
+    configAccessor?: ConfigAccessor,
   ): string {
-    const baseCSS = this.getDefaultCSS();
+    const baseCSS = this.getDefaultCSS({}, configAccessor);
     const chineseCSS = enableChineseSupport ? this.getChineseCSS() : '';
     const tocCSS = this.getTOCCSS();
     const css = customCSS

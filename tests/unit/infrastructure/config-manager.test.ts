@@ -321,7 +321,7 @@ describe('ConfigManager - Enhanced Branch Coverage Tests', () => {
 
       expect(configManager.get('pdf.format')).toBe('Letter');
       expect(configManager.get('pdf.margin.top')).toBe('2in');
-      expect(configManager.get('pdf.margin.bottom')).toBe('1in'); // Should keep original
+      expect(configManager.get('pdf.margin.bottom')).toBe('0.75in'); // Should keep original
       expect(configManager.get('custom.newSetting')).toBe('value');
       expect(configManager.get('toc.enabled')).toBe(true); // Should keep original
     });
@@ -419,12 +419,12 @@ describe('ConfigManager - Enhanced Branch Coverage Tests', () => {
       return configManager.setAndSave('pdf.margin.top', '3in').then(() => {
         expect(specificCallback).toHaveBeenCalledWith(
           '3in',
-          '1in',
+          '0.75in',
           'pdf.margin.top',
         );
         expect(parentCallback).toHaveBeenCalledWith(
           '3in',
-          '1in',
+          '0.75in',
           'pdf.margin.top',
         );
       });

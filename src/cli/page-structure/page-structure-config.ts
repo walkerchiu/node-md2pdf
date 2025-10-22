@@ -11,6 +11,7 @@ import {
   HeaderConfig,
   FooterConfig,
 } from '../../core/page-structure';
+import { DEFAULT_MARGINS } from '../../infrastructure/config/constants';
 
 import type { ITranslationManager } from '../../infrastructure/i18n/types';
 import type { ILogger } from '../../infrastructure/logging/types';
@@ -281,12 +282,7 @@ export class PageStructureConfigUI {
         }
         case 'margins': {
           const marginsResult = await this.customizeMargins(
-            customConfig.margins || {
-              top: '1in',
-              bottom: '1in',
-              left: '1in',
-              right: '1in',
-            },
+            customConfig.margins || DEFAULT_MARGINS.NORMAL,
           );
           if (marginsResult) {
             customConfig.margins = marginsResult;
@@ -306,12 +302,7 @@ export class PageStructureConfigUI {
     console.log('\n🎨 自定義頁面結構配置\n');
 
     const config: PageStructureConfig = {
-      margins: {
-        top: '1in',
-        bottom: '1in',
-        left: '1in',
-        right: '1in',
-      },
+      margins: DEFAULT_MARGINS.NORMAL,
     };
 
     // Configure header
@@ -328,12 +319,7 @@ export class PageStructureConfigUI {
 
     // Configure margins
     const marginsResult = await this.customizeMargins(
-      config.margins || {
-        top: '1in',
-        bottom: '1in',
-        left: '1in',
-        right: '1in',
-      },
+      config.margins || DEFAULT_MARGINS.NORMAL,
     );
     if (marginsResult) {
       config.margins = marginsResult;

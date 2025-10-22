@@ -13,6 +13,7 @@ import {
   ValidationResult,
   TemplateVariable,
 } from '../../core/page-structure';
+import { DEFAULT_MARGINS } from '../../infrastructure/config/constants';
 import { MD2PDFError } from '../../infrastructure/error/errors';
 
 import type { IConfigManager } from '../../infrastructure/config/types';
@@ -536,12 +537,7 @@ export class PageStructureService implements IPageStructureService {
         showOnEvenPages: true,
         showOnOddPages: true,
       },
-      margins: {
-        top: '1in',
-        bottom: '1in',
-        left: '1in',
-        right: '1in',
-      },
+      margins: DEFAULT_MARGINS.NORMAL,
     };
   }
 }

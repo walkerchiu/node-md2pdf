@@ -9,6 +9,8 @@ import { existsSync, mkdirSync, writeFileSync, unlinkSync, statSync } from 'fs';
 import { tmpdir } from 'os';
 import { dirname, resolve, join } from 'path';
 
+import { DEFAULT_MARGINS } from '../../../infrastructure/config/constants';
+
 import {
   IPDFEngine,
   PDFEngineOptions,
@@ -228,6 +230,7 @@ export class ChromeHeadlessPDFEngine implements IPDFEngine {
     const tempHtmlPath = join(tempDir, `md2pdf_temp_${Date.now()}.html`);
 
     // Create full HTML with CSS
+    const margins = DEFAULT_MARGINS.NORMAL;
     let htmlContent = `<!DOCTYPE html>
 <html>
 <head>
@@ -236,7 +239,7 @@ export class ChromeHeadlessPDFEngine implements IPDFEngine {
     <style>
         body {
             font-family: Arial, sans-serif;
-            margin: 1in;
+            margin: ${margins.top} ${margins.right} ${margins.bottom} ${margins.left};
             line-height: 1.6;
         }
         h1, h2, h3, h4, h5, h6 {
