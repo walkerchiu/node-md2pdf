@@ -128,9 +128,6 @@ export class BatchProgressUI {
       outputDirectory: this.translationManager
         ? this.translationManager.t('batchProgress.outputDirectory')
         : 'Output Directory:',
-      preserveStructure: this.translationManager
-        ? this.translationManager.t('batchProgress.preserveStructure')
-        : 'Preserve Structure:',
       concurrentProcesses: this.translationManager
         ? this.translationManager.t('batchProgress.concurrentProcesses')
         : 'Concurrent Processes:',
@@ -152,9 +149,6 @@ export class BatchProgressUI {
     console.log(`${chalk.bold(labels.inputPattern)} ${config.inputPattern}`);
     console.log(
       `${chalk.bold(labels.outputDirectory)} ${config.outputDirectory}`,
-    );
-    console.log(
-      `${chalk.bold(labels.preserveStructure)} ${config.preserveDirectoryStructure ? yesNo.yes : yesNo.no}`,
     );
     console.log(
       `${chalk.bold(labels.concurrentProcesses)} ${config.maxConcurrentProcesses}`,

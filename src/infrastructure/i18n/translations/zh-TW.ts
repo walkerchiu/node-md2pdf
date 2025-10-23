@@ -271,7 +271,6 @@ export const zhTWTranslations: TranslationKey = {
     configurationSubtitle: '設定檔案的處理方式',
     enterOutputDirectory: '輸入輸出目錄：',
     pleaseEnterOutputDirectory: '請輸入輸出目錄',
-    preserveDirectoryStructure: '在輸出中保持原有目錄結構？',
     selectFilenameFormat: '選擇輸出檔名格式：',
     filenameFormats: {
       original: '1. 原始檔名 (example.pdf)',
@@ -313,7 +312,6 @@ export const zhTWTranslations: TranslationKey = {
       with_timestamp: '加入時間戳記後綴',
       custom: '自定義格式',
     },
-    preserveStructure: '🗂️  保持結構：{{preserve}}',
     tableOfContents: '📖 目錄：{{depth}} 層',
     pageNumbers: '📄 頁碼：{{include}}',
     chineseSupport: '🈳 中文支援：{{enabled}}',
@@ -461,7 +459,6 @@ export const zhTWTranslations: TranslationKey = {
     batchConfiguration: '🔧 批次設定：',
     inputPattern: '輸入模式：',
     outputDirectory: '輸出目錄：',
-    preserveStructure: '保持結構：',
     concurrentProcesses: '並行處理數：',
     continueOnError: '錯誤時繼續：',
     successful: '成功：{{count}}',

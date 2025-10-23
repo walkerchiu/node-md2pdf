@@ -271,7 +271,6 @@ export const enTranslations: TranslationKey = {
     configurationSubtitle: 'Configure how your files will be processed',
     enterOutputDirectory: 'Enter output directory:',
     pleaseEnterOutputDirectory: 'Please enter an output directory',
-    preserveDirectoryStructure: 'Preserve original directory structure in output?',
     selectFilenameFormat: 'Select output filename format:',
     filenameFormats: {
       original: '1. Original filename (example.pdf)',
@@ -313,7 +312,6 @@ export const enTranslations: TranslationKey = {
       with_timestamp: 'Add timestamp suffix',
       custom: 'Custom format',
     },
-    preserveStructure: '🗂️  Preserve structure: {{preserve}}',
     tableOfContents: '📖 Table of contents: {{depth}} levels',
     pageNumbers: '📄 Page numbers: {{include}}',
     chineseSupport: '🈳 Chinese support: {{enabled}}',
@@ -461,7 +459,6 @@ export const enTranslations: TranslationKey = {
     batchConfiguration: '🔧 Batch Configuration:',
     inputPattern: 'Input Pattern:',
     outputDirectory: 'Output Directory:',
-    preserveStructure: 'Preserve Structure:',
     concurrentProcesses: 'Concurrent Processes:',
     continueOnError: 'Continue on Error:',
     successful: 'Successful: {{count}}',

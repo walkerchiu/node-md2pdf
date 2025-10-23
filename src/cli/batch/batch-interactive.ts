@@ -280,12 +280,6 @@ export class BatchInteractiveMode {
         },
       },
       {
-        type: 'confirm',
-        name: 'preserveDirectoryStructure',
-        message: this.translationManager.t('batch.preserveDirectoryStructure'),
-        default: true,
-      },
-      {
         type: 'list',
         name: 'filenameFormat',
         message: this.translationManager.t('batch.selectFilenameFormat'),
@@ -389,7 +383,6 @@ export class BatchInteractiveMode {
       },
     ])) as {
       outputDirectory: string;
-      preserveDirectoryStructure: boolean;
       filenameFormat: BatchFilenameFormat;
       customFilenamePattern?: string;
       tocDepth: number;
@@ -402,7 +395,7 @@ export class BatchInteractiveMode {
     return {
       inputPattern: inputPattern,
       outputDirectory: answers.outputDirectory,
-      preserveDirectoryStructure: answers.preserveDirectoryStructure,
+      preserveDirectoryStructure: true,
       filenameFormat: answers.filenameFormat,
       customFilenamePattern: answers.customFilenamePattern ?? '',
       tocDepth: answers.tocDepth,
@@ -542,7 +535,7 @@ export class BatchInteractiveMode {
         type: 'confirm',
         name: 'finalConfirm',
         message: this.translationManager.t('batch.startBatchProcessing'),
-        default: false,
+        default: true,
       },
     ])) as { finalConfirm: boolean };
 

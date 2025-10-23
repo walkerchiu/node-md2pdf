@@ -208,7 +208,6 @@ describe('BatchProgressUI', () => {
             'batchProgress.batchConfiguration': 'Batch Configuration:',
             'batchProgress.inputPattern': 'Input Pattern:',
             'batchProgress.outputDirectory': 'Output Directory:',
-            'batchProgress.preserveStructure': 'Preserve Structure:',
             'batchProgress.concurrentProcesses': 'Concurrent Processes:',
             'batchProgress.continueOnError': 'Continue on Error:',
             'common.yes': 'Yes',
@@ -291,7 +290,6 @@ describe('BatchProgressUI', () => {
         expect(consoleSpy).toHaveBeenCalledWith('Batch Configuration:');
         expect(consoleSpy).toHaveBeenCalledWith('Input Pattern: *.md');
         expect(consoleSpy).toHaveBeenCalledWith('Output Directory: ./output');
-        expect(consoleSpy).toHaveBeenCalledWith('Preserve Structure: Yes');
         expect(consoleSpy).toHaveBeenCalledWith('Concurrent Processes: 4');
         expect(consoleSpy).toHaveBeenCalledWith('Continue on Error: No');
       });

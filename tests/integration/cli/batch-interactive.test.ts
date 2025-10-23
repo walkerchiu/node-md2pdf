@@ -264,10 +264,6 @@ describe('BatchInteractiveMode Integration Tests', () => {
             default: './output',
           }),
           expect.objectContaining({
-            name: 'preserveDirectoryStructure',
-            default: true,
-          }),
-          expect.objectContaining({
             name: 'filenameFormat',
             choices: expect.arrayContaining([
               expect.objectContaining({ value: BatchFilenameFormat.ORIGINAL }),
