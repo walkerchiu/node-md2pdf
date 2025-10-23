@@ -395,9 +395,7 @@ describe('BatchInteractiveMode', () => {
         const lines: string[] = [];
         lines.push(`📁 Files to process: ${config.inputFiles?.length || 0}`);
         lines.push(`📂 Output directory: ${config.outputDirectory}`);
-        lines.push(
-          `🗂️  Preserve structure: ${config.preserveDirectoryStructure ? 'Yes' : 'No'}`,
-        );
+        lines.push();
         lines.push(
           `📄 Page numbers: ${config.includePageNumbers ? 'Yes' : 'No'}`,
         );
@@ -410,9 +408,8 @@ describe('BatchInteractiveMode', () => {
       const displayLines = formatConfigDisplay(mockBatchConfig);
       expect(displayLines[0]).toContain('Files to process: 2');
       expect(displayLines[1]).toContain('Output directory: ./output');
-      expect(displayLines[2]).toContain('Preserve structure: Yes');
-      expect(displayLines[3]).toContain('Page numbers: Yes');
-      expect(displayLines[4]).toContain('Chinese support: Enabled');
+      expect(displayLines[2]).toContain('Page numbers: Yes');
+      expect(displayLines[3]).toContain('Chinese support: Enabled');
     });
 
     it('should test header display logic', () => {
@@ -649,7 +646,7 @@ describe('BatchInteractiveMode', () => {
         return {
           inputPattern: inputPattern,
           outputDirectory: answers.outputDirectory,
-          preserveDirectoryStructure: answers.preserveDirectoryStructure,
+          preserveDirectoryStructure: true,
           filenameFormat: answers.filenameFormat,
           customFilenamePattern: answers.customFilenamePattern ?? '',
           tocDepth: answers.tocDepth,
@@ -675,7 +672,7 @@ describe('BatchInteractiveMode', () => {
 
       expect(config.inputPattern).toBe('**/*.md');
       expect(config.outputDirectory).toBe('./test-output');
-      expect(config.preserveDirectoryStructure).toBe(false);
+      expect(config.preserveDirectoryStructure).toBe(true);
       expect(config.customFilenamePattern).toBe('');
       expect(config.tocDepth).toBe(3);
     });
@@ -2166,7 +2163,7 @@ describe('BatchInteractiveMode', () => {
         return {
           inputPattern: inputPattern,
           outputDirectory: answers.outputDirectory,
-          preserveDirectoryStructure: answers.preserveDirectoryStructure,
+          preserveDirectoryStructure: true,
           filenameFormat: answers.filenameFormat,
           customFilenamePattern: answers.customFilenamePattern ?? '',
           tocDepth: answers.tocDepth,
@@ -2334,9 +2331,6 @@ describe('BatchInteractiveMode', () => {
         const summary = [];
         summary.push(`Files to process: ${files.length}`);
         summary.push(`Output directory: ${config.outputDirectory}`);
-        summary.push(
-          `Preserve structure: ${config.preserveDirectoryStructure ? 'Yes' : 'No'}`,
-        );
         summary.push(`Table of contents: ${config.tocDepth} levels`);
         summary.push(
           `Page numbers: ${config.includePageNumbers ? 'Yes' : 'No'}`,
@@ -2366,12 +2360,11 @@ describe('BatchInteractiveMode', () => {
 
       expect(summary[0]).toBe('Files to process: 2');
       expect(summary[1]).toBe('Output directory: ./output');
-      expect(summary[2]).toBe('Preserve structure: No');
-      expect(summary[3]).toBe('Table of contents: 2 levels');
-      expect(summary[4]).toBe('Page numbers: Yes');
-      expect(summary[5]).toBe('Chinese support: Disabled');
-      expect(summary[6]).toBe('Concurrent processes: 3');
-      expect(summary[7]).toBe('Continue on error: Yes');
+      expect(summary[2]).toBe('Table of contents: 2 levels');
+      expect(summary[3]).toBe('Page numbers: Yes');
+      expect(summary[4]).toBe('Chinese support: Disabled');
+      expect(summary[5]).toBe('Concurrent processes: 3');
+      expect(summary[6]).toBe('Continue on error: Yes');
     });
   });
 
