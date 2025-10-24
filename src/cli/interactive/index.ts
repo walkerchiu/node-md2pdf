@@ -261,6 +261,12 @@ export class InteractiveMode {
         },
       },
       {
+        type: 'confirm',
+        name: 'includeTOC',
+        message: this.translationManager.t('interactive.includeTOC'),
+        default: true,
+      },
+      {
         type: 'list',
         name: 'tocDepth',
         message: this.translationManager.t('interactive.selectTocDepth'),
@@ -291,6 +297,7 @@ export class InteractiveMode {
           },
         ],
         default: 2,
+        when: (answers: any) => answers.includeTOC,
       },
       {
         type: 'confirm',
@@ -330,11 +337,16 @@ export class InteractiveMode {
       `${this.translationManager.t('interactive.outputFile')} ${config.outputPath}`,
     );
     this.uiManager.showMessage(
-      `${this.translationManager.t('interactive.tocDepth')} ${config.tocDepth} ${this.translationManager.t('interactive.levels')}`,
+      `${this.translationManager.t('interactive.includeTOC')} ${config.includeTOC ? this.translationManager.t('interactive.yes') : this.translationManager.t('interactive.no')}`,
     );
-    this.uiManager.showMessage(
-      `${this.translationManager.t('interactive.pageNumbers')} ${config.includePageNumbers ? this.translationManager.t('interactive.yes') : this.translationManager.t('interactive.no')}`,
-    );
+    if (config.includeTOC) {
+      this.uiManager.showMessage(
+        `${this.translationManager.t('interactive.tocDepth')} ${config.tocDepth} ${this.translationManager.t('interactive.levels')}`,
+      );
+      this.uiManager.showMessage(
+        `${this.translationManager.t('interactive.pageNumbers')} ${config.includePageNumbers ? this.translationManager.t('interactive.yes') : this.translationManager.t('interactive.no')}`,
+      );
+    }
     this.uiManager.showMessage(
       `${this.translationManager.t('interactive.chineseSupport')} ${config.chineseFontSupport ? this.translationManager.t('interactive.yes') : this.translationManager.t('interactive.no')}`,
     );
@@ -379,13 +391,15 @@ export class InteractiveMode {
 
       const processingOptions: Record<string, unknown> = {
         outputPath,
-        includeTOC: true,
+        includeTOC: config.includeTOC,
         includePageNumbers: config.includePageNumbers, // Add this setting for CSS @page rules
-        tocOptions: {
-          maxDepth: config.tocDepth,
-          includePageNumbers: config.includePageNumbers,
-          title: this.translationManager.t('pdfContent.tocTitle'),
-        },
+        tocOptions: config.includeTOC
+          ? {
+              maxDepth: config.tocDepth,
+              includePageNumbers: config.includePageNumbers,
+              title: this.translationManager.t('pdfContent.tocTitle'),
+            }
+          : {},
         pdfOptions: {
           margin: DEFAULT_MARGINS.NORMAL,
           displayHeaderFooter: false, // Force disable - using CSS @page instead

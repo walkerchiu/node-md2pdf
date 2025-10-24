@@ -6,6 +6,7 @@
 export interface ConversionConfig {
   inputPath: string;
   outputPath?: string;
+  includeTOC: boolean;
   tocDepth: number;
   includePageNumbers: boolean;
   chineseFontSupport: boolean;

@@ -53,6 +53,7 @@ describe('FileCollector', () => {
       filenameFormat: BatchFilenameFormat.ORIGINAL,
       maxConcurrentProcesses: 2,
       continueOnError: true,
+      includeTOC: true,
       tocDepth: 3,
       includePageNumbers: true,
       chineseFontSupport: false,

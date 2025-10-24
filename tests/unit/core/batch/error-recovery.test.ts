@@ -67,6 +67,7 @@ describe('ErrorRecoveryManager', () => {
       filenameFormat: 'original' as BatchFilenameFormat,
       maxConcurrentProcesses: 2,
       continueOnError: true,
+      includeTOC: true,
       tocDepth: 3,
       includePageNumbers: true,
       chineseFontSupport: false,

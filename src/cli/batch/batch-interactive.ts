@@ -288,6 +288,12 @@ export class BatchInteractiveMode {
         },
       },
       {
+        type: 'confirm',
+        name: 'includeTOC',
+        message: this.translationManager.t('batch.includeTOCPrompt'),
+        default: true,
+      },
+      {
         type: 'list',
         name: 'tocDepth',
         message: this.translationManager.t('batch.selectTocDepth'),
@@ -300,6 +306,7 @@ export class BatchInteractiveMode {
           { name: this.translationManager.t('batch.tocLevels.6'), value: 6 },
         ],
         default: 2,
+        when: (answers: any) => answers.includeTOC,
       },
       {
         type: 'confirm',
@@ -353,6 +360,7 @@ export class BatchInteractiveMode {
       outputDirectory: string;
       filenameFormat: BatchFilenameFormat;
       customFilenamePattern?: string;
+      includeTOC: boolean;
       tocDepth: number;
       includePageNumbers: boolean;
       chineseFontSupport: boolean;
@@ -366,7 +374,8 @@ export class BatchInteractiveMode {
       preserveDirectoryStructure: true,
       filenameFormat: answers.filenameFormat,
       customFilenamePattern: answers.customFilenamePattern ?? '',
-      tocDepth: answers.tocDepth,
+      includeTOC: answers.includeTOC,
+      tocDepth: answers.tocDepth || 2,
       includePageNumbers: answers.includePageNumbers,
       chineseFontSupport: answers.chineseFontSupport,
       maxConcurrentProcesses: answers.maxConcurrentProcesses,
@@ -445,20 +454,31 @@ export class BatchInteractiveMode {
     );
     console.log(
       chalk.white(
-        this.translationManager.t('batch.tableOfContents', {
-          depth: config.tocDepth,
-        }),
-      ),
-    );
-    console.log(
-      chalk.white(
-        this.translationManager.t('batch.pageNumbers', {
-          include: config.includePageNumbers
+        this.translationManager.t('batch.includeTOC', {
+          include: config.includeTOC
             ? this.translationManager.t('batch.yes')
             : this.translationManager.t('batch.no'),
         }),
       ),
     );
+    if (config.includeTOC) {
+      console.log(
+        chalk.white(
+          this.translationManager.t('batch.tableOfContents', {
+            depth: config.tocDepth,
+          }),
+        ),
+      );
+      console.log(
+        chalk.white(
+          this.translationManager.t('batch.pageNumbers', {
+            include: config.includePageNumbers
+              ? this.translationManager.t('batch.yes')
+              : this.translationManager.t('batch.no'),
+          }),
+        ),
+      );
+    }
     console.log(
       chalk.white(
         this.translationManager.t('batch.chineseSupport', {
@@ -538,12 +558,14 @@ export class BatchInteractiveMode {
     try {
       const fileOptions: Record<string, unknown> = {
         outputPath: config.outputDirectory,
-        includeTOC: true,
-        tocOptions: {
-          maxDepth: config.tocDepth,
-          includePageNumbers: config.includePageNumbers,
-          title: this.translationManager.t('pdfContent.tocTitle'),
-        },
+        includeTOC: config.includeTOC,
+        tocOptions: config.includeTOC
+          ? {
+              maxDepth: config.tocDepth,
+              includePageNumbers: config.includePageNumbers,
+              title: this.translationManager.t('pdfContent.tocTitle'),
+            }
+          : {},
         pdfOptions: {
           margin: DEFAULT_MARGINS.NORMAL,
           displayHeaderFooter: config.includePageNumbers,

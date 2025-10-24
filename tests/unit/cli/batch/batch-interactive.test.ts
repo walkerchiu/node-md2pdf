@@ -940,6 +940,7 @@ describe('BatchInteractiveMode', () => {
         inputFiles: ['/test/file1.md'],
         maxConcurrentProcesses: 2,
         continueOnError: true,
+        includeTOC: true,
         tocDepth: 2,
         includePageNumbers: true,
         chineseFontSupport: true,
@@ -1562,6 +1563,7 @@ describe('BatchInteractiveMode', () => {
         maxConcurrentProcesses: 2,
         continueOnError: true,
         chineseFontSupport: false,
+        includeTOC: true,
         includePageNumbers: false,
         tocDepth: 3,
       };
