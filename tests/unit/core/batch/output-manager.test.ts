@@ -46,6 +46,7 @@ describe('OutputManager', () => {
       filenameFormat: BatchFilenameFormat.ORIGINAL,
       maxConcurrentProcesses: 3,
       continueOnError: true,
+      includeTOC: true,
       tocDepth: 3,
       includePageNumbers: true,
       chineseFontSupport: false,

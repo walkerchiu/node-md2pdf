@@ -506,6 +506,25 @@ export class SmartConversionMode {
     // Generate output path suggestion
     const outputPath = filePath.replace(/\.(md|markdown)$/i, '.pdf');
 
+    // Smart conversion should automatically determine TOC settings
+    const includeTOC = choice.config
+      ? this.getRecommendedTOCValue(choice.config, analysis)
+      : analysis.headingStructure.totalHeadings > 3;
+
+    const tocDepth = choice.config
+      ? this.getRecommendedTOCDepth(choice.config, analysis)
+      : Math.min(analysis.headingStructure.maxDepth, 3);
+
+    // Display smart decisions
+    this.renderer.info(chalk.cyan('\n📋 Smart Configuration Applied:'));
+    this.renderer.info(
+      `   📚 Table of Contents: ${includeTOC ? 'Yes' : 'No'}${includeTOC ? ` (${tocDepth} levels)` : ''}`,
+    );
+    if (includeTOC) {
+      this.renderer.info(`   📄 Page Numbers: Yes`);
+    }
+    this.renderer.info('');
+
     const { confirmed, finalOutputPath } = await inquirer.default.prompt([
       {
         type: 'input',
@@ -544,6 +563,8 @@ export class SmartConversionMode {
       const processingConfig = this.convertToProcessingConfig(
         choice.config,
         analysis,
+        includeTOC,
+        tocDepth,
       );
 
       // Start progress indication
@@ -637,19 +658,60 @@ export class SmartConversionMode {
     return 5; // Default fallback
   }
 
+  private getRecommendedTOCValue(
+    config: QuickConfig | RecommendedConfig,
+    analysis: ContentAnalysis,
+  ): boolean {
+    if ('config' in config) {
+      // QuickConfig
+      return (
+        config.config.tocConfig?.enabled ??
+        analysis.headingStructure.totalHeadings > 3
+      );
+    } else {
+      // RecommendedConfig
+      return (
+        config.tocConfig?.enabled ?? analysis.headingStructure.totalHeadings > 3
+      );
+    }
+  }
+
+  private getRecommendedTOCDepth(
+    config: QuickConfig | RecommendedConfig,
+    analysis: ContentAnalysis,
+  ): number {
+    if ('config' in config) {
+      // QuickConfig
+      return (
+        config.config.tocConfig?.maxDepth ??
+        Math.min(analysis.headingStructure.maxDepth, 3)
+      );
+    } else {
+      // RecommendedConfig
+      return (
+        config.tocConfig?.maxDepth ??
+        Math.min(analysis.headingStructure.maxDepth, 3)
+      );
+    }
+  }
+
   private convertToProcessingConfig(
     config: QuickConfig | RecommendedConfig | undefined,
-    analysis: ContentAnalysis,
+    _analysis: ContentAnalysis,
+    includeTOC: boolean,
+    tocDepth: number,
   ): any {
     if (!config) {
       // Return basic configuration matching single file and batch processing
       return {
-        includeTOC: analysis.headingStructure.totalHeadings > 3,
-        tocOptions: {
-          maxDepth: 3,
-          includePageNumbers: true,
-          title: '目錄',
-        },
+        includeTOC: includeTOC,
+        tocOptions: includeTOC
+          ? {
+              maxDepth: tocDepth,
+              includePageNumbers: true,
+              title: '目錄',
+            }
+          : {},
         pdfOptions: {
           margin: DEFAULT_MARGINS.NORMAL,
           displayHeaderFooter: true,
@@ -663,8 +725,8 @@ export class SmartConversionMode {
     // Convert Smart Defaults configuration to file processor configuration
     // Follow the same pattern as single file and batch processing
     const baseConfig: any = {
-      includeTOC: false,
-      tocOptions: {},
+      includeTOC: includeTOC,
+      tocOptions: includeTOC ? {} : {},
       pdfOptions: {
         margin: DEFAULT_MARGINS.NORMAL,
         printBackground: true,
@@ -674,19 +736,18 @@ export class SmartConversionMode {
     if ('config' in config) {
       // QuickConfig
       const quickConfig = config.config;
-      if (quickConfig.tocConfig) {
-        baseConfig.includeTOC = quickConfig.tocConfig.enabled;
+      if (includeTOC) {
         baseConfig.tocOptions = {
-          maxDepth: quickConfig.tocConfig.maxDepth || 3,
-          includePageNumbers: quickConfig.tocConfig.includePageNumbers ?? true,
-          title: quickConfig.tocConfig.title || '目錄',
+          maxDepth: tocDepth,
+          includePageNumbers: quickConfig.tocConfig?.includePageNumbers ?? true,
+          title: quickConfig.tocConfig?.title || '目錄',
         };
 
         // Set PDF options for page numbers - same as single file and batch processing
         baseConfig.pdfOptions.displayHeaderFooter =
-          quickConfig.tocConfig.includePageNumbers ?? true;
+          quickConfig.tocConfig?.includePageNumbers ?? true;
         baseConfig.pdfOptions.footerTemplate =
-          (quickConfig.tocConfig.includePageNumbers ?? true)
+          (quickConfig.tocConfig?.includePageNumbers ?? true)
             ? '<div style="font-size:10px; width:100%; text-align:center;">Page <span class="pageNumber"></span> of <span class="totalPages"></span></div>'
             : '';
       }
@@ -706,20 +767,21 @@ export class SmartConversionMode {
       }
     } else {
       // RecommendedConfig
-      baseConfig.includeTOC = config.tocConfig?.enabled || false;
-      baseConfig.tocOptions = {
-        maxDepth: config.tocConfig?.maxDepth || 3,
-        includePageNumbers: config.tocConfig?.includePageNumbers ?? true,
-        title: config.tocConfig?.title || '目錄',
-      };
+      if (includeTOC) {
+        baseConfig.tocOptions = {
+          maxDepth: tocDepth,
+          includePageNumbers: config.tocConfig?.includePageNumbers ?? true,
+          title: config.tocConfig?.title || '目錄',
+        };
 
-      // Set PDF options for page numbers - same as single file and batch processing
-      baseConfig.pdfOptions.displayHeaderFooter =
-        config.tocConfig?.includePageNumbers ?? true;
-      baseConfig.pdfOptions.footerTemplate =
-        (config.tocConfig?.includePageNumbers ?? true)
-          ? '<div style="font-size:10px; width:100%; text-align:center;">Page <span class="pageNumber"></span> of <span class="totalPages"></span></div>'
-          : '';
+        // Set PDF options for page numbers - same as single file and batch processing
+        baseConfig.pdfOptions.displayHeaderFooter =
+          config.tocConfig?.includePageNumbers ?? true;
+        baseConfig.pdfOptions.footerTemplate =
+          (config.tocConfig?.includePageNumbers ?? true)
+            ? '<div style="font-size:10px; width:100%; text-align:center;">Page <span class="pageNumber"></span> of <span class="totalPages"></span></div>'
+            : '';
+      }
 
       // Handle margins if specified
       if (config.margins) {

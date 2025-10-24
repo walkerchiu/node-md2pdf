@@ -784,6 +784,8 @@ describe('SmartConversionMode', () => {
         const result = (smartConversionMode as any).convertToProcessingConfig(
           config,
           analysis,
+          true,
+          4,
         );
 
         expect(result.includeTOC).toBe(true);
@@ -801,10 +803,12 @@ describe('SmartConversionMode', () => {
         const result = (smartConversionMode as any).convertToProcessingConfig(
           config,
           analysis,
+          false,
+          2,
         );
 
         expect(result.includeTOC).toBe(false);
-        expect(result.tocOptions.maxDepth).toBe(2);
+        expect(result.tocOptions).toEqual({});
       });
 
       it('should handle undefined config', () => {
@@ -815,6 +819,8 @@ describe('SmartConversionMode', () => {
         const result = (smartConversionMode as any).convertToProcessingConfig(
           undefined,
           analysis,
+          true,
+          3,
         );
 
         expect(result.includeTOC).toBe(true);

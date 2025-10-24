@@ -82,6 +82,7 @@ describe('InteractiveMode', () => {
   const mockConversionConfig: ConversionConfig = {
     inputPath: 'test.md',
     outputPath: 'test.pdf',
+    includeTOC: true,
     tocDepth: 2,
     includePageNumbers: true,
     chineseFontSupport: true,
@@ -515,6 +516,7 @@ describe('InteractiveMode', () => {
         .mockResolvedValueOnce({ inputPath: mockConversionConfig.inputPath })
         .mockResolvedValueOnce({
           outputPath: mockConversionConfig.outputPath,
+          includeTOC: mockConversionConfig.includeTOC,
           tocDepth: mockConversionConfig.tocDepth,
           includePageNumbers: mockConversionConfig.includePageNumbers,
           chineseFontSupport: mockConversionConfig.chineseFontSupport,
@@ -860,6 +862,7 @@ describe('InteractiveMode', () => {
         .mockResolvedValueOnce({ inputPath: configWithMaxTocDepth.inputPath })
         .mockResolvedValueOnce({
           outputPath: configWithMaxTocDepth.outputPath,
+          includeTOC: configWithMaxTocDepth.includeTOC,
           tocDepth: configWithMaxTocDepth.tocDepth,
           includePageNumbers: configWithMaxTocDepth.includePageNumbers,
           chineseFontSupport: configWithMaxTocDepth.chineseFontSupport,
