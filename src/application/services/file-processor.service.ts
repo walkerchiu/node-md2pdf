@@ -26,6 +26,7 @@ import type { ILogger } from '../../infrastructure/logging/types';
 export interface FileProcessingOptions {
   outputPath?: string;
   includeTOC?: boolean;
+  includePageNumbers?: boolean;
   tocOptions?: Partial<TOCGeneratorOptions>;
   pdfOptions?: Partial<PDFGeneratorOptions>;
   customStyles?: string;
@@ -149,6 +150,9 @@ export class FileProcessorService implements IFileProcessorService {
           headings: parsedContent.headings,
           markdownContent: finalHtmlContent,
           enableChineseSupport: true,
+          ...(options.includePageNumbers !== undefined && {
+            includePageNumbers: options.includePageNumbers,
+          }),
           ...(options.tocOptions && {
             tocOptions: {
               enabled: options.includeTOC || false,
