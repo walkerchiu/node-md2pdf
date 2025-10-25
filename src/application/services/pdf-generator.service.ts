@@ -43,6 +43,7 @@ export interface IPDFGeneratorService {
       headings?: Heading[];
       markdownContent?: string;
       enableChineseSupport?: boolean;
+      includePageNumbers?: boolean;
       tocOptions?: {
         enabled: boolean;
         maxDepth: number;
@@ -173,6 +174,7 @@ export class PDFGeneratorService implements IPDFGeneratorService {
       headings?: Heading[];
       markdownContent?: string;
       enableChineseSupport?: boolean;
+      includePageNumbers?: boolean;
       tocOptions?: {
         enabled: boolean;
         maxDepth: number;
@@ -200,9 +202,11 @@ export class PDFGeneratorService implements IPDFGeneratorService {
       );
       await this.eventPublisher.publish(startedEvent);
 
-      // Check if page numbers should be included - priority: tocOptions > global config
+      // Check if page numbers should be included - priority: root level > tocOptions > default false
       const includePageNumbers =
-        options.tocOptions?.includePageNumbers ?? false;
+        options.includePageNumbers ??
+        options.tocOptions?.includePageNumbers ??
+        false;
 
       // Inject CSS @page rules for header/footer directly into HTML content
       const enhancedHtmlContent = this.injectCSSPageRules(
