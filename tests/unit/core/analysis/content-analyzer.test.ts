@@ -42,7 +42,7 @@ console.log("Hello World");
       expect(analysis.codeBlocks[0].language).toBe('javascript');
       expect(analysis.tables).toHaveLength(1);
       expect(analysis.links.external).toBe(1);
-      expect(analysis.estimatedPages).toBeGreaterThan(0);
+      expect(analysis.wordCount).toBeGreaterThan(0);
     });
 
     it('should detect Chinese content correctly', async () => {
@@ -183,7 +183,7 @@ In conclusion, this study demonstrates...
 Just a few words here.`;
 
       const shortAnalysis = await analyzer.analyzeContent(shortContent);
-      expect(shortAnalysis.estimatedPages).toBe(1);
+      expect(shortAnalysis.wordCount).toBeGreaterThan(0);
 
       // Longer content
       const longContent = `# Long Document
@@ -193,7 +193,7 @@ ${'This is a longer paragraph with more content. '.repeat(200)}
 ${'## Section\n\nMore content here. '.repeat(50)}`;
 
       const longAnalysis = await analyzer.analyzeContent(longContent);
-      expect(longAnalysis.estimatedPages).toBeGreaterThan(1);
+      expect(longAnalysis.wordCount).toBeGreaterThan(100);
     });
 
     it('should handle empty content gracefully', async () => {
@@ -205,7 +205,6 @@ ${'## Section\n\nMore content here. '.repeat(50)}`;
       expect(analysis.headingStructure.totalHeadings).toBe(0);
       expect(analysis.codeBlocks).toHaveLength(0);
       expect(analysis.tables).toHaveLength(0);
-      expect(analysis.estimatedPages).toBe(1);
     });
 
     it('should analyze content with images and media', async () => {

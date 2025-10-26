@@ -1,5 +1,5 @@
-import { DEFAULT_CSS_TEMPLATE } from '../../infrastructure/config/constants';
 import { ConfigAccessor } from '../../infrastructure/config';
+import { DEFAULT_CSS_TEMPLATE } from '../../infrastructure/config/constants';
 
 import { StyleOptions } from './types';
 

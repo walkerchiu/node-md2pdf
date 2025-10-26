@@ -59,6 +59,10 @@ export const defaultConfig: ConfigSchema = {
       'zh-tw': '目錄',
     },
   },
+  rendering: {
+    forceAccuratePageNumbers: false,
+    maxPerformanceImpact: 0.5,
+  },
   performance: {
     maxWorkers: 3,
     timeout: 120000, // 2 minutes
@@ -116,4 +120,6 @@ export const environmentMappings: Record<string, string> = {
   MD2PDF_PDF_MAX_CONCURRENT_TASKS:
     'pdf.engines.resourceLimits.maxConcurrentTasks',
   MD2PDF_PDF_TASK_TIMEOUT: 'pdf.engines.resourceLimits.taskTimeout',
+  MD2PDF_FORCE_ACCURATE_PAGE_NUMBERS: 'rendering.forceAccuratePageNumbers',
+  MD2PDF_MAX_PERFORMANCE_IMPACT: 'rendering.maxPerformanceImpact',
 };

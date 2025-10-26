@@ -32,7 +32,6 @@ describe('SmartDefaultsService', () => {
       const analysis: ContentAnalysis = {
         fileSize: 5000,
         wordCount: 800,
-        estimatedPages: 3,
         readingTime: 4,
         headingStructure: {
           totalHeadings: 8,
@@ -150,7 +149,6 @@ describe('SmartDefaultsService', () => {
       const analysis: ContentAnalysis = {
         fileSize: 3000,
         wordCount: 500,
-        estimatedPages: 2,
         readingTime: 3,
         headingStructure: {
           totalHeadings: 4,
@@ -205,7 +203,6 @@ describe('SmartDefaultsService', () => {
       const analysis: ContentAnalysis = {
         fileSize: 4000,
         wordCount: 600,
-        estimatedPages: 2,
         readingTime: 3,
         headingStructure: {
           totalHeadings: 3,
@@ -272,7 +269,6 @@ describe('SmartDefaultsService', () => {
       const analysis: ContentAnalysis = {
         fileSize: 1000,
         wordCount: 150,
-        estimatedPages: 1,
         readingTime: 1,
         headingStructure: {
           totalHeadings: 2,
@@ -334,7 +330,6 @@ describe('SmartDefaultsService', () => {
       const analysis: ContentAnalysis = {
         fileSize: 5000,
         wordCount: 800,
-        estimatedPages: 3,
         readingTime: 4,
         headingStructure: {
           totalHeadings: 8,
@@ -399,7 +394,6 @@ describe('SmartDefaultsService', () => {
       const analysis: ContentAnalysis = {
         fileSize: 3000,
         wordCount: 500,
-        estimatedPages: 2,
         readingTime: 3,
         headingStructure: {
           totalHeadings: 4,
@@ -475,8 +469,7 @@ describe('SmartDefaultsService', () => {
     it('should generate appropriate insights for complex content', async () => {
       const analysis: ContentAnalysis = {
         fileSize: 10 * 1024 * 1024, // 10MB
-        wordCount: 5000,
-        estimatedPages: 150,
+        wordCount: 60000,
         readingTime: 25,
         headingStructure: {
           totalHeadings: 50,

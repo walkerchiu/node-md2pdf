@@ -584,6 +584,18 @@ export class BatchInteractiveMode {
         `;
       }
 
+      // Enable two-stage rendering for batch processing when TOC with page numbers is requested
+      if (config.includeTOC && config.includePageNumbers) {
+        fileOptions.twoStageRendering = {
+          enabled: true,
+          forceAccuratePageNumbers: true,
+          maxPerformanceImpact: 50, // Moderate performance impact for batch processing
+        };
+        this.logger.info(
+          'Two-stage rendering enabled for batch processing with accurate page numbers',
+        );
+      }
+
       const batchOptions = {
         maxConcurrency: config.maxConcurrentProcesses,
         continueOnError: config.continueOnError,

@@ -38,15 +38,6 @@ export class DocumentAnalysis extends ValueObject<DocumentAnalysisData> {
       );
     }
 
-    if (typeof value.estimatedPages !== 'number' || value.estimatedPages < 0) {
-      throw new ValueObjectValidationError(
-        'DocumentAnalysis',
-        value.estimatedPages,
-        'positive-pages',
-        'Estimated pages must be a positive number',
-      );
-    }
-
     if (typeof value.readingTime !== 'number' || value.readingTime < 0) {
       throw new ValueObjectValidationError(
         'DocumentAnalysis',
@@ -201,6 +192,5 @@ export interface DocumentAnalysisData {
     lineCount: number;
     complexity: 'simple' | 'moderate' | 'complex';
   }>;
-  estimatedPages: number;
   readingTime: number;
 }

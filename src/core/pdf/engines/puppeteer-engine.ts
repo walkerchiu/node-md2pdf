@@ -80,26 +80,26 @@ export class PuppeteerPDFEngine implements IPDFEngine {
 
     const configs = [
       {
-        headless: 'new' as const,
+        headless: 'new' as const, // Use new headless mode with enhanced stability configuration
         timeout: 10000,
         args: baseArgs,
       },
       {
         executablePath:
           '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
-        headless: 'new' as const,
+        headless: 'new' as const, // Use new headless mode with enhanced stability configuration
         timeout: 10000,
         args: ['--no-sandbox'],
       },
       {
         executablePath: '/usr/bin/google-chrome',
-        headless: 'new' as const,
+        headless: 'new' as const, // Use new headless mode with enhanced stability configuration
         timeout: 10000,
         args: ['--no-sandbox'],
       },
       {
         executablePath: '/usr/bin/chromium-browser',
-        headless: 'new' as const,
+        headless: 'new' as const, // Use new headless mode with enhanced stability configuration
         timeout: 10000,
         args: ['--no-sandbox'],
       },
@@ -215,17 +215,9 @@ export class PuppeteerPDFEngine implements IPDFEngine {
   private async generateFullHTML(
     context: PDFGenerationContext,
   ): Promise<string> {
-    if (context.toc?.enabled && context.toc) {
-      // TOC generation logic would go here
-      // For now, return basic HTML
-      return PDFTemplates.getFullHTML(
-        context.htmlContent,
-        context.title,
-        context.customCSS,
-        context.enableChineseSupport || false,
-      );
-    }
-
+    // Since we're now using two-stage rendering exclusively,
+    // TOC generation is handled by TwoStageRenderingEngine
+    // This method only handles basic HTML generation
     return PDFTemplates.getFullHTML(
       context.htmlContent,
       context.title,

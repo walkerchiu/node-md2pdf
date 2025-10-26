@@ -234,14 +234,21 @@ describe('PDFGeneratorService', () => {
         },
       );
 
-      expect(result).toEqual({
-        success: true,
-        outputPath: '/test/output.pdf',
-        metadata: {
-          pages: 1,
-          fileSize: 1024,
-          generationTime: 100,
-        },
+      expect(result.success).toBe(true);
+      expect(result.outputPath).toBe('/test/output.pdf');
+      expect(result.metadata).toMatchObject({
+        pages: 1,
+        fileSize: 1024,
+        generationTime: 100,
+        renderingStrategy: 'two-stage',
+        pageNumberAccuracy: 'exact',
+        enhancedFeatures: expect.any(Array),
+        performance: expect.objectContaining({
+          preRenderTime: expect.any(Number),
+          finalRenderTime: expect.any(Number),
+          totalTime: expect.any(Number),
+          performanceIncrease: expect.any(Number),
+        }),
       });
     });
 
@@ -412,10 +419,19 @@ describe('PDFGeneratorService', () => {
       );
 
       expect(result.success).toBe(true);
-      expect(result.metadata).toEqual({
+      expect(result.metadata).toMatchObject({
         pages: 0,
         fileSize: 0,
         generationTime: 0,
+        renderingStrategy: 'two-stage',
+        pageNumberAccuracy: 'exact',
+        enhancedFeatures: expect.any(Array),
+        performance: expect.objectContaining({
+          preRenderTime: expect.any(Number),
+          finalRenderTime: expect.any(Number),
+          totalTime: expect.any(Number),
+          performanceIncrease: expect.any(Number),
+        }),
       });
     });
   });

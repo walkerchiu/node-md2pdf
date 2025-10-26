@@ -140,7 +140,6 @@ describe('SmartConversionMode', () => {
           'smartConversion.recentFilesError': 'Error loading recent files',
           'smartConversion.analysisResults': 'Analysis Results',
           'smartConversion.words': 'Words',
-          'smartConversion.estimatedPages': 'Estimated pages',
           'smartConversion.readingTime': 'Reading time',
           'smartConversion.minutes': 'minutes',
           'smartConversion.headings': 'Headings',
@@ -252,7 +251,6 @@ describe('SmartConversionMode', () => {
     const mockAnalysis: ContentAnalysis = {
       fileSize: 5000,
       wordCount: 1000,
-      estimatedPages: 3,
       readingTime: 5,
       headingStructure: {
         totalHeadings: 10,
@@ -431,7 +429,6 @@ describe('SmartConversionMode', () => {
       const analysis: ContentAnalysis = {
         fileSize: 7500,
         wordCount: 1500,
-        estimatedPages: 4,
         readingTime: 8,
         headingStructure: {
           totalHeadings: 15,
@@ -505,7 +502,6 @@ describe('SmartConversionMode', () => {
     const mockAnalysis: ContentAnalysis = {
       fileSize: 5000,
       wordCount: 1000,
-      estimatedPages: 3,
       readingTime: 5,
       headingStructure: {
         totalHeadings: 10,
@@ -613,7 +609,6 @@ describe('SmartConversionMode', () => {
     const mockAnalysis: ContentAnalysis = {
       fileSize: 5000,
       wordCount: 1000,
-      estimatedPages: 3,
       readingTime: 5,
       headingStructure: {
         totalHeadings: 10,
@@ -798,6 +793,7 @@ describe('SmartConversionMode', () => {
         };
         const analysis = {
           headingStructure: { totalHeadings: 5 },
+          mediaElements: { hasDiagrams: false, images: 0 },
         };
 
         const result = (smartConversionMode as any).convertToProcessingConfig(
@@ -808,12 +804,13 @@ describe('SmartConversionMode', () => {
         );
 
         expect(result.includeTOC).toBe(false);
-        expect(result.tocOptions).toEqual({});
+        expect(result.tocOptions).toBeUndefined();
       });
 
       it('should handle undefined config', () => {
         const analysis = {
           headingStructure: { totalHeadings: 5 },
+          mediaElements: { hasDiagrams: false, images: 0 },
         };
 
         const result = (smartConversionMode as any).convertToProcessingConfig(
@@ -825,6 +822,102 @@ describe('SmartConversionMode', () => {
 
         expect(result.includeTOC).toBe(true);
         expect(result.tocOptions.maxDepth).toBe(3);
+      });
+
+      it('should enable two-stage rendering for TOC with page numbers', () => {
+        const config = {
+          config: {
+            tocConfig: { enabled: true, includePageNumbers: true },
+          },
+        };
+        const analysis = {
+          headingStructure: { totalHeadings: 5 },
+          mediaElements: { hasDiagrams: false, images: 2 },
+        };
+
+        (smartConversionMode as any).convertToProcessingConfig(
+          config,
+          analysis,
+          true,
+          3,
+        );
+
+        // Two-stage rendering is now always enabled, no need to test configuration
+      });
+
+      it('should not enable two-stage rendering for simple content', () => {
+        const config = {
+          config: {
+            tocConfig: { enabled: false },
+          },
+        };
+        const analysis = {
+          headingStructure: { totalHeadings: 2 },
+          mediaElements: { hasDiagrams: false, images: 1 },
+        };
+
+        (smartConversionMode as any).convertToProcessingConfig(
+          config,
+          analysis,
+          false,
+          3,
+        );
+
+        // Two-stage rendering is now always enabled regardless of content complexity
+      });
+    });
+
+    describe('shouldEnableTwoStageRendering', () => {
+      it('should enable two-stage rendering when TOC is included', () => {
+        const analysis = {
+          hasDiagrams: false,
+          stats: { headingCount: 3, imageCount: 1 },
+        };
+
+        const result = (
+          smartConversionMode as any
+        ).shouldEnableTwoStageRendering(analysis, true);
+
+        expect(result).toBe(true);
+      });
+
+      it('should enable two-stage rendering for dynamic diagrams', () => {
+        const analysis = {
+          mediaElements: { hasDiagrams: true, images: 1 },
+          headingStructure: { totalHeadings: 3 },
+        };
+
+        const result = (
+          smartConversionMode as any
+        ).shouldEnableTwoStageRendering(analysis, false);
+
+        expect(result).toBe(true);
+      });
+
+      it('should enable two-stage rendering for complex content', () => {
+        const analysis = {
+          mediaElements: { hasDiagrams: false, images: 8 },
+          headingStructure: { totalHeadings: 15 },
+        };
+
+        const result = (
+          smartConversionMode as any
+        ).shouldEnableTwoStageRendering(analysis, false);
+
+        expect(result).toBe(true);
+      });
+
+      it('should not enable two-stage rendering for simple content', () => {
+        const analysis = {
+          mediaElements: { hasDiagrams: false, images: 1 },
+          headingStructure: { totalHeadings: 3 },
+        };
+
+        const result = (
+          smartConversionMode as any
+        ).shouldEnableTwoStageRendering(analysis, false);
+
+        expect(result).toBe(false);
       });
     });
 

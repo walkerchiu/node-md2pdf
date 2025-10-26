@@ -13,7 +13,6 @@ export interface ContentAnalysis {
   codeBlocks: CodeBlockInfo[];
   tables: TableInfo[];
   links: LinkInfo;
-  estimatedPages: number;
   readingTime: number; // in minutes
 }
 

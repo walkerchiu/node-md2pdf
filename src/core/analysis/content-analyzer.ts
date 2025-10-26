@@ -62,12 +62,6 @@ export class ContentAnalyzer {
       codeBlocks,
       tables,
       links,
-      estimatedPages: this.estimatePages(
-        content,
-        mediaElements,
-        tables.length,
-        codeBlocks.length,
-      ),
       readingTime: Math.ceil(basicStats.wordCount / 200), // Assuming 200 words per minute
     };
   }
@@ -440,24 +434,5 @@ export class ContentAnalyzer {
     }
 
     return 'article';
-  }
-
-  private estimatePages(
-    content: string,
-    media: MediaElementsInfo,
-    tableCount: number,
-    codeBlockCount: number,
-  ): number {
-    const wordsPerPage = 500; // Conservative estimate for PDF
-    const wordCount = content.split(/\s+/).length;
-
-    let pages = Math.ceil(wordCount / wordsPerPage);
-
-    // Add pages for media elements
-    pages += Math.ceil(media.images * 0.3); // Images take space
-    pages += Math.ceil(tableCount * 0.2); // Tables can be space-consuming
-    pages += Math.ceil(codeBlockCount * 0.1); // Code blocks need more vertical space
-
-    return Math.max(pages, 1);
   }
 }

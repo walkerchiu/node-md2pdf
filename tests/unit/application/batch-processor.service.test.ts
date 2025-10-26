@@ -99,6 +99,15 @@ describe('BatchProcessorService', () => {
     },
   };
 
+  const sampleFileOptionsWithTwoStage: FileProcessingOptions = {
+    outputPath: './output/test.pdf',
+    includeTOC: true,
+    tocOptions: {
+      maxDepth: 3,
+      includePageNumbers: true,
+    },
+  };
+
   const sampleBatchOptions: BatchProcessingServiceOptions = {
     maxConcurrency: 2,
     continueOnError: true,
@@ -236,6 +245,23 @@ describe('BatchProcessorService', () => {
       expect(mockLogger.info).toHaveBeenCalledWith(
         `Starting batch processing: ${sampleBatchConfig.inputPattern}`,
       );
+    });
+
+    it('should process batch with two-stage rendering options', async () => {
+      const result = (await service.processBatch(
+        sampleBatchConfig,
+        sampleFileOptionsWithTwoStage,
+        sampleBatchOptions,
+      )) as unknown as TestBatchProcessingResult;
+
+      expect(result.success).toBe(true);
+      expect(mockLogger.info).toHaveBeenCalledWith(
+        `Starting batch processing: ${sampleBatchConfig.inputPattern}`,
+      );
+
+      // Verify that two-stage rendering options are passed to file processor
+      // Since we're using mocks, we can't directly verify the file processor calls
+      // but the test ensures the service doesn't break with two-stage options
     });
 
     it('should validate batch configuration before processing', async () => {

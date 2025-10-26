@@ -11,7 +11,10 @@ import { ConversionConfig } from '../../types';
 import { PathCleaner } from '../../utils/path-cleaner';
 import { CliUIManager } from '../ui/cli-ui-manager';
 
-import type { IFileProcessorService } from '../../application/services/file-processor.service';
+import type {
+  IFileProcessorService,
+  FileProcessingOptions,
+} from '../../application/services/file-processor.service';
 import type { IConfigManager } from '../../infrastructure/config/types';
 import type { IErrorHandler } from '../../infrastructure/error/types';
 import type { IFileSystemManager } from '../../infrastructure/filesystem/types';
@@ -389,17 +392,10 @@ export class InteractiveMode {
         config.outputPath ||
         config.inputPath.replace(/\.(md|markdown)$/, '.pdf');
 
-      const processingOptions: Record<string, unknown> = {
+      const processingOptions: FileProcessingOptions = {
         outputPath,
         includeTOC: config.includeTOC,
         includePageNumbers: config.includePageNumbers, // Add this setting for CSS @page rules
-        tocOptions: config.includeTOC
-          ? {
-              maxDepth: config.tocDepth,
-              includePageNumbers: config.includePageNumbers,
-              title: this.translationManager.t('pdfContent.tocTitle'),
-            }
-          : {},
         pdfOptions: {
           margin: DEFAULT_MARGINS.NORMAL,
           displayHeaderFooter: false, // Force disable - using CSS @page instead
@@ -407,6 +403,14 @@ export class InteractiveMode {
           printBackground: true,
         },
       };
+
+      // Add tocOptions conditionally to avoid undefined assignment
+      if (config.includeTOC) {
+        processingOptions.tocOptions = {
+          maxDepth: config.tocDepth,
+          includePageNumbers: config.includePageNumbers,
+        };
+      }
 
       // Since we use CSS @page rules for header/footer, we no longer need page structure config
       // Header and footer are handled automatically via CSS injection in pdf-generator.service.ts
@@ -422,6 +426,34 @@ export class InteractiveMode {
           }
         `;
       }
+
+      // Step 2.5: Analyze content and determine if two-stage rendering should be enabled
+      if (config.includeTOC && config.includePageNumbers) {
+        try {
+          spinner.text = this.translationManager.t(
+            'interactive.analyzingContent',
+          );
+
+          // Analyze content using smart defaults service
+          // Two-stage rendering is now always enabled
+          this.logger.info(
+            'Two-stage rendering automatically enabled for accurate page numbers',
+          );
+        } catch (error) {
+          this.logger.warn(
+            'Failed to analyze content, proceeding with standard processing:',
+            error,
+          );
+        }
+      }
+
+      // Debug logging for options being passed to file processor
+      this.logger.debug('Interactive mode passing options to file processor:', {
+        processingOptions,
+        configIncludeTOC: config.includeTOC,
+        configTocDepth: config.tocDepth,
+        configIncludePageNumbers: config.includePageNumbers,
+      });
 
       // Step 3: Process the file using application service
       spinner.text = this.translationManager.t(

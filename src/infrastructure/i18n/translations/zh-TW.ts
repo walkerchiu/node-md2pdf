@@ -112,7 +112,6 @@ export const zhTWTranslations: TranslationKey = {
     recentFilesError: '⚠️  載入最近使用檔案時發生錯誤，使用檔案瀏覽器',
     analysisResults: '📊 內容分析結果',
     words: '📄 字數',
-    estimatedPages: '📖 預估頁數',
     readingTime: '⏱️  閱讀時間',
     minutes: '分鐘',
     headings: '📝 標題',

@@ -14,5 +14,3 @@ export type {
   TOCItemFlat,
   TOCItemNested,
 } from './types';
-export * from './page-estimator';
-export { PageEstimator } from './page-estimator';

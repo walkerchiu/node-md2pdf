@@ -1,16 +1,5 @@
 /**
- * TOC Genexport class TOCGenerator {
-  private options: Required<TOCGeneratorOptions>;
-  private translator: ITranslationManager | undefined;
-
-  constructor(options: TOCGeneratorOptions, translator?: ITranslationManager) {
-    // Validate maxDepth first
-    const maxDepth = options.maxDepth || 3;
-    if (maxDepth < 1 || maxDepth > 6) {
-      throw new Error('TOC maxDepth must be between 1 and 6');
-    }
-
-    this.translator = translator;nerates table of contents from Markdown headings
+ * TOC Generator - Generates table of contents from Markdown headings
  */
 
 import { Heading } from '../../types/index';
@@ -263,41 +252,24 @@ export class TOCGenerator {
     items: TOCItemFlat[],
     pageNumbers: Record<string, number>,
   ): void {
-    const usedKeys: Record<string, number> = {};
-
     for (const item of items) {
       const anchor = item.anchor.startsWith('#')
         ? item.anchor.substring(1)
         : item.anchor;
 
-      // Try to find matching page number
-      let pageNumber: number | undefined;
-
-      // First try exact match
-      if (pageNumbers[anchor]) {
-        pageNumber = pageNumbers[anchor];
+      // Try exact match first
+      if (pageNumbers[anchor] !== undefined) {
+        item.pageNumber = pageNumbers[anchor];
       } else {
-        // Handle duplicate keys - look for numbered variants
-        const baseKey = anchor;
-        if (usedKeys[baseKey]) {
-          usedKeys[baseKey]++;
-          const numberedKey = `${baseKey}-${usedKeys[baseKey]}`;
-          if (pageNumbers[numberedKey]) {
-            pageNumber = pageNumbers[numberedKey];
-          }
-        } else {
-          usedKeys[baseKey] = 1;
-          // Check if this might be a duplicate that needs numbering
-          const numberedKey = `${baseKey}-2`;
-          if (pageNumbers[numberedKey]) {
-            // This means we have duplicates, use the first one
-            pageNumber = pageNumbers[anchor] || pageNumbers[numberedKey];
-          }
-        }
-      }
+        // If no exact match, the ID generation should be consistent
+        // This fallback handles legacy cases
+        const fallbackPageNumber = Object.entries(pageNumbers).find(([key]) =>
+          key.startsWith(anchor),
+        )?.[1];
 
-      if (pageNumber !== undefined) {
-        item.pageNumber = pageNumber;
+        if (fallbackPageNumber !== undefined) {
+          item.pageNumber = fallbackPageNumber;
+        }
       }
     }
   }

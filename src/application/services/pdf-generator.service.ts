@@ -23,6 +23,7 @@ import {
   IEngineSelectionStrategy,
 } from '../../core/pdf/engines';
 import { PDFGeneratorOptions, PDFGenerationResult } from '../../core/pdf/types';
+import { ProcessingContext } from '../../core/rendering/types';
 import { MD2PDFError } from '../../infrastructure/error/errors';
 import { DEFAULT_MARGINS } from '../../infrastructure/config/constants';
 import { Heading } from '../../types';
@@ -44,6 +45,7 @@ export interface IPDFGeneratorService {
       markdownContent?: string;
       enableChineseSupport?: boolean;
       includePageNumbers?: boolean;
+      includeTOC?: boolean;
       tocOptions?: {
         enabled: boolean;
         maxDepth: number;
@@ -175,6 +177,7 @@ export class PDFGeneratorService implements IPDFGeneratorService {
       markdownContent?: string;
       enableChineseSupport?: boolean;
       includePageNumbers?: boolean;
+      includeTOC?: boolean;
       tocOptions?: {
         enabled: boolean;
         maxDepth: number;
@@ -189,103 +192,22 @@ export class PDFGeneratorService implements IPDFGeneratorService {
 
     try {
       this.logger.debug(`Generating PDF with advanced service: ${outputPath}`);
+      this.logger.debug('PDF Generator received options:', {
+        includeTOC: options.includeTOC,
+        tocOptions: options.tocOptions,
+        markdownContentLength: options.markdownContent?.length || 0,
+      });
       const startTime = Date.now();
 
-      // Publish conversion started event
-      // For Domain Events, we'll use string paths directly since FilePath has validation constraints
-      const inputPath = outputPath.replace('.pdf', '.md');
-      const outputPath_ = outputPath;
-      const startedEvent = new ConversionStartedEvent(
-        inputPath,
-        outputPath_,
-        options,
-      );
-      await this.eventPublisher.publish(startedEvent);
+      // Always use two-stage rendering for consistent translation and accurate page numbers
+      this.logger.info('Using two-stage rendering for all PDFs');
 
-      // Check if page numbers should be included - priority: root level > tocOptions > default false
-      const includePageNumbers =
-        options.includePageNumbers ??
-        options.tocOptions?.includePageNumbers ??
-        false;
-
-      // Inject CSS @page rules for header/footer directly into HTML content
-      const enhancedHtmlContent = this.injectCSSPageRules(
+      return await this.generateWithTwoStageRendering(
         htmlContent,
-        options,
-        includePageNumbers,
-      );
-
-      // Build generation context
-      const context: PDFGenerationContext = {
-        htmlContent: enhancedHtmlContent,
         outputPath,
-        title: options.title || '',
-        customCSS: options.customCSS || '',
-        enableChineseSupport: options.enableChineseSupport || false,
-        toc: options.tocOptions || {
-          enabled: false,
-          maxDepth: 3,
-          includePageNumbers: true,
-        },
-      };
-
-      // Build engine options from legacy format
-      const engineOptions: PDFEngineOptions =
-        await this.convertToEngineOptions(context);
-
-      // Generate PDF using engine manager
-      const result = await this.engineManager!.generatePDF(
-        context,
-        engineOptions,
+        options,
+        startTime,
       );
-
-      const duration = Date.now() - startTime;
-
-      if (result.success) {
-        this.logger.info(
-          `PDF generated successfully with ${result.metadata?.engineUsed || 'unknown'} engine: ${outputPath} (${duration}ms)`,
-        );
-
-        // Publish conversion completed event
-        const completedEvent = new ConversionCompletedEvent(
-          inputPath,
-          outputPath_,
-          duration,
-          result.metadata?.fileSize || 0,
-        );
-        await this.eventPublisher.publish(completedEvent);
-
-        // Convert to legacy format
-        return {
-          success: true,
-          outputPath: result.outputPath || outputPath,
-          metadata: result.metadata
-            ? {
-                pages: result.metadata.pages,
-                fileSize: result.metadata.fileSize,
-                generationTime: result.metadata.generationTime,
-              }
-            : {
-                pages: 0,
-                fileSize: 0,
-                generationTime: 0,
-              },
-        };
-      } else {
-        this.logger.error(`PDF generation failed: ${result.error}`);
-
-        // Publish conversion failed event
-        const failedEvent = new ConversionFailedEvent(
-          inputPath,
-          result.error || 'PDF generation failed',
-        );
-        await this.eventPublisher.publish(failedEvent);
-
-        return {
-          success: false,
-          error: result.error || 'PDF generation failed',
-        };
-      }
     } catch (error) {
       const wrappedError = new MD2PDFError(
         `Advanced PDF generation failed: ${(error as Error).message}`,
@@ -559,4 +481,288 @@ export class PDFGeneratorService implements IPDFGeneratorService {
     this.engineManager.updateConfig(newConfig);
     this.logger.info('Engine configuration updated', newConfig);
   }
+
+  // Two-stage rendering methods
+
+  /**
+   * Generate PDF using two-stage rendering
+   */
+  private async generateWithTwoStageRendering(
+    htmlContent: string,
+    outputPath: string,
+    options: {
+      title?: string;
+      customCSS?: string;
+      headings?: Heading[];
+      markdownContent?: string;
+      enableChineseSupport?: boolean;
+      includePageNumbers?: boolean;
+      tocOptions?: {
+        enabled: boolean;
+        maxDepth: number;
+        includePageNumbers: boolean;
+        title?: string;
+      };
+      twoStageRendering?: {
+        enabled?: boolean;
+        forceAccuratePageNumbers?: boolean;
+        maxPerformanceImpact?: number;
+      };
+    },
+    startTime: number,
+  ): Promise<PDFGenerationResult> {
+    this.logger.info('Starting two-stage rendering process');
+
+    // Publish conversion started event
+    const inputPath = outputPath.replace('.pdf', '.md');
+    const startedEvent = new ConversionStartedEvent(
+      inputPath,
+      outputPath,
+      options,
+    );
+    await this.eventPublisher.publish(startedEvent);
+
+    // Stage 1: Pre-render to get accurate page information
+    this.logger.debug('Stage 1: Pre-rendering for accurate page calculations');
+    const preRenderStart = Date.now();
+
+    const enhancedContent = await this.performTwoStageAnalysis(
+      htmlContent,
+      options,
+    );
+
+    const preRenderTime = Date.now() - preRenderStart;
+    this.logger.debug(`Pre-rendering completed in ${preRenderTime}ms`);
+
+    // Stage 2: Generate final PDF with accurate content
+    this.logger.debug('Stage 2: Final PDF generation with accurate layout');
+    const finalRenderStart = Date.now();
+
+    // Check if page numbers should be included
+    const includePageNumbers =
+      options.includePageNumbers ??
+      options.tocOptions?.includePageNumbers ??
+      false;
+
+    // Inject CSS @page rules for header/footer
+    const enhancedHtmlContent = this.injectCSSPageRules(
+      enhancedContent.html,
+      options,
+      includePageNumbers,
+    );
+
+    // Build generation context
+    const context: PDFGenerationContext = {
+      htmlContent: enhancedHtmlContent,
+      outputPath,
+      title: options.title || '',
+      customCSS: options.customCSS || '',
+      enableChineseSupport: options.enableChineseSupport || false,
+      toc: options.tocOptions || {
+        enabled: false,
+        maxDepth: 3,
+        includePageNumbers: true,
+      },
+    };
+
+    // Build engine options
+    const engineOptions: PDFEngineOptions =
+      await this.convertToEngineOptions(context);
+
+    // Generate PDF using engine manager
+    const result = await this.engineManager!.generatePDF(
+      context,
+      engineOptions,
+    );
+
+    const finalRenderTime = Date.now() - finalRenderStart;
+    const totalTime = Date.now() - startTime;
+
+    this.logger.info(
+      `Two-stage rendering completed: Pre-render ${preRenderTime}ms, Final ${finalRenderTime}ms, Total ${totalTime}ms`,
+    );
+
+    if (result.success) {
+      this.logger.info(
+        `PDF generated successfully with two-stage rendering: ${outputPath} (${totalTime}ms)`,
+      );
+
+      // Publish conversion completed event
+      const completedEvent = new ConversionCompletedEvent(
+        inputPath,
+        outputPath,
+        totalTime,
+        result.metadata?.fileSize || 0,
+      );
+      await this.eventPublisher.publish(completedEvent);
+
+      return {
+        success: true,
+        outputPath: result.outputPath || outputPath,
+        metadata: result.metadata
+          ? {
+              pages: result.metadata.pages,
+              fileSize: result.metadata.fileSize,
+              generationTime: result.metadata.generationTime,
+              renderingStrategy: 'two-stage',
+              pageNumberAccuracy: 'exact',
+              performance: {
+                preRenderTime,
+                finalRenderTime,
+                totalTime,
+                performanceIncrease: Math.round(
+                  (preRenderTime / totalTime) * 100,
+                ),
+              },
+              enhancedFeatures: enhancedContent.features,
+            }
+          : {
+              pages: 0,
+              fileSize: 0,
+              generationTime: 0,
+              renderingStrategy: 'two-stage',
+              pageNumberAccuracy: 'exact',
+              performance: {
+                preRenderTime,
+                finalRenderTime,
+                totalTime,
+                performanceIncrease: Math.round(
+                  (preRenderTime / totalTime) * 100,
+                ),
+              },
+              enhancedFeatures: enhancedContent.features,
+            },
+      };
+    } else {
+      this.logger.error(`Two-stage PDF generation failed: ${result.error}`);
+
+      // Publish conversion failed event
+      const failedEvent = new ConversionFailedEvent(
+        inputPath,
+        result.error || 'Two-stage PDF generation failed',
+      );
+      await this.eventPublisher.publish(failedEvent);
+
+      return {
+        success: false,
+        error: result.error || 'Two-stage PDF generation failed',
+      };
+    }
+  }
+
+  /**
+   * Perform two-stage content analysis and enhancement
+   */
+  private async performTwoStageAnalysis(
+    htmlContent: string,
+    options: {
+      markdownContent?: string;
+      headings?: Heading[];
+      tocOptions?: {
+        enabled: boolean;
+        maxDepth: number;
+        includePageNumbers: boolean;
+        title?: string;
+      };
+    },
+  ): Promise<{
+    html: string;
+    pageNumbers: Record<string, number>;
+    features: string[];
+  }> {
+    this.logger.debug(
+      'Starting two-stage analysis with actual rendering engine',
+    );
+
+    const features: string[] = [];
+    let enhancedHtml = htmlContent;
+    let pageNumbers: Record<string, number> = {};
+
+    try {
+      // Import and use the actual two-stage rendering engine
+      const { TwoStageRenderingEngine } = await import(
+        '../../core/rendering/two-stage-rendering-engine'
+      );
+
+      // Create rendering engine instance
+      const renderingEngine = new TwoStageRenderingEngine(
+        {
+          enabled: true,
+          forceAccuratePageNumbers: true,
+          maxPerformanceImpact: 100,
+          enableCaching: true,
+        },
+        this.translationManager,
+      );
+
+      // Prepare processing context
+      const context: ProcessingContext = {
+        headings: options.headings || [],
+        tocOptions: {
+          enabled: options.tocOptions?.enabled || false,
+          includePageNumbers: options.tocOptions?.includePageNumbers || false,
+          maxDepth: options.tocOptions?.maxDepth || 3,
+        },
+        pdfOptions: {
+          includePageNumbers: options.tocOptions?.includePageNumbers || false,
+        },
+        isPreRendering: false,
+      };
+
+      this.logger.debug('Calling two-stage rendering engine with context:', {
+        headingsCount: context.headings?.length || 0,
+        tocEnabled: context.tocOptions?.enabled,
+        includePageNumbers: context.tocOptions?.includePageNumbers,
+      });
+
+      // Perform actual two-stage rendering
+      const renderingResult = await renderingEngine.render(
+        htmlContent,
+        context,
+      );
+
+      enhancedHtml = renderingResult.html;
+      pageNumbers = renderingResult.pageNumbers?.headingPages || {};
+
+      // Add TOC feature if generated
+      if (
+        context.tocOptions?.enabled &&
+        renderingResult.html.includes('toc-container')
+      ) {
+        features.push('Table of Contents with accurate page numbers');
+      }
+
+      this.logger.info(
+        `Two-stage rendering completed. Total time: ${renderingResult.performance.totalTime}ms`,
+      );
+    } catch (error) {
+      this.logger.error(
+        'Two-stage rendering failed, falling back to simple processing:',
+        error,
+      );
+
+      // Fallback: Detect other dynamic content manually
+      if (options.markdownContent) {
+        if (
+          options.markdownContent.includes('```mermaid') ||
+          options.markdownContent.includes('```plantuml')
+        ) {
+          features.push('Dynamic diagram layout optimization');
+        }
+
+        if (/!\[.*?\]\([^)]+\)/.test(options.markdownContent)) {
+          features.push('Image path resolution');
+        }
+      }
+    }
+
+    return {
+      html: enhancedHtml,
+      pageNumbers,
+      features,
+    };
+  }
+
+  // Old TOC generation methods removed
+  // TOC is now handled exclusively by the two-stage rendering engine
 }

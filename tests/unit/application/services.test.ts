@@ -89,8 +89,6 @@ describe('ApplicationServices Integration', () => {
       const service = ApplicationServices.createTOCGeneratorService();
       expect(service).toBeDefined();
       expect(typeof service.generateTOC).toBe('function');
-      expect(typeof service.generateTOCWithPageNumbers).toBe('function');
-      expect(typeof service.estimatePageNumbers).toBe('function');
       expect(typeof service.validateHeadings).toBe('function');
     });
 

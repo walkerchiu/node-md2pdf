@@ -323,7 +323,6 @@ describe('ApplicationServices', () => {
         expect.any(Object), // config
         expect.any(Object), // fileSystem
         expect.any(Object), // markdownParser
-        expect.any(Object), // tocGenerator
         expect.any(Object), // pdfGenerator
       );
     });

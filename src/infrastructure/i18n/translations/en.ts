@@ -112,7 +112,6 @@ export const enTranslations: TranslationKey = {
     recentFilesError: '⚠️  Error loading recent files, using file browser',
     analysisResults: '📊 Content Analysis Results',
     words: '📄 Words',
-    estimatedPages: '📖 Estimated pages',
     readingTime: '⏱️  Reading time',
     minutes: 'minutes',
     headings: '📝 Headings',

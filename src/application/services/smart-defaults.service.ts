@@ -61,9 +61,7 @@ export class SmartDefaultsService implements ISmartDefaultsService {
     try {
       const analysis = await this.contentAnalyzer.analyzeFile(filePath);
 
-      this.logger?.info(
-        `Analysis completed: ${analysis.wordCount} words, ${analysis.estimatedPages} pages`,
-      );
+      this.logger?.info(`Analysis completed: ${analysis.wordCount} words`);
 
       return analysis;
     } catch (error) {
@@ -86,9 +84,7 @@ export class SmartDefaultsService implements ISmartDefaultsService {
     try {
       const analysis = await this.contentAnalyzer.analyzeContent(content);
 
-      this.logger?.info(
-        `Analysis completed: ${analysis.wordCount} words, ${analysis.estimatedPages} pages`,
-      );
+      this.logger?.info(`Analysis completed: ${analysis.wordCount} words`);
 
       return analysis;
     } catch (error) {
@@ -200,7 +196,11 @@ export class SmartDefaultsService implements ISmartDefaultsService {
       };
     }
 
-    if (analysis.estimatedPages > 10 && customized.config.tocConfig) {
+    // Enable TOC for complex documents with many headings
+    if (
+      analysis.headingStructure.totalHeadings > 10 &&
+      customized.config.tocConfig
+    ) {
       customized.config.tocConfig = {
         ...customized.config.tocConfig,
         enabled: true,
@@ -336,14 +336,14 @@ export class SmartDefaultsService implements ISmartDefaultsService {
     analysis: ContentAnalysis,
     reasoning: ConfigReasoning[],
   ): RecommendedTocConfig {
-    const shouldIncludeToc =
-      analysis.headingStructure.totalHeadings > 5 ||
-      analysis.estimatedPages > 3;
+    // With two-stage rendering, we don't need page estimation
+    // TOC decision is purely based on content structure
+    const shouldIncludeToc = analysis.headingStructure.totalHeadings > 3;
 
     if (!shouldIncludeToc) {
       reasoning.push({
         setting: 'toc',
-        reason: 'Document is short with few headings, TOC not needed',
+        reason: 'Document has few headings, TOC not needed',
         impact: 'low',
       });
       return {
@@ -352,7 +352,7 @@ export class SmartDefaultsService implements ISmartDefaultsService {
         includePageNumbers: true,
         style: 'simple',
         title: 'Table of Contents',
-        reasoning: 'Document too short for TOC',
+        reasoning: 'Document structure too simple for TOC',
       };
     }
 
@@ -369,7 +369,7 @@ export class SmartDefaultsService implements ISmartDefaultsService {
 
     reasoning.push({
       setting: 'toc',
-      reason: `Document has ${analysis.headingStructure.totalHeadings} headings across ${analysis.estimatedPages} pages`,
+      reason: `Document has ${analysis.headingStructure.totalHeadings} headings with good structure`,
       impact: 'high',
     });
 
@@ -463,13 +463,15 @@ export class SmartDefaultsService implements ISmartDefaultsService {
     analysis: ContentAnalysis,
     reasoning: ConfigReasoning[],
   ): PageStructureConfig {
-    const isLongDocument = analysis.estimatedPages > 10;
+    // Use content structure indicators instead of estimated pages
+    const isComplexDocument =
+      analysis.headingStructure.totalHeadings > 15 || analysis.wordCount > 5000;
     const isFormal = ['academic-paper', 'business-report'].includes(
       analysis.contentComplexity.documentType,
     );
-    const includeCover = isFormal || isLongDocument;
-    const includeHeader = isLongDocument;
-    const includeFooter = isLongDocument || isFormal;
+    const includeCover = isFormal || isComplexDocument;
+    const includeHeader = isComplexDocument;
+    const includeFooter = isComplexDocument || isFormal;
 
     if (includeCover) {
       reasoning.push({
@@ -491,7 +493,7 @@ export class SmartDefaultsService implements ISmartDefaultsService {
       includeCover,
       includeHeader,
       includeFooter,
-      reasoning: `Page structure optimized for ${isLongDocument ? 'long' : 'short'} ${isFormal ? 'formal' : 'informal'} document`,
+      reasoning: `Page structure optimized for ${isComplexDocument ? 'complex' : 'simple'} ${isFormal ? 'formal' : 'informal'} document`,
     };
 
     if (includeHeader) {
@@ -548,12 +550,14 @@ export class SmartDefaultsService implements ISmartDefaultsService {
   }
 
   private estimateProcessingTime(analysis: ContentAnalysis): number {
-    let baseTime = 2; // 2 seconds base time
+    let baseTime = 3; // Base time for two-stage rendering
 
-    baseTime += analysis.estimatedPages * 0.5; // 0.5s per page
+    // Time estimation based on content complexity, not estimated pages
+    baseTime += Math.ceil(analysis.wordCount / 1000) * 0.5; // 0.5s per 1000 words
     baseTime += analysis.mediaElements.images * 0.3; // 0.3s per image
     baseTime += analysis.codeBlocks.length * 0.1; // 0.1s per code block
     baseTime += analysis.tables.length * 0.2; // 0.2s per table
+    baseTime += analysis.headingStructure.totalHeadings * 0.05; // TOC processing time
 
     if (analysis.languageDetection.needsChineseSupport) {
       baseTime += 1; // Extra time for font loading
@@ -630,7 +634,8 @@ export class SmartDefaultsService implements ISmartDefaultsService {
   private generateProcessingWarnings(analysis: ContentAnalysis): string[] {
     const warnings: string[] = [];
 
-    if (analysis.estimatedPages > 100) {
+    // Base warnings on content complexity instead of estimated pages
+    if (analysis.wordCount > 50000) {
       warnings.push(
         'Large document detected - processing may take several minutes',
       );

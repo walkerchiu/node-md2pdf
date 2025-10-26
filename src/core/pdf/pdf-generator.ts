@@ -8,7 +8,7 @@ import {
   DEFAULT_PDF_OPTIONS,
 } from '../../infrastructure/config/constants';
 import { Heading } from '../../types/index';
-import { TOCGenerator, PageEstimator } from '../toc';
+import { TwoStageRenderingEngine } from '../rendering/two-stage-rendering-engine';
 
 import { PDFTemplates } from './templates';
 import {
@@ -52,7 +52,7 @@ export class PDFGenerator {
     const configs = [
       // Try bundled Chromium first
       {
-        headless: 'new' as const,
+        headless: 'new' as const, // Use new headless mode with enhanced stability configuration
         timeout: 10000,
         args: baseArgs,
       },
@@ -60,21 +60,21 @@ export class PDFGenerator {
       {
         executablePath:
           '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
-        headless: 'new' as const,
+        headless: 'new' as const, // Use new headless mode with enhanced stability configuration
         timeout: 10000,
         args: ['--no-sandbox'],
       },
       // Fallback to system Chrome on Linux
       {
         executablePath: '/usr/bin/google-chrome',
-        headless: 'new' as const,
+        headless: 'new' as const, // Use new headless mode with enhanced stability configuration
         timeout: 10000,
         args: ['--no-sandbox'],
       },
       // Fallback to system Chromium on Linux
       {
         executablePath: '/usr/bin/chromium-browser',
-        headless: 'new' as const,
+        headless: 'new' as const, // Use new headless mode with enhanced stability configuration
         timeout: 10000,
         args: ['--no-sandbox'],
       },
@@ -131,6 +131,14 @@ export class PDFGenerator {
       headings?: Heading[];
       markdownContent?: string;
       enableChineseSupport?: boolean;
+      tocOptions?: {
+        enabled: boolean;
+        maxDepth?: number;
+        includePageNumbers?: boolean;
+        title?: string;
+      };
+      forceAccuratePageNumbers?: boolean;
+      maxPerformanceImpact?: number;
     } = {},
   ): Promise<PDFGenerationResult> {
     const startTime = Date.now();
@@ -152,50 +160,45 @@ export class PDFGenerator {
         throw new Error('Output path must end with .pdf extension');
       }
 
-      // Generate TOC if enabled and headings provided
+      // Always use two-stage rendering for consistent page number handling
       let fullHTML: string;
-      if (
-        this.options.toc?.enabled &&
+      const renderingStrategy: 'two-stage' = 'two-stage';
+
+      // Check if TOC is explicitly enabled and we have headings
+      const shouldGenerateTOC =
+        (this.options.toc?.enabled || options.tocOptions?.enabled) &&
         options.headings &&
-        options.headings.length > 0
-      ) {
-        const tocGenerator = new TOCGenerator({
-          maxDepth: this.options.toc.maxDepth || 3,
-          includePageNumbers: this.options.toc.includePageNumbers || false,
-          cssClasses: {
-            container: 'toc-container',
-            title: 'toc-title',
-            list: 'toc-list',
-            item: 'toc-item',
-            link: 'toc-link',
-            pageNumber: 'toc-page-number',
+        options.headings.length > 0;
+
+      if (shouldGenerateTOC) {
+        const twoStageEngine = new TwoStageRenderingEngine({
+          enabled: true,
+          forceAccuratePageNumbers: options.forceAccuratePageNumbers || false,
+          maxPerformanceImpact: options.maxPerformanceImpact || 100,
+        });
+
+        const tocConfig = options.tocOptions || this.options.toc;
+        const renderingResult = await twoStageEngine.render(htmlContent, {
+          headings: options.headings || [],
+          tocOptions: {
+            enabled: true,
+            maxDepth: tocConfig?.maxDepth || 3,
+            includePageNumbers: tocConfig?.includePageNumbers !== false,
           },
-        }); // No translation manager - will fallback to English
+          pdfOptions: {
+            includePageNumbers: tocConfig?.includePageNumbers !== false,
+          },
+        });
 
-        let tocResult;
-        if (this.options.toc.includePageNumbers && options.markdownContent) {
-          // Use PageEstimator to calculate page numbers
-          const pageEstimator = new PageEstimator();
-          const pageNumbers = pageEstimator.estimatePageNumbers(
-            options.headings,
-            options.markdownContent,
-          );
-          tocResult = tocGenerator.generateTOCWithPageNumbers(
-            options.headings,
-            pageNumbers,
-          );
-        } else {
-          tocResult = tocGenerator.generateTOC(options.headings);
-        }
-
-        fullHTML = PDFTemplates.getFullHTMLWithTOC(
-          tocResult.html,
-          htmlContent,
+        // Apply full HTML template with TOC CSS styles
+        fullHTML = PDFTemplates.getFullHTML(
+          renderingResult.html,
           options.title,
           options.customCSS,
           options.enableChineseSupport || false,
         );
       } else {
+        // No TOC needed - use simple HTML template directly
         fullHTML = PDFTemplates.getFullHTML(
           htmlContent,
           options.title,
@@ -248,6 +251,8 @@ export class PDFGenerator {
             pages: await this.getPageCount(page),
             fileSize: pdfBuffer.length,
             generationTime,
+            renderingStrategy,
+            pageNumberAccuracy: 'exact',
           },
         };
 
