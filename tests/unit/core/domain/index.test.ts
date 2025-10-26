@@ -68,7 +68,6 @@ describe('Domain Layer Module Index', () => {
       const documentAnalysis = new DocumentAnalysis({
         fileSize: 1024,
         wordCount: 500,
-        estimatedPages: 2,
         readingTime: 120,
       });
       expect(documentAnalysis).toBeInstanceOf(DocumentAnalysis);
@@ -130,7 +129,6 @@ describe('Domain Layer Module Index', () => {
       const analysisData = {
         fileSize: 2048,
         wordCount: 1000,
-        estimatedPages: 4,
         readingTime: 300,
         contentComplexity: {
           score: 6,
@@ -157,7 +155,6 @@ describe('Domain Layer Module Index', () => {
       const analysis = new DocumentAnalysis({
         fileSize: 1024,
         wordCount: 500,
-        estimatedPages: 2,
         readingTime: 120,
       });
 
@@ -176,7 +173,6 @@ describe('Domain Layer Module Index', () => {
       const analysisData = {
         fileSize: 1024,
         wordCount: 500,
-        estimatedPages: 2,
         readingTime: 120,
       };
 
@@ -337,7 +333,6 @@ describe('Domain Layer Module Index', () => {
       const analysis = new DocumentAnalysis({
         fileSize: 1024,
         wordCount: 500,
-        estimatedPages: 2,
         readingTime: 120,
       });
 
@@ -364,7 +359,6 @@ describe('Domain Layer Module Index', () => {
       const analysis = new DocumentAnalysis({
         fileSize: 4096,
         wordCount: 2000,
-        estimatedPages: 8,
         readingTime: 600,
         contentComplexity: { score: 7, recommendedTocDepth: 4 },
         languageDetection: {
@@ -422,7 +416,7 @@ describe('Domain Layer Module Index', () => {
         analysis.estimatedProcessingTime,
         analysis.value.fileSize * 2, // Assume PDF is 2x larger
         {
-          pages: analysis.value.estimatedPages,
+          pages: Math.ceil(analysis.value.wordCount / 500),
           complexity: analysis.complexityLevel,
         },
       );
@@ -458,7 +452,6 @@ describe('Domain Layer Module Index', () => {
       const analysis = new DocumentAnalysis({
         fileSize: 1024,
         wordCount: 500,
-        estimatedPages: 2,
         readingTime: 120,
       });
 

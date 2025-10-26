@@ -12,7 +12,6 @@ describe('DocumentAnalysis Value Object', () => {
   const validData: DocumentAnalysisData = {
     fileSize: 1024,
     wordCount: 500,
-    estimatedPages: 2,
     readingTime: 120,
     headingStructure: {
       totalHeadings: 5,
@@ -81,7 +80,7 @@ describe('DocumentAnalysis Value Object', () => {
     });
 
     it('should throw error for negative estimated pages', () => {
-      const invalidData = { ...validData, estimatedPages: -1 };
+      const invalidData = { ...validData, wordCount: -1 };
       expect(() => new DocumentAnalysis(invalidData)).toThrow(
         ValueObjectValidationError,
       );
@@ -142,7 +141,6 @@ describe('DocumentAnalysis Value Object', () => {
       const minimalData: DocumentAnalysisData = {
         fileSize: 1024,
         wordCount: 500,
-        estimatedPages: 2,
         readingTime: 120,
       };
       expect(() => new DocumentAnalysis(minimalData)).not.toThrow();
@@ -453,7 +451,6 @@ describe('DocumentAnalysis Value Object', () => {
       const zeroData: DocumentAnalysisData = {
         fileSize: 0,
         wordCount: 0,
-        estimatedPages: 0,
         readingTime: 0,
       };
       expect(() => new DocumentAnalysis(zeroData)).not.toThrow();

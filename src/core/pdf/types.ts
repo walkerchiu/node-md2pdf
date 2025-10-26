@@ -34,6 +34,15 @@ export interface PDFGenerationResult {
     pages: number;
     fileSize: number;
     generationTime: number;
+    renderingStrategy?: 'two-stage';
+    pageNumberAccuracy?: 'estimated' | 'exact';
+    performance?: {
+      preRenderTime?: number;
+      finalRenderTime?: number;
+      totalTime?: number;
+      performanceIncrease?: number;
+    };
+    enhancedFeatures?: string[];
   };
 }
 

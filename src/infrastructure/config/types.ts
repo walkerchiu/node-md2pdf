@@ -111,6 +111,12 @@ export interface ConfigSchema {
     };
   };
 
+  // Rendering settings
+  rendering: {
+    forceAccuratePageNumbers: boolean;
+    maxPerformanceImpact: number;
+  };
+
   // Performance settings
   performance: {
     maxWorkers: number;

@@ -3,7 +3,6 @@
  * Integrates core TOC functionality with infrastructure services
  */
 
-import { PageEstimator } from '../../core/toc/page-estimator';
 import { TOCGenerator } from '../../core/toc/toc-generator';
 import { TOCGeneratorOptions, TOCGenerationResult } from '../../core/toc/types';
 import { MD2PDFError } from '../../infrastructure/error/errors';
@@ -19,21 +18,11 @@ export interface ITOCGeneratorService {
     headings: Heading[],
     options?: Partial<TOCGeneratorOptions>,
   ): Promise<TOCGenerationResult>;
-  generateTOCWithPageNumbers(
-    headings: Heading[],
-    htmlContent: string,
-    options?: Partial<TOCGeneratorOptions>,
-  ): Promise<TOCGenerationResult>;
-  estimatePageNumbers(
-    headings: Heading[],
-    htmlContent: string,
-  ): Promise<Record<string, number>>;
   validateHeadings(headings: Heading[]): Promise<boolean>;
 }
 
 export class TOCGeneratorService implements ITOCGeneratorService {
   private tocGenerator: TOCGenerator | null = null;
-  private pageEstimator: PageEstimator | null = null;
   private isInitialized = false;
 
   constructor(
@@ -65,7 +54,6 @@ export class TOCGeneratorService implements ITOCGeneratorService {
       }) as TOCGeneratorOptions;
 
       this.tocGenerator = new TOCGenerator(tocConfig, this.translationManager);
-      this.pageEstimator = new PageEstimator();
 
       this.isInitialized = true;
       this.logger.info('TOC generator service initialized successfully');
@@ -133,107 +121,6 @@ export class TOCGeneratorService implements ITOCGeneratorService {
       await this.errorHandler.handleError(
         wrappedError,
         'TOCGeneratorService.generateTOC',
-      );
-      throw wrappedError;
-    }
-  }
-
-  async generateTOCWithPageNumbers(
-    headings: Heading[],
-    htmlContent: string,
-    options?: Partial<TOCGeneratorOptions>,
-  ): Promise<TOCGenerationResult> {
-    if (!this.isInitialized || !this.tocGenerator || !this.pageEstimator) {
-      await this.initialize();
-    }
-
-    try {
-      this.logger.debug(
-        `Generating TOC with page numbers for ${headings.length} headings`,
-      );
-
-      const pageNumbers = await this.estimatePageNumbers(headings, htmlContent);
-
-      const tocOptions = {
-        ...this.configManager.get('toc', {}),
-        ...options,
-        includePageNumbers: true,
-      } as TOCGeneratorOptions;
-
-      const generator = new TOCGenerator(tocOptions, this.translationManager);
-      const startTime = Date.now();
-      const result = generator.generateTOCWithPageNumbers(
-        headings,
-        pageNumbers,
-      );
-      const duration = Date.now() - startTime;
-
-      this.logger.info(
-        `TOC with page numbers generated successfully (${duration}ms)`,
-      );
-
-      return result;
-    } catch (error) {
-      const wrappedError = new MD2PDFError(
-        `TOC with page numbers generation failed: ${(error as Error).message}`,
-        'TOC_PAGE_NUMBERS_ERROR',
-        'markdown_parsing',
-        true,
-        {
-          headingsCount: headings.length,
-          htmlContentLength: htmlContent.length,
-          options,
-          originalError: error,
-        },
-      );
-
-      await this.errorHandler.handleError(
-        wrappedError,
-        'TOCGeneratorService.generateTOCWithPageNumbers',
-      );
-      throw wrappedError;
-    }
-  }
-
-  async estimatePageNumbers(
-    headings: Heading[],
-    htmlContent: string,
-  ): Promise<Record<string, number>> {
-    if (!this.isInitialized || !this.pageEstimator) {
-      await this.initialize();
-    }
-
-    try {
-      this.logger.debug('Estimating page numbers for headings');
-
-      const startTime = Date.now();
-      const pageNumbers = await this.pageEstimator!.estimatePageNumbers(
-        headings,
-        htmlContent,
-      );
-      const duration = Date.now() - startTime;
-
-      this.logger.info(
-        `Page numbers estimated successfully (${duration}ms) for ${Object.keys(pageNumbers).length} headings`,
-      );
-
-      return pageNumbers;
-    } catch (error) {
-      const wrappedError = new MD2PDFError(
-        `Page number estimation failed: ${(error as Error).message}`,
-        'PAGE_ESTIMATION_ERROR',
-        'markdown_parsing',
-        true,
-        {
-          headingsCount: headings.length,
-          htmlContentLength: htmlContent.length,
-          originalError: error,
-        },
-      );
-
-      await this.errorHandler.handleError(
-        wrappedError,
-        'TOCGeneratorService.estimatePageNumbers',
       );
       throw wrappedError;
     }

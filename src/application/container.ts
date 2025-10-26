@@ -113,7 +113,6 @@ export class ApplicationServices {
           c.resolve('config'),
           c.resolve('fileSystem'),
           c.resolve(APPLICATION_SERVICE_NAMES.MARKDOWN_PARSER),
-          c.resolve(APPLICATION_SERVICE_NAMES.TOC_GENERATOR),
           c.resolve(APPLICATION_SERVICE_NAMES.PDF_GENERATOR),
         ),
     );

@@ -7,7 +7,6 @@ import {
   ITOCGeneratorService,
 } from '../../../src/application/services/toc-generator.service';
 import { TOCGenerator } from '../../../src/core/toc/toc-generator';
-import { PageEstimator } from '../../../src/core/toc/page-estimator';
 import {
   TOCGeneratorOptions,
   TOCGenerationResult,
@@ -23,7 +22,6 @@ import { MD2PDFError } from '../../../src/infrastructure/error/errors';
 
 // Mock the core modules
 jest.mock('../../../src/core/toc/toc-generator');
-jest.mock('../../../src/core/toc/page-estimator');
 
 describe('TOCGeneratorService', () => {
   let service: ITOCGeneratorService;
@@ -32,29 +30,12 @@ describe('TOCGeneratorService', () => {
   let mockConfigManager: jest.Mocked<IConfigManager>;
   let mockTranslationManager: jest.Mocked<ITranslationManager>;
   let MockTOCGenerator: jest.MockedClass<typeof TOCGenerator>;
-  let MockPageEstimator: jest.MockedClass<typeof PageEstimator>;
   let mockTOCGeneratorInstance: jest.Mocked<{
     generateTOC: jest.MockedFunction<
       (headings: unknown[], options?: unknown) => unknown
     >;
-    generateTOCWithPageNumbers: jest.MockedFunction<
-      (
-        headings: unknown[],
-        pageNumbers: unknown[],
-        options?: unknown,
-      ) => unknown
-    >;
     validateOptions: jest.MockedFunction<(options: unknown) => boolean>;
     sanitizeOptions: jest.MockedFunction<(options: unknown) => unknown>;
-  }>;
-  let mockPageEstimatorInstance: jest.Mocked<{
-    estimatePageNumbers: jest.MockedFunction<
-      (content: string, options?: unknown) => Promise<Record<string, number>>
-    >;
-    estimateContentHeight: jest.MockedFunction<(content: string) => number>;
-    calculateWordBasedEstimate: jest.MockedFunction<
-      (content: string) => number
-    >;
   }>;
 
   const sampleHeadings: Heading[] = [
@@ -90,9 +71,6 @@ describe('TOCGeneratorService', () => {
     },
   ];
 
-  const sampleHtmlContent =
-    '<h1>Introduction</h1><p>Content...</p><h2>Getting Started</h2><p>More content...</p>';
-
   const mockTOCResult: TOCGenerationResult = {
     html: '<nav class="toc-container"><ol class="toc-list"><li class="toc-item"><a href="#introduction">Introduction</a></li></ol></nav>',
     items: [
@@ -124,14 +102,6 @@ describe('TOCGeneratorService', () => {
       maxDepth: 2,
       itemsByLevel: { 1: 1, 2: 1 },
     },
-  };
-
-  const mockPageNumbers: Record<string, number> = {
-    introduction: 1,
-    'getting-started': 2,
-    installation: 3,
-    prerequisites: 3,
-    configuration: 4,
   };
 
   const defaultTOCConfig: TOCGeneratorOptions = {
@@ -204,7 +174,6 @@ describe('TOCGeneratorService', () => {
 
     mockTOCGeneratorInstance = {
       generateTOC: jest.fn(),
-      generateTOCWithPageNumbers: jest.fn(),
       validateOptions: jest.fn(),
       sanitizeOptions: jest.fn(),
     };
@@ -212,27 +181,8 @@ describe('TOCGeneratorService', () => {
       () => mockTOCGeneratorInstance as unknown as TOCGenerator,
     );
 
-    // Mock PageEstimator
-    MockPageEstimator = PageEstimator as jest.MockedClass<typeof PageEstimator>;
-    MockPageEstimator.mockClear();
-
-    mockPageEstimatorInstance = {
-      estimatePageNumbers: jest.fn(),
-      estimateContentHeight: jest.fn(),
-      calculateWordBasedEstimate: jest.fn(),
-    };
-    MockPageEstimator.mockImplementation(
-      () => mockPageEstimatorInstance as unknown as PageEstimator,
-    );
-
     // Setup default successful behavior
     mockTOCGeneratorInstance.generateTOC.mockReturnValue(mockTOCResult);
-    mockTOCGeneratorInstance.generateTOCWithPageNumbers.mockReturnValue(
-      mockTOCResult,
-    );
-    mockPageEstimatorInstance.estimatePageNumbers.mockResolvedValue(
-      mockPageNumbers,
-    );
 
     // Create service instance
     service = new TOCGeneratorService(
@@ -244,14 +194,13 @@ describe('TOCGeneratorService', () => {
   });
 
   describe('initialization', () => {
-    it('should initialize TOC generator and page estimator successfully', async () => {
+    it('should initialize TOC generator successfully', async () => {
       await service.generateTOC(sampleHeadings);
 
       expect(MockTOCGenerator).toHaveBeenCalledWith(
         defaultTOCConfig,
         mockTranslationManager,
       );
-      expect(MockPageEstimator).toHaveBeenCalled();
       expect(mockConfigManager.get).toHaveBeenCalledWith(
         'toc',
         expect.any(Object),
@@ -269,7 +218,6 @@ describe('TOCGeneratorService', () => {
       await service.generateTOC(sampleHeadings);
 
       expect(MockTOCGenerator).toHaveBeenCalledTimes(1);
-      expect(MockPageEstimator).toHaveBeenCalledTimes(1);
     });
 
     it('should handle initialization errors', async () => {
@@ -306,7 +254,7 @@ describe('TOCGeneratorService', () => {
     it('should use custom options when provided', async () => {
       const customOptions: Partial<TOCGeneratorOptions> = {
         maxDepth: 2,
-        includePageNumbers: true,
+        includePageNumbers: false,
       };
 
       await service.generateTOC(sampleHeadings, customOptions);
@@ -364,146 +312,6 @@ describe('TOCGeneratorService', () => {
           headingsCount: sampleHeadings.length,
           options: { maxDepth: 2 },
           originalError: tocError,
-        });
-      }
-    });
-  });
-
-  describe('generateTOCWithPageNumbers', () => {
-    it('should generate TOC with page numbers successfully', async () => {
-      const result = await service.generateTOCWithPageNumbers(
-        sampleHeadings,
-        sampleHtmlContent,
-      );
-
-      expect(result).toEqual(mockTOCResult);
-      expect(
-        mockPageEstimatorInstance.estimatePageNumbers,
-      ).toHaveBeenCalledWith(sampleHeadings, sampleHtmlContent);
-      expect(
-        mockTOCGeneratorInstance.generateTOCWithPageNumbers,
-      ).toHaveBeenCalledWith(sampleHeadings, mockPageNumbers);
-      expect(mockLogger.debug).toHaveBeenCalledWith(
-        `Generating TOC with page numbers for ${sampleHeadings.length} headings`,
-      );
-    });
-
-    it('should use custom options with page numbers enabled', async () => {
-      const customOptions: Partial<TOCGeneratorOptions> = {
-        maxDepth: 4,
-      };
-
-      await service.generateTOCWithPageNumbers(
-        sampleHeadings,
-        sampleHtmlContent,
-        customOptions,
-      );
-
-      expect(MockTOCGenerator).toHaveBeenCalledWith(
-        expect.objectContaining({
-          ...customOptions,
-          includePageNumbers: true,
-        }),
-        mockTranslationManager,
-      );
-    });
-
-    it('should handle page number generation errors', async () => {
-      const pageError = new Error('Page estimation failed');
-      mockPageEstimatorInstance.estimatePageNumbers.mockRejectedValue(
-        pageError,
-      );
-
-      await expect(
-        service.generateTOCWithPageNumbers(sampleHeadings, sampleHtmlContent),
-      ).rejects.toThrow(MD2PDFError);
-
-      expect(mockErrorHandler.handleError).toHaveBeenCalledWith(
-        expect.any(MD2PDFError),
-        'TOCGeneratorService.generateTOCWithPageNumbers',
-      );
-    });
-
-    it('should handle TOC generation with page numbers errors', async () => {
-      const tocError = new Error('TOC with page numbers failed');
-      mockTOCGeneratorInstance.generateTOCWithPageNumbers.mockImplementation(
-        () => {
-          throw tocError;
-        },
-      );
-
-      await expect(
-        service.generateTOCWithPageNumbers(sampleHeadings, sampleHtmlContent),
-      ).rejects.toThrow(MD2PDFError);
-    });
-  });
-
-  describe('estimatePageNumbers', () => {
-    it('should estimate page numbers successfully', async () => {
-      const result = await service.estimatePageNumbers(
-        sampleHeadings,
-        sampleHtmlContent,
-      );
-
-      expect(result).toEqual(mockPageNumbers);
-      expect(
-        mockPageEstimatorInstance.estimatePageNumbers,
-      ).toHaveBeenCalledWith(sampleHeadings, sampleHtmlContent);
-      expect(mockLogger.debug).toHaveBeenCalledWith(
-        'Estimating page numbers for headings',
-      );
-      expect(mockLogger.info).toHaveBeenCalledWith(
-        expect.stringContaining(`Page numbers estimated successfully`),
-      );
-    });
-
-    it('should handle page estimation errors', async () => {
-      const estimationError = new Error('Page estimation failed');
-      mockPageEstimatorInstance.estimatePageNumbers.mockRejectedValue(
-        estimationError,
-      );
-
-      await expect(
-        service.estimatePageNumbers(sampleHeadings, sampleHtmlContent),
-      ).rejects.toThrow(MD2PDFError);
-
-      expect(mockErrorHandler.handleError).toHaveBeenCalledWith(
-        expect.any(MD2PDFError),
-        'TOCGeneratorService.estimatePageNumbers',
-      );
-    });
-
-    it('should track estimation performance', async () => {
-      // Add a small delay to ensure processing time > 0
-      mockPageEstimatorInstance.estimatePageNumbers.mockImplementation(
-        async () => {
-          await new Promise((resolve) => setTimeout(resolve, 10));
-          return mockPageNumbers;
-        },
-      );
-
-      await service.estimatePageNumbers(sampleHeadings, sampleHtmlContent);
-
-      expect(mockLogger.info).toHaveBeenCalledWith(
-        expect.stringMatching(/Page numbers estimated successfully \(\d+ms\)/),
-      );
-    });
-
-    it('should include error context in wrapped errors', async () => {
-      const estimationError = new Error('Estimation failed');
-      mockPageEstimatorInstance.estimatePageNumbers.mockRejectedValue(
-        estimationError,
-      );
-
-      try {
-        await service.estimatePageNumbers(sampleHeadings, sampleHtmlContent);
-      } catch (error) {
-        expect(error).toBeInstanceOf(MD2PDFError);
-        const wrappedError = error as MD2PDFError;
-        expect(wrappedError.context).toMatchObject({
-          headingsCount: sampleHeadings.length,
-          htmlContentLength: sampleHtmlContent.length,
-          originalError: estimationError,
         });
       }
     });
@@ -582,7 +390,7 @@ describe('TOCGeneratorService', () => {
     it('should use custom TOC configuration', async () => {
       const customConfig: TOCGeneratorOptions = {
         maxDepth: 4,
-        includePageNumbers: true,
+        includePageNumbers: false,
         cssClasses: {
           container: 'custom-toc',
           title: 'custom-title',
@@ -665,15 +473,9 @@ describe('TOCGeneratorService', () => {
   describe('service lifecycle', () => {
     it('should handle multiple operations after initialization', async () => {
       await service.generateTOC(sampleHeadings);
-      await service.generateTOCWithPageNumbers(
-        sampleHeadings,
-        sampleHtmlContent,
-      );
-      await service.estimatePageNumbers(sampleHeadings, sampleHtmlContent);
       await service.validateHeadings(sampleHeadings);
 
-      expect(MockTOCGenerator).toHaveBeenCalledTimes(2); // Once for init, once for page numbers
-      expect(MockPageEstimator).toHaveBeenCalledTimes(1); // Once during init
+      expect(MockTOCGenerator).toHaveBeenCalledTimes(1); // Once for init only
     });
 
     it('should handle auto-initialization for different methods', async () => {
@@ -689,22 +491,11 @@ describe('TOCGeneratorService', () => {
         mockConfigManager,
         mockTranslationManager,
       );
-      const service3 = new TOCGeneratorService(
-        mockLogger,
-        mockErrorHandler,
-        mockConfigManager,
-        mockTranslationManager,
-      );
 
       await service1.generateTOC(sampleHeadings);
-      await service2.generateTOCWithPageNumbers(
-        sampleHeadings,
-        sampleHtmlContent,
-      );
-      await service3.estimatePageNumbers(sampleHeadings, sampleHtmlContent);
+      await service2.validateHeadings(sampleHeadings);
 
-      expect(MockTOCGenerator).toHaveBeenCalledTimes(4); // 3 for init + 1 for page numbers
-      expect(MockPageEstimator).toHaveBeenCalledTimes(3); // All three services
+      expect(MockTOCGenerator).toHaveBeenCalledTimes(1); // Only service1 initializes TOCGenerator
     });
   });
 });

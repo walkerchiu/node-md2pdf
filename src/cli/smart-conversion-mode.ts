@@ -317,11 +317,6 @@ export class SmartConversionMode {
     );
     this.renderer.info(
       chalk.cyan(
-        `   ${this.translationManager.t('smartConversion.estimatedPages')}: ${analysis.estimatedPages}`,
-      ),
-    );
-    this.renderer.info(
-      chalk.cyan(
         `   ${this.translationManager.t('smartConversion.readingTime')}: ${analysis.readingTime} ${this.translationManager.t('smartConversion.minutes')}`,
       ),
     );
@@ -494,7 +489,7 @@ export class SmartConversionMode {
       `   ${this.translationManager.t('smartConversion.configuration')}: ${choice.name}`,
     );
     this.renderer.info(
-      `   📄 ${analysis.wordCount.toLocaleString()} words → ${analysis.estimatedPages} pages (estimated)`,
+      `   📄 ${analysis.wordCount.toLocaleString()} words, ${analysis.headingStructure.totalHeadings} headings`,
     );
 
     if (choice.config) {
@@ -570,11 +565,23 @@ export class SmartConversionMode {
       // Start progress indication
       const progressInterval = this.showProgress();
 
-      // Perform the actual conversion
-      await this.fileProcessorService.processFile(filePath, {
+      // Debug logging for options being passed to file processor
+      const finalOptions = {
         outputPath: finalOutputPath,
         ...processingConfig,
-      });
+      };
+      this.logger.debug(
+        'Smart conversion mode passing options to file processor:',
+        {
+          finalOptions,
+          includeTOC,
+          tocDepth,
+          processingConfig,
+        },
+      );
+
+      // Perform the actual conversion
+      await this.fileProcessorService.processFile(filePath, finalOptions);
 
       clearInterval(progressInterval);
 
@@ -697,28 +704,38 @@ export class SmartConversionMode {
 
   private convertToProcessingConfig(
     config: QuickConfig | RecommendedConfig | undefined,
-    _analysis: ContentAnalysis,
+    analysis: ContentAnalysis,
     includeTOC: boolean,
     tocDepth: number,
   ): any {
+    // Determine if two-stage rendering should be enabled
+    const shouldEnableTwoStage = this.shouldEnableTwoStageRendering(
+      analysis,
+      includeTOC,
+    );
+
     if (!config) {
       // Return basic configuration matching single file and batch processing
       return {
         includeTOC: includeTOC,
+        includePageNumbers: includeTOC, // Enable page numbers when TOC is enabled
         tocOptions: includeTOC
           ? {
               maxDepth: tocDepth,
               includePageNumbers: true,
-              title: '目錄',
             }
-          : {},
+          : undefined,
         pdfOptions: {
           margin: DEFAULT_MARGINS.NORMAL,
-          displayHeaderFooter: true,
-          footerTemplate:
-            '<div style="font-size:10px; width:100%; text-align:center;">Page <span class="pageNumber"></span> of <span class="totalPages"></span></div>',
           printBackground: true,
         },
+        // Enable two-stage rendering for better accuracy when appropriate
+        ...(shouldEnableTwoStage && {
+          twoStageRendering: {
+            enabled: true,
+            forceAccuratePageNumbers: includeTOC,
+          },
+        }),
       };
     }
 
@@ -726,7 +743,12 @@ export class SmartConversionMode {
     // Follow the same pattern as single file and batch processing
     const baseConfig: any = {
       includeTOC: includeTOC,
-      tocOptions: includeTOC ? {} : {},
+      tocOptions: includeTOC
+        ? {
+            maxDepth: tocDepth,
+            includePageNumbers: true,
+          }
+        : undefined,
       pdfOptions: {
         margin: DEFAULT_MARGINS.NORMAL,
         printBackground: true,
@@ -736,20 +758,15 @@ export class SmartConversionMode {
     if ('config' in config) {
       // QuickConfig
       const quickConfig = config.config;
+      const includePageNumbers =
+        quickConfig.tocConfig?.includePageNumbers ?? true;
+
       if (includeTOC) {
         baseConfig.tocOptions = {
           maxDepth: tocDepth,
-          includePageNumbers: quickConfig.tocConfig?.includePageNumbers ?? true,
-          title: quickConfig.tocConfig?.title || '目錄',
+          includePageNumbers,
         };
-
-        // Set PDF options for page numbers - same as single file and batch processing
-        baseConfig.pdfOptions.displayHeaderFooter =
-          quickConfig.tocConfig?.includePageNumbers ?? true;
-        baseConfig.pdfOptions.footerTemplate =
-          (quickConfig.tocConfig?.includePageNumbers ?? true)
-            ? '<div style="font-size:10px; width:100%; text-align:center;">Page <span class="pageNumber"></span> of <span class="totalPages"></span></div>'
-            : '';
+        baseConfig.includePageNumbers = includePageNumbers;
       }
 
       // Handle margins if specified
@@ -767,20 +784,14 @@ export class SmartConversionMode {
       }
     } else {
       // RecommendedConfig
+      const includePageNumbers = config.tocConfig?.includePageNumbers ?? true;
+
       if (includeTOC) {
         baseConfig.tocOptions = {
           maxDepth: tocDepth,
-          includePageNumbers: config.tocConfig?.includePageNumbers ?? true,
-          title: config.tocConfig?.title || '目錄',
+          includePageNumbers,
         };
-
-        // Set PDF options for page numbers - same as single file and batch processing
-        baseConfig.pdfOptions.displayHeaderFooter =
-          config.tocConfig?.includePageNumbers ?? true;
-        baseConfig.pdfOptions.footerTemplate =
-          (config.tocConfig?.includePageNumbers ?? true)
-            ? '<div style="font-size:10px; width:100%; text-align:center;">Page <span class="pageNumber"></span> of <span class="totalPages"></span></div>'
-            : '';
+        baseConfig.includePageNumbers = includePageNumbers;
       }
 
       // Handle margins if specified
@@ -803,7 +814,48 @@ export class SmartConversionMode {
       }
     }
 
+    // Add two-stage rendering support for all configurations
+    if (shouldEnableTwoStage) {
+      baseConfig.twoStageRendering = {
+        enabled: true,
+        forceAccuratePageNumbers: includeTOC && baseConfig.includePageNumbers,
+        maxPerformanceImpact: 100, // Allow up to 100% performance impact for accuracy
+      };
+    }
+
     return baseConfig;
+  }
+
+  /**
+   * Determine if two-stage rendering should be enabled based on content analysis
+   */
+  private shouldEnableTwoStageRendering(
+    analysis: ContentAnalysis,
+    includeTOC: boolean,
+  ): boolean {
+    // Enable two-stage rendering if:
+    // 1. TOC is enabled (for accurate page numbers)
+    // 2. Content has dynamic diagrams (mermaid, plantuml)
+    // 3. Content is complex (many headings, images, etc.)
+
+    if (includeTOC) {
+      return true; // Always use two-stage for TOC accuracy
+    }
+
+    // Check for dynamic diagrams
+    if (analysis.mediaElements.hasDiagrams) {
+      return true;
+    }
+
+    // Check for complex content
+    if (
+      analysis.headingStructure.totalHeadings > 10 ||
+      analysis.mediaElements.images > 5
+    ) {
+      return true;
+    }
+
+    return false; // Use single-stage for simple content
   }
 
   private showProgress(): NodeJS.Timeout {

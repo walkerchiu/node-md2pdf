@@ -3,7 +3,6 @@ import {
   FileProcessingOptions,
 } from '../../../src/application/services/file-processor.service';
 import { IMarkdownParserService } from '../../../src/application/services/markdown-parser.service';
-import { ITOCGeneratorService } from '../../../src/application/services/toc-generator.service';
 import { IPDFGeneratorService } from '../../../src/application/services/pdf-generator.service';
 import { ILogger } from '../../../src/infrastructure/logging/types';
 import { IErrorHandler } from '../../../src/infrastructure/error/types';
@@ -18,7 +17,6 @@ import {
 } from '../../../src/infrastructure/error/errors';
 import { ParsedMarkdown, Heading } from '../../../src/types/index';
 import { PDFGenerationResult } from '../../../src/core/pdf/types';
-import { TOCGenerationResult } from '../../../src/core/toc/types';
 
 describe('FileProcessorService', () => {
   let service: FileProcessorService;
@@ -27,8 +25,9 @@ describe('FileProcessorService', () => {
   let mockConfigManager: jest.Mocked<IConfigManager>;
   let mockFileSystemManager: jest.Mocked<IFileSystemManager>;
   let mockMarkdownParserService: jest.Mocked<IMarkdownParserService>;
-  let mockTOCGeneratorService: jest.Mocked<ITOCGeneratorService>;
   let mockPDFGeneratorService: jest.Mocked<IPDFGeneratorService>;
+
+  const mockOriginalMarkdown = '# Test Document\n\nThis is a test document.';
 
   const mockParsedContent: ParsedMarkdown = {
     content: '<h1>Test Document</h1><p>This is a test document.</p>',
@@ -45,31 +44,6 @@ describe('FileProcessorService', () => {
       pages: 1,
       fileSize: 1024,
       generationTime: 500,
-    },
-  };
-
-  const mockTOCResult: TOCGenerationResult = {
-    html: '<div class="toc"><ul><li><a href="#test-document">Test Document</a></li></ul></div>',
-    items: [
-      {
-        title: 'Test Document',
-        level: 1,
-        anchor: 'test-document',
-        index: 0,
-      },
-    ],
-    tree: [
-      {
-        title: 'Test Document',
-        level: 1,
-        anchor: 'test-document',
-        children: [],
-      },
-    ],
-    stats: {
-      totalItems: 1,
-      maxDepth: 1,
-      itemsByLevel: { 1: 1 },
     },
   };
 
@@ -146,13 +120,6 @@ describe('FileProcessorService', () => {
       validateMarkdown: jest.fn(),
     };
 
-    mockTOCGeneratorService = {
-      generateTOC: jest.fn(),
-      generateTOCWithPageNumbers: jest.fn(),
-      estimatePageNumbers: jest.fn(),
-      validateHeadings: jest.fn(),
-    };
-
     mockPDFGeneratorService = {
       generatePDF: jest.fn(),
       initialize: jest.fn(),
@@ -168,7 +135,6 @@ describe('FileProcessorService', () => {
       mockConfigManager,
       mockFileSystemManager,
       mockMarkdownParserService,
-      mockTOCGeneratorService,
       mockPDFGeneratorService,
     );
   });
@@ -180,6 +146,7 @@ describe('FileProcessorService', () => {
     beforeEach(() => {
       mockFileSystemManager.exists.mockResolvedValue(true);
       mockFileSystemManager.getStats.mockResolvedValue(mockFileStats);
+      mockFileSystemManager.readFile.mockResolvedValue(mockOriginalMarkdown);
       mockMarkdownParserService.parseMarkdownFile.mockResolvedValue(
         mockParsedContent,
       );
@@ -222,15 +189,14 @@ describe('FileProcessorService', () => {
         {
           enableChineseSupport: true,
           headings: mockParsedContent.headings,
-          markdownContent: mockParsedContent.content,
+          includeTOC: false,
+          markdownContent: mockOriginalMarkdown,
           title: 'Test Document',
         },
       );
     });
 
-    it('should include TOC when requested', async () => {
-      mockTOCGeneratorService.generateTOC.mockResolvedValue(mockTOCResult);
-
+    it('should delegate TOC handling to two-stage rendering when requested', async () => {
       const options: FileProcessingOptions = {
         outputPath,
         includeTOC: true,
@@ -239,25 +205,15 @@ describe('FileProcessorService', () => {
 
       await service.processFile(inputPath, options);
 
-      expect(mockTOCGeneratorService.generateTOC).toHaveBeenCalledWith(
-        mockParsedContent.headings,
-        {
-          maxDepth: 2,
-        },
-      );
-
-      // The actual implementation injects TOC after the first H1 heading
-      const expectedContent =
-        '<h1>Test Document</h1>\n\n' +
-        mockTOCResult.html +
-        '\n\n<p>This is a test document.</p>';
+      // Verify that two-stage rendering is used for TOC
       expect(mockPDFGeneratorService.generatePDF).toHaveBeenCalledWith(
-        expectedContent,
+        mockParsedContent.content,
         outputPath,
         {
           enableChineseSupport: true,
           headings: mockParsedContent.headings,
-          markdownContent: expectedContent,
+          includeTOC: true,
+          markdownContent: mockOriginalMarkdown,
           title: 'Test Document',
           tocOptions: {
             enabled: true,
@@ -285,7 +241,8 @@ describe('FileProcessorService', () => {
           customCSS: customStyles,
           enableChineseSupport: true,
           headings: mockParsedContent.headings,
-          markdownContent: expectedContent,
+          includeTOC: false,
+          markdownContent: mockOriginalMarkdown,
           title: 'Test Document',
         },
       );
@@ -302,7 +259,8 @@ describe('FileProcessorService', () => {
         {
           enableChineseSupport: true,
           headings: mockParsedContent.headings,
-          markdownContent: mockParsedContent.content,
+          includeTOC: false,
+          markdownContent: mockOriginalMarkdown,
           title: 'Test Document',
         },
       );
@@ -333,6 +291,34 @@ describe('FileProcessorService', () => {
         service.processFile(inputPath, { outputPath }),
       ).rejects.toThrow(MD2PDFError);
       expect(mockErrorHandler.handleError).toHaveBeenCalled();
+    });
+
+    it('should pass through processing options', async () => {
+      const options: FileProcessingOptions = {
+        outputPath,
+        includeTOC: true,
+        includePageNumbers: true,
+      };
+
+      await service.processFile(inputPath, options);
+
+      expect(mockPDFGeneratorService.generatePDF).toHaveBeenCalledWith(
+        mockParsedContent.content,
+        outputPath,
+        {
+          enableChineseSupport: true,
+          headings: mockParsedContent.headings,
+          includeTOC: true,
+          includePageNumbers: true,
+          markdownContent: mockOriginalMarkdown,
+          title: 'Test Document',
+          tocOptions: {
+            enabled: true,
+            includePageNumbers: true,
+            maxDepth: 3,
+          },
+        },
+      );
     });
   });
 
@@ -439,69 +425,6 @@ describe('FileProcessorService', () => {
   });
 
   describe('private methods', () => {
-    describe('injectTOC', () => {
-      it('should inject TOC at placeholder', () => {
-        const htmlContent = '<h1>Title</h1><!-- TOC --><p>Content</p>';
-        const tocHtml = '<div class="toc">TOC</div>';
-
-        // Access private method via type assertion
-        const result = (
-          service as unknown as {
-            injectTOC: (html: string, toc: string) => string;
-          }
-        ).injectTOC(htmlContent, tocHtml);
-
-        expect(result).toBe(
-          '<h1>Title</h1><div class="toc">TOC</div><p>Content</p>',
-        );
-      });
-
-      it('should inject TOC after first H1 heading', () => {
-        const htmlContent = '<h1>Title</h1><p>Content</p>';
-        const tocHtml = '<div class="toc">TOC</div>';
-
-        const result = (
-          service as unknown as {
-            injectTOC: (html: string, toc: string) => string;
-          }
-        ).injectTOC(htmlContent, tocHtml);
-
-        expect(result).toBe(
-          '<h1>Title</h1>\n\n<div class="toc">TOC</div>\n\n<p>Content</p>',
-        );
-      });
-
-      it('should inject TOC after body tag as fallback', () => {
-        const htmlContent = '<html><body><p>Content</p></body></html>';
-        const tocHtml = '<div class="toc">TOC</div>';
-
-        const result = (
-          service as unknown as {
-            injectTOC: (html: string, toc: string) => string;
-          }
-        ).injectTOC(htmlContent, tocHtml);
-
-        expect(result).toBe(
-          '<html><body>\n\n<div class="toc">TOC</div>\n\n<p>Content</p></body></html>',
-        );
-      });
-
-      it('should prepend TOC as last resort', () => {
-        const htmlContent = '<p>Content without proper structure</p>';
-        const tocHtml = '<div class="toc">TOC</div>';
-
-        const result = (
-          service as unknown as {
-            injectTOC: (html: string, toc: string) => string;
-          }
-        ).injectTOC(htmlContent, tocHtml);
-
-        expect(result).toBe(
-          '<div class="toc">TOC</div>\n\n<p>Content without proper structure</p>',
-        );
-      });
-    });
-
     describe('injectStyles', () => {
       it('should inject styles in head tag', () => {
         const htmlContent =

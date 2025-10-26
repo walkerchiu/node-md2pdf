@@ -147,6 +147,19 @@ describe('InteractiveMode', () => {
     container.registerInstance('translator', createMockTranslator());
     container.registerInstance('errorHandler', mockErrorHandler);
     container.registerInstance('fileProcessor', mockFileProcessorService);
+    const mockSmartDefaultsService = {
+      analyzeContent: jest.fn().mockImplementation(() =>
+        Promise.resolve({
+          mediaElements: { hasDiagrams: false, images: 0 },
+          headingStructure: { totalHeadings: 3 },
+        }),
+      ),
+      analyzeContentString: jest.fn(),
+      recommendSettings: jest.fn(),
+      generateSettings: jest.fn(),
+    };
+
+    container.registerInstance('smartDefaults', mockSmartDefaultsService);
     container.registerInstance('config', {
       get: jest.fn(),
       set: jest.fn(),
@@ -534,7 +547,6 @@ describe('InteractiveMode', () => {
           tocOptions: {
             maxDepth: 2,
             includePageNumbers: true,
-            title: expect.any(String), // Now uses translation manager
           },
           pdfOptions: expect.objectContaining({
             displayHeaderFooter: false, // Changed to false due to CSS @page approach
