@@ -7,6 +7,7 @@ import {
   DEFAULT_MARGINS,
   DEFAULT_CSS_TEMPLATE,
   DEFAULT_PDF_OPTIONS,
+  DEFAULT_PLANTUML,
   CONFIG_KEYS,
 } from './constants';
 
@@ -76,6 +77,24 @@ export const defaultConfig: ConfigSchema = {
     maxBackupFiles: 5,
     enableRotation: true,
   },
+  plantuml: {
+    enabled: true,
+    serverUrl: DEFAULT_PLANTUML.SERVER_URL,
+    format: DEFAULT_PLANTUML.FORMAT,
+    defaultWidth: DEFAULT_PLANTUML.DEFAULT_WIDTH,
+    defaultHeight: DEFAULT_PLANTUML.DEFAULT_HEIGHT,
+    timeout: DEFAULT_PLANTUML.TIMEOUT,
+    enableCaching: DEFAULT_PLANTUML.ENABLE_CACHING,
+    cache: {
+      enabled: true,
+      maxAge: 3600000, // 1 hour in milliseconds
+      maxSize: 100, // max 100 cache entries
+    },
+    fallback: {
+      showErrorPlaceholder: true,
+      errorMessage: 'PlantUML diagram rendering failed',
+    },
+  },
   features: {
     enhancedServices: process.env.MD2PDF_USE_ENHANCED_SERVICES !== 'false',
     enhancedCli: process.env.MD2PDF_USE_ENHANCED_CLI !== 'false',
@@ -89,6 +108,7 @@ export {
   DEFAULT_MARGINS,
   DEFAULT_CSS_TEMPLATE,
   DEFAULT_PDF_OPTIONS,
+  DEFAULT_PLANTUML,
   CONFIG_KEYS,
 };
 
@@ -122,4 +142,17 @@ export const environmentMappings: Record<string, string> = {
   MD2PDF_PDF_TASK_TIMEOUT: 'pdf.engines.resourceLimits.taskTimeout',
   MD2PDF_FORCE_ACCURATE_PAGE_NUMBERS: 'rendering.forceAccuratePageNumbers',
   MD2PDF_MAX_PERFORMANCE_IMPACT: 'rendering.maxPerformanceImpact',
+  MD2PDF_PLANTUML_ENABLED: 'plantuml.enabled',
+  MD2PDF_PLANTUML_SERVER_URL: 'plantuml.serverUrl',
+  MD2PDF_PLANTUML_FORMAT: 'plantuml.format',
+  MD2PDF_PLANTUML_DEFAULT_WIDTH: 'plantuml.defaultWidth',
+  MD2PDF_PLANTUML_DEFAULT_HEIGHT: 'plantuml.defaultHeight',
+  MD2PDF_PLANTUML_TIMEOUT: 'plantuml.timeout',
+  MD2PDF_PLANTUML_ENABLE_CACHING: 'plantuml.enableCaching',
+  MD2PDF_PLANTUML_CACHE_ENABLED: 'plantuml.cache.enabled',
+  MD2PDF_PLANTUML_CACHE_MAX_AGE: 'plantuml.cache.maxAge',
+  MD2PDF_PLANTUML_CACHE_MAX_SIZE: 'plantuml.cache.maxSize',
+  MD2PDF_PLANTUML_SHOW_ERROR_PLACEHOLDER:
+    'plantuml.fallback.showErrorPlaceholder',
+  MD2PDF_PLANTUML_ERROR_MESSAGE: 'plantuml.fallback.errorMessage',
 };

@@ -135,6 +135,26 @@ export interface ConfigSchema {
     enableRotation: boolean;
   };
 
+  // PlantUML settings
+  plantuml: {
+    enabled: boolean;
+    serverUrl: string;
+    format: 'svg' | 'png';
+    defaultWidth: number;
+    defaultHeight: number;
+    timeout: number; // request timeout in milliseconds
+    enableCaching: boolean;
+    cache: {
+      enabled: boolean;
+      maxAge: number; // in milliseconds
+      maxSize: number; // max cache entries
+    };
+    fallback: {
+      showErrorPlaceholder: boolean;
+      errorMessage: string;
+    };
+  };
+
   // Feature flags
   features: {
     enhancedServices: boolean;

@@ -12,6 +12,7 @@ import {
   IDynamicContentProcessor,
   IContentCache,
 } from './interfaces';
+import { PlantUMLProcessor } from './processors/plantuml-processor';
 import { TOCProcessor } from './processors/toc-processor';
 import {
   DynamicContentType,
@@ -20,6 +21,7 @@ import {
   TwoStageRenderingOptions,
 } from './types';
 
+import type { IConfigManager } from '../../infrastructure/config/types';
 import type { ITranslationManager } from '../../infrastructure/i18n/types';
 
 export class TwoStageRenderingEngine implements ITwoStageRenderingEngine {
@@ -28,10 +30,12 @@ export class TwoStageRenderingEngine implements ITwoStageRenderingEngine {
   private cache: IContentCache | null = null;
   private options: TwoStageRenderingOptions;
   private translator: ITranslationManager | undefined;
+  private configManager: IConfigManager | undefined;
 
   constructor(
     options: Partial<TwoStageRenderingOptions> = {},
     translator?: ITranslationManager,
+    configManager?: IConfigManager,
   ) {
     this.options = {
       enabled: true,
@@ -42,6 +46,7 @@ export class TwoStageRenderingEngine implements ITwoStageRenderingEngine {
     };
 
     this.translator = translator;
+    this.configManager = configManager;
 
     // Register default processors
     this.registerDefaultProcessors();
@@ -185,6 +190,25 @@ export class TwoStageRenderingEngine implements ITwoStageRenderingEngine {
     // Process content with single-stage processors
     let processedHTML = content;
 
+    // Process PlantUML diagrams first
+    const plantUMLProcessor = this.processors.get(DynamicContentType.PLANTUML);
+    if (plantUMLProcessor) {
+      const plantUMLContext = { ...context, isPreRendering: false };
+      const plantUMLResult = await plantUMLProcessor.process(
+        processedHTML,
+        plantUMLContext,
+      );
+
+      if (plantUMLResult.html) {
+        processedHTML = plantUMLResult.html;
+        processedContentTypes.push(DynamicContentType.PLANTUML);
+      }
+
+      warnings.push(...plantUMLResult.metadata.warnings);
+      cacheHits += plantUMLResult.metadata.cacheHits || 0;
+      cacheMisses += plantUMLResult.metadata.cacheMisses || 0;
+    }
+
     // Process TOC based on user configuration (simplified for debugging)
     if (context.tocOptions?.enabled && (context.headings?.length || 0) > 0) {
       console.log(
@@ -194,7 +218,7 @@ export class TwoStageRenderingEngine implements ITwoStageRenderingEngine {
 
       if (tocProcessor) {
         const tocContext = { ...context, isPreRendering: false };
-        const tocResult = await tocProcessor.process(content, tocContext);
+        const tocResult = await tocProcessor.process(processedHTML, tocContext);
 
         if (tocResult.html) {
           processedHTML = tocResult.html + '\n\n' + processedHTML;
@@ -240,6 +264,25 @@ export class TwoStageRenderingEngine implements ITwoStageRenderingEngine {
 
     // Process images and other non-TOC content first
     let preRenderedContent = content;
+
+    // Process PlantUML diagrams first
+    const plantUMLProcessor = this.processors.get(DynamicContentType.PLANTUML);
+    if (plantUMLProcessor) {
+      const plantUMLContext = { ...context, isPreRendering: true };
+      const plantUMLResult = await plantUMLProcessor.process(
+        preRenderedContent,
+        plantUMLContext,
+      );
+
+      if (plantUMLResult.html) {
+        preRenderedContent = plantUMLResult.html;
+        processedContentTypes.push(DynamicContentType.PLANTUML);
+      }
+
+      warnings.push(...plantUMLResult.metadata.warnings);
+      cacheHits += plantUMLResult.metadata.cacheHits || 0;
+      cacheMisses += plantUMLResult.metadata.cacheMisses || 0;
+    }
 
     // For TOC, we need special handling
     let pageNumbers: Record<string, number> = {};
@@ -347,6 +390,10 @@ export class TwoStageRenderingEngine implements ITwoStageRenderingEngine {
   private registerDefaultProcessors(): void {
     // Register TOC processor with translator
     this.registerProcessor(new TOCProcessor(this.translator));
+
+    // Register PlantUML processor with configuration
+    const plantUMLConfig = this.configManager?.get('plantuml', {}) || {};
+    this.registerProcessor(new PlantUMLProcessor(plantUMLConfig));
 
     // Future processors will be registered here:
     // this.registerProcessor(new ImageProcessor());

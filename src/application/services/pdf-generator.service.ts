@@ -693,6 +693,7 @@ export class PDFGeneratorService implements IPDFGeneratorService {
           enableCaching: true,
         },
         this.translationManager,
+        this.configManager,
       );
 
       // Prepare processing context

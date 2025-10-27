@@ -36,7 +36,9 @@
     "converter",
     "toc",
     "chinese",
-    "table-of-contents"
+    "table-of-contents",
+    "plantuml",
+    "diagrams"
   ],
   "author": "Walker Chiu",
   "license": "MIT",
@@ -80,7 +82,9 @@
     "markdown-it-anchor": "^9.2.0",
     "markdown-it-attrs": "^4.3.1",
     "markdown-it-table-of-contents": "^1.0.0",
+    "node-plantuml": "^0.9.0",
     "ora": "^7.0.0",
+    "plantuml-encoder": "^1.4.0",
     "puppeteer": "^21.11.0"
   },
   "lint-staged": {
