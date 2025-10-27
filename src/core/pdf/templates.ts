@@ -183,6 +183,68 @@ export class PDFTemplates {
     `;
   }
 
+  static getPlantUMLCSS(): string {
+    return `
+      /* PlantUML Diagram Styles */
+      .plantuml-diagram {
+        margin: 1.5em 0;
+        text-align: center;
+        page-break-inside: avoid;
+        background: white;
+        border-radius: 4px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        padding: 16px;
+      }
+
+      .plantuml-diagram svg {
+        max-width: 100%;
+        height: auto;
+        border-radius: 4px;
+      }
+
+      .plantuml-diagram img {
+        max-width: 100%;
+        height: auto;
+        border-radius: 4px;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+      }
+
+      .plantuml-error {
+        border: 2px dashed #dc3545;
+        padding: 16px;
+        margin: 16px 0;
+        background-color: #f8d7da;
+        border-radius: 4px;
+        color: #721c24;
+        font-family: monospace;
+        font-size: 0.9em;
+        page-break-inside: avoid;
+      }
+
+      .plantuml-error strong {
+        color: #5a1a1a;
+        font-weight: bold;
+      }
+
+      @media print {
+        .plantuml-diagram {
+          box-shadow: none;
+          border: 1px solid #ddd;
+        }
+
+        .plantuml-diagram img {
+          box-shadow: none;
+        }
+
+        .plantuml-error {
+          background-color: #f0f0f0 !important;
+          border-color: #999 !important;
+          color: #333 !important;
+        }
+      }
+    `;
+  }
+
   static getTOCCSS(): string {
     return `
       /* Table of Contents Styles */
@@ -291,9 +353,10 @@ export class PDFTemplates {
     const baseCSS = this.getDefaultCSS({}, configAccessor);
     const chineseCSS = enableChineseSupport ? this.getChineseCSS() : '';
     const tocCSS = this.getTOCCSS();
+    const plantUMLCSS = this.getPlantUMLCSS();
     const css = customCSS
-      ? `${baseCSS}\n${chineseCSS}\n${tocCSS}\n${customCSS}`
-      : `${baseCSS}\n${chineseCSS}\n${tocCSS}`;
+      ? `${baseCSS}\n${chineseCSS}\n${tocCSS}\n${plantUMLCSS}\n${customCSS}`
+      : `${baseCSS}\n${chineseCSS}\n${tocCSS}\n${plantUMLCSS}`;
 
     return `
 <!DOCTYPE html>
@@ -324,9 +387,10 @@ export class PDFTemplates {
     const baseCSS = this.getDefaultCSS({}, configAccessor);
     const chineseCSS = enableChineseSupport ? this.getChineseCSS() : '';
     const tocCSS = this.getTOCCSS();
+    const plantUMLCSS = this.getPlantUMLCSS();
     const css = customCSS
-      ? `${baseCSS}\n${chineseCSS}\n${tocCSS}\n${customCSS}`
-      : `${baseCSS}\n${chineseCSS}\n${tocCSS}`;
+      ? `${baseCSS}\n${chineseCSS}\n${tocCSS}\n${plantUMLCSS}\n${customCSS}`
+      : `${baseCSS}\n${chineseCSS}\n${tocCSS}\n${plantUMLCSS}`;
 
     const fullContent = tocHTML ? `${tocHTML}\n\n${content}` : content;
 

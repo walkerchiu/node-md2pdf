@@ -8,6 +8,7 @@ export enum DynamicContentType {
   TOC = 'toc',
   IMAGE = 'image',
   DIAGRAM = 'diagram',
+  PLANTUML = 'plantuml',
   COMPLEX_LAYOUT = 'complex_layout',
 }
 
@@ -54,6 +55,10 @@ export interface ProcessedContent {
 
     /** Any warnings or issues during processing */
     warnings: string[];
+
+    /** Cache statistics */
+    cacheHits?: number;
+    cacheMisses?: number;
 
     /** Additional type-specific metadata */
     details?: Record<string, any>;

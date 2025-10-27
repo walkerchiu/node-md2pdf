@@ -532,6 +532,166 @@ describe('ConfigManager - Enhanced Branch Coverage Tests', () => {
     });
   });
 
+  describe('PlantUML Configuration Coverage', () => {
+    let configManager: ConfigManager;
+
+    beforeEach(() => {
+      mockFs.pathExistsSync.mockReturnValue(false);
+      mockFs.ensureDirSync.mockImplementation(() => {});
+      mockFs.writeJsonSync.mockImplementation(() => {});
+
+      configManager = new ConfigManager({
+        configPath: '/test/config.json',
+        useEnvironmentVariables: false,
+      });
+    });
+
+    it('should have default PlantUML configuration', () => {
+      expect(configManager.get('plantuml.enabled')).toBe(true);
+      expect(configManager.get('plantuml.serverUrl')).toBe(
+        'https://www.plantuml.com/plantuml',
+      );
+      expect(configManager.get('plantuml.format')).toBe('svg');
+      expect(configManager.get('plantuml.cache.enabled')).toBe(true);
+      expect(configManager.get('plantuml.cache.maxAge')).toBe(3600000);
+      expect(configManager.get('plantuml.cache.maxSize')).toBe(100);
+      expect(configManager.get('plantuml.timeout')).toBe(10000);
+      expect(configManager.get('plantuml.fallback.showErrorPlaceholder')).toBe(
+        true,
+      );
+      expect(configManager.get('plantuml.fallback.errorMessage')).toBe(
+        'PlantUML diagram rendering failed',
+      );
+    });
+
+    it('should handle PlantUML environment variables', () => {
+      process.env.MD2PDF_PLANTUML_ENABLED = 'false';
+      process.env.MD2PDF_PLANTUML_SERVER_URL =
+        'http://custom-plantuml.server.com';
+      process.env.MD2PDF_PLANTUML_FORMAT = 'png';
+      process.env.MD2PDF_PLANTUML_CACHE_ENABLED = 'false';
+      process.env.MD2PDF_PLANTUML_CACHE_MAX_AGE = '7200000';
+      process.env.MD2PDF_PLANTUML_CACHE_MAX_SIZE = '50';
+      process.env.MD2PDF_PLANTUML_TIMEOUT = '15000';
+      process.env.MD2PDF_PLANTUML_SHOW_ERROR_PLACEHOLDER = 'false';
+      process.env.MD2PDF_PLANTUML_ERROR_MESSAGE = 'Custom error message';
+
+      const configWithEnv = new ConfigManager({
+        configPath: '/test/plantuml-config.json',
+        useEnvironmentVariables: true,
+        environmentPrefix: 'MD2PDF_',
+      });
+
+      expect(configWithEnv.get('plantuml.enabled')).toBe(false);
+      expect(configWithEnv.get('plantuml.serverUrl')).toBe(
+        'http://custom-plantuml.server.com',
+      );
+      expect(configWithEnv.get('plantuml.format')).toBe('png');
+      expect(configWithEnv.get('plantuml.cache.enabled')).toBe(false);
+      expect(configWithEnv.get('plantuml.cache.maxAge')).toBe(7200000);
+      expect(configWithEnv.get('plantuml.cache.maxSize')).toBe(50);
+      expect(configWithEnv.get('plantuml.timeout')).toBe(15000);
+      expect(configWithEnv.get('plantuml.fallback.showErrorPlaceholder')).toBe(
+        false,
+      );
+      expect(configWithEnv.get('plantuml.fallback.errorMessage')).toBe(
+        'Custom error message',
+      );
+    });
+
+    it('should handle PlantUML configuration changes', () => {
+      const callback = jest.fn();
+      configManager.onConfigChanged('plantuml.enabled', callback);
+
+      (mockFs.ensureDir as any).mockResolvedValue();
+      mockFs.writeJson.mockResolvedValue();
+
+      return configManager.setAndSave('plantuml.enabled', false).then(() => {
+        expect(callback).toHaveBeenCalledWith(false, true, 'plantuml.enabled');
+        expect(configManager.get('plantuml.enabled')).toBe(false);
+      });
+    });
+
+    it('should handle nested PlantUML cache configuration', () => {
+      const cacheCallback = jest.fn();
+      configManager.onConfigChanged('plantuml.cache', cacheCallback);
+
+      (mockFs.ensureDir as any).mockResolvedValue();
+      mockFs.writeJson.mockResolvedValue();
+
+      return configManager
+        .setAndSave('plantuml.cache.maxAge', 1800000)
+        .then(() => {
+          expect(cacheCallback).toHaveBeenCalledWith(
+            1800000,
+            3600000,
+            'plantuml.cache.maxAge',
+          );
+          expect(configManager.get('plantuml.cache.maxAge')).toBe(1800000);
+        });
+    });
+
+    it('should handle PlantUML configuration from user file', () => {
+      const userConfig = {
+        plantuml: {
+          enabled: false,
+          serverUrl: 'http://localhost:8080/plantuml',
+          format: 'png',
+          cache: {
+            enabled: false,
+            maxSize: 200,
+          },
+          timeout: 5000,
+          fallback: {
+            showErrorPlaceholder: false,
+            errorMessage: 'Local PlantUML failed',
+          },
+        },
+      };
+
+      mockFs.pathExistsSync.mockReturnValue(true);
+      mockFs.readJsonSync.mockReturnValue(userConfig);
+
+      const configManager = new ConfigManager({
+        configPath: '/test/config.json',
+        useEnvironmentVariables: false,
+      });
+
+      expect(configManager.get('plantuml.enabled')).toBe(false);
+      expect(configManager.get('plantuml.serverUrl')).toBe(
+        'http://localhost:8080/plantuml',
+      );
+      expect(configManager.get('plantuml.format')).toBe('png');
+      expect(configManager.get('plantuml.cache.enabled')).toBe(false);
+      expect(configManager.get('plantuml.cache.maxAge')).toBe(3600000); // Should keep default
+      expect(configManager.get('plantuml.cache.maxSize')).toBe(200); // Should override
+      expect(configManager.get('plantuml.timeout')).toBe(5000);
+      expect(configManager.get('plantuml.fallback.showErrorPlaceholder')).toBe(
+        false,
+      );
+      expect(configManager.get('plantuml.fallback.errorMessage')).toBe(
+        'Local PlantUML failed',
+      );
+    });
+
+    it('should validate PlantUML configuration types', () => {
+      // Test boolean values
+      configManager.set('plantuml.enabled', 'true');
+      expect(configManager.get('plantuml.enabled')).toBe('true'); // ConfigManager doesn't auto-convert
+
+      // Test number values
+      configManager.set('plantuml.timeout', '30000');
+      expect(configManager.get('plantuml.timeout')).toBe('30000');
+
+      // Test object values
+      configManager.set('plantuml.cache', { enabled: false, maxSize: 50 });
+      expect(configManager.get('plantuml.cache')).toEqual({
+        enabled: false,
+        maxSize: 50,
+      });
+    });
+  });
+
   describe('Edge Cases and Error Handling', () => {
     let configManager: ConfigManager;
 

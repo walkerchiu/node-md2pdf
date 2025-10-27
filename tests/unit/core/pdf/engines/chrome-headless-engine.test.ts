@@ -297,6 +297,7 @@ describe('ChromeHeadlessPDFEngine', () => {
       await generatePromise;
 
       // Check the second spawn call (PDF generation)
+      expect(mockSpawn.mock.calls.length).toBeGreaterThanOrEqual(2);
       const pdfGenerationCall = mockSpawn.mock.calls[1];
       expect(pdfGenerationCall).toBeDefined();
 

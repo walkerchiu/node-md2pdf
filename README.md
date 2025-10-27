@@ -5,7 +5,7 @@
 
 **A professional Markdown to PDF converter with smart features**
 
-Transform your Markdown documents into beautiful PDFs with automatic table of contents, Chinese language support, and intelligent settings recommendations!
+Transform your Markdown documents into beautiful PDFs with automatic table of contents, PlantUML diagram support, Chinese language support, and intelligent settings recommendations!
 
 ## ✨ Key Features
 
@@ -15,6 +15,7 @@ Transform your Markdown documents into beautiful PDFs with automatic table of co
 🎨 **Customization** - Adjust styling, covers, headers, and footers.<br/>
 🔧 **Settings** - Save preferences for future use.<br/>
 📑 **Auto TOC** - Generate clickable table of contents from headings.<br/>
+📊 **PlantUML Diagrams** - Automatic diagram rendering and embedding.<br/>
 📝 **File Logging** - Advanced logging with rotation and monitoring.
 
 ## 🚀 Quick Start
@@ -92,6 +93,7 @@ When you start the app, you'll see this friendly menu:
 ✅ **Tables** - Full table support with proper formatting.<br/>
 ✅ **Links & Images** - Handles automatically with image path resolution.<br/>
 ✅ **Quotes & Dividers** - Maintains original formatting.<br/>
+✅ **PlantUML Diagrams** - Automatic diagram rendering and embedding.<br/>
 ✅ **Chinese Support** - Perfect support for Chinese characters.
 
 ## 💡 Smart Features
@@ -114,10 +116,11 @@ Handle multiple files efficiently:
 
 ### 🎨 Customization Options
 
-- Adjust page size and margins.
-- Choose different style themes.
-- Custom covers and headers/footers.
-- Watermarks and security settings.
+- **Page Structure**: Configure headers, footers, and margins with interactive presets.
+- **Style Themes**: Choose from professional templates (business, academic, technical).
+- **Table of Contents**: Customizable depth and styling.
+- **PlantUML Settings**: Configure diagram server and rendering options.
+- **Image Processing**: Automatic path resolution and base64 embedding.
 
 ## 🔧 Requirements
 
@@ -356,5 +359,7 @@ Thanks to these amazing open source projects:
 
 - [Puppeteer](https://pptr.dev/) - High-quality PDF generation.
 - [markdown-it](https://github.com/markdown-it/markdown-it) - Markdown parsing.
+- [PlantUML](https://plantuml.com/) - Diagram generation and rendering.
 - [Commander.js](https://github.com/tj/commander.js/) - CLI framework.
 - [Inquirer.js](https://github.com/SBoudrias/Inquirer.js/) - Interactive prompts.
+- [Jest](https://jestjs.io/) - Testing framework with comprehensive coverage.

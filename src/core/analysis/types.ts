@@ -66,6 +66,8 @@ export interface MediaElementsInfo {
   images: number;
   hasLargeImages: boolean;
   hasDiagrams: boolean;
+  hasPlantUMLDiagrams: boolean;
+  plantUMLCount: number;
   estimatedImageSize: number; // in KB
 }
 

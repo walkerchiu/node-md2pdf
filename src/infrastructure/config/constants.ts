@@ -40,6 +40,16 @@ export const DEFAULT_PDF_OPTIONS = {
   PREFER_CSS_PAGE_SIZE: false,
 } as const;
 
+// Default PlantUML values
+export const DEFAULT_PLANTUML = {
+  SERVER_URL: 'https://www.plantuml.com/plantuml',
+  FORMAT: 'svg' as const,
+  DEFAULT_WIDTH: 800,
+  DEFAULT_HEIGHT: 600,
+  TIMEOUT: 10000,
+  ENABLE_CACHING: true,
+} as const;
+
 /**
  * Configuration constants and keys for type-safe access
  */
@@ -95,6 +105,24 @@ export const CONFIG_KEYS = {
     MAX_WORKERS: 'performance.maxWorkers',
     TIMEOUT: 'performance.timeout',
     MEMORY_LIMIT: 'performance.memoryLimit',
+  },
+  PLANTUML: {
+    ENABLED: 'plantuml.enabled',
+    SERVER_URL: 'plantuml.serverUrl',
+    FORMAT: 'plantuml.format',
+    DEFAULT_WIDTH: 'plantuml.defaultWidth',
+    DEFAULT_HEIGHT: 'plantuml.defaultHeight',
+    TIMEOUT: 'plantuml.timeout',
+    ENABLE_CACHING: 'plantuml.enableCaching',
+    CACHE: {
+      ENABLED: 'plantuml.cache.enabled',
+      MAX_AGE: 'plantuml.cache.maxAge',
+      MAX_SIZE: 'plantuml.cache.maxSize',
+    },
+    FALLBACK: {
+      SHOW_ERROR_PLACEHOLDER: 'plantuml.fallback.showErrorPlaceholder',
+      ERROR_MESSAGE: 'plantuml.fallback.errorMessage',
+    },
   },
   FEATURES: {
     ENHANCED_SERVICES: 'features.enhancedServices',

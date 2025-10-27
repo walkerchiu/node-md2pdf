@@ -277,6 +277,8 @@ describe('SmartConversionMode', () => {
         images: 0,
         hasLargeImages: false,
         hasDiagrams: false,
+        hasPlantUMLDiagrams: false,
+        plantUMLCount: 0,
         estimatedImageSize: 0,
       },
       contentComplexity: {
@@ -457,6 +459,8 @@ describe('SmartConversionMode', () => {
           images: 2,
           hasLargeImages: true,
           hasDiagrams: false,
+          hasPlantUMLDiagrams: false,
+          plantUMLCount: 0,
           estimatedImageSize: 500,
         },
         contentComplexity: {
@@ -528,6 +532,8 @@ describe('SmartConversionMode', () => {
         images: 0,
         hasLargeImages: false,
         hasDiagrams: false,
+        hasPlantUMLDiagrams: false,
+        plantUMLCount: 0,
         estimatedImageSize: 0,
       },
       contentComplexity: {
@@ -635,6 +641,8 @@ describe('SmartConversionMode', () => {
         images: 0,
         hasLargeImages: false,
         hasDiagrams: false,
+        hasPlantUMLDiagrams: false,
+        plantUMLCount: 0,
         estimatedImageSize: 0,
       },
       contentComplexity: {

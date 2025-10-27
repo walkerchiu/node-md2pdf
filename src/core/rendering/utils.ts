@@ -16,6 +16,7 @@ import {
 export function createTwoStageEngine(
   options: Partial<TwoStageRenderingOptions> = {},
   translator?: import('../../infrastructure/i18n/types').ITranslationManager,
+  configManager?: import('../../infrastructure/config/types').IConfigManager,
 ): TwoStageRenderingEngine {
   const defaultOptions: TwoStageRenderingOptions = {
     enabled: true,
@@ -25,7 +26,7 @@ export function createTwoStageEngine(
     ...options,
   };
 
-  return new TwoStageRenderingEngine(defaultOptions, translator);
+  return new TwoStageRenderingEngine(defaultOptions, translator, configManager);
 }
 
 /**

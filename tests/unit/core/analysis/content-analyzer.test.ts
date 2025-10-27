@@ -227,7 +227,108 @@ The document also references diagrams and flowcharts in the text.
 
       expect(analysis.mediaElements.images).toBe(3);
       expect(analysis.mediaElements.hasDiagrams).toBe(true);
+      expect(analysis.mediaElements.hasPlantUMLDiagrams).toBe(false);
+      expect(analysis.mediaElements.plantUMLCount).toBe(0);
       expect(analysis.mediaElements.estimatedImageSize).toBeGreaterThan(0);
+    });
+
+    it('should analyze content with PlantUML diagrams', async () => {
+      const content = `# Document with PlantUML
+
+Here is some content.
+
+\`\`\`plantuml
+@startuml
+Alice -> Bob: Hello
+Bob -> Alice: Hi there
+@enduml
+\`\`\`
+
+Some more text.
+
+\`\`\`plantuml
+@startuml
+class User {
+  +name: string
+  +email: string
+}
+class Order {
+  +id: number
+  +amount: number
+}
+User ||--o{ Order
+@enduml
+\`\`\`
+
+And more content with normal code:
+
+\`\`\`javascript
+console.log('This is not PlantUML');
+\`\`\`
+`;
+
+      const analysis = await analyzer.analyzeContent(content);
+
+      expect(analysis.mediaElements.hasPlantUMLDiagrams).toBe(true);
+      expect(analysis.mediaElements.plantUMLCount).toBe(2);
+      expect(analysis.mediaElements.hasDiagrams).toBe(true);
+      expect(analysis.codeBlocks).toHaveLength(3); // 2 PlantUML + 1 JavaScript
+    });
+
+    it('should detect PlantUML in @startuml format', async () => {
+      const content = `# Document with Direct PlantUML
+
+Some content here.
+
+The system architecture is shown below:
+
+@startuml
+participant User
+participant System
+participant Database
+
+User -> System: Request
+System -> Database: Query
+Database -> System: Result
+System -> User: Response
+@enduml
+
+More content continues here.
+`;
+
+      const analysis = await analyzer.analyzeContent(content);
+
+      expect(analysis.mediaElements.hasPlantUMLDiagrams).toBe(true);
+      expect(analysis.mediaElements.plantUMLCount).toBe(1);
+      expect(analysis.mediaElements.hasDiagrams).toBe(true);
+    });
+
+    it('should not detect PlantUML in other code blocks', async () => {
+      const content = `# Document without PlantUML
+
+\`\`\`java
+@Component
+public class UserService {
+  // This is not PlantUML even though it has @
+}
+\`\`\`
+
+\`\`\`mermaid
+graph TD
+  A --> B
+  B --> C
+\`\`\`
+
+\`\`\`python
+print("@startuml is just a string here")
+\`\`\`
+`;
+
+      const analysis = await analyzer.analyzeContent(content);
+
+      expect(analysis.mediaElements.hasPlantUMLDiagrams).toBe(false);
+      expect(analysis.mediaElements.plantUMLCount).toBe(0);
+      expect(analysis.mediaElements.hasDiagrams).toBe(true); // Still has diagrams due to mermaid
     });
 
     it('should handle complex tables correctly', async () => {

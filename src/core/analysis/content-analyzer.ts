@@ -27,6 +27,8 @@ export class ContentAnalyzer {
   private codeBlockRegex = /```(\w+)?\n([\s\S]*?)```/g;
   private linkRegex = /\[([^\]]+)\]\(([^)]+)\)/g;
   private imageRegex = /!\[([^\]]*)\]\(([^)]+)\)/g;
+  private plantUMLRegex = /```plantuml\n([\s\S]*?)```/g;
+  private plantUMLDirectRegex = /@startuml[\s\S]*?@enduml/g;
 
   async analyzeFile(filePath: string): Promise<ContentAnalysis> {
     const content = this.readMarkdownFile(filePath);
@@ -177,6 +179,21 @@ export class ContentAnalyzer {
     const imageMatches = content.match(this.imageRegex) || [];
     const images = imageMatches.length;
 
+    // Check for PlantUML diagrams
+    const plantUMLMatches = content.match(this.plantUMLRegex) || [];
+
+    // Remove PlantUML code blocks from content before checking for direct @startuml patterns
+    // to avoid double counting
+    let contentWithoutCodeBlocks = content;
+    plantUMLMatches.forEach((match) => {
+      contentWithoutCodeBlocks = contentWithoutCodeBlocks.replace(match, '');
+    });
+
+    const plantUMLDirectMatches =
+      contentWithoutCodeBlocks.match(this.plantUMLDirectRegex) || [];
+    const plantUMLCount = plantUMLMatches.length + plantUMLDirectMatches.length;
+    const hasPlantUMLDiagrams = plantUMLCount > 0;
+
     // Check for diagram indicators
     const diagramKeywords = [
       'graph',
@@ -187,9 +204,10 @@ export class ContentAnalyzer {
       'plantuml',
       'mermaid',
     ];
-    const hasDiagrams = diagramKeywords.some((keyword) =>
-      content.toLowerCase().includes(keyword),
-    );
+    const hasDiagrams =
+      diagramKeywords.some((keyword) =>
+        content.toLowerCase().includes(keyword),
+      ) || hasPlantUMLDiagrams;
 
     // Estimate if images are large based on context
     const hasLargeImages =
@@ -199,6 +217,8 @@ export class ContentAnalyzer {
       images,
       hasLargeImages,
       hasDiagrams,
+      hasPlantUMLDiagrams,
+      plantUMLCount,
       estimatedImageSize: images * 50, // Rough estimate: 50KB per image
     };
   }
