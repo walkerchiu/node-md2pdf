@@ -7,6 +7,7 @@ import {
   DEFAULT_CSS_TEMPLATE,
   DEFAULT_PDF_OPTIONS,
   DEFAULT_PLANTUML,
+  DEFAULT_MERMAID,
   CONFIG_KEYS,
 } from '../../../../src/infrastructure/config/constants';
 
@@ -112,6 +113,53 @@ describe('Configuration Constants', () => {
     });
   });
 
+  describe('DEFAULT_MERMAID', () => {
+    it('should define all required Mermaid options', () => {
+      expect(DEFAULT_MERMAID.THEME).toBe('default');
+      expect(DEFAULT_MERMAID.DEFAULT_WIDTH).toBe(800);
+      expect(DEFAULT_MERMAID.DEFAULT_HEIGHT).toBe(600);
+      expect(DEFAULT_MERMAID.TIMEOUT).toBe(10000);
+      expect(DEFAULT_MERMAID.ENABLE_CACHING).toBe(true);
+      expect(DEFAULT_MERMAID.BACKGROUND_COLOR).toBe('white');
+      expect(DEFAULT_MERMAID.CDN_URL).toBe(
+        'https://cdn.jsdelivr.net/npm/mermaid@11.12.0/dist/mermaid.min.js',
+      );
+      expect(DEFAULT_MERMAID.VIEWPORT_WIDTH).toBe(1200);
+      expect(DEFAULT_MERMAID.VIEWPORT_HEIGHT).toBe(800);
+    });
+
+    it('should use public CDN for Mermaid library', () => {
+      expect(DEFAULT_MERMAID.CDN_URL).toContain('jsdelivr.net');
+      expect(DEFAULT_MERMAID.CDN_URL).toContain('mermaid');
+    });
+
+    it('should have reasonable timeout and dimensions', () => {
+      expect(DEFAULT_MERMAID.TIMEOUT).toBeGreaterThan(0);
+      expect(DEFAULT_MERMAID.DEFAULT_WIDTH).toBeGreaterThan(0);
+      expect(DEFAULT_MERMAID.DEFAULT_HEIGHT).toBeGreaterThan(0);
+      expect(DEFAULT_MERMAID.VIEWPORT_WIDTH).toBeGreaterThan(0);
+      expect(DEFAULT_MERMAID.VIEWPORT_HEIGHT).toBeGreaterThan(0);
+    });
+
+    it('should enable caching by default for performance', () => {
+      expect(DEFAULT_MERMAID.ENABLE_CACHING).toBe(true);
+    });
+
+    it('should use default theme and white background', () => {
+      expect(DEFAULT_MERMAID.THEME).toBe('default');
+      expect(DEFAULT_MERMAID.BACKGROUND_COLOR).toBe('white');
+    });
+
+    it('should have larger viewport than default dimensions', () => {
+      expect(DEFAULT_MERMAID.VIEWPORT_WIDTH).toBeGreaterThan(
+        DEFAULT_MERMAID.DEFAULT_WIDTH,
+      );
+      expect(DEFAULT_MERMAID.VIEWPORT_HEIGHT).toBeGreaterThan(
+        DEFAULT_MERMAID.DEFAULT_HEIGHT,
+      );
+    });
+  });
+
   describe('CONFIG_KEYS', () => {
     it('should define PDF configuration keys', () => {
       expect(CONFIG_KEYS.PDF.FORMAT).toBe('pdf.format');
@@ -212,6 +260,38 @@ describe('Configuration Constants', () => {
       );
     });
 
+    it('should define Mermaid configuration keys', () => {
+      expect(CONFIG_KEYS.MERMAID.ENABLED).toBe('mermaid.enabled');
+      expect(CONFIG_KEYS.MERMAID.THEME).toBe('mermaid.theme');
+      expect(CONFIG_KEYS.MERMAID.DEFAULT_WIDTH).toBe('mermaid.defaultWidth');
+      expect(CONFIG_KEYS.MERMAID.DEFAULT_HEIGHT).toBe('mermaid.defaultHeight');
+      expect(CONFIG_KEYS.MERMAID.TIMEOUT).toBe('mermaid.timeout');
+      expect(CONFIG_KEYS.MERMAID.ENABLE_CACHING).toBe('mermaid.enableCaching');
+      expect(CONFIG_KEYS.MERMAID.BACKGROUND_COLOR).toBe(
+        'mermaid.backgroundColor',
+      );
+      expect(CONFIG_KEYS.MERMAID.CDN_URL).toBe('mermaid.cdnUrl');
+      expect(CONFIG_KEYS.MERMAID.VIEWPORT_WIDTH).toBe('mermaid.viewportWidth');
+      expect(CONFIG_KEYS.MERMAID.VIEWPORT_HEIGHT).toBe(
+        'mermaid.viewportHeight',
+      );
+    });
+
+    it('should define Mermaid cache configuration keys', () => {
+      expect(CONFIG_KEYS.MERMAID.CACHE.ENABLED).toBe('mermaid.cache.enabled');
+      expect(CONFIG_KEYS.MERMAID.CACHE.MAX_AGE).toBe('mermaid.cache.maxAge');
+      expect(CONFIG_KEYS.MERMAID.CACHE.MAX_SIZE).toBe('mermaid.cache.maxSize');
+    });
+
+    it('should define Mermaid fallback configuration keys', () => {
+      expect(CONFIG_KEYS.MERMAID.FALLBACK.SHOW_ERROR_PLACEHOLDER).toBe(
+        'mermaid.fallback.showErrorPlaceholder',
+      );
+      expect(CONFIG_KEYS.MERMAID.FALLBACK.ERROR_MESSAGE).toBe(
+        'mermaid.fallback.errorMessage',
+      );
+    });
+
     it('should define feature flag keys', () => {
       expect(CONFIG_KEYS.FEATURES.ENHANCED_SERVICES).toBe(
         'features.enhancedServices',
@@ -232,6 +312,7 @@ describe('Configuration Constants', () => {
       expect(DEFAULT_CSS_TEMPLATE).toBeDefined();
       expect(DEFAULT_PDF_OPTIONS).toBeDefined();
       expect(DEFAULT_PLANTUML).toBeDefined();
+      expect(DEFAULT_MERMAID).toBeDefined();
       expect(CONFIG_KEYS).toBeDefined();
     });
 
@@ -241,6 +322,7 @@ describe('Configuration Constants', () => {
       expect(CONFIG_KEYS.PDF).toBeDefined();
       expect(CONFIG_KEYS.PDF.MARGIN).toBeDefined();
       expect(CONFIG_KEYS.PLANTUML).toBeDefined();
+      expect(CONFIG_KEYS.MERMAID).toBeDefined();
     });
 
     it('should be read-only objects (as const)', () => {

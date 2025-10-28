@@ -61,6 +61,8 @@ describe('Core Analysis Types', () => {
           hasDiagrams: false,
           hasPlantUMLDiagrams: false,
           plantUMLCount: 0,
+          hasMermaidDiagrams: false,
+          mermaidCount: 0,
           estimatedImageSize: 2048,
         },
         codeBlocks: [

@@ -33,11 +33,12 @@ describe('Rendering Types', () => {
 
     it('should have all expected enum values', () => {
       const enumValues = Object.values(DynamicContentType);
-      expect(enumValues).toHaveLength(5);
+      expect(enumValues).toHaveLength(6);
       expect(enumValues).toContain('toc');
       expect(enumValues).toContain('image');
       expect(enumValues).toContain('diagram');
       expect(enumValues).toContain('plantuml');
+      expect(enumValues).toContain('mermaid');
       expect(enumValues).toContain('complex_layout');
     });
   });

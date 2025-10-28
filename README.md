@@ -16,6 +16,7 @@ Transform your Markdown documents into beautiful PDFs with automatic table of co
 🔧 **Settings** - Save preferences for future use.<br/>
 📑 **Auto TOC** - Generate clickable table of contents from headings.<br/>
 📊 **PlantUML Diagrams** - Automatic diagram rendering and embedding.<br/>
+📈 **Mermaid Diagrams** - Modern flowcharts, sequence diagrams, and Gantt charts.<br/>
 📝 **File Logging** - Advanced logging with rotation and monitoring.
 
 ## 🚀 Quick Start
@@ -94,6 +95,7 @@ When you start the app, you'll see this friendly menu:
 ✅ **Links & Images** - Handles automatically with image path resolution.<br/>
 ✅ **Quotes & Dividers** - Maintains original formatting.<br/>
 ✅ **PlantUML Diagrams** - Automatic diagram rendering and embedding.<br/>
+✅ **Mermaid Diagrams** - Flowcharts, sequence diagrams, Gantt charts with local rendering.<br/>
 ✅ **Chinese Support** - Perfect support for Chinese characters.
 
 ## 💡 Smart Features
@@ -120,6 +122,7 @@ Handle multiple files efficiently:
 - **Style Themes**: Choose from professional templates (business, academic, technical).
 - **Table of Contents**: Customizable depth and styling.
 - **PlantUML Settings**: Configure diagram server and rendering options.
+- **Mermaid Settings**: Local rendering with theme customization and caching.
 - **Image Processing**: Automatic path resolution and base64 embedding.
 
 ## 🔧 Requirements
@@ -360,6 +363,7 @@ Thanks to these amazing open source projects:
 - [Puppeteer](https://pptr.dev/) - High-quality PDF generation.
 - [markdown-it](https://github.com/markdown-it/markdown-it) - Markdown parsing.
 - [PlantUML](https://plantuml.com/) - Diagram generation and rendering.
+- [Mermaid](https://mermaid.js.org/) - Modern diagramming and charting tool.
 - [Commander.js](https://github.com/tj/commander.js/) - CLI framework.
 - [Inquirer.js](https://github.com/SBoudrias/Inquirer.js/) - Interactive prompts.
 - [Jest](https://jestjs.io/) - Testing framework with comprehensive coverage.

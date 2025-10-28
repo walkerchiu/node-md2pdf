@@ -9,6 +9,7 @@ import {
   DEFAULT_CSS_TEMPLATE,
   DEFAULT_PDF_OPTIONS,
   DEFAULT_PLANTUML,
+  DEFAULT_MERMAID,
   CONFIG_KEYS,
 } from '../../../../src/infrastructure/config/defaults';
 
@@ -142,6 +143,44 @@ describe('Default Configuration Values', () => {
       expect(defaultConfig.plantuml?.fallback?.showErrorPlaceholder).toBe(true);
       expect(defaultConfig.plantuml?.fallback?.errorMessage).toBe(
         'PlantUML diagram rendering failed',
+      );
+    });
+
+    it('should define Mermaid configuration', () => {
+      expect(defaultConfig.mermaid?.enabled).toBe(true);
+      expect(defaultConfig.mermaid?.theme).toBe(DEFAULT_MERMAID.THEME);
+      expect(defaultConfig.mermaid?.defaultWidth).toBe(
+        DEFAULT_MERMAID.DEFAULT_WIDTH,
+      );
+      expect(defaultConfig.mermaid?.defaultHeight).toBe(
+        DEFAULT_MERMAID.DEFAULT_HEIGHT,
+      );
+      expect(defaultConfig.mermaid?.timeout).toBe(DEFAULT_MERMAID.TIMEOUT);
+      expect(defaultConfig.mermaid?.enableCaching).toBe(
+        DEFAULT_MERMAID.ENABLE_CACHING,
+      );
+      expect(defaultConfig.mermaid?.backgroundColor).toBe(
+        DEFAULT_MERMAID.BACKGROUND_COLOR,
+      );
+      expect(defaultConfig.mermaid?.cdnUrl).toBe(DEFAULT_MERMAID.CDN_URL);
+      expect(defaultConfig.mermaid?.viewportWidth).toBe(
+        DEFAULT_MERMAID.VIEWPORT_WIDTH,
+      );
+      expect(defaultConfig.mermaid?.viewportHeight).toBe(
+        DEFAULT_MERMAID.VIEWPORT_HEIGHT,
+      );
+    });
+
+    it('should define Mermaid cache configuration', () => {
+      expect(defaultConfig.mermaid?.cache?.enabled).toBe(true);
+      expect(defaultConfig.mermaid?.cache?.maxAge).toBe(3600000); // 1 hour
+      expect(defaultConfig.mermaid?.cache?.maxSize).toBe(100);
+    });
+
+    it('should define Mermaid fallback configuration', () => {
+      expect(defaultConfig.mermaid?.fallback?.showErrorPlaceholder).toBe(true);
+      expect(defaultConfig.mermaid?.fallback?.errorMessage).toBe(
+        'Mermaid diagram rendering failed',
       );
     });
 
@@ -290,6 +329,58 @@ describe('Default Configuration Values', () => {
       );
     });
 
+    it('should define Mermaid environment mappings', () => {
+      expect(environmentMappings['MD2PDF_MERMAID_ENABLED']).toBe(
+        'mermaid.enabled',
+      );
+      expect(environmentMappings['MD2PDF_MERMAID_THEME']).toBe('mermaid.theme');
+      expect(environmentMappings['MD2PDF_MERMAID_DEFAULT_WIDTH']).toBe(
+        'mermaid.defaultWidth',
+      );
+      expect(environmentMappings['MD2PDF_MERMAID_DEFAULT_HEIGHT']).toBe(
+        'mermaid.defaultHeight',
+      );
+      expect(environmentMappings['MD2PDF_MERMAID_TIMEOUT']).toBe(
+        'mermaid.timeout',
+      );
+      expect(environmentMappings['MD2PDF_MERMAID_ENABLE_CACHING']).toBe(
+        'mermaid.enableCaching',
+      );
+      expect(environmentMappings['MD2PDF_MERMAID_BACKGROUND_COLOR']).toBe(
+        'mermaid.backgroundColor',
+      );
+      expect(environmentMappings['MD2PDF_MERMAID_CDN_URL']).toBe(
+        'mermaid.cdnUrl',
+      );
+      expect(environmentMappings['MD2PDF_MERMAID_VIEWPORT_WIDTH']).toBe(
+        'mermaid.viewportWidth',
+      );
+      expect(environmentMappings['MD2PDF_MERMAID_VIEWPORT_HEIGHT']).toBe(
+        'mermaid.viewportHeight',
+      );
+    });
+
+    it('should define Mermaid cache environment mappings', () => {
+      expect(environmentMappings['MD2PDF_MERMAID_CACHE_ENABLED']).toBe(
+        'mermaid.cache.enabled',
+      );
+      expect(environmentMappings['MD2PDF_MERMAID_CACHE_MAX_AGE']).toBe(
+        'mermaid.cache.maxAge',
+      );
+      expect(environmentMappings['MD2PDF_MERMAID_CACHE_MAX_SIZE']).toBe(
+        'mermaid.cache.maxSize',
+      );
+    });
+
+    it('should define Mermaid fallback environment mappings', () => {
+      expect(environmentMappings['MD2PDF_MERMAID_SHOW_ERROR_PLACEHOLDER']).toBe(
+        'mermaid.fallback.showErrorPlaceholder',
+      );
+      expect(environmentMappings['MD2PDF_MERMAID_ERROR_MESSAGE']).toBe(
+        'mermaid.fallback.errorMessage',
+      );
+    });
+
     it('should have mappings for all defined environment variables', () => {
       const envKeys = Object.keys(environmentMappings);
       expect(envKeys.length).toBeGreaterThan(0);
@@ -312,6 +403,7 @@ describe('Default Configuration Values', () => {
       expect(DEFAULT_CSS_TEMPLATE).toBeDefined();
       expect(DEFAULT_PDF_OPTIONS).toBeDefined();
       expect(DEFAULT_PLANTUML).toBeDefined();
+      expect(DEFAULT_MERMAID).toBeDefined();
       expect(CONFIG_KEYS).toBeDefined();
     });
 
@@ -324,6 +416,8 @@ describe('Default Configuration Values', () => {
       expect(defaultConfig.plantuml?.serverUrl).toBe(
         DEFAULT_PLANTUML.SERVER_URL,
       );
+      expect(defaultConfig.mermaid?.theme).toBe(DEFAULT_MERMAID.THEME);
+      expect(defaultConfig.mermaid?.cdnUrl).toBe(DEFAULT_MERMAID.CDN_URL);
     });
   });
 

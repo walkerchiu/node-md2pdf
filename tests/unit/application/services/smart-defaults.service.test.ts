@@ -101,6 +101,8 @@ describe('SmartDefaultsService', () => {
           estimatedImageSize: 100,
           hasPlantUMLDiagrams: false,
           plantUMLCount: 0,
+          hasMermaidDiagrams: false,
+          mermaidCount: 0,
         },
         codeBlocks: [
           {
@@ -185,6 +187,8 @@ describe('SmartDefaultsService', () => {
           estimatedImageSize: 0,
           hasPlantUMLDiagrams: false,
           plantUMLCount: 0,
+          hasMermaidDiagrams: false,
+          mermaidCount: 0,
         },
         codeBlocks: [],
         tables: [],
@@ -248,6 +252,8 @@ describe('SmartDefaultsService', () => {
           hasDiagrams: false,
           hasPlantUMLDiagrams: false,
           plantUMLCount: 0,
+          hasMermaidDiagrams: false,
+          mermaidCount: 0,
           estimatedImageSize: 50,
         },
         codeBlocks: [],
@@ -314,6 +320,8 @@ describe('SmartDefaultsService', () => {
           estimatedImageSize: 0,
           hasPlantUMLDiagrams: false,
           plantUMLCount: 0,
+          hasMermaidDiagrams: false,
+          mermaidCount: 0,
         },
         codeBlocks: [],
         tables: [],
@@ -377,6 +385,8 @@ describe('SmartDefaultsService', () => {
           estimatedImageSize: 100,
           hasPlantUMLDiagrams: false,
           plantUMLCount: 0,
+          hasMermaidDiagrams: false,
+          mermaidCount: 0,
         },
         codeBlocks: [
           {
@@ -441,6 +451,8 @@ describe('SmartDefaultsService', () => {
           estimatedImageSize: 0,
           hasPlantUMLDiagrams: false,
           plantUMLCount: 0,
+          hasMermaidDiagrams: false,
+          mermaidCount: 0,
         },
         codeBlocks: [],
         tables: [],
@@ -526,6 +538,8 @@ describe('SmartDefaultsService', () => {
           estimatedImageSize: 3000,
           hasPlantUMLDiagrams: false,
           plantUMLCount: 0,
+          hasMermaidDiagrams: false,
+          mermaidCount: 0,
         },
         codeBlocks: [
           {
