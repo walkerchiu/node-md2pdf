@@ -279,6 +279,8 @@ describe('SmartConversionMode', () => {
         hasDiagrams: false,
         hasPlantUMLDiagrams: false,
         plantUMLCount: 0,
+        hasMermaidDiagrams: false,
+        mermaidCount: 0,
         estimatedImageSize: 0,
       },
       contentComplexity: {
@@ -461,6 +463,8 @@ describe('SmartConversionMode', () => {
           hasDiagrams: false,
           hasPlantUMLDiagrams: false,
           plantUMLCount: 0,
+          hasMermaidDiagrams: false,
+          mermaidCount: 0,
           estimatedImageSize: 500,
         },
         contentComplexity: {
@@ -534,6 +538,8 @@ describe('SmartConversionMode', () => {
         hasDiagrams: false,
         hasPlantUMLDiagrams: false,
         plantUMLCount: 0,
+        hasMermaidDiagrams: false,
+        mermaidCount: 0,
         estimatedImageSize: 0,
       },
       contentComplexity: {
@@ -643,6 +649,8 @@ describe('SmartConversionMode', () => {
         hasDiagrams: false,
         hasPlantUMLDiagrams: false,
         plantUMLCount: 0,
+        hasMermaidDiagrams: false,
+        mermaidCount: 0,
         estimatedImageSize: 0,
       },
       contentComplexity: {

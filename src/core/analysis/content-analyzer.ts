@@ -29,6 +29,7 @@ export class ContentAnalyzer {
   private imageRegex = /!\[([^\]]*)\]\(([^)]+)\)/g;
   private plantUMLRegex = /```plantuml\n([\s\S]*?)```/g;
   private plantUMLDirectRegex = /@startuml[\s\S]*?@enduml/g;
+  private mermaidRegex = /```mermaid\n([\s\S]*?)```/g;
 
   async analyzeFile(filePath: string): Promise<ContentAnalysis> {
     const content = this.readMarkdownFile(filePath);
@@ -194,6 +195,11 @@ export class ContentAnalyzer {
     const plantUMLCount = plantUMLMatches.length + plantUMLDirectMatches.length;
     const hasPlantUMLDiagrams = plantUMLCount > 0;
 
+    // Check for Mermaid diagrams
+    const mermaidMatches = content.match(this.mermaidRegex) || [];
+    const mermaidCount = mermaidMatches.length;
+    const hasMermaidDiagrams = mermaidCount > 0;
+
     // Check for diagram indicators
     const diagramKeywords = [
       'graph',
@@ -207,7 +213,9 @@ export class ContentAnalyzer {
     const hasDiagrams =
       diagramKeywords.some((keyword) =>
         content.toLowerCase().includes(keyword),
-      ) || hasPlantUMLDiagrams;
+      ) ||
+      hasPlantUMLDiagrams ||
+      hasMermaidDiagrams;
 
     // Estimate if images are large based on context
     const hasLargeImages =
@@ -219,6 +227,8 @@ export class ContentAnalyzer {
       hasDiagrams,
       hasPlantUMLDiagrams,
       plantUMLCount,
+      hasMermaidDiagrams,
+      mermaidCount,
       estimatedImageSize: images * 50, // Rough estimate: 50KB per image
     };
   }

@@ -155,6 +155,29 @@ export interface ConfigSchema {
     };
   };
 
+  // Mermaid settings
+  mermaid: {
+    enabled: boolean;
+    theme: 'default' | 'dark' | 'forest' | 'neutral';
+    defaultWidth: number;
+    defaultHeight: number;
+    timeout: number; // request timeout in milliseconds
+    enableCaching: boolean;
+    backgroundColor: string;
+    cdnUrl: string;
+    viewportWidth: number;
+    viewportHeight: number;
+    cache: {
+      enabled: boolean;
+      maxAge: number; // in milliseconds
+      maxSize: number; // max cache entries
+    };
+    fallback: {
+      showErrorPlaceholder: boolean;
+      errorMessage: string;
+    };
+  };
+
   // Feature flags
   features: {
     enhancedServices: boolean;

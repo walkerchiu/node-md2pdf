@@ -9,6 +9,7 @@ export enum DynamicContentType {
   IMAGE = 'image',
   DIAGRAM = 'diagram',
   PLANTUML = 'plantuml',
+  MERMAID = 'mermaid',
   COMPLEX_LAYOUT = 'complex_layout',
 }
 
@@ -32,6 +33,26 @@ export interface ProcessingContext {
     enabled?: boolean;
     includePageNumbers?: boolean;
     maxDepth?: number;
+  };
+
+  /** PlantUML configuration */
+  plantUMLConfig?: {
+    serverUrl?: string;
+    format?: 'svg' | 'png';
+    defaultWidth?: number;
+    defaultHeight?: number;
+    timeout?: number;
+    enableCaching?: boolean;
+  };
+
+  /** Mermaid configuration */
+  mermaidConfig?: {
+    theme?: 'default' | 'forest' | 'dark' | 'neutral' | 'null';
+    defaultWidth?: number;
+    defaultHeight?: number;
+    timeout?: number;
+    enableCaching?: boolean;
+    backgroundColor?: string;
   };
 
   /** Headings extracted from content */

@@ -68,6 +68,8 @@ export interface MediaElementsInfo {
   hasDiagrams: boolean;
   hasPlantUMLDiagrams: boolean;
   plantUMLCount: number;
+  hasMermaidDiagrams: boolean;
+  mermaidCount: number;
   estimatedImageSize: number; // in KB
 }
 

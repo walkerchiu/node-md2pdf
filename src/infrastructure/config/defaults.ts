@@ -8,6 +8,7 @@ import {
   DEFAULT_CSS_TEMPLATE,
   DEFAULT_PDF_OPTIONS,
   DEFAULT_PLANTUML,
+  DEFAULT_MERMAID,
   CONFIG_KEYS,
 } from './constants';
 
@@ -95,6 +96,27 @@ export const defaultConfig: ConfigSchema = {
       errorMessage: 'PlantUML diagram rendering failed',
     },
   },
+  mermaid: {
+    enabled: true,
+    theme: DEFAULT_MERMAID.THEME,
+    defaultWidth: DEFAULT_MERMAID.DEFAULT_WIDTH,
+    defaultHeight: DEFAULT_MERMAID.DEFAULT_HEIGHT,
+    timeout: DEFAULT_MERMAID.TIMEOUT,
+    enableCaching: DEFAULT_MERMAID.ENABLE_CACHING,
+    backgroundColor: DEFAULT_MERMAID.BACKGROUND_COLOR,
+    cdnUrl: DEFAULT_MERMAID.CDN_URL,
+    viewportWidth: DEFAULT_MERMAID.VIEWPORT_WIDTH,
+    viewportHeight: DEFAULT_MERMAID.VIEWPORT_HEIGHT,
+    cache: {
+      enabled: true,
+      maxAge: 3600000, // 1 hour in milliseconds
+      maxSize: 100, // max 100 cache entries
+    },
+    fallback: {
+      showErrorPlaceholder: true,
+      errorMessage: 'Mermaid diagram rendering failed',
+    },
+  },
   features: {
     enhancedServices: process.env.MD2PDF_USE_ENHANCED_SERVICES !== 'false',
     enhancedCli: process.env.MD2PDF_USE_ENHANCED_CLI !== 'false',
@@ -109,6 +131,7 @@ export {
   DEFAULT_CSS_TEMPLATE,
   DEFAULT_PDF_OPTIONS,
   DEFAULT_PLANTUML,
+  DEFAULT_MERMAID,
   CONFIG_KEYS,
 };
 
@@ -155,4 +178,20 @@ export const environmentMappings: Record<string, string> = {
   MD2PDF_PLANTUML_SHOW_ERROR_PLACEHOLDER:
     'plantuml.fallback.showErrorPlaceholder',
   MD2PDF_PLANTUML_ERROR_MESSAGE: 'plantuml.fallback.errorMessage',
+  MD2PDF_MERMAID_ENABLED: 'mermaid.enabled',
+  MD2PDF_MERMAID_THEME: 'mermaid.theme',
+  MD2PDF_MERMAID_DEFAULT_WIDTH: 'mermaid.defaultWidth',
+  MD2PDF_MERMAID_DEFAULT_HEIGHT: 'mermaid.defaultHeight',
+  MD2PDF_MERMAID_TIMEOUT: 'mermaid.timeout',
+  MD2PDF_MERMAID_ENABLE_CACHING: 'mermaid.enableCaching',
+  MD2PDF_MERMAID_BACKGROUND_COLOR: 'mermaid.backgroundColor',
+  MD2PDF_MERMAID_CDN_URL: 'mermaid.cdnUrl',
+  MD2PDF_MERMAID_VIEWPORT_WIDTH: 'mermaid.viewportWidth',
+  MD2PDF_MERMAID_VIEWPORT_HEIGHT: 'mermaid.viewportHeight',
+  MD2PDF_MERMAID_CACHE_ENABLED: 'mermaid.cache.enabled',
+  MD2PDF_MERMAID_CACHE_MAX_AGE: 'mermaid.cache.maxAge',
+  MD2PDF_MERMAID_CACHE_MAX_SIZE: 'mermaid.cache.maxSize',
+  MD2PDF_MERMAID_SHOW_ERROR_PLACEHOLDER:
+    'mermaid.fallback.showErrorPlaceholder',
+  MD2PDF_MERMAID_ERROR_MESSAGE: 'mermaid.fallback.errorMessage',
 };

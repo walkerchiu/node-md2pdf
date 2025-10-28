@@ -12,6 +12,7 @@ import {
   IDynamicContentProcessor,
   IContentCache,
 } from './interfaces';
+import { MermaidProcessor } from './processors/mermaid-processor';
 import { PlantUMLProcessor } from './processors/plantuml-processor';
 import { TOCProcessor } from './processors/toc-processor';
 import {
@@ -209,6 +210,25 @@ export class TwoStageRenderingEngine implements ITwoStageRenderingEngine {
       cacheMisses += plantUMLResult.metadata.cacheMisses || 0;
     }
 
+    // Process Mermaid diagrams
+    const mermaidProcessor = this.processors.get(DynamicContentType.MERMAID);
+    if (mermaidProcessor) {
+      const mermaidContext = { ...context, isPreRendering: false };
+      const mermaidResult = await mermaidProcessor.process(
+        processedHTML,
+        mermaidContext,
+      );
+
+      if (mermaidResult.html) {
+        processedHTML = mermaidResult.html;
+        processedContentTypes.push(DynamicContentType.MERMAID);
+      }
+
+      warnings.push(...mermaidResult.metadata.warnings);
+      cacheHits += mermaidResult.metadata.cacheHits || 0;
+      cacheMisses += mermaidResult.metadata.cacheMisses || 0;
+    }
+
     // Process TOC based on user configuration (simplified for debugging)
     if (context.tocOptions?.enabled && (context.headings?.length || 0) > 0) {
       console.log(
@@ -282,6 +302,25 @@ export class TwoStageRenderingEngine implements ITwoStageRenderingEngine {
       warnings.push(...plantUMLResult.metadata.warnings);
       cacheHits += plantUMLResult.metadata.cacheHits || 0;
       cacheMisses += plantUMLResult.metadata.cacheMisses || 0;
+    }
+
+    // Process Mermaid diagrams
+    const mermaidProcessor = this.processors.get(DynamicContentType.MERMAID);
+    if (mermaidProcessor) {
+      const mermaidContext = { ...context, isPreRendering: true };
+      const mermaidResult = await mermaidProcessor.process(
+        preRenderedContent,
+        mermaidContext,
+      );
+
+      if (mermaidResult.html) {
+        preRenderedContent = mermaidResult.html;
+        processedContentTypes.push(DynamicContentType.MERMAID);
+      }
+
+      warnings.push(...mermaidResult.metadata.warnings);
+      cacheHits += mermaidResult.metadata.cacheHits || 0;
+      cacheMisses += mermaidResult.metadata.cacheMisses || 0;
     }
 
     // For TOC, we need special handling
@@ -394,6 +433,10 @@ export class TwoStageRenderingEngine implements ITwoStageRenderingEngine {
     // Register PlantUML processor with configuration
     const plantUMLConfig = this.configManager?.get('plantuml', {}) || {};
     this.registerProcessor(new PlantUMLProcessor(plantUMLConfig));
+
+    // Register Mermaid processor with configuration
+    const mermaidConfig = this.configManager?.get('mermaid', {}) || {};
+    this.registerProcessor(new MermaidProcessor(mermaidConfig));
 
     // Future processors will be registered here:
     // this.registerProcessor(new ImageProcessor());

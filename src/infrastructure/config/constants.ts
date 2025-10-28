@@ -50,6 +50,19 @@ export const DEFAULT_PLANTUML = {
   ENABLE_CACHING: true,
 } as const;
 
+// Default Mermaid values
+export const DEFAULT_MERMAID = {
+  THEME: 'default' as const,
+  DEFAULT_WIDTH: 800,
+  DEFAULT_HEIGHT: 600,
+  TIMEOUT: 10000,
+  ENABLE_CACHING: true,
+  BACKGROUND_COLOR: 'white',
+  CDN_URL: 'https://cdn.jsdelivr.net/npm/mermaid@11.12.0/dist/mermaid.min.js',
+  VIEWPORT_WIDTH: 1200,
+  VIEWPORT_HEIGHT: 800,
+} as const;
+
 /**
  * Configuration constants and keys for type-safe access
  */
@@ -122,6 +135,27 @@ export const CONFIG_KEYS = {
     FALLBACK: {
       SHOW_ERROR_PLACEHOLDER: 'plantuml.fallback.showErrorPlaceholder',
       ERROR_MESSAGE: 'plantuml.fallback.errorMessage',
+    },
+  },
+  MERMAID: {
+    ENABLED: 'mermaid.enabled',
+    THEME: 'mermaid.theme',
+    DEFAULT_WIDTH: 'mermaid.defaultWidth',
+    DEFAULT_HEIGHT: 'mermaid.defaultHeight',
+    TIMEOUT: 'mermaid.timeout',
+    ENABLE_CACHING: 'mermaid.enableCaching',
+    BACKGROUND_COLOR: 'mermaid.backgroundColor',
+    CDN_URL: 'mermaid.cdnUrl',
+    VIEWPORT_WIDTH: 'mermaid.viewportWidth',
+    VIEWPORT_HEIGHT: 'mermaid.viewportHeight',
+    CACHE: {
+      ENABLED: 'mermaid.cache.enabled',
+      MAX_AGE: 'mermaid.cache.maxAge',
+      MAX_SIZE: 'mermaid.cache.maxSize',
+    },
+    FALLBACK: {
+      SHOW_ERROR_PLACEHOLDER: 'mermaid.fallback.showErrorPlaceholder',
+      ERROR_MESSAGE: 'mermaid.fallback.errorMessage',
     },
   },
   FEATURES: {
