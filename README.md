@@ -15,7 +15,7 @@ Transform your Markdown documents into beautiful PDFs with automatic table of co
 🎨 **Customization** - Adjust styling, covers, headers, and footers.<br/>
 🔧 **Settings** - Save preferences for future use.<br/>
 📑 **Auto TOC** - Generate clickable table of contents from headings.<br/>
-📊 **PlantUML Diagrams** - Automatic diagram rendering and embedding.<br/>
+📊 **PlantUML Diagrams** - Local and remote diagram rendering with automatic installation detection.<br/>
 📈 **Mermaid Diagrams** - Modern flowcharts, sequence diagrams, and Gantt charts.<br/>
 📝 **File Logging** - Advanced logging with rotation and monitoring.
 
@@ -94,7 +94,7 @@ When you start the app, you'll see this friendly menu:
 ✅ **Tables** - Full table support with proper formatting.<br/>
 ✅ **Links & Images** - Handles automatically with image path resolution.<br/>
 ✅ **Quotes & Dividers** - Maintains original formatting.<br/>
-✅ **PlantUML Diagrams** - Automatic diagram rendering and embedding.<br/>
+✅ **PlantUML Diagrams** - Local-first rendering with automatic fallback to remote server.<br/>
 ✅ **Mermaid Diagrams** - Flowcharts, sequence diagrams, Gantt charts with local rendering.<br/>
 ✅ **Chinese Support** - Perfect support for Chinese characters.
 
@@ -121,7 +121,7 @@ Handle multiple files efficiently:
 - **Page Structure**: Configure headers, footers, and margins with interactive presets.
 - **Style Themes**: Choose from professional templates (business, academic, technical).
 - **Table of Contents**: Customizable depth and styling.
-- **PlantUML Settings**: Configure diagram server and rendering options.
+- **PlantUML Settings**: Local-first rendering with automatic installation detection and remote fallback.
 - **Mermaid Settings**: Local rendering with theme customization and caching.
 - **Image Processing**: Automatic path resolution and base64 embedding.
 
@@ -130,6 +130,45 @@ Handle multiple files efficiently:
 - **Node.js**: Version 18.0.0 or higher.
 - **Memory**: 2GB+ recommended (Puppeteer requirement).
 - **Platforms**: macOS, Linux, Windows.
+
+### Optional: PlantUML Local Rendering
+
+For enhanced PlantUML diagram rendering performance, install PlantUML locally:
+
+#### Option 1: Install PlantUML Command (Recommended)
+
+```bash
+# macOS (Homebrew)
+brew install plantuml
+
+# Linux (Ubuntu/Debian)
+sudo apt-get install plantuml
+
+# Linux (CentOS/RHEL)
+sudo yum install plantuml
+
+# Windows (Chocolatey)
+choco install plantuml
+```
+
+#### Option 2: Java + PlantUML JAR
+
+```bash
+# 1. Install Java (if not already installed)
+# macOS: brew install openjdk
+# Linux: sudo apt-get install openjdk-11-jre-headless
+# Windows: Download from Oracle or use Chocolatey
+
+# 2. Download PlantUML JAR
+curl -L -o plantuml.jar http://sourceforge.net/projects/plantuml/files/plantuml.jar/download
+
+# 3. Place in standard location:
+# macOS: /usr/local/bin/plantuml.jar
+# Linux: /usr/local/bin/plantuml.jar
+# Windows: C:\plantuml\plantuml.jar
+```
+
+**Note**: MD2PDF automatically detects PlantUML installations and uses local rendering for better performance. If local PlantUML is not available, it automatically falls back to the remote PlantUML server.
 
 ## 🛠️ For Developers
 
@@ -310,6 +349,32 @@ Check file permissions:
 chmod 644 your-markdown-file.md
 ```
 
+### PlantUML Rendering Issues?
+
+Check PlantUML setup and troubleshooting:
+
+```bash
+# Check if PlantUML command is available
+which plantuml
+plantuml -version
+
+# Test Java installation (if using JAR approach)
+java -version
+
+# Test PlantUML JAR directly
+java -jar /path/to/plantuml.jar -version
+
+# Enable debug mode to see PlantUML processing details
+MD2PDF_LOG_LEVEL=debug MD2PDF_VERBOSE=true npm run dev
+```
+
+**Common PlantUML issues:**
+
+- **Local rendering fails**: MD2PDF automatically falls back to remote server
+- **Java not found**: Install Java JRE 8+ for JAR-based rendering
+- **PlantUML JAR not found**: Check JAR file path and permissions
+- **Command not found**: Install PlantUML via package manager
+
 ### Logging Issues?
 
 Common logging troubleshooting:
@@ -331,7 +396,8 @@ tail -f logs/md2pdf.log
 2. **Images**: Use relative paths for image references.
 3. **TOC Settings**: 2-3 levels work best for most documents.
 4. **Batch Mode**: Use batch processing for multiple files - it's more efficient.
-5. **Logging**: Use file logging in production for better troubleshooting.
+5. **PlantUML**: Install PlantUML locally for faster diagram rendering and better performance.
+6. **Logging**: Use file logging in production for better troubleshooting.
 
 ## 📊 What Makes This Special
 

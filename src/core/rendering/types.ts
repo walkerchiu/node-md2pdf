@@ -60,6 +60,9 @@ export interface ProcessingContext {
 
   /** Whether this is a pre-rendering stage */
   isPreRendering?: boolean;
+
+  /** Logger instance for debug and info messages */
+  logger?: any;
 }
 
 export interface ProcessedContent {
