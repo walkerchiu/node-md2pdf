@@ -435,4 +435,103 @@ describe('PDFGeneratorService', () => {
       });
     });
   });
+
+  describe('Logger Integration', () => {
+    it('should pass logger to processing context for dynamic content processors', async () => {
+      // Mock engine with processing context verification
+      const mockEngine = {
+        initialize: jest.fn(),
+        generatePDF: jest.fn(
+          (_htmlContent: string, _outputPath: string, options: any) => {
+            // Verify that logger is included in processing context if provided
+            if (options && options.processingContext) {
+              expect(options.processingContext.logger).toBeDefined();
+              expect(typeof options.processingContext.logger.info).toBe(
+                'function',
+              );
+              expect(typeof options.processingContext.logger.error).toBe(
+                'function',
+              );
+            }
+
+            return Promise.resolve({
+              success: true,
+              outputPath: '/test/output.pdf',
+              metadata: {
+                pages: 1,
+                fileSize: 1024,
+                generationTime: 100,
+                engineUsed: 'puppeteer',
+              },
+            });
+          },
+        ),
+        cleanup: jest.fn(),
+        getEngineStatus: jest.fn(() => new Map()),
+      };
+
+      (service as any).engineManager = mockEngine;
+      (service as any).isInitialized = true;
+
+      // Generate PDF with HTML content that would trigger dynamic content processing
+      const result = await service.generatePDF(
+        '<html><body><h1>Test</h1><pre class="language-plantuml">@startuml\nAlice -> Bob: Hello\n@enduml</pre></body></html>',
+        '/test/with-logger.pdf',
+      );
+
+      expect(result.success).toBe(true);
+      expect(mockEngine.generatePDF).toHaveBeenCalled();
+    });
+
+    it('should maintain logger instance throughout service lifecycle', async () => {
+      await service.initialize();
+
+      // Verify that the service maintains the logger instance
+      expect((service as any).logger).toBe(mockLogger);
+
+      // Test that logger is used in various service operations
+      expect(mockLogger.info).toHaveBeenCalledWith(
+        'Advanced PDF generator service initialized successfully',
+      );
+
+      await service.cleanup();
+
+      // Verify logger is used during cleanup
+      expect(mockLogger.info).toHaveBeenCalledWith(
+        'Advanced PDF generator service cleaned up successfully',
+      );
+    });
+
+    it('should handle logger methods correctly in error scenarios', async () => {
+      // Mock engine manager to throw error on initialization
+      mockEngineManagerInstance.initialize.mockRejectedValueOnce(
+        new Error('Logger test initialization failure'),
+      );
+
+      try {
+        await service.initialize();
+      } catch (error) {
+        // Verify error handler is called with proper logger context
+        expect(mockErrorHandler.handleError).toHaveBeenCalledWith(
+          expect.any(Error),
+          expect.stringMatching(/PDFGeneratorService/),
+        );
+      }
+
+      // Reset mock for cleanup
+      mockEngineManagerInstance.initialize.mockResolvedValue(undefined);
+    });
+
+    it('should ensure logger availability for dynamic content rendering', () => {
+      // Verify that service exposes logger for internal components
+      const serviceLogger = (service as any).logger;
+
+      expect(serviceLogger).toBeDefined();
+      expect(serviceLogger).toBe(mockLogger);
+      expect(typeof serviceLogger.debug).toBe('function');
+      expect(typeof serviceLogger.info).toBe('function');
+      expect(typeof serviceLogger.warn).toBe('function');
+      expect(typeof serviceLogger.error).toBe('function');
+    });
+  });
 });

@@ -111,6 +111,53 @@ describe('Configuration Constants', () => {
     it('should enable caching by default for performance', () => {
       expect(DEFAULT_PLANTUML.ENABLE_CACHING).toBe(true);
     });
+
+    it('should define local renderer configuration', () => {
+      expect(DEFAULT_PLANTUML.USE_LOCAL_RENDERER).toBe(true);
+      expect(DEFAULT_PLANTUML.LOCAL_RENDERER).toBeDefined();
+      expect(DEFAULT_PLANTUML.LOCAL_RENDERER.JAVA_PATH).toBe('java');
+      expect(DEFAULT_PLANTUML.LOCAL_RENDERER.JAVA_OPTIONS).toEqual([
+        '-Xmx1024m',
+        '-Djava.awt.headless=true',
+      ]);
+      expect(DEFAULT_PLANTUML.LOCAL_RENDERER.TIMEOUT).toBe(30000);
+      expect(DEFAULT_PLANTUML.LOCAL_RENDERER.DEBUG).toBe(false);
+    });
+
+    it('should define cache configuration', () => {
+      expect(DEFAULT_PLANTUML.CACHE).toBeDefined();
+      expect(DEFAULT_PLANTUML.CACHE.ENABLED).toBe(true);
+      expect(DEFAULT_PLANTUML.CACHE.MAX_AGE).toBe(3600000);
+      expect(DEFAULT_PLANTUML.CACHE.MAX_SIZE).toBe(100);
+    });
+
+    it('should define fallback configuration', () => {
+      expect(DEFAULT_PLANTUML.FALLBACK).toBeDefined();
+      expect(DEFAULT_PLANTUML.FALLBACK.SHOW_ERROR_PLACEHOLDER).toBe(true);
+      expect(DEFAULT_PLANTUML.FALLBACK.ERROR_MESSAGE).toBe(
+        'PlantUML diagram rendering failed',
+      );
+    });
+
+    it('should have platform-specific JAR path', () => {
+      const expectedPath =
+        process.platform === 'win32'
+          ? 'C:\\plantuml\\plantuml.jar'
+          : '/usr/local/bin/plantuml.jar';
+      expect(DEFAULT_PLANTUML.LOCAL_RENDERER.JAR_PATH).toBe(expectedPath);
+    });
+
+    it('should prefer local rendering by default', () => {
+      expect(DEFAULT_PLANTUML.USE_LOCAL_RENDERER).toBe(true);
+    });
+
+    it('should have reasonable cache settings', () => {
+      expect(DEFAULT_PLANTUML.CACHE.MAX_AGE).toBeGreaterThan(0);
+      expect(DEFAULT_PLANTUML.CACHE.MAX_SIZE).toBeGreaterThan(0);
+      expect(DEFAULT_PLANTUML.LOCAL_RENDERER.TIMEOUT).toBeGreaterThan(
+        DEFAULT_PLANTUML.TIMEOUT,
+      );
+    });
   });
 
   describe('DEFAULT_MERMAID', () => {

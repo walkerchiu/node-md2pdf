@@ -92,6 +92,55 @@ describe('Rendering Types', () => {
       expect(context.headings).toHaveLength(1);
       expect(context.isPreRendering).toBe(false);
     });
+
+    it('should create valid processing context with logger', () => {
+      const mockLogger = {
+        debug: jest.fn(),
+        info: jest.fn(),
+        warn: jest.fn(),
+        error: jest.fn(),
+      };
+
+      const context: ProcessingContext = {
+        filePath: '/test/document.md',
+        logger: mockLogger,
+        isPreRendering: true,
+      };
+
+      expect(context.filePath).toBe('/test/document.md');
+      expect(context.logger).toBe(mockLogger);
+      expect(context.isPreRendering).toBe(true);
+      expect(typeof context.logger?.info).toBe('function');
+      expect(typeof context.logger?.warn).toBe('function');
+      expect(typeof context.logger?.error).toBe('function');
+      expect(typeof context.logger?.debug).toBe('function');
+    });
+
+    it('should create processing context without logger (optional)', () => {
+      const context: ProcessingContext = {
+        filePath: '/test/document.md',
+        isPreRendering: false,
+      };
+
+      expect(context.filePath).toBe('/test/document.md');
+      expect(context.logger).toBeUndefined();
+      expect(context.isPreRendering).toBe(false);
+    });
+
+    it('should support logger with partial interface', () => {
+      const partialLogger = {
+        info: jest.fn(),
+        error: jest.fn(),
+      };
+
+      const context: ProcessingContext = {
+        filePath: '/test/document.md',
+        logger: partialLogger,
+      };
+
+      expect(context.logger?.info).toBeDefined();
+      expect(context.logger?.error).toBeDefined();
+    });
   });
 
   describe('ProcessedContent Interface', () => {

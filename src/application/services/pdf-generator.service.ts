@@ -708,6 +708,7 @@ export class PDFGeneratorService implements IPDFGeneratorService {
           includePageNumbers: options.tocOptions?.includePageNumbers || false,
         },
         isPreRendering: false,
+        logger: this.logger,
       };
 
       this.logger.debug('Calling two-stage rendering engine with context:', {

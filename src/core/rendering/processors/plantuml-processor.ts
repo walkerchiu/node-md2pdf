@@ -3,6 +3,11 @@
  * Handles PlantUML diagram rendering with accurate size calculation
  */
 
+import { spawn } from 'child_process';
+import { promises as fs } from 'fs';
+import { tmpdir } from 'os';
+import { join } from 'path';
+
 import { DEFAULT_PLANTUML } from '../../../infrastructure/config/constants';
 import {
   DynamicContentType,
@@ -15,6 +20,29 @@ import { BaseProcessor } from './base-processor';
 
 // Import plantuml-encoder as any to avoid type issues
 const plantumlEncoder = require('plantuml-encoder');
+
+export interface PlantUMLLocalRendererConfig {
+  /** Path to Java executable */
+  javaPath?: string;
+
+  /** Path to PlantUML JAR file */
+  jarPath?: string;
+
+  /** Path to PlantUML command */
+  commandPath?: string;
+
+  /** Whether to use plantuml command instead of java -jar */
+  useCommand?: boolean;
+
+  /** Java options for PlantUML execution */
+  javaOptions?: string[];
+
+  /** Timeout for local rendering in milliseconds */
+  timeout?: number;
+
+  /** Enable debug output for local renderer */
+  debug?: boolean;
+}
 
 export interface PlantUMLConfig {
   /** PlantUML server URL (default: public server) */
@@ -34,13 +62,39 @@ export interface PlantUMLConfig {
 
   /** Enable caching of generated diagrams */
   enableCaching?: boolean;
+
+  /** Use local renderer instead of remote server */
+  useLocalRenderer?: boolean;
+
+  /** Local renderer configuration */
+  localRenderer?: PlantUMLLocalRendererConfig;
+
+  /** Cache configuration */
+  cache?: {
+    enabled?: boolean;
+    maxAge?: number;
+    maxSize?: number;
+  };
+
+  /** Fallback configuration */
+  fallback?: {
+    showErrorPlaceholder?: boolean;
+    errorMessage?: string;
+  };
 }
 
 export class PlantUMLProcessor extends BaseProcessor {
-  private readonly config: Required<PlantUMLConfig>;
+  private readonly config: Required<
+    Omit<PlantUMLConfig, 'localRenderer' | 'cache' | 'fallback'> & {
+      localRenderer: Required<PlantUMLLocalRendererConfig>;
+      cache: Required<NonNullable<PlantUMLConfig['cache']>>;
+      fallback: Required<NonNullable<PlantUMLConfig['fallback']>>;
+    }
+  >;
   private readonly plantUMLRegex = /```plantuml\n([\s\S]*?)```/g;
   private readonly htmlPlantUMLRegex =
     /<pre[^>]*class="language-plantuml"[^>]*><code[^>]*class="language-plantuml"[^>]*>([\s\S]*?)<\/code><\/pre>/g;
+  private logger: any = null; // Will be injected via context
 
   constructor(config: PlantUMLConfig = {}) {
     super(DynamicContentType.PLANTUML, 'PlantUML Diagram Processor');
@@ -52,6 +106,43 @@ export class PlantUMLProcessor extends BaseProcessor {
       defaultHeight: config.defaultHeight || DEFAULT_PLANTUML.DEFAULT_HEIGHT,
       timeout: config.timeout || DEFAULT_PLANTUML.TIMEOUT,
       enableCaching: config.enableCaching ?? DEFAULT_PLANTUML.ENABLE_CACHING,
+      useLocalRenderer:
+        config.useLocalRenderer ?? DEFAULT_PLANTUML.USE_LOCAL_RENDERER,
+      localRenderer: {
+        javaPath:
+          config.localRenderer?.javaPath ||
+          DEFAULT_PLANTUML.LOCAL_RENDERER.JAVA_PATH,
+        jarPath:
+          config.localRenderer?.jarPath ||
+          DEFAULT_PLANTUML.LOCAL_RENDERER.JAR_PATH,
+        commandPath:
+          config.localRenderer?.commandPath ||
+          DEFAULT_PLANTUML.LOCAL_RENDERER.COMMAND_PATH,
+        useCommand:
+          config.localRenderer?.useCommand ??
+          DEFAULT_PLANTUML.LOCAL_RENDERER.USE_COMMAND,
+        javaOptions: config.localRenderer?.javaOptions || [
+          ...DEFAULT_PLANTUML.LOCAL_RENDERER.JAVA_OPTIONS,
+        ],
+        timeout:
+          config.localRenderer?.timeout ||
+          DEFAULT_PLANTUML.LOCAL_RENDERER.TIMEOUT,
+        debug:
+          config.localRenderer?.debug || DEFAULT_PLANTUML.LOCAL_RENDERER.DEBUG,
+      },
+      cache: {
+        enabled: config.cache?.enabled ?? DEFAULT_PLANTUML.CACHE.ENABLED,
+        maxAge: config.cache?.maxAge || DEFAULT_PLANTUML.CACHE.MAX_AGE,
+        maxSize: config.cache?.maxSize || DEFAULT_PLANTUML.CACHE.MAX_SIZE,
+      },
+      fallback: {
+        showErrorPlaceholder:
+          config.fallback?.showErrorPlaceholder ??
+          DEFAULT_PLANTUML.FALLBACK.SHOW_ERROR_PLACEHOLDER,
+        errorMessage:
+          config.fallback?.errorMessage ||
+          DEFAULT_PLANTUML.FALLBACK.ERROR_MESSAGE,
+      },
     };
   }
 
@@ -73,11 +164,17 @@ export class PlantUMLProcessor extends BaseProcessor {
     const startTime = Date.now();
     const warnings: string[] = [];
 
+    // Set up logger from context if available
+    if (context && context.logger) {
+      this.logger = context.logger;
+    }
+
     try {
       // Check cache first if enabled
       if (this.config.enableCaching) {
         const cachedContent = await this.getCachedContent(content, context);
         if (cachedContent) {
+          this.log('info', 'PlantUML cache hit, using cached content');
           return cachedContent;
         }
       }
@@ -166,17 +263,41 @@ export class PlantUMLProcessor extends BaseProcessor {
     const issues: string[] = [];
     const recommendations: string[] = [];
 
+    // Check local renderer if enabled
+    if (this.config.useLocalRenderer) {
+      try {
+        await this.validateLocalRenderer();
+        this.log('info', 'Local PlantUML renderer is available');
+      } catch (error) {
+        issues.push(
+          `Local PlantUML renderer not available: ${(error as Error).message}`,
+        );
+        recommendations.push(
+          'Install Java and PlantUML JAR, or disable local rendering to use remote server',
+        );
+      }
+    }
+
+    // Test remote server connectivity (as fallback or primary)
     try {
-      // Test server connectivity
       const testDiagram = '@startuml\nAlice -> Bob: Hello\n@enduml';
-      await this.renderPlantUMLDiagram(testDiagram);
+      await this.renderPlantUMLRemotely(testDiagram);
+      this.log('info', 'Remote PlantUML server is accessible');
     } catch (error) {
-      issues.push(
-        `PlantUML server not accessible: ${(error as Error).message}`,
-      );
-      recommendations.push(
-        'Check internet connection or configure alternative PlantUML server',
-      );
+      if (!this.config.useLocalRenderer) {
+        // Remote is primary, this is critical
+        issues.push(
+          `PlantUML server not accessible: ${(error as Error).message}`,
+        );
+        recommendations.push(
+          'Check internet connection or configure alternative PlantUML server',
+        );
+      } else {
+        // Remote is fallback, this is a warning
+        recommendations.push(
+          `Remote PlantUML fallback not available: ${(error as Error).message}`,
+        );
+      }
     }
 
     // Check if fetch is available
@@ -190,6 +311,66 @@ export class PlantUMLProcessor extends BaseProcessor {
       issues,
       recommendations,
     };
+  }
+
+  /**
+   * Validate local PlantUML renderer availability
+   */
+  private async validateLocalRenderer(): Promise<void> {
+    if (
+      this.config.localRenderer.useCommand &&
+      this.config.localRenderer.commandPath
+    ) {
+      // Validate plantuml command
+      try {
+        const result = await this.executeCommand(
+          this.config.localRenderer.commandPath,
+          ['-version'],
+          5000,
+        );
+
+        if (result.exitCode !== 0) {
+          throw new Error(`PlantUML command not available: ${result.stderr}`);
+        }
+      } catch (error) {
+        throw new Error(
+          `PlantUML command validation failed: ${(error as Error).message}`,
+        );
+      }
+    } else {
+      // Validate Java + JAR approach
+      // Check if Java is available
+      try {
+        const javaResult = await this.executeJavaCommand(
+          this.config.localRenderer.javaPath,
+          ['-version'],
+          5000,
+        );
+
+        if (javaResult.exitCode !== 0) {
+          throw new Error(`Java not available: ${javaResult.stderr}`);
+        }
+      } catch (error) {
+        throw new Error(`Java validation failed: ${(error as Error).message}`);
+      }
+
+      // Check if PlantUML JAR exists
+      try {
+        await fs.access(this.config.localRenderer.jarPath);
+      } catch (error) {
+        throw new Error(
+          `PlantUML JAR not found at: ${this.config.localRenderer.jarPath}`,
+        );
+      }
+    }
+
+    // Test PlantUML JAR execution with a simple diagram
+    try {
+      const testDiagram = '@startuml\nAlice -> Bob: Hello\n@enduml';
+      await this.renderPlantUMLLocally(testDiagram);
+    } catch (error) {
+      throw new Error(`PlantUML JAR test failed: ${(error as Error).message}`);
+    }
   }
 
   /**
@@ -242,9 +423,131 @@ export class PlantUMLProcessor extends BaseProcessor {
   }
 
   /**
-   * Render PlantUML diagram to HTML
+   * Render PlantUML diagram to HTML (with local-first approach)
    */
   private async renderPlantUMLDiagram(source: string): Promise<string> {
+    // Try local rendering first if enabled
+    if (this.config.useLocalRenderer) {
+      try {
+        this.log('info', 'Attempting PlantUML local rendering');
+        const localResult = await this.renderPlantUMLLocally(source);
+        this.log('info', 'PlantUML local rendering successful');
+        return localResult;
+      } catch (error) {
+        this.log(
+          'warn',
+          `PlantUML local rendering failed: ${(error as Error).message}. Falling back to remote rendering`,
+        );
+        // Continue to remote rendering fallback
+      }
+    }
+
+    // Fallback to remote rendering
+    return await this.renderPlantUMLRemotely(source);
+  }
+
+  /**
+   * Render PlantUML diagram using local installation
+   */
+  private async renderPlantUMLLocally(source: string): Promise<string> {
+    const tmpDir = tmpdir();
+    const timestamp = Date.now();
+    const inputFile = join(tmpDir, `plantuml-input-${timestamp}.puml`);
+    const outputFile = join(
+      tmpDir,
+      `plantuml-input-${timestamp}.${this.config.format}`,
+    );
+
+    try {
+      // Write PlantUML source to temporary file
+      await fs.writeFile(inputFile, source, 'utf8');
+
+      let result: { exitCode: number; stdout: string; stderr: string };
+
+      if (
+        this.config.localRenderer.useCommand &&
+        this.config.localRenderer.commandPath
+      ) {
+        // Use plantuml command directly
+        const args = [`-t${this.config.format}`, '-o', tmpDir, inputFile];
+
+        if (this.config.localRenderer.debug) {
+          this.log(
+            'debug',
+            `PlantUML command: ${this.config.localRenderer.commandPath} ${args.join(' ')}`,
+          );
+        }
+
+        result = await this.executeCommand(
+          this.config.localRenderer.commandPath,
+          args,
+          this.config.localRenderer.timeout,
+        );
+      } else {
+        // Use Java + JAR approach
+        const javaArgs = [
+          ...this.config.localRenderer.javaOptions,
+          '-jar',
+          this.config.localRenderer.jarPath,
+          `-t${this.config.format}`,
+          '-o',
+          tmpDir,
+          inputFile,
+        ];
+
+        if (this.config.localRenderer.debug) {
+          this.log(
+            'debug',
+            `Java command: ${this.config.localRenderer.javaPath} ${javaArgs.join(' ')}`,
+          );
+        }
+
+        result = await this.executeJavaCommand(
+          this.config.localRenderer.javaPath,
+          javaArgs,
+          this.config.localRenderer.timeout,
+        );
+      }
+
+      if (result.exitCode !== 0) {
+        throw new Error(`PlantUML execution failed: ${result.stderr}`);
+      }
+
+      // Read the generated output file
+      const outputContent = await fs.readFile(outputFile, 'utf8');
+
+      if (this.config.format === 'svg') {
+        return `<div class="plantuml-diagram">${outputContent}</div>`;
+      } else {
+        // For PNG, we need to convert to base64 and create img tag
+        const outputBuffer = await fs.readFile(outputFile);
+        const base64Content = outputBuffer.toString('base64');
+        return `<div class="plantuml-diagram">
+          <img src="data:image/png;base64,${base64Content}"
+               alt="PlantUML Diagram"
+               style="max-width: 100%; height: auto;" />
+        </div>`;
+      }
+    } finally {
+      // Clean up temporary files
+      try {
+        await fs.unlink(inputFile);
+        await fs.unlink(outputFile);
+      } catch (cleanupError) {
+        this.log(
+          'debug',
+          `Failed to clean up temporary files: ${cleanupError}`,
+        );
+      }
+    }
+  }
+
+  /**
+   * Render PlantUML diagram using remote server
+   */
+  private async renderPlantUMLRemotely(source: string): Promise<string> {
+    this.log('info', 'Using PlantUML remote rendering');
+
     try {
       // Encode PlantUML source
       const encoded = plantumlEncoder.encode(source);
@@ -269,6 +572,8 @@ export class PlantUMLProcessor extends BaseProcessor {
           throw new Error(`HTTP ${response.status}: ${response.statusText}`);
         }
 
+        this.log('info', 'PlantUML remote rendering successful');
+
         if (this.config.format === 'svg') {
           const svgContent = await response.text();
           return `<div class="plantuml-diagram">${svgContent}</div>`;
@@ -291,8 +596,116 @@ export class PlantUMLProcessor extends BaseProcessor {
       }
     } catch (error) {
       throw new Error(
-        `Failed to render PlantUML diagram: ${(error as Error).message}`,
+        `Failed to render PlantUML diagram remotely: ${(error as Error).message}`,
       );
+    }
+  }
+
+  /**
+   * Execute Java command with PlantUML JAR
+   */
+  private async executeJavaCommand(
+    javaPath: string,
+    args: string[],
+    timeout: number,
+  ): Promise<{ exitCode: number; stdout: string; stderr: string }> {
+    return new Promise((resolve, reject) => {
+      const child = spawn(javaPath, args, {
+        stdio: ['pipe', 'pipe', 'pipe'],
+      });
+
+      let stdout = '';
+      let stderr = '';
+
+      child.stdout?.on('data', (data) => {
+        stdout += data.toString();
+      });
+
+      child.stderr?.on('data', (data) => {
+        stderr += data.toString();
+      });
+
+      child.on('close', (code) => {
+        resolve({
+          exitCode: code || 0,
+          stdout,
+          stderr,
+        });
+      });
+
+      child.on('error', (error) => {
+        reject(new Error(`Failed to spawn Java process: ${error.message}`));
+      });
+
+      // Set timeout
+      const timeoutId = setTimeout(() => {
+        child.kill('SIGKILL');
+        reject(new Error(`Java process timed out after ${timeout}ms`));
+      }, timeout);
+
+      child.on('close', () => {
+        clearTimeout(timeoutId);
+      });
+    });
+  }
+
+  /**
+   * Execute generic command (for plantuml command)
+   */
+  private async executeCommand(
+    command: string,
+    args: string[],
+    timeout: number,
+  ): Promise<{ exitCode: number; stdout: string; stderr: string }> {
+    return new Promise((resolve, reject) => {
+      const child = spawn(command, args, {
+        stdio: ['pipe', 'pipe', 'pipe'],
+      });
+
+      let stdout = '';
+      let stderr = '';
+
+      child.stdout?.on('data', (data) => {
+        stdout += data.toString();
+      });
+
+      child.stderr?.on('data', (data) => {
+        stderr += data.toString();
+      });
+
+      const timer = setTimeout(() => {
+        child.kill('SIGKILL');
+        reject(new Error(`Command timeout after ${timeout}ms`));
+      }, timeout);
+
+      child.on('close', (code) => {
+        clearTimeout(timer);
+        resolve({
+          exitCode: code || 0,
+          stdout,
+          stderr,
+        });
+      });
+
+      child.on('error', (error) => {
+        clearTimeout(timer);
+        reject(error);
+      });
+    });
+  }
+
+  /**
+   * Log message with optional fallback to console
+   */
+  private log(
+    level: 'debug' | 'info' | 'warn' | 'error',
+    message: string,
+  ): void {
+    if (this.logger && typeof this.logger[level] === 'function') {
+      this.logger[level](message);
+    } else {
+      // Fallback to console if logger not available
+      console.log(`[PlantUML-${level.toUpperCase()}] ${message}`);
     }
   }
 

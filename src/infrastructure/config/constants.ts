@@ -48,6 +48,39 @@ export const DEFAULT_PLANTUML = {
   DEFAULT_HEIGHT: 600,
   TIMEOUT: 10000,
   ENABLE_CACHING: true,
+  USE_LOCAL_RENDERER: true, // Default to using local renderer
+  LOCAL_RENDERER: (() => {
+    // Dynamic PlantUML path resolution
+    try {
+      const {
+        getDefaultPlantUMLConfig,
+      } = require('../../utils/plantuml-path-resolver');
+      return getDefaultPlantUMLConfig();
+    } catch (error) {
+      // Fallback to static configuration
+      return {
+        JAVA_PATH: 'java',
+        JAR_PATH:
+          process.platform === 'win32'
+            ? 'C:\\plantuml\\plantuml.jar'
+            : '/usr/local/bin/plantuml.jar',
+        COMMAND_PATH: undefined,
+        USE_COMMAND: false,
+        JAVA_OPTIONS: ['-Xmx1024m', '-Djava.awt.headless=true'],
+        TIMEOUT: 30000,
+        DEBUG: false,
+      };
+    }
+  })(),
+  CACHE: {
+    ENABLED: true,
+    MAX_AGE: 3600000, // 1 hour in milliseconds
+    MAX_SIZE: 100,
+  },
+  FALLBACK: {
+    SHOW_ERROR_PLACEHOLDER: true,
+    ERROR_MESSAGE: 'PlantUML diagram rendering failed',
+  },
 } as const;
 
 // Default Mermaid values
