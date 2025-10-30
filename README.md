@@ -17,6 +17,7 @@ Transform your Markdown documents into beautiful PDFs with automatic table of co
 📑 **Auto TOC** - Generate clickable table of contents from headings.<br/>
 📊 **PlantUML Diagrams** - Local and remote diagram rendering with automatic installation detection.<br/>
 📈 **Mermaid Diagrams** - Modern flowcharts, sequence diagrams, and Gantt charts.<br/>
+🎨 **Admonitions** - 8 professional callout block types with custom SVG icons and perfect alignment.<br/>
 📝 **File Logging** - Advanced logging with rotation and monitoring.
 
 ## 🚀 Quick Start
@@ -96,6 +97,7 @@ When you start the app, you'll see this friendly menu:
 ✅ **Quotes & Dividers** - Maintains original formatting.<br/>
 ✅ **PlantUML Diagrams** - Local-first rendering with automatic fallback to remote server.<br/>
 ✅ **Mermaid Diagrams** - Flowcharts, sequence diagrams, Gantt charts with local rendering.<br/>
+✅ **Admonitions** - Professional callout blocks: `:::info`, `:::tip`, `:::warning`, `:::danger`, `:::success`, `:::note`, `:::important`, `:::example`.<br/>
 ✅ **Chinese Support** - Perfect support for Chinese characters.
 
 ## 💡 Smart Features
@@ -123,6 +125,7 @@ Handle multiple files efficiently:
 - **Table of Contents**: Customizable depth and styling.
 - **PlantUML Settings**: Local-first rendering with automatic installation detection and remote fallback.
 - **Mermaid Settings**: Local rendering with theme customization and caching.
+- **Admonitions**: 8 professional callout types with custom SVG icons, perfect alignment, and theme colors.
 - **Image Processing**: Automatic path resolution and base64 embedding.
 
 ## 🔧 Requirements
