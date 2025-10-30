@@ -10,6 +10,8 @@ import anchor from 'markdown-it-anchor';
 
 import { ParsedMarkdown, Heading } from '../../types/index';
 
+import admonitionsPlugin from './plugins/markdown-it-admonitions';
+
 export interface MarkdownParserOptions {
   html: boolean;
   breaks: boolean;
@@ -56,6 +58,10 @@ export class MarkdownParser {
       level: [1, 2, 3, 4, 5, 6],
       slugify: this.slugify.bind(this),
     });
+
+    // Add admonitions plugin for callout blocks
+    this.md.use(admonitionsPlugin);
+
     // Note: markdown-it-attrs plugin disabled for now due to type issues
     // this.md.use(attrs);
   }

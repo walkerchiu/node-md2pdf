@@ -343,6 +343,211 @@ export class PDFTemplates {
     `;
   }
 
+  static getAdmonitionsCSS(): string {
+    return `
+      /* Light Theme Admonition Styles with Proper Spacing */
+      .admonition {
+        margin: 1.5em 0;
+        border-radius: 8px;
+        page-break-inside: avoid;
+        border: 1px solid var(--admonition-border);
+        background: var(--admonition-bg);
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+        overflow: hidden;
+        font-size: 0.95em;
+        line-height: 1.6;
+      }
+
+      .admonition-title {
+        display: flex;
+        align-items: center;
+        padding: 12px 18px;
+        margin: 0;
+        font-weight: 600;
+        font-size: 1em;
+        color: var(--admonition-title-color);
+        background: var(--admonition-title-bg);
+        border-bottom: 1px solid var(--admonition-border);
+        line-height: 1.4;
+      }
+
+      .admonition-icon {
+        margin-right: 8px;
+        flex-shrink: 0;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 1.2em;
+        height: 1.2em;
+      }
+
+      .admonition-icon svg {
+        width: 1.3em;
+        height: 1.3em;
+        display: block;
+      }
+
+      /* Content area padding */
+      .admonition > p,
+      .admonition > div:not(.admonition-title),
+      .admonition > ul,
+      .admonition > ol,
+      .admonition > blockquote,
+      .admonition > pre {
+        padding: 16px 18px;
+        margin: 0;
+        color: var(--admonition-content-color);
+      }
+
+      .admonition > *:last-child {
+        padding-bottom: 18px;
+      }
+
+      .admonition > p + p {
+        padding-top: 0;
+        margin-top: -8px;
+      }
+
+      /* Info admonition - Distinct blue theme */
+      .admonition-info {
+        --admonition-bg: #f0f8ff;
+        --admonition-border: #4a90e2;
+        --admonition-title-bg: #e3f2fd;
+        --admonition-title-color: #1565c0;
+        --admonition-content-color: #0d47a1;
+      }
+
+      /* Note admonition - Neutral gray theme */
+      .admonition-note {
+        --admonition-bg: #f8f9fa;
+        --admonition-border: #8e8e93;
+        --admonition-title-bg: #e9ecef;
+        --admonition-title-color: #495057;
+        --admonition-content-color: #212529;
+      }
+
+      /* Tip admonition - Bright green theme */
+      .admonition-tip {
+        --admonition-bg: #f0fff0;
+        --admonition-border: #32cd32;
+        --admonition-title-bg: #e8f5e8;
+        --admonition-title-color: #228b22;
+        --admonition-content-color: #006400;
+      }
+
+      /* Success admonition - Emerald green theme */
+      .admonition-success {
+        --admonition-bg: #f6ffed;
+        --admonition-border: #52c41a;
+        --admonition-title-bg: #d9f7be;
+        --admonition-title-color: #389e0d;
+        --admonition-content-color: #237804;
+      }
+
+      /* Warning admonition - Amber/yellow theme */
+      .admonition-warning {
+        --admonition-bg: #fffdf0;
+        --admonition-border: #ffc107;
+        --admonition-title-bg: #fff8c4;
+        --admonition-title-color: #e65100;
+        --admonition-content-color: #bf360c;
+      }
+
+      /* Danger admonition - Bright red theme */
+      .admonition-danger {
+        --admonition-bg: #fff5f5;
+        --admonition-border: #f5222d;
+        --admonition-title-bg: #ffebee;
+        --admonition-title-color: #d32f2f;
+        --admonition-content-color: #b71c1c;
+      }
+
+      /* Important admonition - Purple theme */
+      .admonition-important {
+        --admonition-bg: #fdf4ff;
+        --admonition-border: #d946ef;
+        --admonition-title-bg: #fae8ff;
+        --admonition-title-color: #a21caf;
+        --admonition-content-color: #86198f;
+      }
+
+      /* Example admonition - Teal theme */
+      .admonition-example {
+        --admonition-bg: #f0fdfa;
+        --admonition-border: #14b8a6;
+        --admonition-title-bg: #ccfbf1;
+        --admonition-title-color: #0f766e;
+        --admonition-content-color: #134e4a;
+      }
+
+      /* Print media styles */
+      @media print {
+        .admonition {
+          box-shadow: none;
+          border: 1px solid var(--admonition-border) !important;
+          background: #ffffff !important;
+          -webkit-print-color-adjust: exact;
+          color-adjust: exact;
+        }
+
+        .admonition-title {
+          background: var(--admonition-title-bg) !important;
+          color: var(--admonition-title-color) !important;
+          -webkit-print-color-adjust: exact;
+          color-adjust: exact;
+        }
+
+        .admonition p {
+          color: var(--admonition-content-color) !important;
+        }
+      }
+
+      /* Nested content styling */
+      .admonition ul,
+      .admonition ol {
+        padding-left: 40px;
+        margin-top: 4px;
+        margin-bottom: 4px;
+      }
+
+      /* Reduce space between paragraphs and lists inside admonitions */
+      .admonition > p + ul,
+      .admonition > p + ol {
+        margin-top: -4px !important;
+        padding-top: 0 !important;
+      }
+
+      .admonition li {
+        margin: 4px 0;
+      }
+
+      .admonition code {
+        background: rgba(175, 184, 193, 0.2);
+        padding: 0.2em 0.4em;
+        border-radius: 4px;
+        font-size: 0.85em;
+        color: #e36209;
+      }
+
+      .admonition pre {
+        background: rgba(175, 184, 193, 0.1);
+        border: 1px solid rgba(175, 184, 193, 0.2);
+        border-radius: 6px;
+        padding: 16px;
+        margin: 12px 0;
+        overflow-x: auto;
+      }
+
+      .admonition blockquote {
+        border-left: 4px solid rgba(175, 184, 193, 0.3);
+        padding-left: 18px;
+        margin: 12px 0;
+        color: var(--admonition-content-color);
+        font-style: italic;
+      }
+    `;
+  }
+
   static getFullHTML(
     content: string,
     title?: string,
@@ -354,9 +559,10 @@ export class PDFTemplates {
     const chineseCSS = enableChineseSupport ? this.getChineseCSS() : '';
     const tocCSS = this.getTOCCSS();
     const plantUMLCSS = this.getPlantUMLCSS();
+    const admonitionsCSS = this.getAdmonitionsCSS();
     const css = customCSS
-      ? `${baseCSS}\n${chineseCSS}\n${tocCSS}\n${plantUMLCSS}\n${customCSS}`
-      : `${baseCSS}\n${chineseCSS}\n${tocCSS}\n${plantUMLCSS}`;
+      ? `${baseCSS}\n${chineseCSS}\n${tocCSS}\n${plantUMLCSS}\n${admonitionsCSS}\n${customCSS}`
+      : `${baseCSS}\n${chineseCSS}\n${tocCSS}\n${plantUMLCSS}\n${admonitionsCSS}`;
 
     return `
 <!DOCTYPE html>
@@ -388,9 +594,10 @@ export class PDFTemplates {
     const chineseCSS = enableChineseSupport ? this.getChineseCSS() : '';
     const tocCSS = this.getTOCCSS();
     const plantUMLCSS = this.getPlantUMLCSS();
+    const admonitionsCSS = this.getAdmonitionsCSS();
     const css = customCSS
-      ? `${baseCSS}\n${chineseCSS}\n${tocCSS}\n${plantUMLCSS}\n${customCSS}`
-      : `${baseCSS}\n${chineseCSS}\n${tocCSS}\n${plantUMLCSS}`;
+      ? `${baseCSS}\n${chineseCSS}\n${tocCSS}\n${plantUMLCSS}\n${admonitionsCSS}\n${customCSS}`
+      : `${baseCSS}\n${chineseCSS}\n${tocCSS}\n${plantUMLCSS}\n${admonitionsCSS}`;
 
     const fullContent = tocHTML ? `${tocHTML}\n\n${content}` : content;
 
