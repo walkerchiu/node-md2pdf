@@ -91,7 +91,7 @@ describe('Configuration Constants', () => {
       expect(DEFAULT_PLANTUML.SERVER_URL).toBe(
         'https://www.plantuml.com/plantuml',
       );
-      expect(DEFAULT_PLANTUML.FORMAT).toBe('svg');
+      expect(DEFAULT_PLANTUML.FORMAT).toBe('png');
       expect(DEFAULT_PLANTUML.DEFAULT_WIDTH).toBe(800);
       expect(DEFAULT_PLANTUML.DEFAULT_HEIGHT).toBe(600);
       expect(DEFAULT_PLANTUML.TIMEOUT).toBe(10000);

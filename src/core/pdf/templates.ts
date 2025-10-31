@@ -196,12 +196,7 @@ export class PDFTemplates {
         padding: 16px;
       }
 
-      .plantuml-diagram svg {
-        max-width: 100%;
-        height: auto;
-        border-radius: 4px;
-      }
-
+      .plantuml-diagram svg,
       .plantuml-diagram img {
         max-width: 100%;
         height: auto;
