@@ -163,6 +163,8 @@ export class PlantUMLProcessor extends BaseProcessor {
   ): Promise<ProcessedContent> {
     const startTime = Date.now();
     const warnings: string[] = [];
+    let cacheHits = 0;
+    let cacheMisses = 0;
 
     // Set up logger from context if available
     if (context && context.logger) {
@@ -175,7 +177,17 @@ export class PlantUMLProcessor extends BaseProcessor {
         const cachedContent = await this.getCachedContent(content, context);
         if (cachedContent) {
           this.log('info', 'PlantUML cache hit, using cached content');
-          return cachedContent;
+          cacheHits = 1;
+          return {
+            ...cachedContent,
+            metadata: {
+              ...cachedContent.metadata,
+              cacheHits,
+              cacheMisses,
+            },
+          };
+        } else {
+          cacheMisses = 1;
         }
       }
 
@@ -186,9 +198,13 @@ export class PlantUMLProcessor extends BaseProcessor {
         const processingTime = Date.now() - startTime;
         return {
           html: content,
-          metadata: this.createMetadataWithCache(processingTime, [
-            'No PlantUML blocks found',
-          ]),
+          metadata: this.createMetadataWithCache(
+            processingTime,
+            ['No PlantUML blocks found'],
+            {},
+            cacheHits,
+            cacheMisses,
+          ),
         };
       }
 
@@ -212,11 +228,17 @@ export class PlantUMLProcessor extends BaseProcessor {
       const processingTime = Date.now() - startTime;
       const processedContent: ProcessedContent = {
         html: processedHTML,
-        metadata: this.createMetadataWithCache(processingTime, warnings, {
-          diagramCount: plantUMLBlocks.length,
-          format: this.config.format,
-          serverUrl: this.config.serverUrl,
-        }),
+        metadata: this.createMetadataWithCache(
+          processingTime,
+          warnings,
+          {
+            diagramCount: plantUMLBlocks.length,
+            format: this.config.format,
+            serverUrl: this.config.serverUrl,
+          },
+          cacheHits,
+          cacheMisses,
+        ),
       };
 
       // Cache the result if enabled
@@ -231,7 +253,13 @@ export class PlantUMLProcessor extends BaseProcessor {
 
       return {
         html: content,
-        metadata: this.createMetadataWithCache(processingTime, [errorMessage]),
+        metadata: this.createMetadataWithCache(
+          processingTime,
+          [errorMessage],
+          {},
+          cacheHits,
+          cacheMisses,
+        ),
       };
     }
   }

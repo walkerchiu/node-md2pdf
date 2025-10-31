@@ -551,7 +551,7 @@ describe('ConfigManager - Enhanced Branch Coverage Tests', () => {
       expect(configManager.get('plantuml.serverUrl')).toBe(
         'https://www.plantuml.com/plantuml',
       );
-      expect(configManager.get('plantuml.format')).toBe('svg');
+      expect(configManager.get('plantuml.format')).toBe('png');
       expect(configManager.get('plantuml.cache.enabled')).toBe(true);
       expect(configManager.get('plantuml.cache.maxAge')).toBe(3600000);
       expect(configManager.get('plantuml.cache.maxSize')).toBe(100);

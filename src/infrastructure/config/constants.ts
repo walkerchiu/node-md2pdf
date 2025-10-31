@@ -43,7 +43,7 @@ export const DEFAULT_PDF_OPTIONS = {
 // Default PlantUML values
 export const DEFAULT_PLANTUML = {
   SERVER_URL: 'https://www.plantuml.com/plantuml',
-  FORMAT: 'svg' as const,
+  FORMAT: 'png' as const,
   DEFAULT_WIDTH: 800,
   DEFAULT_HEIGHT: 600,
   TIMEOUT: 10000,
