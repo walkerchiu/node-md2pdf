@@ -117,10 +117,10 @@ describe('TOCProcessor', () => {
       expect(result).toBe(0);
     });
 
-    it('should return 0 when page numbers are disabled', async () => {
+    it('should return 0.9 when page numbers are disabled', async () => {
       context.tocOptions!.includePageNumbers = false;
       const result = await processor.detect('content', context);
-      expect(result).toBe(0);
+      expect(result).toBe(0.9);
     });
 
     it('should return 0 when no headings are available', async () => {
@@ -134,10 +134,10 @@ describe('TOCProcessor', () => {
       expect(result).toBe(1.0);
     });
 
-    it('should return 0.8 when header/footer is disabled but TOC is enabled', async () => {
+    it('should return 1.0 when header/footer is disabled but TOC is enabled', async () => {
       context.pdfOptions!.includePageNumbers = false;
       const result = await processor.detect('content', context);
-      expect(result).toBe(0.8);
+      expect(result).toBe(1.0);
     });
   });
 

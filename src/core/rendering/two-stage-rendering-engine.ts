@@ -326,11 +326,8 @@ export class TwoStageRenderingEngine implements ITwoStageRenderingEngine {
     // For TOC, we need special handling
     let pageNumbers: Record<string, number> = {};
 
-    // Process TOC based on user configuration (simplified for debugging)
+    // Process TOC based on user configuration
     if (context.tocOptions?.enabled && (context.headings?.length || 0) > 0) {
-      console.log(
-        'DEBUG: Processing TOC - user enabled and headings available',
-      );
       const tocProcessor = this.processors.get(DynamicContentType.TOC);
       if (tocProcessor) {
         // TOC processor will handle the two-stage process internally
