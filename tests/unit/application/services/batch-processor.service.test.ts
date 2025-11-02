@@ -6,23 +6,23 @@ import {
   BatchProcessorService,
   IBatchProcessorService,
   BatchProcessingServiceOptions,
-} from '../../../src/application/services/batch-processor.service';
+} from '../../../../src/application/services/batch-processor.service';
 import {
   IFileProcessorService,
   FileProcessingOptions,
-} from '../../../src/application/services/file-processor.service';
+} from '../../../../src/application/services/file-processor.service';
 import {
   BatchConversionConfig,
   BatchFilenameFormat,
-} from '../../../src/types/batch';
-import type { ILogger } from '../../../src/infrastructure/logging/types';
-import type { IErrorHandler } from '../../../src/infrastructure/error/types';
-import type { IConfigManager } from '../../../src/infrastructure/config/types';
-import type { IFileSystemManager } from '../../../src/infrastructure/filesystem/types';
-import { MD2PDFError } from '../../../src/infrastructure/error/errors';
+} from '../../../../src/types/batch';
+import type { ILogger } from '../../../../src/infrastructure/logging/types';
+import type { IErrorHandler } from '../../../../src/infrastructure/error/types';
+import type { IConfigManager } from '../../../../src/infrastructure/config/types';
+import type { IFileSystemManager } from '../../../../src/infrastructure/filesystem/types';
+import { MD2PDFError } from '../../../../src/infrastructure/error/errors';
 import fs from 'fs';
-import { FileCollector } from '../../../src/core/batch/file-collector';
-import { BatchFileInfo } from '../../../src/types/batch';
+import { FileCollector } from '../../../../src/core/batch/file-collector';
+import { BatchFileInfo } from '../../../../src/types/batch';
 
 // Local minimal type for FileProcessingResult used in tests to avoid path-alias import
 type TestFileProcessingResult = {

@@ -68,13 +68,13 @@ describe('PDFTemplates', () => {
   });
 
   describe('getChineseCSS', () => {
-    it('should generate Chinese font CSS', () => {
+    it('should generate Chinese font CSS with default Simplified Chinese fonts', () => {
       const css = PDFTemplates.getChineseCSS();
 
-      expect(css).toContain('Noto Sans CJK SC');
-      expect(css).toContain('Source Han Sans SC');
       expect(css).toContain('PingFang SC');
       expect(css).toContain('Microsoft YaHei');
+      expect(css).toContain('Noto Sans CJK SC');
+      expect(css).toContain('Source Han Sans SC');
     });
 
     it('should include Chinese text formatting', () => {
@@ -83,6 +83,15 @@ describe('PDFTemplates', () => {
       expect(css).toContain('text-align: justify');
       expect(css).toContain('word-wrap: break-word');
       expect(css).toContain('word-break: break-all');
+    });
+
+    it('should generate consistent Chinese font CSS', () => {
+      const css = PDFTemplates.getChineseCSS();
+
+      expect(css).toContain('PingFang SC');
+      expect(css).toContain('Microsoft YaHei');
+      expect(css).toContain('Noto Sans CJK SC');
+      expect(css).toContain('Source Han Sans SC');
     });
 
     it('should set appropriate font weights for Chinese text', () => {
@@ -118,7 +127,7 @@ describe('PDFTemplates', () => {
 
       expect(html).toContain('font-family: system-ui');
       // Chinese CSS is not included by default
-      expect(html).not.toContain('Noto Sans CJK SC');
+      expect(html).not.toContain('PingFang SC');
     });
 
     it('should include Chinese CSS when enableChineseSupport is true', () => {
@@ -131,7 +140,7 @@ describe('PDFTemplates', () => {
       );
 
       expect(html).toContain('font-family: system-ui');
-      expect(html).toContain('Noto Sans CJK SC');
+      expect(html).toContain('PingFang SC'); // Default Simplified Chinese fonts
     });
 
     it('should include custom CSS when provided', () => {
@@ -201,7 +210,7 @@ describe('PDFTemplates', () => {
 
       // Should contain both default styles and Chinese styles when enableChineseSupport is true
       expect(html).toContain('font-family: system-ui'); // Default CSS
-      expect(html).toContain('Noto Sans CJK SC'); // Chinese CSS
+      expect(html).toContain('PingFang SC'); // Chinese CSS (Simplified Chinese default)
       expect(html).toContain('text-align: justify'); // Chinese text formatting
     });
 
@@ -211,7 +220,7 @@ describe('PDFTemplates', () => {
       const html = PDFTemplates.getFullHTML(content, 'Title', customCSS, true);
 
       expect(html).toContain('font-family: system-ui'); // Default
-      expect(html).toContain('Noto Sans CJK SC'); // Chinese
+      expect(html).toContain('PingFang SC'); // Chinese (Simplified Chinese default)
       expect(html).toContain('.custom { color: blue; }'); // Custom
     });
 
@@ -221,7 +230,7 @@ describe('PDFTemplates', () => {
       const html = PDFTemplates.getFullHTML(content, 'Title', customCSS, false);
 
       expect(html).toContain('font-family: system-ui'); // Default
-      expect(html).not.toContain('Noto Sans CJK SC'); // No Chinese CSS
+      expect(html).not.toContain('PingFang SC'); // No Chinese CSS
       expect(html).toContain('.custom { color: blue; }'); // Custom
     });
   });
@@ -269,7 +278,7 @@ describe('PDFTemplates', () => {
       expect(html).toContain(customCSS);
       expect(html).toContain('toc-container'); // TOC CSS should be included
       expect(html).toContain('font-family: system-ui'); // Default CSS
-      expect(html).toContain('Noto Sans CJK SC'); // Chinese CSS
+      expect(html).toContain('PingFang SC'); // Chinese CSS (Simplified Chinese default)
     });
 
     it('should not include Chinese CSS with TOC when enableChineseSupport is false', () => {
@@ -287,7 +296,7 @@ describe('PDFTemplates', () => {
       expect(html).toContain(customCSS);
       expect(html).toContain('toc-container'); // TOC CSS should be included
       expect(html).toContain('font-family: system-ui'); // Default CSS
-      expect(html).not.toContain('Noto Sans CJK SC'); // No Chinese CSS
+      expect(html).not.toContain('PingFang SC'); // No Chinese CSS
     });
 
     it('should handle null TOC HTML', () => {

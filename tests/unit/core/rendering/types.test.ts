@@ -27,6 +27,8 @@ describe('Rendering Types', () => {
       expect(DynamicContentType.DIAGRAM).toBe('diagram');
     });
 
+    // Note: CODE_HIGHLIGHTING was removed from DynamicContentType enum
+
     it('should have correct COMPLEX_LAYOUT value', () => {
       expect(DynamicContentType.COMPLEX_LAYOUT).toBe('complex_layout');
     });

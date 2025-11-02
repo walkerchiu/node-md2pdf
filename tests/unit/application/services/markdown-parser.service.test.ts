@@ -5,21 +5,21 @@
 import {
   MarkdownParserService,
   IMarkdownParserService,
-} from '../../../src/application/services/markdown-parser.service';
-import { MarkdownParser } from '../../../src/core/parser/markdown-parser';
-import type { ILogger } from '../../../src/infrastructure/logging/types';
-import type { IErrorHandler } from '../../../src/infrastructure/error/types';
-import type { IConfigManager } from '../../../src/infrastructure/config/types';
-import type { IFileSystemManager } from '../../../src/infrastructure/filesystem/types';
-import { ParsedMarkdown, Heading } from '../../../src/types/index';
+} from '../../../../src/application/services/markdown-parser.service';
+import { MarkdownParser } from '../../../../src/core/parser/markdown-parser';
+import type { ILogger } from '../../../../src/infrastructure/logging/types';
+import type { IErrorHandler } from '../../../../src/infrastructure/error/types';
+import type { IConfigManager } from '../../../../src/infrastructure/config/types';
+import type { IFileSystemManager } from '../../../../src/infrastructure/filesystem/types';
+import { ParsedMarkdown, Heading } from '../../../../src/types/index';
 import {
   MD2PDFError,
   FileNotFoundError,
   MarkdownParsingError,
-} from '../../../src/infrastructure/error/errors';
+} from '../../../../src/infrastructure/error/errors';
 
 // Mock the MarkdownParser
-jest.mock('../../../src/core/parser/markdown-parser');
+jest.mock('../../../../src/core/parser/markdown-parser');
 
 describe('MarkdownParserService', () => {
   let service: IMarkdownParserService;

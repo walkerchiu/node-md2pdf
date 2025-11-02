@@ -29,6 +29,7 @@ export interface ServiceInfo {
   type: ServiceType;
   isSingleton: boolean;
   isInstance: boolean;
+  isCreated: boolean;
   dependencies?: string[];
 }
 

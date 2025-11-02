@@ -11,6 +11,7 @@ import anchor from 'markdown-it-anchor';
 import { ParsedMarkdown, Heading } from '../../types/index';
 
 import admonitionsPlugin from './plugins/markdown-it-admonitions';
+import { SyntaxHighlighter } from '../rendering/processors/syntax-highlighter';
 
 export interface MarkdownParserOptions {
   html: boolean;
@@ -23,13 +24,21 @@ export interface MarkdownParserOptions {
 
 export class MarkdownParser {
   private md: MarkdownIt;
+  private syntaxHighlighter: SyntaxHighlighter;
+
   constructor(options?: Partial<MarkdownParserOptions>) {
+    // Initialize syntax highlighter
+    this.syntaxHighlighter = new SyntaxHighlighter({
+      enableLineNumbers: true,
+      lineNumberStart: 1,
+    });
     const defaultOptions: MarkdownParserOptions = {
       html: true,
       breaks: true,
       linkify: true,
       typographer: true,
       quotes: '""\'\'',
+      // Custom highlight function to ensure proper HTML structure for diagram processors
       highlight: this.highlightCode.bind(this),
     };
     const finalOptions = { ...defaultOptions, ...options };
@@ -96,17 +105,32 @@ export class MarkdownParser {
   }
 
   /**
-   * Code highlighting function
+   * Code highlighting function - ensures proper HTML structure for all language types
    */
   private highlightCode(str: string, lang: string): string {
-    // Basic code highlighting - can be enhanced with prism.js later
+    const language = (lang || '').toLowerCase();
+
+    // For diagram languages (mermaid, plantuml), ensure both <pre> and <code> have the language class
+    // This is required for the diagram processors to correctly identify and process them
+    if (language === 'mermaid' || language === 'plantuml') {
+      const escapedStr = str
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+      return `<pre class="language-${lang}"><code class="language-${lang}">${escapedStr}</code></pre>`;
+    }
+
+    // For all other languages, return plain HTML structure without highlighting
+    // The SyntaxHighlighter post-processor will handle these later
     const escapedStr = str
       .replace(/&/g, '&amp;')
       .replace(/</g, '&lt;')
       .replace(/>/g, '&gt;')
       .replace(/"/g, '&quot;')
       .replace(/'/g, '&#39;');
-    return `<pre class="language-${lang}"><code class="language-${lang}">${escapedStr}</code></pre>`;
+    return `<pre><code class="language-${lang}">${escapedStr}</code></pre>`;
   }
 
   /**
@@ -129,8 +153,11 @@ export class MarkdownParser {
       // Preprocess content to fix formatting issues
       const preprocessedContent = this.preprocessContent(content);
 
-      // Render HTML
-      const html = this.md.render(preprocessedContent);
+      // Render HTML (highlight function handles initial code block structure)
+      let html = this.md.render(preprocessedContent);
+
+      // Post-process HTML for syntax highlighting (only for non-diagram code blocks)
+      html = this.syntaxHighlighter.processContent(html);
 
       // Extract headings
       const headings = this.extractHeadings(content);

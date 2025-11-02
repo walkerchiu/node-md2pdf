@@ -178,6 +178,18 @@ export interface ConfigSchema {
     };
   };
 
+  // Syntax highlighting settings
+  syntaxHighlighting: {
+    enabled: boolean;
+    theme: string;
+    enableLineNumbers: boolean;
+    lineNumberStart: number;
+    timeout: number;
+    enableCaching: boolean;
+    supportedLanguages: string[];
+    languageAliases: Record<string, string>;
+  };
+
   // Feature flags
   features: {
     enhancedServices: boolean;

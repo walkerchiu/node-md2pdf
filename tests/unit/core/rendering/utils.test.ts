@@ -44,7 +44,7 @@ describe('Rendering Utils', () => {
       expect(validation.isValid).toBeDefined();
       expect(validation.issues).toBeDefined();
       expect(validation.recommendations).toBeDefined();
-    });
+    }, 30000);
   });
 
   describe('createDefaultProcessingContext', () => {

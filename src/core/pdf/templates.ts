@@ -338,6 +338,175 @@ export class PDFTemplates {
     `;
   }
 
+  static getSyntaxHighlightingCSS(
+    enableChineseSupport: boolean = false,
+  ): string {
+    const codeFontFamily = enableChineseSupport
+      ? DEFAULT_CSS_TEMPLATE.CODE.FONT_FAMILY_WITH_CHINESE
+      : DEFAULT_CSS_TEMPLATE.CODE.FONT_FAMILY;
+
+    return `
+      /* PrismJS Syntax Highlighting Styles */
+      .code-block-container {
+        margin: 20px 0;
+        page-break-inside: avoid;
+        font-family: ${codeFontFamily};
+        font-size: 14px;
+        line-height: 1.45;
+      }
+
+      .code-block-container pre {
+        border-radius: 4px;
+        overflow-x: auto;
+        padding: 1em;
+        margin: 0;
+        background: #f6f8fa;
+        border: 1px solid #e1e4e8;
+      }
+
+      .code-block-container code {
+        font-family: inherit;
+        background: transparent;
+        padding: 0;
+        border-radius: 0;
+      }
+
+      /* PrismJS Line Numbers Plugin CSS - FIXED */
+      pre[class*="language-"].line-numbers {
+        position: relative;
+        padding-left: 3.8em;
+        counter-reset: linenumber;
+      }
+
+      pre[class*="language-"].line-numbers > code {
+        position: relative;
+        white-space: inherit;
+      }
+
+      .line-numbers .line-numbers-rows {
+        position: absolute;
+        pointer-events: none;
+        top: 0;
+        bottom: 0;
+        left: 0;
+        width: 3.3em;
+        border-right: 1px solid #e1e4e8;
+        user-select: none;
+        background-color: #f6f8fa;
+        box-sizing: border-box;
+      }
+
+      .line-numbers-rows > span {
+        display: block;
+        counter-increment: linenumber;
+        line-height: 1.45;
+        text-align: right;
+        padding-right: 0.75em;
+        color: #666;
+        font-family: ${codeFontFamily};
+        font-size: 14px;
+        vertical-align: baseline;
+        box-sizing: border-box;
+      }
+
+      .line-numbers-rows > span:first-child {
+        margin-top: 1em;
+      }
+
+      .line-numbers-rows > span:last-child {
+        margin-bottom: 1em;
+      }
+
+      .line-numbers-rows > span:before {
+        content: counter(linenumber);
+        display: inline-block;
+        width: 100%;
+        line-height: inherit;
+        vertical-align: baseline;
+      }
+
+      /* Default Theme Syntax Colors */
+      .token.comment,
+      .token.prolog,
+      .token.doctype,
+      .token.cdata {
+        color: slategray;
+      }
+
+      .token.punctuation {
+        color: #999;
+      }
+
+      .token.property,
+      .token.tag,
+      .token.boolean,
+      .token.number,
+      .token.constant,
+      .token.symbol,
+      .token.deleted {
+        color: #905;
+      }
+
+      .token.selector,
+      .token.attr-name,
+      .token.string,
+      .token.char,
+      .token.builtin,
+      .token.inserted {
+        color: #690;
+      }
+
+      .token.operator,
+      .token.entity,
+      .token.url,
+      .language-css .token.string,
+      .style .token.string {
+        color: #9a6e3a;
+        background: hsla(0, 0%, 100%, .5);
+      }
+
+      .token.atrule,
+      .token.attr-value,
+      .token.keyword {
+        color: #07a;
+      }
+
+      .token.function,
+      .token.class-name {
+        color: #dd4a68;
+      }
+
+      .token.regex,
+      .token.important,
+      .token.variable {
+        color: #e90;
+      }
+
+      .token.important,
+      .token.bold {
+        font-weight: bold;
+      }
+
+      .token.italic {
+        font-style: italic;
+      }
+
+      .token.entity {
+        cursor: help;
+      }
+
+      @media print {
+        .code-block-container {
+          break-inside: avoid;
+        }
+        .code-block-container pre {
+          border: 1px solid #ddd;
+          background: #f9f9f9 !important;
+        }
+      }
+    `;
+  }
+
   static getAdmonitionsCSS(): string {
     return `
       /* Light Theme Admonition Styles with Proper Spacing */
@@ -554,10 +723,12 @@ export class PDFTemplates {
     const chineseCSS = enableChineseSupport ? this.getChineseCSS() : '';
     const tocCSS = this.getTOCCSS();
     const plantUMLCSS = this.getPlantUMLCSS();
+    const syntaxHighlightingCSS =
+      this.getSyntaxHighlightingCSS(enableChineseSupport);
     const admonitionsCSS = this.getAdmonitionsCSS();
     const css = customCSS
-      ? `${baseCSS}\n${chineseCSS}\n${tocCSS}\n${plantUMLCSS}\n${admonitionsCSS}\n${customCSS}`
-      : `${baseCSS}\n${chineseCSS}\n${tocCSS}\n${plantUMLCSS}\n${admonitionsCSS}`;
+      ? `${baseCSS}\n${chineseCSS}\n${tocCSS}\n${plantUMLCSS}\n${syntaxHighlightingCSS}\n${admonitionsCSS}\n${customCSS}`
+      : `${baseCSS}\n${chineseCSS}\n${tocCSS}\n${plantUMLCSS}\n${syntaxHighlightingCSS}\n${admonitionsCSS}`;
 
     return `
 <!DOCTYPE html>
@@ -589,10 +760,12 @@ export class PDFTemplates {
     const chineseCSS = enableChineseSupport ? this.getChineseCSS() : '';
     const tocCSS = this.getTOCCSS();
     const plantUMLCSS = this.getPlantUMLCSS();
+    const syntaxHighlightingCSS =
+      this.getSyntaxHighlightingCSS(enableChineseSupport);
     const admonitionsCSS = this.getAdmonitionsCSS();
     const css = customCSS
-      ? `${baseCSS}\n${chineseCSS}\n${tocCSS}\n${plantUMLCSS}\n${admonitionsCSS}\n${customCSS}`
-      : `${baseCSS}\n${chineseCSS}\n${tocCSS}\n${plantUMLCSS}\n${admonitionsCSS}`;
+      ? `${baseCSS}\n${chineseCSS}\n${tocCSS}\n${plantUMLCSS}\n${syntaxHighlightingCSS}\n${admonitionsCSS}\n${customCSS}`
+      : `${baseCSS}\n${chineseCSS}\n${tocCSS}\n${plantUMLCSS}\n${syntaxHighlightingCSS}\n${admonitionsCSS}`;
 
     const fullContent = tocHTML ? `${tocHTML}\n\n${content}` : content;
 

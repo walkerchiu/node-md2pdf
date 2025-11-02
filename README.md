@@ -18,6 +18,7 @@ Transform your Markdown documents into beautiful PDFs with automatic table of co
 📊 **PlantUML Diagrams** - Local and remote diagram rendering with automatic installation detection.<br/>
 📈 **Mermaid Diagrams** - Modern flowcharts, sequence diagrams, and Gantt charts.<br/>
 🎨 **Admonitions** - 8 professional callout block types with custom SVG icons and perfect alignment.<br/>
+💻 **Syntax Highlighting** - Professional code highlighting with PrismJS for 50+ programming languages.<br/>
 📝 **File Logging** - Advanced logging with rotation and monitoring.
 
 ## 🚀 Quick Start
@@ -126,6 +127,7 @@ Handle multiple files efficiently:
 - **PlantUML Settings**: Local-first rendering with automatic installation detection and remote fallback.
 - **Mermaid Settings**: Local rendering with theme customization and caching.
 - **Admonitions**: 8 professional callout types with custom SVG icons, perfect alignment, and theme colors.
+- **Syntax Highlighting**: PrismJS-powered code highlighting with support for 50+ programming languages and customizable themes.
 - **Image Processing**: Automatic path resolution and base64 embedding.
 
 ## 🔧 Requirements
@@ -406,7 +408,7 @@ tail -f logs/md2pdf.log
 
 - **Clean Architecture**: Built with modern TypeScript and dependency injection.
 - **Advanced Logging**: File logging system with rotation and monitoring.
-- **Robust Testing**: 60%+ test coverage with comprehensive test suite.
+- **Robust Testing**: 85%+ test coverage with comprehensive test suite.
 - **Error Recovery**: Smart error handling and recovery mechanisms.
 - **Performance**: Optimized for both single files and batch processing.
 - **User Experience**: Interactive CLI with guided workflows.

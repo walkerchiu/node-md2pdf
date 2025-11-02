@@ -1,7 +1,7 @@
 {
   "name": "md2pdf",
   "version": "1.0.0",
-  "description": "A tool for converting Markdown documents to PDF files with professional table of contents.",
+  "description": "A professional Markdown to PDF converter with syntax highlighting, diagrams, smart features, and comprehensive testing.",
   "main": "dist/index.js",
   "bin": {
     "md2pdf": "dist/cli.js"
@@ -25,7 +25,7 @@
     "pretty-check": "prettier --check .",
     "pretty-write": "prettier --write .",
     "clean": "rimraf dist coverage",
-    "clean:all": "rimraf dist coverage .bmad-core .cursor .claude *.tmp test-results test-output",
+    "clean:all": "rimraf dist coverage .bmad-core .cursor .claude .github event_demo *.tmp test-results test-output **/*.bak **/.DS_Store",
     "clean:test": "ts-node -r tsconfig-paths/register scripts/clean-test-files.ts",
     "prepare": "husky install"
   },
@@ -38,7 +38,12 @@
     "chinese",
     "table-of-contents",
     "plantuml",
-    "diagrams"
+    "mermaid",
+    "diagrams",
+    "syntax-highlighting",
+    "prismjs",
+    "admonitions",
+    "typescript"
   ],
   "author": "Walker Chiu",
   "license": "MIT",
@@ -72,6 +77,7 @@
   },
   "dependencies": {
     "@types/markdown-it": "^14.1.2",
+    "@types/prismjs": "^1.26.5",
     "@types/puppeteer": "^5.4.7",
     "chalk": "^5.0.0",
     "commander": "^11.0.0",
@@ -86,6 +92,7 @@
     "node-plantuml": "^0.9.0",
     "ora": "^7.0.0",
     "plantuml-encoder": "^1.4.0",
+    "prismjs": "^1.30.0",
     "puppeteer": "^21.11.0",
     "puppeteer-core": "^24.22.0"
   },

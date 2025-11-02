@@ -51,6 +51,9 @@ jest.mock('../../../../../src/core/pdf/templates', () => ({
     getFullHTML: jest
       .fn()
       .mockReturnValue('<html><body>Test HTML</body></html>'),
+    getFullHTMLWithTOC: jest
+      .fn()
+      .mockReturnValue('<html><body><div class="toc"></div>Test HTML</body></html>'),
   },
 }));
 
