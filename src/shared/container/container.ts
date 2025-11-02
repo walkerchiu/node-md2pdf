@@ -112,6 +112,9 @@ export class ServiceContainer implements IServiceContainer {
       type: registration.type,
       isSingleton: registration.type === 'singleton',
       isInstance: registration.type === 'instance',
+      isCreated:
+        registration.type === 'instance' ||
+        (registration.type === 'singleton' && registration.created === true),
     };
     if (dependencies) {
       serviceInfo.dependencies = dependencies;

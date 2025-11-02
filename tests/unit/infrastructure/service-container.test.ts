@@ -97,6 +97,7 @@ describe('ServiceContainer', () => {
         type: 'singleton',
         isSingleton: true,
         isInstance: false,
+        isCreated: false,
       });
     });
 

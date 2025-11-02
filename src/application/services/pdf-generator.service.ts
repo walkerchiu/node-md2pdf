@@ -24,15 +24,15 @@ import {
 } from '../../core/pdf/engines';
 import { PDFGeneratorOptions, PDFGenerationResult } from '../../core/pdf/types';
 import { ProcessingContext } from '../../core/rendering/types';
-import { MD2PDFError } from '../../infrastructure/error/errors';
 import { DEFAULT_MARGINS } from '../../infrastructure/config/constants';
+import { MD2PDFError } from '../../infrastructure/error/errors';
 import { Heading } from '../../types';
 
+import type { IPageStructureService } from './page-structure.service';
 import type { IConfigManager } from '../../infrastructure/config/types';
 import type { IErrorHandler } from '../../infrastructure/error/types';
-import type { ILogger } from '../../infrastructure/logging/types';
 import type { ITranslationManager } from '../../infrastructure/i18n/types';
-import type { IPageStructureService } from './page-structure.service';
+import type { ILogger } from '../../infrastructure/logging/types';
 
 export interface IPDFGeneratorService {
   generatePDF(

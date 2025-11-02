@@ -79,9 +79,53 @@ async function main(): Promise<void> {
       )
       .version(version);
 
-    // Interactive mode (default)
+    // Direct file conversion
     program
-      .command('convert', { isDefault: true })
+      .argument('[input]', 'Input markdown file path')
+      .argument('[output]', 'Output PDF file path (optional)')
+      .action(async (input?: string, output?: string) => {
+        if (input) {
+          // Direct conversion mode
+          try {
+            const processor = container.resolve('fileProcessor') as any;
+
+            const outputPath = output || input.replace(/\.md$/i, '.pdf');
+            console.log(chalk.blue(`Converting ${input} to ${outputPath}...`));
+
+            const result = await processor.processFile(input, {
+              outputPath,
+              includeTOC: true,
+              includePageNumbers: true,
+            });
+
+            if (result.success) {
+              console.log(
+                chalk.green(`✅ PDF generated successfully: ${outputPath}`),
+              );
+            } else {
+              console.log(chalk.red(`❌ Conversion failed: ${result.error}`));
+              process.exit(1);
+            }
+          } catch (error) {
+            console.log(
+              chalk.red(
+                `❌ Error: ${error instanceof Error ? error.message : String(error)}`,
+              ),
+            );
+            process.exit(1);
+          }
+        } else {
+          // Interactive mode (default)
+          const mainInteractive = new MainInteractiveMode(container);
+          await mainInteractive.start();
+        }
+        // After processing ends, exit the process
+        process.exit(0);
+      });
+
+    // Interactive mode command
+    program
+      .command('interactive')
       .description('Start interactive conversion mode')
       .action(async () => {
         const mainInteractive = new MainInteractiveMode(container);

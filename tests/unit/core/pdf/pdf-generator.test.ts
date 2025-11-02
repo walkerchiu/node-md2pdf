@@ -380,7 +380,7 @@ describe('PDFGenerator', () => {
         expect.any(Object),
       );
       expect(mockPage.setContent).toHaveBeenCalledWith(
-        expect.stringContaining('Noto Sans CJK SC'),
+        expect.stringContaining('PingFang SC'),
         expect.any(Object),
       );
     });

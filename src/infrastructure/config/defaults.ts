@@ -9,6 +9,7 @@ import {
   DEFAULT_PDF_OPTIONS,
   DEFAULT_PLANTUML,
   DEFAULT_MERMAID,
+  DEFAULT_SYNTAX_HIGHLIGHTING,
   CONFIG_KEYS,
 } from './constants';
 
@@ -117,6 +118,16 @@ export const defaultConfig: ConfigSchema = {
       errorMessage: 'Mermaid diagram rendering failed',
     },
   },
+  syntaxHighlighting: {
+    enabled: true,
+    theme: DEFAULT_SYNTAX_HIGHLIGHTING.DEFAULT_THEME,
+    enableLineNumbers: DEFAULT_SYNTAX_HIGHLIGHTING.ENABLE_LINE_NUMBERS,
+    lineNumberStart: DEFAULT_SYNTAX_HIGHLIGHTING.LINE_NUMBER_START,
+    timeout: DEFAULT_SYNTAX_HIGHLIGHTING.TIMEOUT,
+    enableCaching: DEFAULT_SYNTAX_HIGHLIGHTING.ENABLE_CACHE,
+    supportedLanguages: [...DEFAULT_SYNTAX_HIGHLIGHTING.SUPPORTED_LANGUAGES],
+    languageAliases: DEFAULT_SYNTAX_HIGHLIGHTING.LANGUAGE_ALIASES,
+  },
   features: {
     enhancedServices: process.env.MD2PDF_USE_ENHANCED_SERVICES !== 'false',
     enhancedCli: process.env.MD2PDF_USE_ENHANCED_CLI !== 'false',
@@ -132,6 +143,7 @@ export {
   DEFAULT_PDF_OPTIONS,
   DEFAULT_PLANTUML,
   DEFAULT_MERMAID,
+  DEFAULT_SYNTAX_HIGHLIGHTING,
   CONFIG_KEYS,
 };
 

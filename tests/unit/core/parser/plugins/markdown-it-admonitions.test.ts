@@ -172,8 +172,11 @@ function hello() {
       const result = parser.parse(markdown);
 
       expect(result.content).toContain('class="admonition admonition-tip"');
-      expect(result.content).toContain('<pre class="language-javascript">');
-      expect(result.content).toContain('function hello()');
+      expect(result.content).toContain(
+        '<pre class="language-javascript line-numbers">',
+      );
+      expect(result.content).toContain('class="token keyword">function</span>');
+      expect(result.content).toContain('class="token function">hello</span>');
     });
 
     it('should handle tables inside admonitions', () => {

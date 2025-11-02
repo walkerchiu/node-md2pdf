@@ -5,23 +5,23 @@
 import {
   TOCGeneratorService,
   ITOCGeneratorService,
-} from '../../../src/application/services/toc-generator.service';
-import { TOCGenerator } from '../../../src/core/toc/toc-generator';
+} from '../../../../src/application/services/toc-generator.service';
+import { TOCGenerator } from '../../../../src/core/toc/toc-generator';
 import {
   TOCGeneratorOptions,
   TOCGenerationResult,
   TOCItemFlat,
   TOCItemNested,
-} from '../../../src/core/toc/types';
-import { Heading } from '../../../src/types/index';
-import type { ILogger } from '../../../src/infrastructure/logging/types';
-import type { IErrorHandler } from '../../../src/infrastructure/error/types';
-import type { IConfigManager } from '../../../src/infrastructure/config/types';
-import type { ITranslationManager } from '../../../src/infrastructure/i18n/types';
-import { MD2PDFError } from '../../../src/infrastructure/error/errors';
+} from '../../../../src/core/toc/types';
+import { Heading } from '../../../../src/types/index';
+import type { ILogger } from '../../../../src/infrastructure/logging/types';
+import type { IErrorHandler } from '../../../../src/infrastructure/error/types';
+import type { IConfigManager } from '../../../../src/infrastructure/config/types';
+import type { ITranslationManager } from '../../../../src/infrastructure/i18n/types';
+import { MD2PDFError } from '../../../../src/infrastructure/error/errors';
 
 // Mock the core modules
-jest.mock('../../../src/core/toc/toc-generator');
+jest.mock('../../../../src/core/toc/toc-generator');
 
 describe('TOCGeneratorService', () => {
   let service: ITOCGeneratorService;

@@ -1,22 +1,22 @@
 import {
   FileProcessorService,
   FileProcessingOptions,
-} from '../../../src/application/services/file-processor.service';
-import { IMarkdownParserService } from '../../../src/application/services/markdown-parser.service';
-import { IPDFGeneratorService } from '../../../src/application/services/pdf-generator.service';
-import { ILogger } from '../../../src/infrastructure/logging/types';
-import { IErrorHandler } from '../../../src/infrastructure/error/types';
-import { IConfigManager } from '../../../src/infrastructure/config/types';
+} from '../../../../src/application/services/file-processor.service';
+import { IMarkdownParserService } from '../../../../src/application/services/markdown-parser.service';
+import { IPDFGeneratorService } from '../../../../src/application/services/pdf-generator.service';
+import { ILogger } from '../../../../src/infrastructure/logging/types';
+import { IErrorHandler } from '../../../../src/infrastructure/error/types';
+import { IConfigManager } from '../../../../src/infrastructure/config/types';
 import {
   IFileSystemManager,
   FileStats,
-} from '../../../src/infrastructure/filesystem/types';
+} from '../../../../src/infrastructure/filesystem/types';
 import {
   MD2PDFError,
   FileNotFoundError,
-} from '../../../src/infrastructure/error/errors';
-import { ParsedMarkdown, Heading } from '../../../src/types/index';
-import { PDFGenerationResult } from '../../../src/core/pdf/types';
+} from '../../../../src/infrastructure/error/errors';
+import { ParsedMarkdown, Heading } from '../../../../src/types/index';
+import { PDFGenerationResult } from '../../../../src/core/pdf/types';
 
 describe('FileProcessorService', () => {
   let service: FileProcessorService;

@@ -2,9 +2,9 @@
  * @jest-environment node
  */
 
-import { I18nHelpers } from '../../../src/cli/utils/i18n-helpers';
-import { TranslationManager } from '../../../src/infrastructure/i18n/manager';
-import type { ITranslationManager } from '../../../src/infrastructure/i18n/types';
+import { I18nHelpers } from '../../../../src/cli/utils/i18n-helpers';
+import { TranslationManager } from '../../../../src/infrastructure/i18n/manager';
+import type { ITranslationManager } from '../../../../src/infrastructure/i18n/types';
 
 // Mock chalk to avoid issues in test environment
 jest.mock('chalk', () => ({
