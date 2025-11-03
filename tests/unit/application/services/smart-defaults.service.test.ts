@@ -27,6 +27,44 @@ describe('SmartDefaultsService', () => {
     jest.clearAllMocks();
   });
 
+  describe('analyzeContent', () => {
+    it('should handle analysis failure', async () => {
+      const mockContentAnalyzer = {
+        analyzeFile: jest.fn().mockRejectedValue(new Error('Analysis failed')),
+      };
+      (service as any).contentAnalyzer = mockContentAnalyzer;
+
+      await expect(service.analyzeContent('/test/file.md')).rejects.toThrow(
+        'Failed to analyze content: Error: Analysis failed',
+      );
+
+      expect(mockLogger.error).toHaveBeenCalledWith(
+        'Content analysis failed: Error: Analysis failed',
+      );
+    });
+  });
+
+  describe('analyzeContentString', () => {
+    it('should handle string content analysis failure', async () => {
+      const mockContentAnalyzer = {
+        analyzeContent: jest
+          .fn()
+          .mockRejectedValue(new Error('String analysis failed')),
+      };
+      (service as any).contentAnalyzer = mockContentAnalyzer;
+
+      await expect(
+        service.analyzeContentString('test content'),
+      ).rejects.toThrow(
+        'Failed to analyze content: Error: String analysis failed',
+      );
+
+      expect(mockLogger.error).toHaveBeenCalledWith(
+        'Content analysis failed: Error: String analysis failed',
+      );
+    });
+  });
+
   describe('recommendSettings', () => {
     it('should recommend appropriate settings for technical content', async () => {
       const analysis: ContentAnalysis = {
@@ -583,6 +621,219 @@ describe('SmartDefaultsService', () => {
       expect(insights.processingWarnings).toContain(
         'Complex document structure - additional memory may be required',
       );
+    });
+  });
+
+  describe('Document Type Specific Presets', () => {
+    it('should select Academic Paper preset for academic documents', async () => {
+      const analysis: ContentAnalysis = {
+        fileSize: 10000,
+        wordCount: 3000,
+        readingTime: 15,
+        headingStructure: {
+          totalHeadings: 12,
+          maxDepth: 4,
+          structure: [],
+          hasNumberedHeadings: true,
+          averageHeadingLength: 15,
+        },
+        contentComplexity: {
+          score: 7,
+          documentType: 'academic-paper',
+          recommendedTocDepth: 3,
+          factors: [
+            { type: 'technical', weight: 0.4, description: 'Academic content' },
+          ],
+        },
+        languageDetection: {
+          primary: 'en',
+          confidence: 0.95,
+          chineseCharacterRatio: 0,
+          needsChineseSupport: false,
+          detectedLanguages: [{ language: 'English', percentage: 100 }],
+        },
+        mediaElements: {
+          images: 5,
+          hasLargeImages: true,
+          hasDiagrams: false,
+          estimatedImageSize: 500,
+          hasPlantUMLDiagrams: false,
+          plantUMLCount: 0,
+          hasMermaidDiagrams: false,
+          mermaidCount: 0,
+        },
+        codeBlocks: [],
+        tables: [{ columns: 4, rows: 10, complexity: 'moderate' }],
+        links: {
+          internal: 8,
+          external: 15,
+          hasFootnotes: true,
+        },
+      };
+
+      const config = await service.recommendSettings(analysis);
+      expect(config.theme).toBe('academic');
+      expect(config.fonts?.enableChineseSupport).toBe(false);
+    });
+
+    it('should select Business Report preset for business documents', async () => {
+      const analysis: ContentAnalysis = {
+        fileSize: 8000,
+        wordCount: 2500,
+        readingTime: 12,
+        headingStructure: {
+          totalHeadings: 10,
+          maxDepth: 3,
+          structure: [],
+          hasNumberedHeadings: false,
+          averageHeadingLength: 12,
+        },
+        contentComplexity: {
+          score: 5,
+          documentType: 'business-report',
+          recommendedTocDepth: 2,
+          factors: [
+            { type: 'table-heavy', weight: 0.3, description: 'Many tables' },
+          ],
+        },
+        languageDetection: {
+          primary: 'en',
+          confidence: 0.9,
+          chineseCharacterRatio: 0,
+          needsChineseSupport: false,
+          detectedLanguages: [{ language: 'English', percentage: 100 }],
+        },
+        mediaElements: {
+          images: 3,
+          hasLargeImages: false,
+          hasDiagrams: true,
+          estimatedImageSize: 150,
+          hasPlantUMLDiagrams: false,
+          plantUMLCount: 0,
+          hasMermaidDiagrams: false,
+          mermaidCount: 0,
+        },
+        codeBlocks: [],
+        tables: [{ columns: 6, rows: 20, complexity: 'complex' }],
+        links: {
+          internal: 5,
+          external: 8,
+          hasFootnotes: false,
+        },
+      };
+
+      const config = await service.recommendSettings(analysis);
+      expect(config.theme).toBe('professional');
+      expect(config.format).toBe('A3');
+    });
+
+    it('should handle Chinese language support', async () => {
+      const analysis: ContentAnalysis = {
+        fileSize: 5000,
+        wordCount: 1000,
+        readingTime: 5,
+        headingStructure: {
+          totalHeadings: 6,
+          maxDepth: 2,
+          structure: [],
+          hasNumberedHeadings: false,
+          averageHeadingLength: 10,
+        },
+        contentComplexity: {
+          score: 3,
+          documentType: 'article',
+          recommendedTocDepth: 2,
+          factors: [],
+        },
+        languageDetection: {
+          primary: 'zh-TW',
+          confidence: 0.88,
+          chineseCharacterRatio: 0.75,
+          needsChineseSupport: true,
+          detectedLanguages: [
+            { language: 'Chinese', percentage: 75 },
+            { language: 'English', percentage: 25 },
+          ],
+        },
+        mediaElements: {
+          images: 2,
+          hasLargeImages: false,
+          hasDiagrams: false,
+          estimatedImageSize: 100,
+          hasPlantUMLDiagrams: false,
+          plantUMLCount: 0,
+          hasMermaidDiagrams: false,
+          mermaidCount: 0,
+        },
+        codeBlocks: [],
+        tables: [],
+        links: {
+          internal: 3,
+          external: 2,
+          hasFootnotes: false,
+        },
+      };
+
+      const config = await service.recommendSettings(analysis);
+      expect(config.fonts?.enableChineseSupport).toBe(true);
+      expect(config.fonts?.primaryFont).toBe('Noto Sans CJK TC');
+      expect(config.fonts?.fallbackFonts).toContain('Microsoft JhengHei');
+    });
+  });
+
+  describe('Edge Cases and Error Handling', () => {
+    it('should handle undefined analysis gracefully', async () => {
+      const analysis = null as any;
+      await expect(service.recommendSettings(analysis)).rejects.toThrow();
+    });
+
+    it('should handle missing document type gracefully', async () => {
+      const analysis: ContentAnalysis = {
+        fileSize: 2000,
+        wordCount: 400,
+        readingTime: 2,
+        headingStructure: {
+          totalHeadings: 3,
+          maxDepth: 2,
+          structure: [],
+          hasNumberedHeadings: false,
+          averageHeadingLength: 8,
+        },
+        contentComplexity: {
+          score: 2,
+          documentType: undefined as any,
+          recommendedTocDepth: 1,
+          factors: [],
+        },
+        languageDetection: {
+          primary: 'en',
+          confidence: 0.8,
+          chineseCharacterRatio: 0,
+          needsChineseSupport: false,
+          detectedLanguages: [{ language: 'English', percentage: 100 }],
+        },
+        mediaElements: {
+          images: 0,
+          hasLargeImages: false,
+          hasDiagrams: false,
+          estimatedImageSize: 0,
+          hasPlantUMLDiagrams: false,
+          plantUMLCount: 0,
+          hasMermaidDiagrams: false,
+          mermaidCount: 0,
+        },
+        codeBlocks: [],
+        tables: [],
+        links: {
+          internal: 1,
+          external: 1,
+          hasFootnotes: false,
+        },
+      };
+
+      const config = await service.recommendSettings(analysis);
+      expect(config).toBeDefined();
+      expect(config.theme).toBeDefined();
     });
   });
 });

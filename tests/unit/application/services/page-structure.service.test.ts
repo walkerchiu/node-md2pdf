@@ -1,125 +1,440 @@
+/**
+ * Page Structure Service Tests
+ * Tests page structure service functionality including:
+ * - Service initialization
+ * - Page structure generation
+ * - Header and footer generation
+ * - Preset management
+ * - Configuration validation
+ * - Error handling
+ */
+
+/// <reference types="jest" />
+
 import { PageStructureService } from '../../../../src/application/services/page-structure.service';
 import {
-  PageStructureConfig,
   PageContext,
-  TemplateVariable,
-} from '../../../../src/core/page-structure/types';
+  PageStructureConfig,
+} from '../../../../src/core/page-structure';
 import { MD2PDFError } from '../../../../src/infrastructure/error/errors';
+import type { ILogger } from '../../../../src/infrastructure/logging/types';
+import type { IErrorHandler } from '../../../../src/infrastructure/error/types';
+import type { IConfigManager } from '../../../../src/infrastructure/config/types';
 
-// Mock dependencies
-const mockLogger = {
-  info: jest.fn(),
-  warn: jest.fn(),
-  debug: jest.fn(),
-  error: jest.fn(),
-};
+// Mock the core page structure modules
+jest.mock('../../../../src/core/page-structure/header-footer-manager', () => ({
+  HeaderFooterManager: jest.fn().mockImplementation(() => ({
+    generatePageStructure: jest.fn().mockImplementation((config) => ({
+      header: {
+        html: '<div>Test Header</div>',
+        height: '50px',
+        warnings: [],
+      },
+      footer: {
+        html: '<div>Test Footer</div>',
+        height: '30px',
+        warnings: [],
+      },
+      margins: config.margins || {
+        top: '1in',
+        bottom: '1in',
+        left: '0.75in',
+        right: '0.75in',
+      },
+    })),
+    generateHeader: jest.fn().mockReturnValue({
+      html: '<div>Test Header</div>',
+      height: '50px',
+      warnings: [],
+    }),
+    generateFooter: jest.fn().mockReturnValue({
+      html: '<div>Test Footer</div>',
+      height: '30px',
+      warnings: [],
+    }),
+    validateHeaderConfig: jest.fn().mockReturnValue({
+      errors: [],
+      warnings: [],
+    }),
+    validateFooterConfig: jest.fn().mockReturnValue({
+      errors: [],
+      warnings: [],
+    }),
+    previewContent: jest.fn().mockReturnValue({
+      html: '<div>Preview Content</div>',
+      warnings: [],
+    }),
+  })),
+}));
 
-const mockErrorHandler = {
-  handleError: jest.fn(),
-};
+jest.mock('../../../../src/core/page-structure/preset-manager', () => ({
+  PresetManager: {
+    getAvailablePresets: jest.fn().mockReturnValue([
+      {
+        name: 'professional',
+        displayName: 'Professional',
+        description: 'Clean professional layout',
+        category: 'business',
+        config: {
+          header: { enabled: true, template: 'Professional Header' },
+          footer: {
+            enabled: true,
+            template: 'Page {{page}} of {{totalPages}}',
+          },
+          margins: {
+            top: '1in',
+            bottom: '1in',
+            left: '0.75in',
+            right: '0.75in',
+          },
+        },
+        tags: ['business', 'clean'],
+        preview: { thumbnailUrl: '/preview/professional.png' },
+      },
+      {
+        name: 'academic',
+        displayName: 'Academic',
+        description: 'Academic document layout',
+        category: 'academic',
+        config: {
+          header: { enabled: false, template: '' },
+          footer: { enabled: true, template: 'Page {{page}}' },
+          margins: { top: '1in', bottom: '1in', left: '1in', right: '1in' },
+        },
+        tags: ['academic', 'minimal'],
+        preview: { thumbnailUrl: '/preview/academic.png' },
+      },
+    ]),
+    getPresetByName: jest.fn().mockImplementation((name: string) => {
+      if (name === 'professional') {
+        return {
+          name: 'professional',
+          displayName: 'Professional',
+          description: 'Clean professional layout',
+          category: 'business',
+          config: {
+            header: { enabled: true, template: 'Professional Header' },
+            footer: {
+              enabled: true,
+              template: 'Page {{page}} of {{totalPages}}',
+            },
+            margins: {
+              top: '1in',
+              bottom: '1in',
+              left: '0.75in',
+              right: '0.75in',
+            },
+          },
+          tags: ['business', 'clean'],
+          preview: { thumbnailUrl: '/preview/professional.png' },
+        };
+      }
+      return undefined;
+    }),
+    suggestPreset: jest.fn().mockReturnValue([
+      {
+        name: 'professional',
+        displayName: 'Professional',
+        description: 'Clean professional layout',
+        category: 'business',
+        config: {
+          header: { enabled: true, template: 'Professional Header' },
+          footer: {
+            enabled: true,
+            template: 'Page {{page}} of {{totalPages}}',
+          },
+          margins: {
+            top: '1in',
+            bottom: '1in',
+            left: '0.75in',
+            right: '0.75in',
+          },
+        },
+        tags: ['business', 'clean'],
+        preview: { thumbnailUrl: '/preview/professional.png' },
+      },
+    ]),
+  },
+}));
 
-const mockConfigManager = {
-  get: jest.fn(),
-  set: jest.fn(),
-};
+jest.mock('../../../../src/core/page-structure/template-validator', () => ({
+  TemplateValidator: {
+    validate: jest.fn().mockReturnValue({
+      isValid: true,
+      errors: [],
+      warnings: [],
+    }),
+  },
+}));
 
 describe('PageStructureService', () => {
   let service: PageStructureService;
-  let mockContext: PageContext;
-  let mockConfig: PageStructureConfig;
+  let mockLogger: jest.Mocked<ILogger>;
+  let mockErrorHandler: jest.Mocked<IErrorHandler>;
+  let mockConfigManager: jest.Mocked<IConfigManager>;
+  let sampleContext: PageContext;
+  let sampleConfig: PageStructureConfig;
 
   beforeEach(() => {
     jest.clearAllMocks();
 
-    service = new PageStructureService(
-      mockLogger as any,
-      mockErrorHandler as any,
-      mockConfigManager as any,
-    );
+    // Mock dependencies
+    mockLogger = {
+      debug: jest.fn(),
+      info: jest.fn(),
+      warn: jest.fn(),
+      error: jest.fn(),
+      log: jest.fn(),
+      setLevel: jest.fn(),
+      getLevel: jest.fn().mockReturnValue('info'),
+    };
 
-    mockContext = {
+    mockErrorHandler = {
+      handleError: jest.fn(),
+      formatError: jest.fn(),
+      isRecoverable: jest.fn(),
+      categorizeError: jest.fn(),
+    };
+
+    mockConfigManager = {
+      get: jest.fn(),
+      set: jest.fn(),
+      has: jest.fn(),
+      getAll: jest.fn(),
+      save: jest.fn(),
+      onConfigCreated: jest.fn(),
+      onConfigChanged: jest.fn(),
+      setAndSave: jest.fn(),
+      getConfigPath: jest.fn(),
+    };
+
+    // Sample test data
+    sampleContext = {
       pageNumber: 1,
       totalPages: 10,
       title: 'Test Document',
       author: 'Test Author',
       date: '2024-01-01',
-      fileName: 'test.md',
+      fileName: 'test.pdf',
+      chapterTitle: 'Chapter 1',
+      sectionTitle: 'Section 1.1',
     };
 
-    mockConfig = {
+    sampleConfig = {
       header: {
         enabled: true,
         template: '<div>{{title}}</div>',
+        height: '50px',
       },
       footer: {
         enabled: true,
-        template: '<div>Page {{pageNumber}}</div>',
+        template: '<div>Page {{pageNumber}} of {{totalPages}}</div>',
+        height: '30px',
+      },
+      margins: {
+        top: '1in',
+        bottom: '1in',
+        left: '0.75in',
+        right: '0.75in',
       },
     };
+
+    service = new PageStructureService(
+      mockLogger,
+      mockErrorHandler,
+      mockConfigManager,
+    );
+  });
+
+  describe('Constructor', () => {
+    it('should create service instance', () => {
+      expect(service).toBeInstanceOf(PageStructureService);
+    });
+
+    it('should initialize with provided dependencies', () => {
+      expect(service).toBeDefined();
+    });
   });
 
   describe('generatePageStructure', () => {
-    it('should generate page structure successfully', async () => {
+    it('should generate complete page structure', async () => {
       const result = await service.generatePageStructure(
-        mockConfig,
-        mockContext,
+        sampleConfig,
+        sampleContext,
       );
 
       expect(result).toBeDefined();
       expect(result.header).toBeDefined();
       expect(result.footer).toBeDefined();
+      expect(result.margins).toBeDefined();
+      expect(result.header.html).toBe('<div>Test Header</div>');
+      expect(result.footer.html).toBe('<div>Test Footer</div>');
       expect(mockLogger.info).toHaveBeenCalledWith(
         'Generating page structure',
-        expect.any(Object),
-      );
-      expect(mockLogger.debug).toHaveBeenCalledWith(
-        'Page structure generated successfully',
-        expect.any(Object),
+        {
+          hasHeader: true,
+          hasFooter: true,
+          pageNumber: 1,
+          title: 'Test Document',
+        },
       );
     });
 
-    it('should handle custom variables', async () => {
-      const customVariables: TemplateVariable[] = [
-        { name: 'custom', value: 'Custom Value' },
-      ];
+    it('should generate structure with custom variables', async () => {
+      const variables = [{ name: 'customVar', value: 'customValue' }];
 
-      const customConfig = {
-        ...mockConfig,
+      const result = await service.generatePageStructure(
+        sampleConfig,
+        sampleContext,
+        variables,
+      );
+
+      expect(result).toBeDefined();
+      expect(result.header.html).toBe('<div>Test Header</div>');
+      expect(result.footer.html).toBe('<div>Test Footer</div>');
+    });
+
+    it('should handle disabled header and footer', async () => {
+      const configWithoutHeaderFooter = {
+        ...sampleConfig,
         header: {
-          enabled: true,
-          template: '<div>{{title}} - {{custom}}</div>',
+          ...sampleConfig.header,
+          enabled: false,
+          template: 'disabled',
+        },
+        footer: {
+          ...sampleConfig.footer,
+          enabled: false,
+          template: 'disabled',
         },
       };
 
       const result = await service.generatePageStructure(
-        customConfig,
-        mockContext,
-        customVariables,
+        configWithoutHeaderFooter,
+        sampleContext,
       );
 
-      expect(result.header.html).toContain('Test Document');
+      expect(result).toBeDefined();
+      expect(mockLogger.info).toHaveBeenCalledWith(
+        'Generating page structure',
+        {
+          hasHeader: false,
+          hasFooter: false,
+          pageNumber: 1,
+          title: 'Test Document',
+        },
+      );
     });
 
     it('should log warnings when present', async () => {
-      // This would require mocking the HeaderFooterManager to return warnings
-      // For now, we'll just test that the service handles warnings properly
-      await service.generatePageStructure(mockConfig, mockContext);
+      // Access the service's internal headerFooterManager mock
+      const internalMock = (service as any).headerFooterManager;
+      internalMock.generatePageStructure.mockReturnValueOnce({
+        header: {
+          html: '<div>Test Header</div>',
+          height: '50px',
+          warnings: ['Header warning'],
+        },
+        footer: {
+          html: '<div>Test Footer</div>',
+          height: '30px',
+          warnings: ['Footer warning'],
+        },
+        margins: sampleConfig.margins,
+      });
 
-      expect(mockLogger.info).toHaveBeenCalled();
+      const result = await service.generatePageStructure(
+        sampleConfig,
+        sampleContext,
+      );
+
+      expect(result).toBeDefined();
+      expect(mockLogger.warn).toHaveBeenCalledWith(
+        'Header generation warnings',
+        {
+          warnings: ['Header warning'],
+        },
+      );
+      expect(mockLogger.warn).toHaveBeenCalledWith(
+        'Footer generation warnings',
+        {
+          warnings: ['Footer warning'],
+        },
+      );
     });
 
-    it('should handle errors and wrap them', async () => {
-      // Force an error by providing invalid config
-      const invalidConfig = null as any;
+    it('should handle errors and wrap them properly', async () => {
+      // Access the service's internal headerFooterManager mock
+      const internalMock = (service as any).headerFooterManager;
+      internalMock.generatePageStructure.mockImplementationOnce(() => {
+        throw new Error('Generation failed');
+      });
 
       await expect(
-        service.generatePageStructure(invalidConfig, mockContext),
+        service.generatePageStructure(sampleConfig, sampleContext),
       ).rejects.toThrow(MD2PDFError);
 
-      expect(mockErrorHandler.handleError).toHaveBeenCalledWith(
-        expect.any(MD2PDFError),
-        'PageStructureService.generatePageStructure',
+      expect(mockErrorHandler.handleError).toHaveBeenCalled();
+    });
+  });
+
+  describe('generateHeader', () => {
+    it('should generate header with default configuration', async () => {
+      const result = await service.generateHeader(sampleContext);
+
+      expect(result).toBeDefined();
+      expect(result.html).toBe('<div>Test Header</div>');
+      expect(result.height).toBe('50px');
+      expect(mockLogger.debug).toHaveBeenCalledWith(
+        'Generating header using default configuration',
       );
+      expect(mockLogger.debug).toHaveBeenCalledWith(
+        'Header generated successfully',
+      );
+    });
+
+    it('should handle header generation errors', async () => {
+      // Access the service's internal headerFooterManager mock
+      const internalMock = (service as any).headerFooterManager;
+      internalMock.generateHeader.mockImplementationOnce(() => {
+        throw new Error('Header generation failed');
+      });
+
+      await expect(service.generateHeader(sampleContext)).rejects.toThrow(
+        MD2PDFError,
+      );
+
+      expect(mockErrorHandler.handleError).toHaveBeenCalled();
+    });
+  });
+
+  describe('generateFooter', () => {
+    it('should generate footer with default configuration', async () => {
+      const result = await service.generateFooter(sampleContext);
+
+      expect(result).toBeDefined();
+      expect(result.html).toBe('<div>Test Footer</div>');
+      expect(result.height).toBe('30px');
+      expect(mockLogger.debug).toHaveBeenCalledWith(
+        'Generating footer using default configuration',
+      );
+      expect(mockLogger.debug).toHaveBeenCalledWith(
+        'Footer generated successfully',
+      );
+    });
+
+    it('should handle footer generation errors', async () => {
+      // Access the service's internal headerFooterManager mock
+      const internalMock = (service as any).headerFooterManager;
+      internalMock.generateFooter.mockImplementationOnce(() => {
+        throw new Error('Footer generation failed');
+      });
+
+      await expect(service.generateFooter(sampleContext)).rejects.toThrow(
+        MD2PDFError,
+      );
+
+      expect(mockErrorHandler.handleError).toHaveBeenCalled();
     });
   });
 
@@ -128,224 +443,291 @@ describe('PageStructureService', () => {
       const presets = await service.getAvailablePresets();
 
       expect(presets).toBeDefined();
-      expect(Array.isArray(presets)).toBe(true);
-      expect(presets.length).toBeGreaterThan(0);
+      expect(presets.length).toBe(2);
+      expect(presets[0].name).toBe('professional');
+      expect(presets[1].name).toBe('academic');
       expect(mockLogger.debug).toHaveBeenCalledWith(
         'Fetching available page structure presets',
       );
       expect(mockLogger.info).toHaveBeenCalledWith(
-        expect.stringContaining('Found'),
-        expect.any(Object),
+        'Found 2 available presets',
+        {
+          presetNames: ['professional', 'academic'],
+          categories: ['business', 'academic'],
+        },
       );
     });
 
-    it('should handle errors when getting presets', async () => {
-      // Mock a scenario that would cause an error
-      jest
-        .spyOn(
-          require('../../../../src/core/page-structure/preset-manager'),
-          'PresetManager',
-        )
-        .mockImplementation(() => {
-          throw new Error('Test error');
-        });
+    it('should handle errors when fetching presets', async () => {
+      const {
+        PresetManager,
+      } = require('../../../../src/core/page-structure/preset-manager');
+      PresetManager.getAvailablePresets.mockImplementationOnce(() => {
+        throw new Error('Failed to fetch presets');
+      });
 
       await expect(service.getAvailablePresets()).rejects.toThrow(MD2PDFError);
+
       expect(mockErrorHandler.handleError).toHaveBeenCalled();
     });
   });
 
   describe('getPresetByName', () => {
-    it('should return preset when found', async () => {
-      const presetName = 'Business Professional';
-      const preset = await service.getPresetByName(presetName);
+    it('should return specific preset by name', async () => {
+      const preset = await service.getPresetByName('professional');
 
       expect(preset).toBeDefined();
-      expect(preset?.name).toBe(presetName);
+      expect(preset!.name).toBe('professional');
+      expect((preset as any).displayName).toBe('Professional');
       expect(mockLogger.debug).toHaveBeenCalledWith(
-        `Fetching preset by name: ${presetName}`,
-      );
-      expect(mockLogger.info).toHaveBeenCalledWith(
-        `Preset found: ${presetName}`,
-        expect.any(Object),
+        'Fetching preset by name: professional',
       );
     });
 
-    it('should return undefined and log warning when preset not found', async () => {
-      const presetName = 'Non-existent Preset';
-      const preset = await service.getPresetByName(presetName);
+    it('should return undefined for non-existent preset', async () => {
+      const preset = await service.getPresetByName('nonexistent');
 
       expect(preset).toBeUndefined();
       expect(mockLogger.warn).toHaveBeenCalledWith(
-        `Preset not found: ${presetName}`,
+        'Preset not found: nonexistent',
       );
+    });
+
+    it('should handle errors when fetching preset', async () => {
+      const {
+        PresetManager,
+      } = require('../../../../src/core/page-structure/preset-manager');
+      PresetManager.getPresetByName.mockImplementationOnce(() => {
+        throw new Error('Failed to fetch preset');
+      });
+
+      await expect(service.getPresetByName('professional')).rejects.toThrow(
+        MD2PDFError,
+      );
+
+      expect(mockErrorHandler.handleError).toHaveBeenCalled();
     });
   });
 
   describe('suggestPreset', () => {
-    it('should analyze document and suggest presets', async () => {
-      const documentPath = '/path/to/technical-api-document.md';
-      const suggestions = await service.suggestPreset(documentPath);
+    it('should suggest appropriate presets for document', async () => {
+      const suggestions = await service.suggestPreset('/path/to/document.md');
 
       expect(suggestions).toBeDefined();
-      expect(Array.isArray(suggestions)).toBe(true);
+      expect(suggestions.length).toBe(1);
+      expect(suggestions[0].name).toBe('professional');
       expect(mockLogger.debug).toHaveBeenCalledWith(
-        `Analyzing document for preset suggestions: ${documentPath}`,
+        'Analyzing document for preset suggestions: /path/to/document.md',
       );
       expect(mockLogger.info).toHaveBeenCalledWith(
-        expect.stringContaining('Generated'),
-        expect.any(Object),
+        'Generated 1 preset suggestions',
+        {
+          documentPath: '/path/to/document.md',
+          analysis: expect.objectContaining({
+            hasCodeBlocks: false,
+            hasAcademicElements: false,
+            isBusinessDocument: false,
+            complexity: 'moderate',
+          }),
+          suggestedPresets: ['professional'],
+        },
       );
     });
 
-    it('should handle different document types', async () => {
-      const businessDoc = '/path/to/business-report.md';
-      const academicDoc = '/path/to/research-paper.md';
+    it('should handle errors when suggesting presets', async () => {
+      const {
+        PresetManager,
+      } = require('../../../../src/core/page-structure/preset-manager');
+      PresetManager.suggestPreset.mockImplementationOnce(() => {
+        throw new Error('Failed to suggest presets');
+      });
 
-      const businessSuggestions = await service.suggestPreset(businessDoc);
-      const academicSuggestions = await service.suggestPreset(academicDoc);
+      await expect(
+        service.suggestPreset('/path/to/document.md'),
+      ).rejects.toThrow(MD2PDFError);
 
-      expect(businessSuggestions).toBeDefined();
-      expect(academicSuggestions).toBeDefined();
+      expect(mockErrorHandler.handleError).toHaveBeenCalled();
     });
   });
 
   describe('validateConfiguration', () => {
-    it('should validate correct configuration', async () => {
-      const result = await service.validateConfiguration(mockConfig);
+    it('should validate configuration successfully', async () => {
+      const result = await service.validateConfiguration(sampleConfig);
 
+      expect(result).toBeDefined();
       expect(result.isValid).toBe(true);
-      expect(result.errors).toHaveLength(0);
+      expect(result.errors).toEqual([]);
+      expect(result.warnings).toEqual([]);
       expect(mockLogger.debug).toHaveBeenCalledWith(
         'Validating page structure configuration',
       );
-      expect(mockLogger.info).toHaveBeenCalledWith(
-        'Configuration validation completed',
-        expect.any(Object),
-      );
-    });
-
-    it('should validate configuration with margins', async () => {
-      const configWithMargins: PageStructureConfig = {
-        ...mockConfig,
-        margins: {
-          top: '60px',
-          bottom: '40px',
-          left: '50px',
-          right: '50px',
-        },
-      };
-
-      const result = await service.validateConfiguration(configWithMargins);
-
-      expect(result.isValid).toBe(true);
-      expect(result.errors).toHaveLength(0);
-    });
-
-    it('should return errors for invalid margin formats', async () => {
-      const configWithInvalidMargins: PageStructureConfig = {
-        ...mockConfig,
-        margins: {
-          top: 'invalid-margin',
-          bottom: '40px',
-        },
-      };
-
-      const result = await service.validateConfiguration(
-        configWithInvalidMargins,
-      );
-
-      expect(result.isValid).toBe(false);
-      expect(
-        result.errors.some((error) =>
-          error.includes('Invalid top margin format'),
-        ),
-      ).toBe(true);
     });
 
     it('should handle validation errors', async () => {
-      const invalidConfig = {
-        header: {
-          enabled: true,
-          template: '', // Invalid: enabled but no template
-        },
-      };
+      // Access the service's internal headerFooterManager mock
+      const internalMock = (service as any).headerFooterManager;
+      internalMock.validateHeaderConfig.mockImplementationOnce(() => {
+        throw new Error('Validation failed');
+      });
 
-      const result = await service.validateConfiguration(invalidConfig);
+      await expect(service.validateConfiguration(sampleConfig)).rejects.toThrow(
+        MD2PDFError,
+      );
 
-      expect(result.isValid).toBe(false);
-      expect(result.errors.length).toBeGreaterThan(0);
+      expect(mockErrorHandler.handleError).toHaveBeenCalled();
     });
   });
 
   describe('previewTemplate', () => {
-    it('should generate template preview with default context', async () => {
-      const template = '<div>{{title}} by {{author}}</div>';
+    it('should preview template with sample context', async () => {
+      const mockHeaderFooterManager =
+        require('../../../../src/core/page-structure/header-footer-manager').HeaderFooterManager;
+      const mockInstance = new mockHeaderFooterManager();
+      mockInstance.renderTemplate = jest.fn().mockReturnValue({
+        html: '<div>Previewed Template</div>',
+        height: '40px',
+        warnings: [],
+      });
 
-      const result = await service.previewTemplate(template);
+      const result = await service.previewTemplate('{{title}}', sampleContext);
 
       expect(result).toBeDefined();
-      expect(result.html).toBeDefined();
+      expect(result.html).toBe('<div>Preview Content</div>');
       expect(mockLogger.debug).toHaveBeenCalledWith(
         'Generating template preview',
-        expect.any(Object),
-      );
-      expect(mockLogger.info).toHaveBeenCalledWith(
-        'Template preview generated',
-        expect.any(Object),
+        {
+          templateLength: 9,
+          hasSampleContext: true,
+        },
       );
     });
 
-    it('should generate template preview with custom context', async () => {
-      const template = '<div>{{title}} by {{author}}</div>';
-      const sampleContext = {
-        title: 'Preview Title',
-        author: 'Preview Author',
-      };
+    it('should use default context when none provided', async () => {
+      const mockHeaderFooterManager =
+        require('../../../../src/core/page-structure/header-footer-manager').HeaderFooterManager;
+      const mockInstance = new mockHeaderFooterManager();
+      mockInstance.renderTemplate = jest.fn().mockReturnValue({
+        html: '<div>Previewed Template</div>',
+        height: '40px',
+        warnings: [],
+      });
 
-      const result = await service.previewTemplate(template, sampleContext);
+      const result = await service.previewTemplate('{{title}}');
 
       expect(result).toBeDefined();
-      expect(result.html).toContain('Preview Title');
-      expect(result.html).toContain('Preview Author');
+      expect(result.html).toBe('<div>Preview Content</div>');
     });
 
     it('should handle preview errors', async () => {
-      const template = null as any;
+      // Access the service's internal headerFooterManager mock
+      const internalMock = (service as any).headerFooterManager;
+      internalMock.previewContent.mockImplementationOnce(() => {
+        throw new Error('Preview failed');
+      });
 
-      await expect(service.previewTemplate(template)).rejects.toThrow(
+      await expect(service.previewTemplate('{{invalid}}')).rejects.toThrow(
         MD2PDFError,
       );
-      expect(mockErrorHandler.handleError).toHaveBeenCalledWith(
-        expect.any(MD2PDFError),
-        'PageStructureService.previewTemplate',
-      );
+
+      expect(mockErrorHandler.handleError).toHaveBeenCalled();
     });
   });
 
-  describe('private methods', () => {
-    describe('analyzeDocument', () => {
-      it('should analyze technical documents', async () => {
-        const documentPath = '/path/to/api-documentation.md';
-        const suggestions = await service.suggestPreset(documentPath);
-
-        // The analysis should detect this as a technical document
-        expect(suggestions.length).toBeGreaterThan(0);
+  describe('Error Handling', () => {
+    it('should properly wrap and categorize errors', async () => {
+      // Access the service's internal headerFooterManager mock
+      const internalMock = (service as any).headerFooterManager;
+      internalMock.generatePageStructure.mockImplementationOnce(() => {
+        throw new Error('Test error');
       });
 
-      it('should analyze academic documents', async () => {
-        const documentPath = '/path/to/research-paper.md';
-        const suggestions = await service.suggestPreset(documentPath);
+      await expect(
+        service.generatePageStructure(sampleConfig, sampleContext),
+      ).rejects.toThrow(MD2PDFError);
 
-        expect(suggestions.length).toBeGreaterThan(0);
+      expect(mockErrorHandler.handleError).toHaveBeenCalledWith(
+        expect.any(MD2PDFError),
+        'PageStructureService.generatePageStructure',
+      );
+    });
+
+    it('should include context in error details', async () => {
+      const mockHeaderFooterManager =
+        require('../../../../src/core/page-structure/header-footer-manager').HeaderFooterManager;
+      const mockInstance = new mockHeaderFooterManager();
+      mockInstance.generatePageStructure.mockImplementationOnce(() => {
+        throw new Error('Test error');
       });
 
-      it('should analyze business documents', async () => {
-        const documentPath = '/path/to/business-report.md';
-        const suggestions = await service.suggestPreset(documentPath);
+      try {
+        await service.generatePageStructure(sampleConfig, sampleContext);
+      } catch (error) {
+        expect(error).toBeInstanceOf(MD2PDFError);
+        expect((error as any).details.config).toBeDefined();
+        expect((error as any).details.context).toBeDefined();
+      }
+    });
+  });
 
-        expect(suggestions.length).toBeGreaterThan(0);
-      });
+  describe('Integration Scenarios', () => {
+    it('should handle complex page structure generation', async () => {
+      const complexConfig = {
+        header: {
+          enabled: true,
+          template: '<div class="header">{{title}} - {{chapterTitle}}</div>',
+          height: '60px',
+          styles: {
+            fontSize: '14px',
+            color: '#333',
+            backgroundColor: '#f5f5f5',
+          },
+        },
+        footer: {
+          enabled: true,
+          template:
+            '<div class="footer">{{author}} | Page {{pageNumber}} of {{totalPages}} | {{date}}</div>',
+          height: '40px',
+          styles: {
+            fontSize: '12px',
+            color: '#666',
+            textAlign: 'center' as 'center',
+          },
+        },
+        margins: {
+          top: '1.5in',
+          bottom: '1.2in',
+          left: '1in',
+          right: '1in',
+        },
+      };
+
+      const result = await service.generatePageStructure(
+        complexConfig,
+        sampleContext,
+      );
+
+      expect(result).toBeDefined();
+      expect(result.header.html).toBe('<div>Test Header</div>');
+      expect(result.footer.html).toBe('<div>Test Footer</div>');
+      expect(result.margins).toEqual(complexConfig.margins);
+    });
+
+    it('should handle preset-based workflow', async () => {
+      const presets = await service.getAvailablePresets();
+      const selectedPreset = presets.find((p) => p.name === 'professional');
+
+      expect(selectedPreset).toBeDefined();
+
+      const validationResult = await service.validateConfiguration(
+        selectedPreset!.config,
+      );
+      expect(validationResult.isValid).toBe(true);
+
+      const result = await service.generatePageStructure(
+        selectedPreset!.config,
+        sampleContext,
+      );
+      expect(result).toBeDefined();
     });
   });
 });

@@ -1,160 +1,257 @@
 /**
- * CLI Renderer tests
- * Tests for unified CLI rendering utility
+ * Unit tests for CliRenderer
  */
 
 import { CliRenderer } from '../../../../src/cli/utils/cli-renderer';
 
-// Mock chalk to return plain text for easier testing
+// Mock chalk
 jest.mock('chalk', () => ({
   red: jest.fn((text: string) => text),
   green: jest.fn((text: string) => text),
   cyan: jest.fn((text: string) => text),
+  yellow: jest.fn((text: string) => text),
   gray: jest.fn((text: string) => text),
+  white: jest.fn((text: string) => text),
+  bold: jest.fn((text: string) => text),
 }));
 
 describe('CliRenderer', () => {
   let renderer: CliRenderer;
-  let mockConsoleLog: jest.SpyInstance;
-  let mockConsoleWarn: jest.SpyInstance;
-  let mockConsoleError: jest.SpyInstance;
+  let consoleSpy: jest.SpyInstance;
+  let consoleWarnSpy: jest.SpyInstance;
+  let consoleErrorSpy: jest.SpyInstance;
 
   beforeEach(() => {
     renderer = new CliRenderer();
-    mockConsoleLog = jest.spyOn(console, 'log').mockImplementation();
-    mockConsoleWarn = jest.spyOn(console, 'warn').mockImplementation();
-    mockConsoleError = jest.spyOn(console, 'error').mockImplementation();
+
+    // Mock console methods
+    consoleSpy = jest.spyOn(console, 'log').mockImplementation(() => {});
+    consoleWarnSpy = jest.spyOn(console, 'warn').mockImplementation(() => {});
+    consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
   });
 
   afterEach(() => {
-    mockConsoleLog.mockRestore();
-    mockConsoleWarn.mockRestore();
-    mockConsoleError.mockRestore();
+    consoleSpy.mockRestore();
+    consoleWarnSpy.mockRestore();
+    consoleErrorSpy.mockRestore();
+  });
+
+  describe('initialization', () => {
+    it('should create CliRenderer instance', () => {
+      expect(renderer).toBeInstanceOf(CliRenderer);
+    });
   });
 
   describe('info method', () => {
-    it('should render info messages with text', () => {
-      renderer.info('Test message');
-      expect(mockConsoleLog).toHaveBeenCalledWith('Test message');
+    it('should log message to console', () => {
+      const message = 'Test info message';
+      renderer.info(message);
+
+      expect(consoleSpy).toHaveBeenCalledWith(message);
     });
 
-    it('should render empty line when message is undefined', () => {
+    it('should log empty line when message is undefined', () => {
       renderer.info(undefined);
-      expect(mockConsoleLog).toHaveBeenCalledWith();
+
+      expect(consoleSpy).toHaveBeenCalledWith();
     });
 
     it('should handle empty string', () => {
       renderer.info('');
-      expect(mockConsoleLog).toHaveBeenCalledWith('');
+
+      expect(consoleSpy).toHaveBeenCalledWith('');
     });
   });
 
   describe('warn method', () => {
-    it('should render warning messages', () => {
-      renderer.warn('Warning message');
-      expect(mockConsoleWarn).toHaveBeenCalledWith('Warning message');
+    it('should log warning message', () => {
+      const message = 'Test warning message';
+      renderer.warn(message);
+
+      expect(consoleWarnSpy).toHaveBeenCalledWith(message);
     });
   });
 
   describe('error method', () => {
-    it('should render error messages without error object', () => {
-      renderer.error('Error message');
-      expect(mockConsoleError).toHaveBeenCalledWith('Error message');
+    it('should log error message only', () => {
+      const message = 'Test error message';
+      renderer.error(message);
+
+      expect(consoleErrorSpy).toHaveBeenCalledWith(message);
     });
 
-    it('should render error messages with error object', () => {
+    it('should log error message with error object', () => {
+      const message = 'Test error message';
       const error = new Error('Test error');
-      renderer.error('Error message', error);
-      expect(mockConsoleError).toHaveBeenCalledWith('Error message', error);
+      renderer.error(message, error);
+
+      expect(consoleErrorSpy).toHaveBeenCalledWith(message, error);
+    });
+
+    it('should handle undefined error parameter', () => {
+      const message = 'Test error message';
+      renderer.error(message, undefined);
+
+      expect(consoleErrorSpy).toHaveBeenCalledWith(message);
     });
   });
 
   describe('errorBox method', () => {
-    it('should render error box without suggestions', () => {
-      renderer.errorBox('Error Title', 'This is an error message');
-      expect(mockConsoleError).toHaveBeenCalled();
-      expect(mockConsoleError.mock.calls.length).toBeGreaterThan(3);
+    it('should display error box with title and message', () => {
+      const title = 'Error Title';
+      const message = 'Error message';
+
+      renderer.errorBox(title, message);
+
+      expect(consoleErrorSpy).toHaveBeenCalledTimes(5); // Top border, title, separator, message, bottom border
+      expect(consoleErrorSpy).toHaveBeenCalledWith(
+        expect.stringContaining('┌─────────────────────────────────────────┐'),
+      );
+      expect(consoleErrorSpy).toHaveBeenCalledWith(
+        expect.stringContaining(`❌ ${title}`),
+      );
+      expect(consoleErrorSpy).toHaveBeenCalledWith(
+        expect.stringContaining('└─────────────────────────────────────────┘'),
+      );
     });
 
-    it('should render error box with suggestions', () => {
-      renderer.errorBox('Error Title', 'This is an error message', [
-        'Try this',
-        'Or this',
-      ]);
-      expect(mockConsoleError).toHaveBeenCalled();
-      expect(mockConsoleError.mock.calls.length).toBeGreaterThan(5);
+    it('should display error box with suggestions', () => {
+      const title = 'Error Title';
+      const message = 'Error message';
+      const suggestions = ['Suggestion 1', 'Suggestion 2'];
+
+      renderer.errorBox(title, message, suggestions);
+
+      expect(consoleErrorSpy).toHaveBeenCalledWith(
+        expect.stringContaining('💡 Suggestions:'),
+      );
+      expect(consoleErrorSpy).toHaveBeenCalledWith(
+        expect.stringContaining('• Suggestion 1'),
+      );
+      expect(consoleErrorSpy).toHaveBeenCalledWith(
+        expect.stringContaining('• Suggestion 2'),
+      );
     });
 
-    it('should render error box with empty suggestions array', () => {
-      renderer.errorBox('Error Title', 'This is an error message', []);
-      expect(mockConsoleError).toHaveBeenCalled();
-    });
+    it('should handle empty suggestions array', () => {
+      const title = 'Error Title';
+      const message = 'Error message';
+      const suggestions: string[] = [];
 
-    it('should handle long messages that need wrapping', () => {
-      const longMessage =
-        'This is a very long error message that should wrap across multiple lines in the error box';
-      renderer.errorBox('Error Title', longMessage);
-      expect(mockConsoleError).toHaveBeenCalled();
-    });
+      renderer.errorBox(title, message, suggestions);
 
-    it('should handle long suggestions that need wrapping', () => {
-      const longSuggestion =
-        'This is a very long suggestion that should wrap across multiple lines in the suggestions section';
-      renderer.errorBox('Error Title', 'Short message', [longSuggestion]);
-      expect(mockConsoleError).toHaveBeenCalled();
+      expect(consoleErrorSpy).not.toHaveBeenCalledWith(
+        expect.stringContaining('💡 Suggestions:'),
+      );
     });
   });
 
   describe('successBox method', () => {
-    it('should render success box', () => {
-      renderer.successBox('Success Title', 'This is a success message');
-      expect(mockConsoleLog).toHaveBeenCalled();
-    });
+    it('should display success box', () => {
+      const title = 'Success Title';
+      const message = 'Success message';
 
-    it('should handle long success messages', () => {
-      const longMessage =
-        'This is a very long success message that should wrap across multiple lines in the success box';
-      renderer.successBox('Success Title', longMessage);
-      expect(mockConsoleLog).toHaveBeenCalled();
-    });
-  });
+      renderer.successBox(title, message);
 
-  describe('wrapText method edge cases', () => {
-    it('should handle single very long word', () => {
-      // Test through errorBox which uses wrapText
-      const veryLongWord = 'supercalifragilisticexpialidocious';
-      renderer.errorBox('Title', veryLongWord);
-      expect(mockConsoleError).toHaveBeenCalled();
-    });
-
-    it('should handle empty text', () => {
-      renderer.errorBox('Title', '');
-      expect(mockConsoleError).toHaveBeenCalled();
-    });
-
-    it('should handle text with multiple spaces', () => {
-      renderer.errorBox('Title', 'Word1    Word2     Word3');
-      expect(mockConsoleError).toHaveBeenCalled();
+      expect(consoleSpy).toHaveBeenCalledWith(
+        expect.stringContaining('┌─────────────────────────────────────────┐'),
+      );
+      expect(consoleSpy).toHaveBeenCalledWith(
+        expect.stringContaining(`✅ ${title}`),
+      );
+      expect(consoleSpy).toHaveBeenCalledWith(
+        expect.stringContaining('└─────────────────────────────────────────┘'),
+      );
     });
   });
 
   describe('header method', () => {
-    it('should render header lines', () => {
-      const lines = ['Line 1', 'Line 2'];
+    it('should display header lines', () => {
+      const lines = ['Header Line 1', 'Header Line 2'];
+
       renderer.header(lines);
-      expect(mockConsoleLog).toHaveBeenCalledTimes(2);
+
+      expect(consoleSpy).toHaveBeenCalledTimes(2);
+      expect(consoleSpy).toHaveBeenCalledWith('Header Line 1');
+      expect(consoleSpy).toHaveBeenCalledWith('Header Line 2');
     });
 
-    it('should handle empty header array', () => {
-      renderer.header([]);
-      expect(mockConsoleLog).not.toHaveBeenCalled();
+    it('should handle empty lines array', () => {
+      const lines: string[] = [];
+
+      renderer.header(lines);
+
+      expect(consoleSpy).not.toHaveBeenCalled();
     });
   });
 
   describe('newline method', () => {
-    it('should render empty line', () => {
+    it('should display empty line', () => {
       renderer.newline();
-      expect(mockConsoleLog).toHaveBeenCalledWith();
+
+      expect(consoleSpy).toHaveBeenCalledWith();
+    });
+  });
+
+  describe('text wrapping', () => {
+    it('should wrap long text in error box', () => {
+      const title = 'Error';
+      const longMessage =
+        'This is a very long error message that should be wrapped to fit within the box boundaries and display properly';
+
+      renderer.errorBox(title, longMessage);
+
+      // Should have multiple console.error calls due to text wrapping
+      expect(consoleErrorSpy).toHaveBeenCalledWith(
+        expect.stringMatching(/This is a very long error message/),
+      );
+    });
+
+    it('should wrap text in suggestions', () => {
+      const title = 'Error';
+      const message = 'Error';
+      const longSuggestion =
+        'This is a very long suggestion that should be wrapped to fit within the box boundaries';
+
+      renderer.errorBox(title, message, [longSuggestion]);
+
+      expect(consoleErrorSpy).toHaveBeenCalledWith(
+        expect.stringMatching(/This is a very long suggestion/),
+      );
+    });
+  });
+
+  describe('edge cases', () => {
+    it('should handle very long title in error box', () => {
+      const longTitle = 'This is a very long title that exceeds normal length';
+      const message = 'Message';
+
+      renderer.errorBox(longTitle, message);
+
+      expect(consoleErrorSpy).toHaveBeenCalledWith(
+        expect.stringContaining(longTitle.substring(0, 33)),
+      );
+    });
+
+    it('should handle special characters in messages', () => {
+      const title = 'Special';
+      const message = 'Message with special chars: @#$%^&*()';
+
+      renderer.errorBox(title, message);
+
+      expect(consoleErrorSpy).toHaveBeenCalledWith(
+        expect.stringContaining('@#$%^&*()'),
+      );
+    });
+
+    it('should handle null/undefined gracefully in suggestions', () => {
+      const title = 'Error';
+      const message = 'Message';
+
+      expect(() => renderer.errorBox(title, message, undefined)).not.toThrow();
+      expect(() =>
+        renderer.errorBox(title, message, null as any),
+      ).not.toThrow();
     });
   });
 });

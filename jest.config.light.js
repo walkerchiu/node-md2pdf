@@ -25,6 +25,16 @@ module.exports = {
   preset: 'ts-jest',
   testEnvironment: 'node',
 
+  // Configure ts-jest to use test-specific tsconfig
+  transform: {
+    '^.+\\.ts$': [
+      'ts-jest',
+      {
+        tsconfig: 'tsconfig.test.json',
+      },
+    ],
+  },
+
   // Extended timeout for integration tests with Puppeteer
   testTimeout: 240000, // 4 minutes for heavy integration tests
 

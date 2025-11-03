@@ -236,6 +236,13 @@ export class TOCProcessor extends BaseProcessor {
     try {
       console.info('TOC: Starting 3-stage accurate page number generation');
 
+      // Filter headings based on maxDepth from context at the beginning
+      const maxDepth = context.tocOptions?.maxDepth || 6;
+      const filteredHeadings = headings.filter((h) => h.level <= maxDepth);
+      console.debug(
+        `TOC: Filtered ${headings.length} headings to ${filteredHeadings.length} headings (maxDepth=${maxDepth})`,
+      );
+
       // Stage 1: Pre-render content to get real page numbers
       console.info(
         'TOC Stage 1: Pre-rendering content to calculate real page numbers',
@@ -249,8 +256,9 @@ export class TOCProcessor extends BaseProcessor {
       console.info(
         'TOC Stage 2: Calculating TOC page count and adjusting page numbers',
       );
+
       const tocPageCount = await this.estimateTOCPageCount(
-        headings,
+        filteredHeadings,
         realPageNumbers.headingPages,
         context,
       );
@@ -270,8 +278,12 @@ export class TOCProcessor extends BaseProcessor {
       console.info(
         'TOC Stage 3: Generating final TOC with accurate page numbers',
       );
+      console.debug(
+        `TOC Stage 3: Using ${filteredHeadings.length} filtered page numbers for ${filteredHeadings.length} headings`,
+      );
+
       const tocResult = this.tocGenerator.generateTOCWithPageNumbers(
-        headings,
+        filteredHeadings,
         adjustedPageNumbers,
       );
 

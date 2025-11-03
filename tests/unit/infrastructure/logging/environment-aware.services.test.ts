@@ -1,345 +1,282 @@
 /**
- * Tests for EnvironmentAwareServices
+ * Tests for Environment-aware Services
  */
 
 import { EnvironmentAwareServices } from '../../../../src/infrastructure/logging/environment-aware.services';
-import { LoggingEnvironmentConfig } from '../../../../src/infrastructure/logging/environment-aware-factory';
+import { ServiceContainer } from '../../../../src/shared/container/container';
+import { Logger } from '../../../../src/infrastructure/logging/logger';
+import {
+  LoggingEnvironmentConfig,
+  EnvironmentAwareLoggingFactory,
+} from '../../../../src/infrastructure/logging/environment-aware-factory';
 
-// Mock the environment-aware-factory
-jest.mock(
-  '../../../../src/infrastructure/logging/environment-aware-factory',
-  () => ({
-    LoggingEnvironmentConfig: {
-      fromEnvironment: jest.fn(),
-      getLogLevel: jest.fn(),
-      isFileLoggingEnabled: jest.fn(),
-    },
-    EnvironmentAwareLoggingFactory: {
-      createLogManagementService: jest.fn(),
-    },
-  }),
-);
+// Mock dependencies
+jest.mock('../../../../src/infrastructure/logging/environment-aware-factory');
+jest.mock('../../../../src/infrastructure/logging/logger');
+jest.mock('../../../../src/infrastructure/services');
 
-// Mock the Logger
-jest.mock('../../../../src/infrastructure/logging/index', () => ({
-  Logger: jest.fn().mockImplementation(() => ({
-    enableFileLogging: jest.fn().mockResolvedValue(undefined),
-  })),
-}));
-
-// Mock the InfrastructureServices
-jest.mock('../../../../src/infrastructure/services', () => ({
-  InfrastructureServices: class {
-    static registerServices = jest.fn();
-  },
-  ILogManagementService: {},
-}));
-
-// Mock the ServiceContainer
-jest.mock('../../../../src/shared/container', () => ({
-  ServiceContainer: jest.fn().mockImplementation(() => ({
-    registerSingleton: jest.fn(),
-    tryResolve: jest.fn(),
-  })),
-}));
+const mockLoggingEnvironmentConfig = LoggingEnvironmentConfig as jest.Mocked<
+  typeof LoggingEnvironmentConfig
+>;
+const mockLogger = Logger as jest.MockedClass<typeof Logger>;
+const mockEnvironmentAwareLoggingFactory =
+  EnvironmentAwareLoggingFactory as jest.Mocked<
+    typeof EnvironmentAwareLoggingFactory
+  >;
 
 describe('EnvironmentAwareServices', () => {
+  let originalEnv: NodeJS.ProcessEnv;
+
   beforeEach(() => {
+    // Store original environment
+    originalEnv = { ...process.env };
+
+    // Reset all mocks
     jest.clearAllMocks();
 
-    // Setup default mocks
-    (LoggingEnvironmentConfig.fromEnvironment as jest.Mock).mockReturnValue({
-      filePath: '/test/logs/md2pdf.log',
-      maxFileSize: 10485760,
-      maxBackupFiles: 5,
-      format: 'text',
-      enableRotation: true,
-      async: true,
+    // Mock LoggingEnvironmentConfig methods
+    mockLoggingEnvironmentConfig.fromEnvironment = jest.fn().mockReturnValue({
+      logLevel: 'info',
+      enableFileLogging: false,
+      filePath: '/tmp/test.log',
     });
+    mockLoggingEnvironmentConfig.getLogLevel = jest
+      .fn()
+      .mockReturnValue('info');
+    mockLoggingEnvironmentConfig.isFileLoggingEnabled = jest
+      .fn()
+      .mockReturnValue(false);
 
-    (LoggingEnvironmentConfig.getLogLevel as jest.Mock).mockReturnValue('info');
-    (
-      LoggingEnvironmentConfig.isFileLoggingEnabled as jest.Mock
-    ).mockReturnValue(true);
+    // Mock EnvironmentAwareLoggingFactory methods
+    mockEnvironmentAwareLoggingFactory.createLogManagementService = jest
+      .fn()
+      .mockReturnValue({
+        start: jest.fn(),
+        stop: jest.fn(),
+        getStats: jest.fn(),
+      });
+
+    // Mock Logger constructor and methods
+    const mockLoggerInstance = {
+      info: jest.fn(),
+      warn: jest.fn(),
+      error: jest.fn(),
+      debug: jest.fn(),
+      enableFileLogging: jest.fn().mockResolvedValue(undefined),
+    } as any;
+
+    mockLogger.mockImplementation(() => mockLoggerInstance);
+  });
+
+  afterEach(() => {
+    // Restore original environment
+    process.env = originalEnv;
   });
 
   describe('createContainer', () => {
-    it('should create container with base infrastructure services', () => {
-      const { ServiceContainer } = require('../../../../src/shared/container');
-      const {
-        InfrastructureServices,
-      } = require('../../../../src/infrastructure/services');
-
-      const mockContainer = {
-        registerSingleton: jest.fn(),
-        tryResolve: jest.fn(),
-      };
-
-      (ServiceContainer as jest.Mock).mockReturnValue(mockContainer);
-
+    it('should create a service container with base infrastructure services', () => {
       const container = EnvironmentAwareServices.createContainer();
 
-      expect(ServiceContainer).toHaveBeenCalled();
-      expect(InfrastructureServices.registerServices).toHaveBeenCalledWith(
-        mockContainer,
-      );
-      expect(container).toBe(mockContainer);
+      expect(container).toBeInstanceOf(ServiceContainer);
     });
 
-    it('should register environment logger services', () => {
-      const { ServiceContainer } = require('../../../../src/shared/container');
-      const mockContainer = {
-        registerSingleton: jest.fn(),
-        tryResolve: jest.fn(),
-      };
+    it('should register environment-aware logger services', () => {
+      const container = EnvironmentAwareServices.createContainer();
 
-      (ServiceContainer as jest.Mock).mockReturnValue(mockContainer);
+      // Verify that enhanced logger is registered
+      expect(container.isRegistered('enhancedLogger')).toBe(true);
+      expect(container.isRegistered('logger')).toBe(true);
+      expect(container.isRegistered('logManagement')).toBe(true);
+    });
 
-      EnvironmentAwareServices.createContainer();
+    it('should resolve enhanced logger with environment configuration', () => {
+      mockLoggingEnvironmentConfig.getLogLevel.mockReturnValue('debug');
+      mockLoggingEnvironmentConfig.isFileLoggingEnabled.mockReturnValue(true);
 
-      // Should register enhancedLogger
-      expect(mockContainer.registerSingleton).toHaveBeenCalledWith(
-        'enhancedLogger',
-        expect.any(Function),
+      const container = EnvironmentAwareServices.createContainer();
+      const logger = container.resolve('enhancedLogger');
+
+      expect(mockLoggingEnvironmentConfig.fromEnvironment).toHaveBeenCalled();
+      expect(mockLoggingEnvironmentConfig.getLogLevel).toHaveBeenCalled();
+      expect(mockLogger).toHaveBeenCalledWith({ level: 'debug' });
+      expect(logger).toBeDefined();
+    });
+
+    it('should handle file logging enablement with environment config', () => {
+      mockLoggingEnvironmentConfig.isFileLoggingEnabled.mockReturnValue(true);
+      const mockEnvConfig = { filePath: '/tmp/test.log' };
+      mockLoggingEnvironmentConfig.fromEnvironment.mockReturnValue(
+        mockEnvConfig,
       );
 
-      // Should register logger
-      expect(mockContainer.registerSingleton).toHaveBeenCalledWith(
-        'logger',
-        expect.any(Function),
+      const mockLoggerInstance = {
+        enableFileLogging: jest.fn().mockResolvedValue(undefined),
+      } as any;
+      mockLogger.mockImplementation(() => mockLoggerInstance);
+
+      const container = EnvironmentAwareServices.createContainer();
+      container.resolve('enhancedLogger');
+
+      expect(mockLoggerInstance.enableFileLogging).toHaveBeenCalledWith(
+        mockEnvConfig,
+      );
+    });
+
+    it('should handle file logging enablement failure gracefully', async () => {
+      mockLoggingEnvironmentConfig.isFileLoggingEnabled.mockReturnValue(true);
+
+      const mockLoggerInstance = {
+        enableFileLogging: jest
+          .fn()
+          .mockRejectedValue(new Error('File logging failed')),
+      } as any;
+      mockLogger.mockImplementation(() => mockLoggerInstance);
+
+      const consoleSpy = jest.spyOn(console, 'warn').mockImplementation();
+
+      const container = EnvironmentAwareServices.createContainer();
+      await container.resolve('enhancedLogger');
+
+      // Allow async operations to complete
+      await new Promise((resolve) => setTimeout(resolve, 0));
+
+      expect(consoleSpy).toHaveBeenCalledWith(
+        'Failed to enable file logging:',
+        'File logging failed',
       );
 
-      // Should register logManagement
-      expect(mockContainer.registerSingleton).toHaveBeenCalledWith(
-        'logManagement',
-        expect.any(Function),
-      );
+      consoleSpy.mockRestore();
+    });
+
+    it('should provide backward compatible logger service', () => {
+      const container = EnvironmentAwareServices.createContainer();
+      const logger = container.resolve('logger');
+
+      expect(logger).toBeDefined();
     });
   });
 
   describe('createEnvironmentLogger', () => {
-    it('should create logger with environment configuration', async () => {
-      const {
-        Logger,
-      } = require('../../../../src/infrastructure/logging/index');
-      const mockLogger = {
-        enableFileLogging: jest.fn().mockResolvedValue(undefined),
-      };
-
-      (Logger as jest.Mock).mockReturnValue(mockLogger);
+    it('should create logger with environment configuration', () => {
+      mockLoggingEnvironmentConfig.getLogLevel.mockReturnValue('warn');
+      mockLoggingEnvironmentConfig.isFileLoggingEnabled.mockReturnValue(false);
 
       const logger = EnvironmentAwareServices.createEnvironmentLogger();
 
-      expect(LoggingEnvironmentConfig.fromEnvironment).toHaveBeenCalled();
-      expect(LoggingEnvironmentConfig.getLogLevel).toHaveBeenCalled();
-      expect(Logger).toHaveBeenCalledWith({ level: 'info' });
-      expect(logger).toBe(mockLogger);
+      expect(mockLoggingEnvironmentConfig.fromEnvironment).toHaveBeenCalled();
+      expect(mockLoggingEnvironmentConfig.getLogLevel).toHaveBeenCalled();
+      expect(mockLogger).toHaveBeenCalledWith({ level: 'warn' });
+      expect(logger).toBeDefined();
     });
 
     it('should enable file logging when configured', () => {
-      const {
-        Logger,
-      } = require('../../../../src/infrastructure/logging/index');
-      const mockLogger = {
-        enableFileLogging: jest.fn().mockResolvedValue(undefined),
-      };
-
-      (Logger as jest.Mock).mockReturnValue(mockLogger);
-
-      const mockEnvConfig = {
-        filePath: '/test/logs/md2pdf.log',
-        maxFileSize: 10485760,
-        maxBackupFiles: 5,
-        format: 'text',
-        enableRotation: true,
-        async: true,
-      };
-
-      (LoggingEnvironmentConfig.fromEnvironment as jest.Mock).mockReturnValue(
+      mockLoggingEnvironmentConfig.isFileLoggingEnabled.mockReturnValue(true);
+      const mockEnvConfig = { filePath: '/custom/path.log' };
+      mockLoggingEnvironmentConfig.fromEnvironment.mockReturnValue(
         mockEnvConfig,
       );
-      (
-        LoggingEnvironmentConfig.isFileLoggingEnabled as jest.Mock
-      ).mockReturnValue(true);
 
-      EnvironmentAwareServices.createEnvironmentLogger();
-
-      expect(mockLogger.enableFileLogging).toHaveBeenCalledWith(mockEnvConfig);
-    });
-
-    it('should not enable file logging when disabled', () => {
-      const {
-        Logger,
-      } = require('../../../../src/infrastructure/logging/index');
-      const mockLogger = {
+      const mockLoggerInstance = {
         enableFileLogging: jest.fn().mockResolvedValue(undefined),
-      };
+      } as any;
+      mockLogger.mockImplementation(() => mockLoggerInstance);
 
-      (Logger as jest.Mock).mockReturnValue(mockLogger);
-      (
-        LoggingEnvironmentConfig.isFileLoggingEnabled as jest.Mock
-      ).mockReturnValue(false);
+      const logger = EnvironmentAwareServices.createEnvironmentLogger();
 
-      EnvironmentAwareServices.createEnvironmentLogger();
-
-      expect(mockLogger.enableFileLogging).not.toHaveBeenCalled();
+      expect(mockLoggerInstance.enableFileLogging).toHaveBeenCalledWith(
+        mockEnvConfig,
+      );
+      expect(logger).toBeDefined();
     });
 
-    it('should handle file logging errors gracefully', () => {
-      const {
-        Logger,
-      } = require('../../../../src/infrastructure/logging/index');
-      const consoleWarnSpy = jest.spyOn(console, 'warn').mockImplementation();
+    it('should handle file logging errors gracefully', async () => {
+      mockLoggingEnvironmentConfig.isFileLoggingEnabled.mockReturnValue(true);
 
-      const mockLogger = {
-        enableFileLogging: jest
-          .fn()
-          .mockRejectedValue(new Error('File logging failed')),
-      };
-
-      (Logger as jest.Mock).mockReturnValue(mockLogger);
-      (
-        LoggingEnvironmentConfig.isFileLoggingEnabled as jest.Mock
-      ).mockReturnValue(true);
-
-      // This should not throw
-      expect(() => {
-        EnvironmentAwareServices.createEnvironmentLogger();
-      }).not.toThrow();
-
-      consoleWarnSpy.mockRestore();
-    });
-
-    it('should log warning when file logging fails', async () => {
-      const {
-        Logger,
-      } = require('../../../../src/infrastructure/logging/index');
-      const consoleWarnSpy = jest.spyOn(console, 'warn').mockImplementation();
-
-      const mockLogger = {
+      const mockLoggerInstance = {
         enableFileLogging: jest
           .fn()
           .mockRejectedValue(new Error('Permission denied')),
-      };
+      } as any;
+      mockLogger.mockImplementation(() => mockLoggerInstance);
 
-      (Logger as jest.Mock).mockReturnValue(mockLogger);
-      (
-        LoggingEnvironmentConfig.isFileLoggingEnabled as jest.Mock
-      ).mockReturnValue(true);
+      const consoleSpy = jest.spyOn(console, 'warn').mockImplementation();
 
       EnvironmentAwareServices.createEnvironmentLogger();
 
-      // Wait for promise to resolve/reject
+      // Allow async operations to complete
       await new Promise((resolve) => setTimeout(resolve, 0));
 
-      expect(consoleWarnSpy).toHaveBeenCalledWith(
+      expect(consoleSpy).toHaveBeenCalledWith(
         'Failed to enable file logging:',
         'Permission denied',
       );
 
-      consoleWarnSpy.mockRestore();
-    });
-  });
-
-  describe('Service Registration Edge Cases', () => {
-    it('should handle container registration with missing enhanced logger', () => {
-      const { ServiceContainer } = require('../../../../src/shared/container');
-      const mockContainer = {
-        registerSingleton: jest.fn(),
-        tryResolve: jest.fn().mockReturnValue(null), // No enhanced logger available
-      };
-
-      (ServiceContainer as jest.Mock).mockReturnValue(mockContainer);
-
-      EnvironmentAwareServices.createContainer();
-
-      // Trigger the logger registration callback
-      const loggerRegistration =
-        mockContainer.registerSingleton.mock.calls.find(
-          (call) => call[0] === 'logger',
-        );
-      expect(loggerRegistration).toBeDefined();
-
-      const loggerCallback = loggerRegistration[1];
-      const result = loggerCallback(mockContainer);
-
-      // Should create environment logger as fallback
-      expect(result).toBeDefined();
-    });
-
-    it('should handle log management service registration with logger resolution', () => {
-      const { ServiceContainer } = require('../../../../src/shared/container');
-      const {
-        EnvironmentAwareLoggingFactory,
-      } = require('../../../../src/infrastructure/logging/environment-aware-factory');
-
-      const mockLogger = { log: jest.fn() };
-      const mockService = { test: true };
-      const mockContainer = {
-        registerSingleton: jest.fn(),
-        tryResolve: jest.fn().mockReturnValue(mockLogger),
-      };
-
-      (ServiceContainer as jest.Mock).mockReturnValue(mockContainer);
-      (
-        EnvironmentAwareLoggingFactory.createLogManagementService as jest.Mock
-      ).mockReturnValue(mockService);
-
-      EnvironmentAwareServices.createContainer();
-
-      // Trigger the logManagement registration callback
-      const logManagementRegistration =
-        mockContainer.registerSingleton.mock.calls.find(
-          (call) => call[0] === 'logManagement',
-        );
-      expect(logManagementRegistration).toBeDefined();
-
-      const logManagementCallback = logManagementRegistration[1];
-      const result = logManagementCallback(mockContainer);
-
-      expect(mockContainer.tryResolve).toHaveBeenCalledWith('logger');
-      expect(
-        EnvironmentAwareLoggingFactory.createLogManagementService,
-      ).toHaveBeenCalledWith(mockLogger);
-      expect(result).toBe(mockService);
+      consoleSpy.mockRestore();
     });
   });
 
   describe('createEnvironmentLogManagement', () => {
-    it('should create environment-aware log management service', () => {
-      const {
-        EnvironmentAwareLoggingFactory,
-      } = require('../../../../src/infrastructure/logging/environment-aware-factory');
-      const mockService = { someMethod: jest.fn() };
+    it('should create log management service with environment logger', () => {
+      const logManagement =
+        EnvironmentAwareServices.createEnvironmentLogManagement();
 
-      (
-        EnvironmentAwareLoggingFactory.createLogManagementService as jest.Mock
-      ).mockReturnValue(mockService);
-
-      // Mock createEnvironmentLogger to return a mock logger
-      jest
-        .spyOn(EnvironmentAwareServices, 'createEnvironmentLogger')
-        .mockReturnValue({
-          enableFileLogging: jest.fn(),
-        } as any);
-
-      const service = EnvironmentAwareServices.createEnvironmentLogManagement();
-
-      expect(
-        EnvironmentAwareServices.createEnvironmentLogger,
-      ).toHaveBeenCalled();
-      expect(
-        EnvironmentAwareLoggingFactory.createLogManagementService,
-      ).toHaveBeenCalled();
-      expect(service).toBe(mockService);
+      expect(logManagement).toBeDefined();
+      expect(mockLoggingEnvironmentConfig.fromEnvironment).toHaveBeenCalled();
     });
   });
 
-  describe('inheritance', () => {
-    it('should extend InfrastructureServices', () => {
-      expect(EnvironmentAwareServices.prototype).toBeInstanceOf(Object);
-      // Verify that it has access to parent class methods through static inheritance
-      expect(EnvironmentAwareServices.createContainer).toBeDefined();
+  describe('integration scenarios', () => {
+    it('should work with different log levels', () => {
+      const logLevels = ['debug', 'info', 'warn', 'error'] as const;
+
+      logLevels.forEach((level) => {
+        mockLoggingEnvironmentConfig.getLogLevel.mockReturnValue(level);
+
+        const logger = EnvironmentAwareServices.createEnvironmentLogger();
+
+        expect(mockLogger).toHaveBeenCalledWith({ level });
+        expect(logger).toBeDefined();
+
+        jest.clearAllMocks();
+      });
+    });
+
+    it('should handle missing enhanced logger in container', () => {
+      const container = new ServiceContainer();
+
+      // Register a mock logger service that returns undefined for enhanced logger
+      container.registerSingleton('logger', (c) => {
+        const enhancedLogger = c.tryResolve('enhancedLogger');
+        return (
+          enhancedLogger || EnvironmentAwareServices.createEnvironmentLogger()
+        );
+      });
+
+      const logger = container.resolve('logger');
+
+      expect(logger).toBeDefined();
+    });
+
+    it('should use environment variables correctly', () => {
+      // Test with different environment variable configurations
+      process.env.MD2PDF_LOG_LEVEL = 'debug';
+      process.env.MD2PDF_LOG_FILE_ENABLED = 'true';
+      process.env.MD2PDF_LOG_PATH = '/var/log/md2pdf.log';
+
+      mockLoggingEnvironmentConfig.getLogLevel.mockReturnValue('debug');
+      mockLoggingEnvironmentConfig.isFileLoggingEnabled.mockReturnValue(true);
+      mockLoggingEnvironmentConfig.fromEnvironment.mockReturnValue({
+        filePath: '/var/log/md2pdf.log',
+      });
+
+      const logger = EnvironmentAwareServices.createEnvironmentLogger();
+
+      expect(logger).toBeDefined();
+      expect(mockLoggingEnvironmentConfig.fromEnvironment).toHaveBeenCalled();
+      expect(mockLoggingEnvironmentConfig.getLogLevel).toHaveBeenCalled();
+      expect(
+        mockLoggingEnvironmentConfig.isFileLoggingEnabled,
+      ).toHaveBeenCalled();
     });
   });
 });

@@ -273,12 +273,15 @@ export class PlantUMLProcessor extends BaseProcessor {
 
     // Estimate dimensions based on number of diagrams
     const estimatedHeight = diagramCount * this.config.defaultHeight;
-    const estimatedPageCount = Math.max(1, Math.ceil(estimatedHeight / 1000)); // Assume 1000px per page
+    const estimatedPageCount =
+      diagramCount > 0
+        ? Math.max(1, Math.ceil(estimatedHeight / 1000)) // Assume 1000px per page
+        : 0;
 
     return {
       pageCount: estimatedPageCount,
       height: estimatedHeight,
-      width: this.config.defaultWidth,
+      width: diagramCount > 0 ? this.config.defaultWidth : 0,
       imagePositions: [], // TODO: Calculate actual positions if needed
     };
   }

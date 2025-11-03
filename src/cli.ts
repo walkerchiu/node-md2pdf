@@ -182,6 +182,9 @@ process.on('uncaughtException', (error) => {
   process.exit(1);
 });
 
+// Export main function for testing
+export { main };
+
 // Execute main program
 if (require.main === module) {
   main();

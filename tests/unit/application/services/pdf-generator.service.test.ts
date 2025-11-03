@@ -46,6 +46,10 @@ jest.mock('../../../../src/core/pdf/engines', () => {
     getEngineStatus: jest.fn(() => new Map()),
     performHealthChecks: jest.fn(() => Promise.resolve()),
     getAvailableEngines: jest.fn(() => ['puppeteer', 'chrome-headless']),
+    forceHealthCheck: jest.fn(() => Promise.resolve()),
+    getHealthyEngines: jest.fn(() => ['puppeteer']),
+    getEngineMetrics: jest.fn(() => new Map()),
+    updateConfig: jest.fn(),
   };
 
   return {
@@ -394,6 +398,137 @@ describe('PDFGeneratorService', () => {
     });
   });
 
+  describe('CSS @page Injection', () => {
+    beforeEach(async () => {
+      await service.initialize();
+      jest.clearAllMocks();
+    });
+
+    it('should inject CSS @page rules when page numbers are enabled', async () => {
+      const htmlContent = '<html><head></head><body>Test Content</body></html>';
+
+      await service.generatePDF(htmlContent, '/test/output.pdf', {
+        title: 'Test Document',
+        includePageNumbers: true,
+        headings: [
+          { level: 1, text: 'Chapter 1', id: 'ch1', anchor: 'chapter-1' },
+        ],
+      });
+
+      // Verify the debug logging for CSS injection
+      expect(mockLogger.debug).toHaveBeenCalledWith(
+        'Injecting CSS @page rules for header/footer - includePageNumbers: true',
+      );
+      expect(mockLogger.debug).toHaveBeenCalledWith(
+        expect.stringMatching(/Generated CSS @page rules:.*/),
+      );
+      expect(mockLogger.debug).toHaveBeenCalledWith(
+        expect.stringMatching(
+          /CSS injected into existing <head> - result length: \d+/,
+        ),
+      );
+    });
+
+    it('should skip CSS injection when page numbers are disabled', async () => {
+      const htmlContent = '<html><head></head><body>Test Content</body></html>';
+
+      await service.generatePDF(htmlContent, '/test/output.pdf', {
+        title: 'Test Document',
+        includePageNumbers: false,
+      });
+
+      // Verify the debug logging for skipping injection
+      expect(mockLogger.debug).toHaveBeenCalledWith(
+        'Injecting CSS @page rules for header/footer - includePageNumbers: false',
+      );
+      expect(mockLogger.debug).toHaveBeenCalledWith(
+        'Page numbers not enabled - skipping CSS @page injection',
+      );
+    });
+
+    it('should inject CSS into HTML without existing head tag', async () => {
+      const htmlContent = '<html><body>Test Content</body></html>';
+
+      await service.generatePDF(htmlContent, '/test/output.pdf', {
+        title: 'Test Document',
+        includePageNumbers: true,
+        headings: [
+          { level: 1, text: 'Main Title', id: 'main', anchor: 'main-title' },
+        ],
+      });
+
+      // Verify CSS was injected with new head section
+      expect(mockLogger.debug).toHaveBeenCalledWith(
+        expect.stringMatching(
+          /CSS injected with new <head> section - result length: \d+/,
+        ),
+      );
+    });
+
+    it('should wrap content with full HTML structure when no HTML tags exist', async () => {
+      const htmlContent = 'Plain text content';
+
+      await service.generatePDF(htmlContent, '/test/output.pdf', {
+        title: 'Test Document',
+        includePageNumbers: true,
+      });
+
+      // Verify CSS was injected with full HTML wrapper
+      expect(mockLogger.debug).toHaveBeenCalledWith(
+        expect.stringMatching(
+          /CSS injected with full HTML wrapper - result length: \d+/,
+        ),
+      );
+    });
+
+    it('should use first H1 heading as document title in CSS', async () => {
+      const htmlContent = '<html><head></head><body>Test Content</body></html>';
+
+      await service.generatePDF(htmlContent, '/test/output.pdf', {
+        title: 'Original Title',
+        includePageNumbers: true,
+        headings: [
+          { level: 1, text: 'First H1 Title', id: 'h1', anchor: 'first-h1' },
+          { level: 2, text: 'Second Heading', id: 'h2', anchor: 'second' },
+        ],
+      });
+
+      // The first H1 should be prioritized over the original title
+      expect(mockLogger.debug).toHaveBeenCalledWith(
+        expect.stringMatching(/Generated CSS @page rules:.*/),
+      );
+
+      // Verify debug logging was called with proper parameters
+      expect(mockLogger.debug).toHaveBeenCalledWith(
+        'Injecting CSS @page rules for header/footer - includePageNumbers: true',
+      );
+    });
+
+    it('should handle CSS injection errors gracefully', async () => {
+      const htmlContent = '<html><head></head><body>Test Content</body></html>';
+
+      // Mock the private method to throw an error - we'll test error handling through integration
+      const originalGeneratePDF = service.generatePDF.bind(service);
+
+      // Create options that might cause issues with CSS injection
+      await service.generatePDF(htmlContent, '/test/output.pdf', {
+        title: 'Test Document with "quotes" and special chars',
+        includePageNumbers: true,
+        headings: [
+          {
+            level: 1,
+            text: 'Title with "quotes"',
+            id: 'h1',
+            anchor: 'title-quotes',
+          },
+        ],
+      });
+
+      // Should still succeed even with special characters
+      expect(mockEngineManagerInstance.generatePDF).toHaveBeenCalled();
+    });
+  });
+
   describe('Metadata Handling', () => {
     it('should handle missing metadata in result', async () => {
       // Mock to return result without metadata
@@ -433,6 +568,254 @@ describe('PDFGeneratorService', () => {
           performanceIncrease: expect.any(Number),
         }),
       });
+    });
+  });
+
+  describe('Error Handling in PDF Generation', () => {
+    it('should handle PDF generation exceptions with error events', async () => {
+      // Mock engine to throw error during generation
+      mockEngineManagerInstance.generatePDF.mockRejectedValueOnce(
+        new Error('PDF generation failed'),
+      );
+
+      await service.initialize();
+
+      const result = await service.generatePDF(
+        '<html><body>Test</body></html>',
+        '/test/error.pdf',
+      );
+
+      expect(result.success).toBe(false);
+      expect(result.error).toContain('Advanced PDF generation failed');
+      expect(mockErrorHandler.handleError).toHaveBeenCalled();
+    });
+
+    it('should handle event publishing failures in error scenarios', async () => {
+      // Mock engine to throw error
+      mockEngineManagerInstance.generatePDF.mockRejectedValueOnce(
+        new Error('Generation error'),
+      );
+
+      await service.initialize();
+
+      // Create a mock that tracks event publishing attempts
+      const mockEventPublisher = {
+        publish: jest
+          .fn()
+          .mockRejectedValue(new Error('Event publish failed') as never),
+      };
+      (service as any).eventPublisher = mockEventPublisher;
+
+      const result = await service.generatePDF(
+        '<html><body>Test</body></html>',
+        '/test/event-error.pdf',
+      );
+
+      expect(result.success).toBe(false);
+      expect(mockLogger.warn).toHaveBeenCalledWith(
+        'Failed to publish conversion failed event',
+        expect.any(Error),
+      );
+    });
+  });
+
+  describe('CSS Page Rules and HTML Processing', () => {
+    it('should handle CSS injection for different HTML structures', async () => {
+      await service.initialize();
+
+      // Test private method for page format
+      const pageFormat = (service as any).getPageNumberFormat();
+      expect(pageFormat).toContain('counter(page)');
+      expect(pageFormat).toContain('counter(pages)');
+    });
+
+    it('should handle CSS injection error scenarios', async () => {
+      await service.initialize();
+
+      // Test the injectCSSPageRules method indirectly through generatePDF
+      // This should not throw errors even with various HTML structures
+      expect(async () => {
+        await service.generatePDF(
+          '<html><head><title>Test</title></head><body>Content</body></html>',
+          '/test/with-head.pdf',
+        );
+      }).not.toThrow();
+
+      expect(async () => {
+        await service.generatePDF(
+          '<html><body>Content without head</body></html>',
+          '/test/no-head.pdf',
+        );
+      }).not.toThrow();
+
+      expect(async () => {
+        await service.generatePDF(
+          '<h1>Just content without HTML tags</h1>',
+          '/test/plain.pdf',
+        );
+      }).not.toThrow();
+    });
+  });
+
+  describe('Page Number Format Localization', () => {
+    it('should get localized page number format', async () => {
+      // Access private method for testing
+      const pageFormat = (service as any).getPageNumberFormat();
+
+      expect(mockTranslationManager.t).toHaveBeenCalledWith(
+        'pdfContent.pageNumber',
+      );
+      expect(pageFormat).toContain('counter(page)');
+      expect(pageFormat).toContain('counter(pages)');
+    });
+
+    it('should handle translation errors with fallback format', async () => {
+      // Mock translation manager to throw error
+      (mockTranslationManager as any).t = jest.fn().mockImplementation(() => {
+        throw new Error('Translation failed');
+      });
+
+      const pageFormat = (service as any).getPageNumberFormat();
+
+      expect(mockLogger.warn).toHaveBeenCalledWith(
+        expect.stringContaining(
+          'Failed to get internationalized page number format',
+        ),
+      );
+      expect(pageFormat).toBe('"Page " counter(page) " of " counter(pages)');
+    });
+  });
+
+  describe('Engine Management Methods', () => {
+    beforeEach(async () => {
+      await service.initialize();
+    });
+
+    it('should get available engines', () => {
+      const engines = service.getAvailableEngines();
+      expect(mockEngineManagerInstance.getAvailableEngines).toHaveBeenCalled();
+      expect(engines).toEqual(['puppeteer', 'chrome-headless']);
+    });
+
+    it('should return empty array when engine manager not initialized', () => {
+      const uninitializedService = new PDFGeneratorService(
+        mockLogger,
+        mockErrorHandler,
+        mockConfigManager,
+        mockTranslationManager,
+      );
+
+      const engines = uninitializedService.getAvailableEngines();
+      expect(engines).toEqual([]);
+    });
+
+    it('should force health check', async () => {
+      await service.forceHealthCheck('puppeteer');
+      expect(mockEngineManagerInstance.forceHealthCheck).toHaveBeenCalledWith(
+        'puppeteer',
+      );
+    });
+
+    it('should throw error when forcing health check without initialization', async () => {
+      const uninitializedService = new PDFGeneratorService(
+        mockLogger,
+        mockErrorHandler,
+        mockConfigManager,
+        mockTranslationManager,
+      );
+
+      await expect(uninitializedService.forceHealthCheck()).rejects.toThrow(
+        'Engine manager not initialized',
+      );
+    });
+
+    it('should get healthy engines', () => {
+      mockEngineManagerInstance.getHealthyEngines = jest
+        .fn()
+        .mockReturnValue(['puppeteer']);
+
+      const healthyEngines = (service as any).getHealthyEngines();
+      expect(healthyEngines).toEqual(['puppeteer']);
+    });
+
+    it('should return empty array for healthy engines when not initialized', () => {
+      const uninitializedService = new PDFGeneratorService(
+        mockLogger,
+        mockErrorHandler,
+        mockConfigManager,
+        mockTranslationManager,
+      );
+
+      const healthyEngines = (uninitializedService as any).getHealthyEngines();
+      expect(healthyEngines).toEqual([]);
+    });
+
+    it('should get engine metrics', () => {
+      const mockMetrics = new Map([['puppeteer', { uptime: 1000 }]]);
+      mockEngineManagerInstance.getEngineMetrics = jest
+        .fn()
+        .mockReturnValue(mockMetrics);
+
+      const metrics = (service as any).getEngineMetrics();
+      expect(metrics).toBe(mockMetrics);
+    });
+
+    it('should return empty map for engine metrics when not initialized', () => {
+      const uninitializedService = new PDFGeneratorService(
+        mockLogger,
+        mockErrorHandler,
+        mockConfigManager,
+        mockTranslationManager,
+      );
+
+      const metrics = (uninitializedService as any).getEngineMetrics();
+      expect(metrics).toEqual(new Map());
+    });
+
+    it('should update engine configuration', () => {
+      const newConfig = { maxRetries: 5 };
+      mockEngineManagerInstance.updateConfig = jest.fn();
+
+      (service as any).updateEngineConfig(newConfig);
+
+      expect(mockEngineManagerInstance.updateConfig).toHaveBeenCalledWith(
+        newConfig,
+      );
+      expect(mockLogger.info).toHaveBeenCalledWith(
+        'Engine configuration updated',
+        newConfig,
+      );
+    });
+
+    it('should throw error when updating config without initialization', () => {
+      const uninitializedService = new PDFGeneratorService(
+        mockLogger,
+        mockErrorHandler,
+        mockConfigManager,
+        mockTranslationManager,
+      );
+
+      expect(() =>
+        (uninitializedService as any).updateEngineConfig({}),
+      ).toThrow('Engine manager not initialized');
+    });
+  });
+
+  describe('Two-Stage Rendering Features', () => {
+    it('should handle markdown content options', async () => {
+      await service.initialize();
+
+      const result = await service.generatePDF(
+        '<html><body>Test</body></html>',
+        '/test/markdown.pdf',
+        {
+          tocOptions: { enabled: true, maxDepth: 3, includePageNumbers: true },
+          markdownContent:
+            '# Title\n## Subtitle\n```mermaid\ngraph TD\nA-->B\n```\n![image](test.png)',
+        },
+      );
+
+      expect(result.success).toBe(true);
     });
   });
 

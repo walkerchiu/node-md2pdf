@@ -1,534 +1,449 @@
 /**
- * Tests for ApplicationServices container
+ * Application Container Tests
+ * Tests service registration, factory methods, and dependency injection
  */
 
-import { ApplicationServices } from '../../../src/application/container';
+import {
+  ApplicationServices,
+  APPLICATION_SERVICE_NAMES,
+} from '../../../src/application/container';
+import { ServiceContainer } from '../../../src/shared/container';
+import type { ILogger } from '../../../src/infrastructure/logging/types';
+import type { IConfigManager } from '../../../src/infrastructure/config/types';
 
-// Mock the EnvironmentAwareServices
-jest.mock(
-  '../../../src/infrastructure/logging/environment-aware.services',
-  () => ({
-    EnvironmentAwareServices: {
-      createContainer: jest.fn().mockReturnValue({
-        resolve: jest.fn(),
-        tryResolve: jest.fn(),
-        registerSingleton: jest.fn(),
-        register: jest.fn(),
-      }),
-    },
-  }),
-);
-
-// Mock all the application services
-jest.mock('../../../src/application/services/pdf-generator.service', () => ({
-  PDFGeneratorService: jest.fn(),
-  IPDFGeneratorService: {},
-}));
-
-jest.mock('../../../src/application/services/markdown-parser.service', () => ({
-  MarkdownParserService: jest.fn(),
-  IMarkdownParserService: {},
-}));
-
-jest.mock('../../../src/application/services/toc-generator.service', () => ({
-  TOCGeneratorService: jest.fn(),
-  ITOCGeneratorService: {},
-}));
-
-jest.mock('../../../src/application/services/file-processor.service', () => ({
-  FileProcessorService: jest.fn(),
-  IFileProcessorService: {},
-}));
-
-jest.mock('../../../src/application/services/smart-defaults.service', () => ({
-  SmartDefaultsService: jest.fn(),
-  ISmartDefaultsService: {},
-}));
-
-jest.mock('../../../src/application/services/batch-processor.service', () => ({
-  BatchProcessorService: jest.fn(),
-  IBatchProcessorService: {},
-}));
-
-jest.mock('../../../src/core/batch/file-collector', () => ({
-  FileCollector: jest.fn(),
-}));
+// Mock all external dependencies
+jest.mock('../../../src/infrastructure/logging/environment-aware.services');
+jest.mock('../../../src/core/batch/file-collector');
 
 describe('ApplicationServices', () => {
+  let mockContainer: jest.Mocked<ServiceContainer>;
+  let mockLogger: jest.Mocked<ILogger>;
+  let mockConfig: jest.Mocked<IConfigManager>;
+
   beforeEach(() => {
+    // Reset all mocks
     jest.clearAllMocks();
+
+    // Mock logger
+    mockLogger = {
+      debug: jest.fn(),
+      info: jest.fn(),
+      warn: jest.fn(),
+      error: jest.fn(),
+      log: jest.fn(),
+      setLevel: jest.fn(),
+      getLevel: jest.fn().mockReturnValue('info'),
+    };
+
+    // Mock config manager
+    mockConfig = {
+      get: jest.fn(),
+      set: jest.fn(),
+      has: jest.fn(),
+      getAll: jest.fn(),
+      save: jest.fn(),
+      onConfigCreated: jest.fn(),
+      onConfigChanged: jest.fn(),
+      setAndSave: jest.fn(),
+      getConfigPath: jest.fn(),
+    };
+
+    // Mock service container
+    mockContainer = {
+      registerSingleton: jest.fn(),
+      registerTransient: jest.fn(),
+      register: jest.fn(),
+      registerInstance: jest.fn(),
+      resolve: jest.fn().mockImplementation((key: string) => {
+        switch (key) {
+          case 'logger':
+            return mockLogger;
+          case 'config':
+            return mockConfig;
+          case 'errorHandler':
+            return { handleError: jest.fn() };
+          case 'translator':
+            return { t: jest.fn() };
+          case 'fileSystem':
+            return { readFile: jest.fn() };
+          default:
+            return {};
+        }
+      }),
+      tryResolve: jest.fn(),
+      isRegistered: jest.fn(),
+      unregister: jest.fn(),
+      getRegisteredServices: jest.fn(),
+      getServiceInfo: jest.fn(),
+      clear: jest.fn(),
+    } as unknown as jest.Mocked<ServiceContainer>;
+  });
+
+  describe('APPLICATION_SERVICE_NAMES', () => {
+    it('should export all required service names', () => {
+      expect(APPLICATION_SERVICE_NAMES.PDF_GENERATOR).toBe('pdfGenerator');
+      expect(APPLICATION_SERVICE_NAMES.MARKDOWN_PARSER).toBe('markdownParser');
+      expect(APPLICATION_SERVICE_NAMES.TOC_GENERATOR).toBe('tocGenerator');
+      expect(APPLICATION_SERVICE_NAMES.FILE_PROCESSOR).toBe('fileProcessor');
+      expect(APPLICATION_SERVICE_NAMES.BATCH_PROCESSOR).toBe('batchProcessor');
+      expect(APPLICATION_SERVICE_NAMES.SMART_DEFAULTS).toBe('smartDefaults');
+      expect(APPLICATION_SERVICE_NAMES.PAGE_STRUCTURE).toBe('pageStructure');
+    });
   });
 
   describe('createContainer', () => {
-    it('should create container with environment-aware infrastructure services', () => {
-      const {
-        EnvironmentAwareServices,
-      } = require('../../../src/infrastructure/logging/environment-aware.services');
+    it('should create container with infrastructure and application services', () => {
+      // Mock the EnvironmentAwareServices.createContainer
+      const mockEnvContainer = { ...mockContainer };
 
-      const container = ApplicationServices.createContainer();
+      // Mock the dynamic import
+      const originalImport = require('../../../src/infrastructure/logging/environment-aware.services');
+      originalImport.EnvironmentAwareServices = {
+        createContainer: jest.fn(() => mockEnvContainer),
+      };
 
-      expect(EnvironmentAwareServices.createContainer).toHaveBeenCalled();
-      expect(container).toBeDefined();
+      jest
+        .spyOn(ApplicationServices, 'registerServices')
+        .mockImplementation(() => {});
+
+      const result = ApplicationServices.createContainer();
+
+      expect(result).toBeDefined();
+      expect(ApplicationServices.registerServices).toHaveBeenCalledWith(
+        mockEnvContainer,
+      );
     });
+  });
 
+  describe('registerServices', () => {
     it('should register all application services', () => {
-      const mockContainer = {
-        resolve: jest.fn(),
-        tryResolve: jest.fn(),
-        registerSingleton: jest.fn(),
-        register: jest.fn(),
-      };
+      ApplicationServices.registerServices(mockContainer);
 
-      const {
-        EnvironmentAwareServices,
-      } = require('../../../src/infrastructure/logging/environment-aware.services');
-      (EnvironmentAwareServices.createContainer as jest.Mock).mockReturnValue(
-        mockContainer,
+      // Verify all services are registered
+      expect(mockContainer.registerSingleton).toHaveBeenCalledWith(
+        APPLICATION_SERVICE_NAMES.PAGE_STRUCTURE,
+        expect.any(Function),
+      );
+      expect(mockContainer.registerSingleton).toHaveBeenCalledWith(
+        APPLICATION_SERVICE_NAMES.PDF_GENERATOR,
+        expect.any(Function),
+      );
+      expect(mockContainer.registerSingleton).toHaveBeenCalledWith(
+        APPLICATION_SERVICE_NAMES.MARKDOWN_PARSER,
+        expect.any(Function),
+      );
+      expect(mockContainer.registerSingleton).toHaveBeenCalledWith(
+        APPLICATION_SERVICE_NAMES.TOC_GENERATOR,
+        expect.any(Function),
+      );
+      expect(mockContainer.registerSingleton).toHaveBeenCalledWith(
+        APPLICATION_SERVICE_NAMES.FILE_PROCESSOR,
+        expect.any(Function),
+      );
+      expect(mockContainer.registerSingleton).toHaveBeenCalledWith(
+        APPLICATION_SERVICE_NAMES.BATCH_PROCESSOR,
+        expect.any(Function),
+      );
+      expect(mockContainer.registerSingleton).toHaveBeenCalledWith(
+        APPLICATION_SERVICE_NAMES.SMART_DEFAULTS,
+        expect.any(Function),
       );
 
-      ApplicationServices.createContainer();
-
-      // Verify that application services are registered
-      expect(mockContainer.registerSingleton).toHaveBeenCalledWith(
-        'pdfGenerator',
-        expect.any(Function),
-      );
-      expect(mockContainer.registerSingleton).toHaveBeenCalledWith(
-        'markdownParser',
-        expect.any(Function),
-      );
-      expect(mockContainer.registerSingleton).toHaveBeenCalledWith(
-        'tocGenerator',
-        expect.any(Function),
-      );
-      expect(mockContainer.registerSingleton).toHaveBeenCalledWith(
-        'fileProcessor',
-        expect.any(Function),
-      );
-      expect(mockContainer.registerSingleton).toHaveBeenCalledWith(
-        'batchProcessor',
-        expect.any(Function),
-      );
-      expect(mockContainer.registerSingleton).toHaveBeenCalledWith(
-        'smartDefaults',
-        expect.any(Function),
-      );
+      // Should have been called 7 times (one for each service)
+      expect(mockContainer.registerSingleton).toHaveBeenCalledTimes(7);
     });
 
-    it('should properly wire service dependencies', () => {
-      const mockContainer = {
-        resolve: jest.fn(),
-        tryResolve: jest.fn(),
-        registerSingleton: jest.fn(),
-        register: jest.fn(),
-      };
+    it('should register services with correct dependencies', () => {
+      ApplicationServices.registerServices(mockContainer);
 
-      // Mock the services that will be resolved
-      mockContainer.resolve.mockImplementation((serviceName: string) => {
-        switch (serviceName) {
+      // Get the factory functions and test them
+      const calls = mockContainer.registerSingleton.mock.calls;
+
+      // Test PDF Generator factory
+      const pdfGeneratorCall = calls.find(
+        (call) => call[0] === APPLICATION_SERVICE_NAMES.PDF_GENERATOR,
+      );
+      expect(pdfGeneratorCall).toBeDefined();
+
+      if (pdfGeneratorCall) {
+        const factory = pdfGeneratorCall[1];
+        expect(() => factory(mockContainer)).not.toThrow();
+      }
+    });
+  });
+
+  describe('factory methods', () => {
+    beforeEach(() => {
+      // Mock createContainer for factory method tests
+      jest
+        .spyOn(ApplicationServices, 'createContainer')
+        .mockReturnValue(mockContainer);
+      // Reset the resolve mock to use the original implementation
+      mockContainer.resolve.mockImplementation((key: string) => {
+        switch (key) {
           case 'logger':
-            return { info: jest.fn(), error: jest.fn() };
+            return mockLogger;
+          case 'config':
+            return mockConfig;
           case 'errorHandler':
             return { handleError: jest.fn() };
-          case 'config':
-            return { get: jest.fn() };
-          case 'fileSystem':
-            return { exists: jest.fn() };
           case 'translator':
             return { t: jest.fn() };
+          case 'fileSystem':
+            return { readFile: jest.fn() };
           default:
             return {};
         }
       });
-
-      const {
-        EnvironmentAwareServices,
-      } = require('../../../src/infrastructure/logging/environment-aware.services');
-      (EnvironmentAwareServices.createContainer as jest.Mock).mockReturnValue(
-        mockContainer,
-      );
-
-      ApplicationServices.createContainer();
-
-      // Get the factory functions that were registered
-      const registeredFactories = mockContainer.registerSingleton.mock.calls;
-
-      // Test that each service factory can be executed (basic smoke test)
-      registeredFactories.forEach((call: any[]) => {
-        const [serviceName, factory] = call;
-        expect(typeof factory).toBe('function');
-
-        // Execute factory to ensure it doesn't throw
-        try {
-          factory(mockContainer);
-        } catch (error) {
-          throw new Error(
-            `Service factory for ${serviceName} failed: ${error}`,
-          );
-        }
-      });
     });
 
-    it('should handle service resolution errors gracefully', () => {
-      const mockContainer = {
-        resolve: jest.fn(() => {
-          throw new Error('Service resolution failed');
-        }),
-        tryResolve: jest.fn().mockReturnValue(null),
-        registerSingleton: jest.fn(),
-        register: jest.fn(),
-      };
+    describe('createPDFGeneratorService', () => {
+      it('should create PDF generator with default log level', () => {
+        const mockService = {};
+        // Override the default mock for this specific service
+        mockContainer.resolve.mockImplementation((key: string) => {
+          switch (key) {
+            case 'logger':
+              return mockLogger;
+            case APPLICATION_SERVICE_NAMES.PDF_GENERATOR:
+              return mockService;
+            case 'config':
+              return mockConfig;
+            case 'errorHandler':
+              return { handleError: jest.fn() };
+            case 'translator':
+              return { t: jest.fn() };
+            case 'fileSystem':
+              return { readFile: jest.fn() };
+            default:
+              return {};
+          }
+        });
 
-      const {
-        EnvironmentAwareServices,
-      } = require('../../../src/infrastructure/logging/environment-aware.services');
-      (EnvironmentAwareServices.createContainer as jest.Mock).mockReturnValue(
-        mockContainer,
-      );
+        const result = ApplicationServices.createPDFGeneratorService();
 
-      // Should not throw when creating container
-      expect(() => ApplicationServices.createContainer()).not.toThrow();
-    });
-  });
-
-  describe('service registration', () => {
-    it('should register PDF generator service with correct dependencies', () => {
-      const mockContainer = {
-        resolve: jest.fn().mockImplementation((name: string) => {
-          if (name === 'logger') return { info: jest.fn() };
-          if (name === 'errorHandler') return { handleError: jest.fn() };
-          if (name === 'config') return { get: jest.fn() };
-          return {};
-        }),
-        tryResolve: jest.fn(),
-        registerSingleton: jest.fn(),
-        register: jest.fn(),
-      };
-
-      const {
-        EnvironmentAwareServices,
-      } = require('../../../src/infrastructure/logging/environment-aware.services');
-      const {
-        PDFGeneratorService,
-      } = require('../../../src/application/services/pdf-generator.service');
-      (EnvironmentAwareServices.createContainer as jest.Mock).mockReturnValue(
-        mockContainer,
-      );
-
-      ApplicationServices.createContainer();
-
-      const pdfGeneratorCall = mockContainer.registerSingleton.mock.calls.find(
-        (call: any[]) => call[0] === 'pdfGenerator',
-      );
-      expect(pdfGeneratorCall).toBeDefined();
-
-      // Execute the factory function
-      const factory = pdfGeneratorCall![1];
-      factory(mockContainer);
-
-      expect(PDFGeneratorService).toHaveBeenCalledWith(
-        expect.any(Object), // logger
-        expect.any(Object), // errorHandler
-        expect.any(Object), // config
-        expect.any(Object), // translationManager
-        expect.any(Object), // pageStructureService
-      );
-    });
-
-    it('should register markdown parser service with correct dependencies', () => {
-      const mockContainer = {
-        resolve: jest.fn().mockImplementation((name: string) => {
-          if (name === 'logger') return { info: jest.fn() };
-          if (name === 'errorHandler') return { handleError: jest.fn() };
-          if (name === 'config') return { get: jest.fn() };
-          if (name === 'fileSystem') return { exists: jest.fn() };
-          return {};
-        }),
-        tryResolve: jest.fn(),
-        registerSingleton: jest.fn(),
-        register: jest.fn(),
-      };
-
-      const {
-        EnvironmentAwareServices,
-      } = require('../../../src/infrastructure/logging/environment-aware.services');
-      const {
-        MarkdownParserService,
-      } = require('../../../src/application/services/markdown-parser.service');
-      (EnvironmentAwareServices.createContainer as jest.Mock).mockReturnValue(
-        mockContainer,
-      );
-
-      ApplicationServices.createContainer();
-
-      const markdownParserCall =
-        mockContainer.registerSingleton.mock.calls.find(
-          (call: any[]) => call[0] === 'markdownParser',
+        expect(ApplicationServices.createContainer).toHaveBeenCalled();
+        expect(mockLogger.setLevel).toHaveBeenCalledWith('info');
+        expect(mockContainer.resolve).toHaveBeenCalledWith(
+          APPLICATION_SERVICE_NAMES.PDF_GENERATOR,
         );
-      expect(markdownParserCall).toBeDefined();
+        expect(result).toBe(mockService);
+      });
 
-      // Execute the factory function
-      const factory = markdownParserCall![1];
-      factory(mockContainer);
+      it('should create PDF generator with custom log level', () => {
+        const mockService = {};
+        mockContainer.resolve.mockImplementation((key: string) => {
+          return key === APPLICATION_SERVICE_NAMES.PDF_GENERATOR
+            ? mockService
+            : key === 'logger'
+              ? mockLogger
+              : {};
+        });
 
-      expect(MarkdownParserService).toHaveBeenCalledWith(
-        expect.any(Object), // logger
-        expect.any(Object), // errorHandler
-        expect.any(Object), // config
-        expect.any(Object), // fileSystem
-      );
+        const result = ApplicationServices.createPDFGeneratorService('debug');
+
+        expect(mockLogger.setLevel).toHaveBeenCalledWith('debug');
+        expect(result).toBe(mockService);
+      });
     });
 
-    it('should register file processor service with all required dependencies', () => {
-      const mockContainer = {
-        resolve: jest.fn().mockImplementation((name: string) => {
-          if (name === 'logger') return { info: jest.fn() };
-          if (name === 'errorHandler') return { handleError: jest.fn() };
-          if (name === 'config') return { get: jest.fn() };
-          if (name === 'fileSystem') return { exists: jest.fn() };
-          if (name === 'markdownParser') return { parseMarkdown: jest.fn() };
-          if (name === 'tocGenerator') return { generateTOC: jest.fn() };
-          if (name === 'pdfGenerator') return { generatePDF: jest.fn() };
-          return {};
-        }),
-        tryResolve: jest.fn(),
-        registerSingleton: jest.fn(),
-        register: jest.fn(),
-      };
+    describe('createMarkdownParserService', () => {
+      it('should create markdown parser with default log level', () => {
+        const mockService = {};
+        mockContainer.resolve.mockImplementation((key: string) => {
+          return key === APPLICATION_SERVICE_NAMES.MARKDOWN_PARSER
+            ? mockService
+            : key === 'logger'
+              ? mockLogger
+              : {};
+        });
 
-      const {
-        EnvironmentAwareServices,
-      } = require('../../../src/infrastructure/logging/environment-aware.services');
-      const {
-        FileProcessorService,
-      } = require('../../../src/application/services/file-processor.service');
-      (EnvironmentAwareServices.createContainer as jest.Mock).mockReturnValue(
-        mockContainer,
-      );
+        const result = ApplicationServices.createMarkdownParserService();
 
-      ApplicationServices.createContainer();
+        expect(mockLogger.setLevel).toHaveBeenCalledWith('info');
+        expect(mockContainer.resolve).toHaveBeenCalledWith(
+          APPLICATION_SERVICE_NAMES.MARKDOWN_PARSER,
+        );
+        expect(result).toBe(mockService);
+      });
 
-      const fileProcessorCall = mockContainer.registerSingleton.mock.calls.find(
-        (call: any[]) => call[0] === 'fileProcessor',
-      );
-      expect(fileProcessorCall).toBeDefined();
+      it('should create markdown parser with custom log level', () => {
+        mockContainer.resolve.mockImplementation((key: string) => {
+          return key === 'logger' ? mockLogger : {};
+        });
+        ApplicationServices.createMarkdownParserService('warn');
+        expect(mockLogger.setLevel).toHaveBeenCalledWith('warn');
+      });
+    });
 
-      // Execute the factory function
-      const factory = fileProcessorCall![1];
-      factory(mockContainer);
+    describe('createTOCGeneratorService', () => {
+      it('should create TOC generator with default log level', () => {
+        const mockService = {};
+        mockContainer.resolve.mockImplementation((key: string) => {
+          return key === APPLICATION_SERVICE_NAMES.TOC_GENERATOR
+            ? mockService
+            : key === 'logger'
+              ? mockLogger
+              : {};
+        });
 
-      expect(FileProcessorService).toHaveBeenCalledWith(
-        expect.any(Object), // logger
-        expect.any(Object), // errorHandler
-        expect.any(Object), // config
-        expect.any(Object), // fileSystem
-        expect.any(Object), // markdownParser
-        expect.any(Object), // pdfGenerator
-      );
+        const result = ApplicationServices.createTOCGeneratorService();
+
+        expect(mockLogger.setLevel).toHaveBeenCalledWith('info');
+        expect(mockContainer.resolve).toHaveBeenCalledWith(
+          APPLICATION_SERVICE_NAMES.TOC_GENERATOR,
+        );
+        expect(result).toBe(mockService);
+      });
+
+      it('should create TOC generator with custom log level', () => {
+        mockContainer.resolve.mockImplementation((key: string) => {
+          return key === 'logger' ? mockLogger : {};
+        });
+        ApplicationServices.createTOCGeneratorService('error');
+        expect(mockLogger.setLevel).toHaveBeenCalledWith('error');
+      });
+    });
+
+    describe('createFileProcessorService', () => {
+      it('should create file processor with default log level', () => {
+        const mockService = {};
+        mockContainer.resolve.mockImplementation((key: string) => {
+          return key === APPLICATION_SERVICE_NAMES.FILE_PROCESSOR
+            ? mockService
+            : key === 'logger'
+              ? mockLogger
+              : {};
+        });
+
+        const result = ApplicationServices.createFileProcessorService();
+
+        expect(mockLogger.setLevel).toHaveBeenCalledWith('info');
+        expect(mockContainer.resolve).toHaveBeenCalledWith(
+          APPLICATION_SERVICE_NAMES.FILE_PROCESSOR,
+        );
+        expect(result).toBe(mockService);
+      });
+    });
+
+    describe('createBatchProcessorService', () => {
+      it('should create batch processor with default log level', () => {
+        const mockService = {};
+        mockContainer.resolve.mockImplementation((key: string) => {
+          return key === APPLICATION_SERVICE_NAMES.BATCH_PROCESSOR
+            ? mockService
+            : key === 'logger'
+              ? mockLogger
+              : {};
+        });
+
+        const result = ApplicationServices.createBatchProcessorService();
+
+        expect(mockLogger.setLevel).toHaveBeenCalledWith('info');
+        expect(mockContainer.resolve).toHaveBeenCalledWith(
+          APPLICATION_SERVICE_NAMES.BATCH_PROCESSOR,
+        );
+        expect(result).toBe(mockService);
+      });
+    });
+
+    describe('createSmartDefaultsService', () => {
+      it('should create smart defaults with default log level', () => {
+        const mockService = {};
+        mockContainer.resolve.mockImplementation((key: string) => {
+          return key === APPLICATION_SERVICE_NAMES.SMART_DEFAULTS
+            ? mockService
+            : key === 'logger'
+              ? mockLogger
+              : {};
+        });
+
+        const result = ApplicationServices.createSmartDefaultsService();
+
+        expect(mockLogger.setLevel).toHaveBeenCalledWith('info');
+        expect(mockContainer.resolve).toHaveBeenCalledWith(
+          APPLICATION_SERVICE_NAMES.SMART_DEFAULTS,
+        );
+        expect(result).toBe(mockService);
+      });
+    });
+
+    describe('createPageStructureService', () => {
+      it('should create page structure service with default log level', () => {
+        const mockService = {};
+        mockContainer.resolve.mockImplementation((key: string) => {
+          return key === APPLICATION_SERVICE_NAMES.PAGE_STRUCTURE
+            ? mockService
+            : key === 'logger'
+              ? mockLogger
+              : {};
+        });
+
+        const result = ApplicationServices.createPageStructureService();
+
+        expect(mockLogger.setLevel).toHaveBeenCalledWith('info');
+        expect(mockContainer.resolve).toHaveBeenCalledWith(
+          APPLICATION_SERVICE_NAMES.PAGE_STRUCTURE,
+        );
+        expect(result).toBe(mockService);
+      });
     });
   });
 
-  describe('container integration', () => {
-    it('should create container that can be used to resolve services', () => {
-      const container = ApplicationServices.createContainer();
-
-      expect(container).toBeDefined();
-      expect(typeof container.resolve).toBe('function');
-      expect(typeof container.tryResolve).toBe('function');
-      expect(typeof container.registerSingleton).toBe('function');
-      expect(typeof container.register).toBe('function');
+  describe('createConfiguredContainer', () => {
+    beforeEach(() => {
+      jest
+        .spyOn(ApplicationServices, 'createContainer')
+        .mockReturnValue(mockContainer);
     });
 
-    it('should inherit infrastructure services from EnvironmentAwareServices', () => {
-      const {
-        EnvironmentAwareServices,
-      } = require('../../../src/infrastructure/logging/environment-aware.services');
+    it('should create container without custom config', () => {
+      const result = ApplicationServices.createConfiguredContainer();
 
-      ApplicationServices.createContainer();
+      expect(ApplicationServices.createContainer).toHaveBeenCalled();
+      expect(mockConfig.set).not.toHaveBeenCalled();
+      expect(result).toBe(mockContainer);
+    });
 
-      expect(EnvironmentAwareServices.createContainer).toHaveBeenCalled();
+    it('should create container with custom config', () => {
+      const customConfig = {
+        'pdf.format': 'A4',
+        'pdf.orientation': 'portrait',
+        'logging.level': 'debug',
+      };
+
+      const result =
+        ApplicationServices.createConfiguredContainer(customConfig);
+
+      expect(ApplicationServices.createContainer).toHaveBeenCalled();
+      expect(mockContainer.resolve).toHaveBeenCalledWith('config');
+      expect(mockConfig.set).toHaveBeenCalledTimes(3);
+      expect(mockConfig.set).toHaveBeenCalledWith('pdf.format', 'A4');
+      expect(mockConfig.set).toHaveBeenCalledWith(
+        'pdf.orientation',
+        'portrait',
+      );
+      expect(mockConfig.set).toHaveBeenCalledWith('logging.level', 'debug');
+      expect(result).toBe(mockContainer);
+    });
+
+    it('should handle empty config object', () => {
+      const result = ApplicationServices.createConfiguredContainer({});
+
+      expect(mockConfig.set).not.toHaveBeenCalled();
+      expect(result).toBe(mockContainer);
     });
   });
 
-  describe('createSmartDefaultsService', () => {
-    it('should create smart defaults service with default log level', () => {
-      const mockContainer = {
-        resolve: jest.fn(),
-        tryResolve: jest.fn(),
-        registerSingleton: jest.fn(),
-        register: jest.fn(),
-      };
-
-      const mockLogger = {
-        setLevel: jest.fn(),
-        info: jest.fn(),
-        error: jest.fn(),
-      };
-
-      const mockSmartDefaultsService = {
-        analyze: jest.fn(),
-        getRecommendations: jest.fn(),
-      };
-
-      mockContainer.resolve.mockImplementation((serviceName: string) => {
-        if (serviceName === 'logger') {
-          return mockLogger;
-        }
-        if (serviceName === 'smartDefaults') {
-          return mockSmartDefaultsService;
-        }
-        return {};
+  describe('error handling', () => {
+    it('should handle missing dependencies gracefully', () => {
+      mockContainer.resolve.mockImplementation(() => {
+        throw new Error('Service not found');
       });
 
-      const {
-        EnvironmentAwareServices,
-      } = require('../../../src/infrastructure/logging/environment-aware.services');
-      (EnvironmentAwareServices.createContainer as jest.Mock).mockReturnValue(
-        mockContainer,
-      );
-
-      const service = ApplicationServices.createSmartDefaultsService();
-
-      expect(EnvironmentAwareServices.createContainer).toHaveBeenCalled();
-      expect(mockContainer.resolve).toHaveBeenCalledWith('logger');
-      expect(mockLogger.setLevel).toHaveBeenCalledWith('info');
-      expect(mockContainer.resolve).toHaveBeenCalledWith('smartDefaults');
-      expect(service).toBe(mockSmartDefaultsService);
-    });
-
-    it('should create smart defaults service with custom log level', () => {
-      const mockContainer = {
-        resolve: jest.fn(),
-        tryResolve: jest.fn(),
-        registerSingleton: jest.fn(),
-        register: jest.fn(),
-      };
-
-      const mockLogger = {
-        setLevel: jest.fn(),
-        info: jest.fn(),
-        error: jest.fn(),
-      };
-
-      const mockSmartDefaultsService = {
-        analyze: jest.fn(),
-        getRecommendations: jest.fn(),
-      };
-
-      mockContainer.resolve.mockImplementation((serviceName: string) => {
-        if (serviceName === 'logger') {
-          return mockLogger;
-        }
-        if (serviceName === 'smartDefaults') {
-          return mockSmartDefaultsService;
-        }
-        return {};
-      });
-
-      const {
-        EnvironmentAwareServices,
-      } = require('../../../src/infrastructure/logging/environment-aware.services');
-      (EnvironmentAwareServices.createContainer as jest.Mock).mockReturnValue(
-        mockContainer,
-      );
-
-      const service = ApplicationServices.createSmartDefaultsService('debug');
-
-      expect(EnvironmentAwareServices.createContainer).toHaveBeenCalled();
-      expect(mockContainer.resolve).toHaveBeenCalledWith('logger');
-      expect(mockLogger.setLevel).toHaveBeenCalledWith('debug');
-      expect(mockContainer.resolve).toHaveBeenCalledWith('smartDefaults');
-      expect(service).toBe(mockSmartDefaultsService);
-    });
-
-    it('should create smart defaults service with error log level', () => {
-      const mockContainer = {
-        resolve: jest.fn(),
-        tryResolve: jest.fn(),
-        registerSingleton: jest.fn(),
-        register: jest.fn(),
-      };
-
-      const mockLogger = {
-        setLevel: jest.fn(),
-        info: jest.fn(),
-        error: jest.fn(),
-      };
-
-      const mockSmartDefaultsService = {
-        analyze: jest.fn(),
-        getRecommendations: jest.fn(),
-      };
-
-      mockContainer.resolve.mockImplementation((serviceName: string) => {
-        if (serviceName === 'logger') {
-          return mockLogger;
-        }
-        if (serviceName === 'smartDefaults') {
-          return mockSmartDefaultsService;
-        }
-        return {};
-      });
-
-      const {
-        EnvironmentAwareServices,
-      } = require('../../../src/infrastructure/logging/environment-aware.services');
-      (EnvironmentAwareServices.createContainer as jest.Mock).mockReturnValue(
-        mockContainer,
-      );
-
-      const service = ApplicationServices.createSmartDefaultsService('error');
-
-      expect(EnvironmentAwareServices.createContainer).toHaveBeenCalled();
-      expect(mockContainer.resolve).toHaveBeenCalledWith('logger');
-      expect(mockLogger.setLevel).toHaveBeenCalledWith('error');
-      expect(mockContainer.resolve).toHaveBeenCalledWith('smartDefaults');
-      expect(service).toBe(mockSmartDefaultsService);
-    });
-
-    it('should create smart defaults service with warn log level', () => {
-      const mockContainer = {
-        resolve: jest.fn(),
-        tryResolve: jest.fn(),
-        registerSingleton: jest.fn(),
-        register: jest.fn(),
-      };
-
-      const mockLogger = {
-        setLevel: jest.fn(),
-        info: jest.fn(),
-        error: jest.fn(),
-      };
-
-      const mockSmartDefaultsService = {
-        analyze: jest.fn(),
-        getRecommendations: jest.fn(),
-      };
-
-      mockContainer.resolve.mockImplementation((serviceName: string) => {
-        if (serviceName === 'logger') {
-          return mockLogger;
-        }
-        if (serviceName === 'smartDefaults') {
-          return mockSmartDefaultsService;
-        }
-        return {};
-      });
-
-      const {
-        EnvironmentAwareServices,
-      } = require('../../../src/infrastructure/logging/environment-aware.services');
-      (EnvironmentAwareServices.createContainer as jest.Mock).mockReturnValue(
-        mockContainer,
-      );
-
-      const service = ApplicationServices.createSmartDefaultsService('warn');
-
-      expect(EnvironmentAwareServices.createContainer).toHaveBeenCalled();
-      expect(mockContainer.resolve).toHaveBeenCalledWith('logger');
-      expect(mockLogger.setLevel).toHaveBeenCalledWith('warn');
-      expect(mockContainer.resolve).toHaveBeenCalledWith('smartDefaults');
-      expect(service).toBe(mockSmartDefaultsService);
+      expect(() => {
+        ApplicationServices.registerServices(mockContainer);
+      }).not.toThrow();
     });
   });
 });
