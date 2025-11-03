@@ -25,7 +25,7 @@ export class FileSystemManager implements IFileSystemManager {
   // File operations
   async readFile(
     filePath: string,
-    encoding: BufferEncoding = 'utf8',
+    encoding?: BufferEncoding,
   ): Promise<string | Buffer> {
     try {
       if (!(await this.exists(filePath))) {

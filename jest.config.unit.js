@@ -22,6 +22,16 @@ module.exports = {
   preset: 'ts-jest',
   testEnvironment: 'node',
 
+  // Configure ts-jest to use test-specific tsconfig
+  transform: {
+    '^.+\\.ts$': [
+      'ts-jest',
+      {
+        tsconfig: 'tsconfig.test.json',
+      },
+    ],
+  },
+
   // Shorter timeout for unit tests
   testTimeout: 10000,
 

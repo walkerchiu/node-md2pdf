@@ -1,346 +1,102 @@
 /**
- * Comprehensive Puppeteer engine unit tests
+ * PuppeteerPDFEngine tests
+ * Tests for the Puppeteer-based PDF generation engine
  */
 
-// Hoist mocks for puppeteer so jest.mock is applied before the engine is required
-// eslint-disable-next-line no-var
-var mockLaunch = jest.fn();
-jest.mock('puppeteer', () => ({
-  __esModule: true,
-  default: { launch: mockLaunch },
-  launch: mockLaunch,
-}));
+import { existsSync } from 'fs';
 
-// Comprehensive fs/path mocks used by the engine internals.
-// eslint-disable-next-line no-var
-var mockExistsSync = jest.fn();
-// eslint-disable-next-line no-var
-var mockMkdirSync = jest.fn();
+import { PuppeteerPDFEngine } from '../../../../../src/core/pdf/engines/puppeteer-engine';
+import {
+  PDFGenerationContext,
+  PDFEngineOptions,
+} from '../../../../../src/core/pdf/engines/types';
+
+// Mock puppeteer
+jest.mock('puppeteer', () => {
+  const mockPage = {
+    // @ts-ignore
+    setContent: jest.fn().mockResolvedValue(undefined),
+    // @ts-ignore
+    pdf: jest.fn().mockResolvedValue(Buffer.from('fake-pdf-content')),
+    // @ts-ignore
+    close: jest.fn().mockResolvedValue(undefined),
+    evaluate: jest
+      .fn()
+      // @ts-ignore
+      .mockResolvedValue(3), // Page count
+  };
+
+  // @ts-ignore
+  const mockBrowser = {
+    // @ts-ignore
+    newPage: jest.fn().mockResolvedValue(mockPage),
+    // @ts-ignore
+    close: jest.fn().mockResolvedValue(undefined),
+    // @ts-ignore
+    disconnect: jest.fn().mockResolvedValue(undefined),
+  };
+
+  return {
+    // @ts-ignore
+    launch: jest.fn().mockResolvedValue(mockBrowser),
+    __mockPage: mockPage,
+    __mockBrowser: mockBrowser,
+  };
+});
+
+// Mock filesystem
 jest.mock('fs', () => ({
-  existsSync: mockExistsSync,
-  mkdirSync: mockMkdirSync,
-  writeFileSync: jest.fn(),
-}));
-jest.mock('path', () => ({
-  dirname: jest.fn(() => '/mock/dir'),
-  resolve: (...p: string[]): string => p.join('/'),
+  existsSync: jest.fn(),
+  mkdirSync: jest.fn(),
 }));
 
-// Mock PDFTemplates
-jest.mock('../../../../../src/core/pdf/templates', () => ({
-  PDFTemplates: {
-    getFullHTML: jest.fn(
-      (content, title, css, _chinese) =>
-        `<html><head><title>${title || ''}</title><style>${css || ''}</style></head><body>${content}</body></html>`,
-    ),
-  },
-}));
+describe('PuppeteerPDFEngine', () => {
+  let engine: PuppeteerPDFEngine;
+  const mockContext: PDFGenerationContext = {
+    htmlContent: '<html><body><h1>Test Content</h1></body></html>',
+    outputPath: '/tmp/test-output.pdf',
+    title: 'Test Document',
+    customCSS: 'body { font-size: 14px; }',
+    enableChineseSupport: false,
+  };
 
-// require engine
-const engineMod = require('../../../../../src/core/pdf/engines/puppeteer-engine');
-const PuppeteerPDFEngineCtor =
-  engineMod.PuppeteerPDFEngine || engineMod.default || engineMod;
-
-describe('PuppeteerPDFEngine - Comprehensive Tests', () => {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  let engine: any;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  let mockBrowser: any;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  let mockPage: any;
+  const mockOptions: PDFEngineOptions = {
+    format: 'A4',
+    orientation: 'portrait',
+    margin: { top: '1in', bottom: '1in', left: '1in', right: '1in' },
+  };
 
   beforeEach(() => {
-    mockPage = {
-      setContent: jest.fn().mockResolvedValue(undefined),
-      pdf: jest.fn().mockResolvedValue(Buffer.from('pdf-content')),
-      close: jest.fn().mockResolvedValue(undefined),
-      evaluate: jest.fn().mockResolvedValue(5),
-    };
-
-    mockBrowser = {
-      newPage: jest.fn().mockResolvedValue(mockPage),
-      close: jest.fn().mockResolvedValue(undefined),
-      isConnected: jest.fn().mockReturnValue(true),
-    };
-
-    mockLaunch.mockResolvedValue(mockBrowser);
-    mockExistsSync.mockReturnValue(true);
-
-    engine = new PuppeteerPDFEngineCtor();
-  });
-
-  afterEach(() => {
     jest.clearAllMocks();
+
+    // Reset puppeteer mocks
+    const puppeteer = require('puppeteer');
+    // @ts-ignore
+    puppeteer.launch.mockResolvedValue(puppeteer.__mockBrowser);
+    // @ts-ignore
+    puppeteer.__mockPage.setContent.mockResolvedValue(undefined);
+    // @ts-ignore
+    puppeteer.__mockPage.pdf.mockResolvedValue(Buffer.from('fake-pdf-content'));
+    // @ts-ignore
+    puppeteer.__mockPage.close.mockResolvedValue(undefined);
+    // @ts-ignore
+    puppeteer.__mockPage.evaluate.mockResolvedValue(3);
+    // @ts-ignore
+    puppeteer.__mockBrowser.newPage.mockResolvedValue(puppeteer.__mockPage);
+    // @ts-ignore
+    puppeteer.__mockBrowser.close.mockResolvedValue(undefined);
+    // @ts-ignore
+    puppeteer.__mockBrowser.disconnect.mockResolvedValue(undefined);
+
+    engine = new PuppeteerPDFEngine();
+    // @ts-ignore
+    (existsSync as jest.Mock).mockReturnValue(true);
   });
 
-  describe('initialization', () => {
-    it('initializes by calling puppeteer.launch', async () => {
-      await engine.initialize();
-      expect(mockLaunch).toHaveBeenCalled();
-    });
-
-    it('should not reinitialize if already initialized', async () => {
-      await engine.initialize();
-      mockLaunch.mockClear();
-      await engine.initialize();
-      expect(mockLaunch).not.toHaveBeenCalled();
-    });
-
-    it('should handle initialization failure and retry configs', async () => {
-      mockLaunch
-        .mockRejectedValueOnce(new Error('First config failed'))
-        .mockRejectedValueOnce(new Error('Second config failed'))
-        .mockResolvedValueOnce(mockBrowser);
-
-      await engine.initialize();
-      expect(mockLaunch).toHaveBeenCalledTimes(3);
-    });
-
-    it('should throw error when all configs fail', async () => {
-      mockLaunch.mockRejectedValue(new Error('All configs failed'));
-
-      await expect(engine.initialize()).rejects.toThrow(
-        'Failed to initialize Puppeteer engine',
-      );
-    });
-
-    it('should clean up browser on failed initialization', async () => {
-      const mockFailedBrowser = {
-        close: jest.fn().mockResolvedValue(undefined),
-        newPage: jest.fn().mockRejectedValue(new Error('Page creation failed')),
-      };
-
-      mockLaunch
-        .mockResolvedValueOnce(mockFailedBrowser)
-        .mockResolvedValueOnce(mockBrowser);
-
-      await engine.initialize();
-
-      expect(mockFailedBrowser.close).toHaveBeenCalled();
-      expect(mockLaunch).toHaveBeenCalledTimes(2);
-    });
-  });
-
-  describe('health check', () => {
-    it('should return healthy when browser is connected', async () => {
-      await engine.initialize();
-      const health = await engine.healthCheck();
-
-      expect(health.isHealthy).toBe(true);
-      expect(health.engineName).toBe('puppeteer');
-      expect(health.performance).toBeDefined();
-    });
-
-    it('should return unhealthy when page operations fail', async () => {
-      mockPage.setContent.mockRejectedValue(new Error('Page error'));
-
-      const health = await engine.healthCheck();
-
-      expect(health.isHealthy).toBe(false);
-      expect(health.errors).toContainEqual(
-        expect.stringContaining('Page operation failed'),
-      );
-    });
-
-    it('should return unhealthy when browser initialization fails', async () => {
-      mockLaunch.mockRejectedValue(new Error('Launch failed'));
-
-      const health = await engine.healthCheck();
-
-      expect(health.isHealthy).toBe(false);
-      expect(health.errors).toContainEqual(
-        expect.stringContaining('Health check failed'),
-      );
-    });
-  });
-
-  describe('PDF generation', () => {
-    const mockContext = {
-      htmlContent: '<h1>Test</h1>',
-      outputPath: '/test/output.pdf',
-      title: 'Test Document',
-      customCSS: 'body { font-size: 12px; }',
-      enableChineseSupport: true,
-      toc: { enabled: false },
-    };
-
-    const mockOptions = {
-      format: 'A4',
-      orientation: 'portrait',
-      margin: {
-        top: '0.75in',
-        right: '0.75in',
-        bottom: '0.75in',
-        left: '0.75in',
-      },
-    };
-
-    beforeEach(() => {
-      mockExistsSync.mockReturnValue(true);
-    });
-
-    it('should generate PDF successfully', async () => {
-      const result = await engine.generatePDF(mockContext, mockOptions);
-
-      expect(result.success).toBe(true);
-      expect(result.outputPath).toBe('/test/output.pdf');
-      expect(result.metadata).toMatchObject({
-        pages: 5,
-        fileSize: 11,
-        engineUsed: 'puppeteer',
-      });
-      expect(mockPage.setContent).toHaveBeenCalled();
-      expect(mockPage.pdf).toHaveBeenCalled();
-    });
-
-    it('should create output directory if it does not exist', async () => {
-      mockExistsSync.mockReturnValue(false);
-
-      await engine.generatePDF(mockContext, mockOptions);
-
-      expect(mockMkdirSync).toHaveBeenCalledWith('/mock/dir', {
-        recursive: true,
-      });
-    });
-
-    it('should handle PDF generation errors', async () => {
-      mockPage.pdf.mockRejectedValue(new Error('PDF generation failed'));
-
-      const result = await engine.generatePDF(mockContext, mockOptions);
-
-      expect(result.success).toBe(false);
-      expect(result.error).toContain('PDF generation failed');
-    });
-
-    it('should validate output path extension', async () => {
-      const invalidContext = { ...mockContext, outputPath: '/test/output.txt' };
-
-      const result = await engine.generatePDF(invalidContext, mockOptions);
-
-      expect(result.success).toBe(false);
-      expect(result.error).toContain(
-        'Output path must end with .pdf extension',
-      );
-    });
-
-    it('should initialize browser if not initialized', async () => {
-      const result = await engine.generatePDF(mockContext, mockOptions);
-
-      expect(mockLaunch).toHaveBeenCalled();
-      expect(result.success).toBe(true);
-    });
-
-    it('should handle TOC enabled context', async () => {
-      const tocContext = { ...mockContext, toc: { enabled: true } };
-
-      const result = await engine.generatePDF(tocContext, mockOptions);
-
-      expect(result.success).toBe(true);
-    });
-
-    it('should handle setContent failure', async () => {
-      mockPage.setContent.mockRejectedValue(new Error('Content error'));
-
-      const result = await engine.generatePDF(mockContext, mockOptions);
-
-      expect(result.success).toBe(false);
-      expect(result.error).toContain('Content error');
-    });
-
-    it('should always close page even on error', async () => {
-      mockPage.pdf.mockRejectedValue(new Error('PDF error'));
-
-      await engine.generatePDF(mockContext, mockOptions);
-
-      expect(mockPage.close).toHaveBeenCalled();
-    });
-
-    it('should build correct PDF options', async () => {
-      const customOptions = {
-        format: 'A3',
-        orientation: 'landscape',
-        scale: 0.8,
-        displayHeaderFooter: true,
-        headerTemplate: '<div>Header</div>',
-        footerTemplate: '<div>Footer</div>',
-      };
-
-      await engine.generatePDF(mockContext, customOptions);
-
-      expect(mockPage.pdf).toHaveBeenCalledWith(
-        expect.objectContaining({
-          format: 'A3',
-          landscape: true,
-          scale: 0.8,
-          displayHeaderFooter: true,
-          headerTemplate: '<div>Header</div>',
-          footerTemplate: '<div>Footer</div>',
-        }),
-      );
-    });
-  });
-
-  describe('resource management', () => {
-    it('should track resource usage', async () => {
-      const usage = await engine.getResourceUsage();
-
-      expect(usage).toMatchObject({
-        memoryUsage: expect.any(Number),
-        activeTasks: 0,
-        averageTaskTime: expect.any(Number),
-      });
-    });
-
-    it('should track active tasks during generation', async () => {
-      const mockContext = {
-        htmlContent: '<h1>Test</h1>',
-        outputPath: '/test/output.pdf',
-      };
-
-      // Delay PDF generation to check active tasks
-      let resolvePdf: () => void;
-      const pdfPromise = new Promise<Buffer>((resolve) => {
-        resolvePdf = () => resolve(Buffer.from('pdf'));
-      });
-      mockPage.pdf.mockReturnValue(pdfPromise);
-
-      const generatePromise = engine.generatePDF(mockContext, {});
-
-      // Check that active tasks increased
-      const usage = await engine.getResourceUsage();
-      expect(usage.activeTasks).toBe(1);
-
-      // Complete PDF generation
-      resolvePdf!();
-      await generatePromise;
-
-      // Check that active tasks decreased
-      const usageAfter = await engine.getResourceUsage();
-      expect(usageAfter.activeTasks).toBe(0);
-    });
-
-    it('should cleanup browser on cleanup', async () => {
-      await engine.initialize();
-      await engine.cleanup();
-
-      expect(mockBrowser.close).toHaveBeenCalled();
-    });
-
-    it('should handle cleanup when browser is null', async () => {
-      await expect(engine.cleanup()).resolves.not.toThrow();
-    });
-
-    it('should handle cleanup browser close error', async () => {
-      await engine.initialize();
-      mockBrowser.close.mockRejectedValue(new Error('Close error'));
-
-      await expect(engine.cleanup()).resolves.not.toThrow();
-    });
-  });
-
-  describe('capabilities and metadata', () => {
-    it('should return correct capabilities', () => {
-      expect(engine.capabilities).toMatchObject({
+  describe('Constructor and Basic Properties', () => {
+    it('should initialize with correct name and capabilities', () => {
+      expect(engine.name).toBe('puppeteer');
+      expect(engine.capabilities).toEqual({
         supportedFormats: ['A4', 'A3', 'A5', 'Letter', 'Legal'],
         maxConcurrentJobs: 3,
         supportsCustomCSS: true,
@@ -350,111 +106,388 @@ describe('PuppeteerPDFEngine - Comprehensive Tests', () => {
       });
     });
 
-    it('should handle can handle check', async () => {
-      const context = {
-        htmlContent: '<h1>Test</h1>',
-        outputPath: '/test/output.pdf',
-      };
-
-      const canHandle = await engine.canHandle(context);
-      expect(canHandle).toBe(true);
+    it('should set version from puppeteer package', () => {
+      // Version should be either a valid version string or 'unknown'
+      expect(typeof engine.version).toBe('string');
     });
 
-    it('should return metrics', () => {
+    it('should initialize metrics correctly', () => {
       const metrics = engine.getMetrics();
-
-      expect(metrics).toMatchObject({
+      expect(metrics).toEqual({
         engineName: 'puppeteer',
-        totalTasks: expect.any(Number),
-        successfulTasks: expect.any(Number),
-        failedTasks: expect.any(Number),
-        averageTime: expect.any(Number),
-        peakMemoryUsage: expect.any(Number),
+        totalTasks: 0,
+        successfulTasks: 0,
+        failedTasks: 0,
+        averageTime: 0,
+        peakMemoryUsage: 0,
         uptime: expect.any(Number),
       });
     });
-
-    it('should have correct name and version', () => {
-      expect(engine.name).toBe('puppeteer');
-      expect(engine.version).toEqual(expect.any(String));
-    });
-
-    it('should update metrics on successful generation', async () => {
-      const mockContext = {
-        htmlContent: '<h1>Test</h1>',
-        outputPath: '/test/output.pdf',
-      };
-
-      await engine.generatePDF(mockContext, {});
-
-      const metrics = engine.getMetrics();
-      expect(metrics.totalTasks).toBe(1);
-      expect(metrics.successfulTasks).toBe(1);
-    });
-
-    it('should update metrics on failed generation', async () => {
-      mockPage.pdf.mockRejectedValue(new Error('Generation failed'));
-
-      const mockContext = {
-        htmlContent: '<h1>Test</h1>',
-        outputPath: '/test/output.pdf',
-      };
-
-      await engine.generatePDF(mockContext, {});
-
-      const metrics = engine.getMetrics();
-      expect(metrics.totalTasks).toBe(1);
-      expect(metrics.failedTasks).toBe(1);
-    });
   });
 
-  describe('edge cases and error handling', () => {
-    it('should handle page count evaluation failure', async () => {
-      mockPage.evaluate.mockRejectedValue(new Error('Evaluation failed'));
+  describe('Initialization', () => {
+    it('should initialize browser successfully', async () => {
+      await engine.initialize();
 
-      const mockContext = {
-        htmlContent: '<h1>Test</h1>',
-        outputPath: '/test/output.pdf',
-      };
+      const puppeteer = require('puppeteer');
+      expect(puppeteer.launch).toHaveBeenCalledWith(
+        expect.objectContaining({
+          headless: 'new',
+          timeout: 10000,
+          args: expect.arrayContaining([
+            '--no-sandbox',
+            '--disable-setuid-sandbox',
+            '--disable-dev-shm-usage',
+            '--disable-gpu',
+            '--disable-web-security',
+            '--disable-features=VizDisplayCompositor',
+          ]),
+        }),
+      );
 
-      const result = await engine.generatePDF(mockContext, {});
-
-      // Should still succeed, just with unknown page count
-      expect(result.success).toBe(true);
-      expect(result.metadata?.pages).toBe(1); // fallback value
+      // Should test browser connection
+      expect(puppeteer.__mockBrowser.newPage).toHaveBeenCalled();
+      expect(puppeteer.__mockPage.close).toHaveBeenCalled();
     });
 
-    it('should handle browser initialization with null browser', async () => {
-      mockLaunch.mockResolvedValue(null);
+    it('should not initialize twice', async () => {
+      await engine.initialize();
+      const puppeteer = require('puppeteer');
+
+      // Clear the mock call count
+      puppeteer.launch.mockClear();
+
+      // Initialize again
+      await engine.initialize();
+
+      // Should not call launch again
+      expect(puppeteer.launch).not.toHaveBeenCalled();
+    });
+
+    it('should try multiple browser configurations on failure', async () => {
+      const puppeteer = require('puppeteer');
+      // @ts-ignore
+      puppeteer.launch.mockRejectedValueOnce(new Error('First config failed'));
+      // @ts-ignore
+      puppeteer.launch.mockResolvedValueOnce(puppeteer.__mockBrowser);
+
+      await engine.initialize();
+
+      expect(puppeteer.launch).toHaveBeenCalledTimes(2);
+    });
+
+    it('should handle initialization failure', async () => {
+      const puppeteer = require('puppeteer');
+      // @ts-ignore
+      puppeteer.launch.mockRejectedValue(new Error('All configs failed'));
 
       await expect(engine.initialize()).rejects.toThrow(
         'Failed to initialize Puppeteer engine',
       );
     });
+  });
 
-    it('should preserve task counts on error', async () => {
-      mockPage.setContent.mockRejectedValue(new Error('Content error'));
-
-      const mockContext = {
-        htmlContent: '<h1>Test</h1>',
-        outputPath: '/test/output.pdf',
-      };
-
-      await engine.generatePDF(mockContext, {});
-
-      const usage = await engine.getResourceUsage();
-      expect(usage.activeTasks).toBe(0); // Should return to 0 after error
+  describe('PDF Generation', () => {
+    beforeEach(async () => {
+      await engine.initialize();
     });
 
-    it('should handle missing optional context fields', async () => {
-      const minimalContext = {
-        htmlContent: '<h1>Test</h1>',
-        outputPath: '/test/output.pdf',
-      };
-
-      const result = await engine.generatePDF(minimalContext, {});
+    it('should generate PDF successfully', async () => {
+      const result = await engine.generatePDF(mockContext, mockOptions);
 
       expect(result.success).toBe(true);
+      expect(result.outputPath).toBe('/tmp/test-output.pdf');
+      expect(result.metadata).toEqual({
+        pages: 3,
+        fileSize: expect.any(Number),
+        generationTime: expect.any(Number),
+        engineUsed: 'puppeteer',
+      });
+
+      // Check browser interactions
+      const puppeteer = require('puppeteer');
+      expect(puppeteer.__mockBrowser.newPage).toHaveBeenCalled();
+      expect(puppeteer.__mockPage.setContent).toHaveBeenCalled();
+      expect(puppeteer.__mockPage.pdf).toHaveBeenCalled();
+      expect(puppeteer.__mockPage.close).toHaveBeenCalled();
+    });
+
+    it('should create output directory if not exists', async () => {
+      // @ts-ignore
+      (existsSync as jest.Mock).mockReturnValue(false);
+
+      await engine.generatePDF(mockContext, mockOptions);
+
+      const { mkdirSync } = require('fs');
+      expect(mkdirSync).toHaveBeenCalledWith('/tmp', { recursive: true });
+    });
+
+    it('should validate PDF extension', async () => {
+      const invalidContext = {
+        ...mockContext,
+        outputPath: '/tmp/test-output.txt',
+      };
+
+      const result = await engine.generatePDF(invalidContext, mockOptions);
+
+      expect(result.success).toBe(false);
+      expect(result.error).toContain(
+        'Output path must end with .pdf extension',
+      );
+    });
+
+    it('should handle PDF generation errors', async () => {
+      const puppeteer = require('puppeteer');
+      // @ts-ignore
+      puppeteer.__mockPage.setContent.mockRejectedValueOnce(
+        new Error('Content loading failed'),
+      );
+
+      const result = await engine.generatePDF(mockContext, mockOptions);
+
+      expect(result.success).toBe(false);
+      expect(result.error).toContain('PDF generation failed');
+      expect(puppeteer.__mockPage.close).toHaveBeenCalled();
+    });
+
+    it('should update metrics on successful generation', async () => {
+      await engine.generatePDF(mockContext, mockOptions);
+
+      const metrics = engine.getMetrics();
+      expect(metrics.totalTasks).toBe(1);
+      expect(metrics.successfulTasks).toBe(1);
+      expect(metrics.failedTasks).toBe(0);
+      expect(metrics.averageTime).toBeGreaterThanOrEqual(0); // Can be 0 in fast tests
+    });
+
+    it('should update metrics on failed generation', async () => {
+      const puppeteer = require('puppeteer');
+      // @ts-ignore
+      puppeteer.__mockPage.pdf.mockRejectedValueOnce(
+        new Error('PDF generation failed'),
+      );
+
+      await engine.generatePDF(mockContext, mockOptions);
+
+      const metrics = engine.getMetrics();
+      expect(metrics.totalTasks).toBe(1);
+      expect(metrics.successfulTasks).toBe(0);
+      expect(metrics.failedTasks).toBe(1);
+      expect(metrics.lastFailure).toEqual({
+        timestamp: expect.any(Date),
+        error: 'PDF generation failed',
+        context: mockContext,
+      });
+    });
+
+    it('should handle browser not initialized', async () => {
+      const uninitializedEngine = new PuppeteerPDFEngine();
+      const result = await uninitializedEngine.generatePDF(
+        mockContext,
+        mockOptions,
+      );
+
+      // Should auto-initialize and succeed
+      expect(result.success).toBe(true);
+    });
+
+    it('should build correct PDF options', async () => {
+      await engine.generatePDF(mockContext, mockOptions);
+
+      const puppeteer = require('puppeteer');
+      expect(puppeteer.__mockPage.pdf).toHaveBeenCalledWith({
+        path: '/tmp/test-output.pdf',
+        format: 'A4',
+        landscape: false,
+        margin: { top: '1in', bottom: '1in', left: '1in', right: '1in' },
+        displayHeaderFooter: false,
+        headerTemplate: '',
+        footerTemplate: '',
+        printBackground: true,
+        scale: 1,
+        preferCSSPageSize: false,
+      });
+    });
+  });
+
+  describe('Health Check', () => {
+    it('should return healthy status when browser is working', async () => {
+      const status = await engine.healthCheck();
+
+      expect(status.isHealthy).toBe(true);
+      expect(status.engineName).toBe('puppeteer');
+      expect(status.version).toBe(engine.version);
+      expect(status.lastCheck).toBeInstanceOf(Date);
+      expect(status.errors).toHaveLength(0);
+      expect(status.performance).toEqual({
+        averageGenerationTime: 0,
+        successRate: 0,
+        memoryUsage: expect.any(Number),
+      });
+    });
+
+    it('should return unhealthy status when browser fails', async () => {
+      const puppeteer = require('puppeteer');
+      // Override the default mock for this test
+      // @ts-ignore
+      puppeteer.launch.mockRejectedValue(new Error('Browser launch failed'));
+
+      const uninitializedEngine = new PuppeteerPDFEngine();
+      const status = await uninitializedEngine.healthCheck();
+
+      expect(status.isHealthy).toBe(false);
+      expect(status.errors.length).toBeGreaterThan(0);
+    });
+
+    it('should handle page operation failures', async () => {
+      await engine.initialize();
+      const puppeteer = require('puppeteer');
+      // @ts-ignore
+      puppeteer.__mockPage.setContent.mockRejectedValueOnce(
+        new Error('Page error'),
+      );
+
+      const status = await engine.healthCheck();
+
+      expect(status.isHealthy).toBe(false);
+      expect(status.errors).toContainEqual(
+        expect.stringContaining('Page operation failed'),
+      );
+    });
+  });
+
+  describe('Resource Management', () => {
+    it('should return resource usage information', async () => {
+      const usage = await engine.getResourceUsage();
+
+      expect(usage).toEqual({
+        memoryUsage: expect.any(Number),
+        activeTasks: 0,
+        averageTaskTime: 0,
+      });
+    });
+
+    it('should track active tasks during generation', async () => {
+      const puppeteer = require('puppeteer');
+      // Make PDF generation take time by adding a delay
+      let resolveSetContent: () => void;
+      const setContentPromise = new Promise<void>((resolve) => {
+        resolveSetContent = resolve;
+      });
+      // @ts-ignore
+      puppeteer.__mockPage.setContent.mockReturnValueOnce(setContentPromise);
+
+      // Start generation but don't await
+      const generationPromise = engine.generatePDF(mockContext, mockOptions);
+
+      // Check active tasks immediately
+      const usage = await engine.getResourceUsage();
+      expect(usage.activeTasks).toBe(1);
+
+      // Complete the generation
+      resolveSetContent!();
+      await generationPromise;
+
+      // Check active tasks after completion
+      const finalUsage = await engine.getResourceUsage();
+      expect(finalUsage.activeTasks).toBe(0);
+    });
+
+    it('should cleanup browser resources', async () => {
+      await engine.initialize();
+      const puppeteer = require('puppeteer');
+
+      await engine.cleanup();
+
+      expect(puppeteer.__mockBrowser.close).toHaveBeenCalled();
+    });
+
+    it('should handle cleanup timeout and disconnect', async () => {
+      await engine.initialize();
+      const puppeteer = require('puppeteer');
+      // @ts-ignore
+      puppeteer.__mockBrowser.close.mockImplementation(
+        () =>
+          new Promise((_, reject) =>
+            setTimeout(() => reject(new Error('Close timeout')), 4000),
+          ),
+      );
+
+      await engine.cleanup();
+
+      expect(puppeteer.__mockBrowser.disconnect).toHaveBeenCalled();
+    });
+  });
+
+  describe('Engine Compatibility', () => {
+    it('should indicate it can handle any context', async () => {
+      const canHandle = await engine.canHandle(mockContext);
+      expect(canHandle).toBe(true);
+    });
+
+    it('should handle Chinese support context', async () => {
+      const chineseContext = {
+        ...mockContext,
+        enableChineseSupport: true,
+      };
+
+      const canHandle = await engine.canHandle(chineseContext);
+      expect(canHandle).toBe(true);
+    });
+  });
+
+  describe('Error Handling and Edge Cases', () => {
+    it('should handle page count evaluation errors', async () => {
+      const puppeteer = require('puppeteer');
+      // @ts-ignore
+      puppeteer.__mockPage.evaluate.mockRejectedValueOnce(
+        new Error('Evaluation failed'),
+      );
+
+      const result = await engine.generatePDF(mockContext, mockOptions);
+
+      // Should still succeed with default page count
+      expect(result.success).toBe(true);
+      expect(result.metadata?.pages).toBe(1); // Default fallback
+    });
+
+    it('should handle memory usage calculation errors', async () => {
+      // Mock process.memoryUsage to throw
+      const originalMemoryUsage = process.memoryUsage;
+      // @ts-ignore
+      process.memoryUsage = jest.fn().mockImplementation(() => {
+        throw new Error('Memory calculation failed');
+      });
+
+      const usage = await engine.getResourceUsage();
+      expect(usage.memoryUsage).toBe(0); // Fallback value
+
+      // Restore original function
+      process.memoryUsage = originalMemoryUsage;
+    });
+
+    it('should handle version detection failures', () => {
+      // Test version detection when puppeteer package.json is not accessible
+      jest.doMock('puppeteer/package.json', () => {
+        throw new Error('Package not found');
+      });
+
+      const newEngine = new PuppeteerPDFEngine();
+      expect(newEngine.version).toBe('unknown');
+    });
+
+    it('should handle landscape orientation', async () => {
+      const landscapeOptions = {
+        ...mockOptions,
+        orientation: 'landscape' as const,
+      };
+
+      await engine.generatePDF(mockContext, landscapeOptions);
+
+      const puppeteer = require('puppeteer');
+      expect(puppeteer.__mockPage.pdf).toHaveBeenCalledWith(
+        expect.objectContaining({ landscape: true }),
+      );
     });
   });
 });

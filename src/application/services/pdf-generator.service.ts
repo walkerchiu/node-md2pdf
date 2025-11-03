@@ -297,10 +297,15 @@ export class PDFGeneratorService implements IPDFGeneratorService {
     includePageNumbers: boolean = false,
   ): string {
     try {
-      this.logger.debug('Injecting CSS @page rules for header/footer');
+      this.logger.debug(
+        `Injecting CSS @page rules for header/footer - includePageNumbers: ${includePageNumbers}`,
+      );
 
       // Only generate CSS if page numbers are requested
       if (!includePageNumbers) {
+        this.logger.debug(
+          'Page numbers not enabled - skipping CSS @page injection',
+        );
         // No header/footer needed - just return the original content
         return htmlContent;
       }
@@ -358,19 +363,31 @@ export class PDFGeneratorService implements IPDFGeneratorService {
         </style>
       `;
 
+      this.logger.debug(
+        `Generated CSS @page rules: ${cssPageRules.slice(0, 200)}...`,
+      );
+
       // Check if HTML already has a <head> section
       if (htmlContent.includes('<head>')) {
         // Insert CSS rules into existing <head>
-        return htmlContent.replace('</head>', `${cssPageRules}</head>`);
+        const result = htmlContent.replace('</head>', `${cssPageRules}</head>`);
+        this.logger.debug(
+          `CSS injected into existing <head> - result length: ${result.length}`,
+        );
+        return result;
       } else if (htmlContent.includes('<html>')) {
         // Add <head> section with CSS rules after <html> tag
-        return htmlContent.replace(
+        const result = htmlContent.replace(
           '<html>',
           `<html><head>${cssPageRules}</head>`,
         );
+        this.logger.debug(
+          `CSS injected with new <head> section - result length: ${result.length}`,
+        );
+        return result;
       } else {
         // Wrap content with full HTML structure
-        return `
+        const result = `
           <!DOCTYPE html>
           <html>
             <head>
@@ -383,6 +400,10 @@ export class PDFGeneratorService implements IPDFGeneratorService {
             </body>
           </html>
         `;
+        this.logger.debug(
+          `CSS injected with full HTML wrapper - result length: ${result.length}`,
+        );
+        return result;
       }
     } catch (error) {
       this.logger.warn(

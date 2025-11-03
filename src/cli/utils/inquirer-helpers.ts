@@ -40,7 +40,9 @@ export class InquirerHelpers {
    */
   static async prompt(options: any): Promise<any> {
     const inquirer = await import('inquirer');
-    const result = await inquirer.default.prompt([options]);
+    const result = await (inquirer.default?.prompt || (inquirer as any).prompt)(
+      [options],
+    );
     return result[options.name];
   }
 
@@ -55,9 +57,9 @@ export class InquirerHelpers {
     pageSize?: number;
   }): Promise<any> {
     const inquirer = await import('inquirer');
-    const result = await inquirer.default.prompt([
-      { type: 'list', ...options },
-    ]);
+    const result = await (inquirer.default?.prompt || (inquirer as any).prompt)(
+      [{ type: 'list', ...options }],
+    );
     return result[options.name];
   }
 
@@ -81,16 +83,18 @@ export class InquirerHelpers {
 
     const choices = [backChoice, ...options.choices];
 
-    const result = await inquirer.default.prompt([
-      {
-        type: 'list',
-        name: 'selection',
-        message: options.message,
-        choices,
-        default: options.default,
-        pageSize: options.pageSize,
-      },
-    ]);
+    const result = await (inquirer.default?.prompt || (inquirer as any).prompt)(
+      [
+        {
+          type: 'list',
+          name: 'selection',
+          message: options.message,
+          choices,
+          default: options.default,
+          pageSize: options.pageSize,
+        },
+      ],
+    );
 
     return result.selection;
   }
@@ -103,14 +107,16 @@ export class InquirerHelpers {
     defaultValue = true,
   ): Promise<boolean> {
     const inquirer = await import('inquirer');
-    const result = await inquirer.default.prompt([
-      {
-        type: 'confirm',
-        name: 'confirmed',
-        message,
-        default: defaultValue,
-      },
-    ]);
+    const result = await (inquirer.default?.prompt || (inquirer as any).prompt)(
+      [
+        {
+          type: 'confirm',
+          name: 'confirmed',
+          message,
+          default: defaultValue,
+        },
+      ],
+    );
     return result.confirmed;
   }
 
@@ -123,15 +129,17 @@ export class InquirerHelpers {
     validate?: (input: string) => boolean | string;
   }): Promise<string> {
     const inquirer = await import('inquirer');
-    const result = await inquirer.default.prompt([
-      {
-        type: 'input',
-        name: 'input',
-        message: options.message,
-        default: options.default,
-        validate: options.validate,
-      },
-    ]);
+    const result = await (inquirer.default?.prompt || (inquirer as any).prompt)(
+      [
+        {
+          type: 'input',
+          name: 'input',
+          message: options.message,
+          default: options.default,
+          validate: options.validate,
+        },
+      ],
+    );
     return result.input;
   }
 

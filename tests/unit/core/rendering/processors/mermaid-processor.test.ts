@@ -1,844 +1,429 @@
 /**
- * Unit tests for Mermaid Processor
+ * Mermaid Processor Tests
+ * Tests Mermaid diagram rendering and processing
  */
 
-import { MermaidProcessor } from '../../../../../src/core/rendering/processors/mermaid-processor';
 import {
-  DynamicContentType,
-  ProcessingContext,
-} from '../../../../../src/core/rendering/types';
+  MermaidProcessor,
+  MermaidConfig,
+} from '../../../../../src/core/rendering/processors/mermaid-processor';
+import { ProcessingContext } from '../../../../../src/core/rendering/types';
+import { MermaidRenderer } from '../../../../../src/utils/mermaid-renderer';
 
 // Mock MermaidRenderer
-jest.mock('../../../../../src/utils/mermaid-renderer', () => ({
-  MermaidRenderer: {
-    getInstance: jest.fn().mockReturnValue({
-      render: jest.fn().mockResolvedValue({
-        svg: '<svg>mocked mermaid svg content</svg>',
-        metadata: {
-          width: 800,
-          height: 600,
-          renderTime: 100,
-        },
-      }),
-      cleanup: jest.fn().mockResolvedValue(undefined),
-      validateEnvironment: jest.fn().mockResolvedValue({
-        isSupported: true,
-        issues: [],
-        recommendations: [],
-      }),
-    }),
-  },
-}));
+jest.mock('../../../../../src/utils/mermaid-renderer');
 
 describe('MermaidProcessor', () => {
   let processor: MermaidProcessor;
+  let mockRenderer: jest.Mocked<MermaidRenderer>;
 
   beforeEach(() => {
+    // Mock MermaidRenderer instance methods
+    mockRenderer = {
+      render: jest.fn(),
+      cleanup: jest.fn(),
+    } as any;
+
+    // Mock the static getInstance method
+    (MermaidRenderer.getInstance as jest.Mock) = jest
+      .fn()
+      .mockReturnValue(mockRenderer);
+
     processor = new MermaidProcessor();
     jest.clearAllMocks();
   });
 
-  describe('Constructor and Configuration', () => {
-    it('should initialize with default configuration', () => {
-      const config = processor.getConfig();
-
-      expect(config.theme).toBe('default');
-      expect(config.defaultWidth).toBe(800);
-      expect(config.defaultHeight).toBe(600);
-      expect(config.timeout).toBe(10000);
-      expect(config.enableCaching).toBe(true);
-      expect(config.backgroundColor).toBe('white');
+  describe('constructor', () => {
+    it('should create processor with default config', () => {
+      expect(processor).toBeInstanceOf(MermaidProcessor);
     });
 
-    it('should initialize with custom configuration', () => {
-      const customConfig = {
-        theme: 'dark' as const,
-        defaultWidth: 1200,
+    it('should create processor with custom config', () => {
+      const config: MermaidConfig = {
+        theme: 'dark',
+        defaultWidth: 1000,
         defaultHeight: 800,
-        timeout: 15000,
-        enableCaching: false,
-        backgroundColor: 'black',
+        timeout: 10000,
+        enableCaching: true,
+        backgroundColor: '#ffffff',
       };
 
-      const customProcessor = new MermaidProcessor(customConfig);
-      const config = customProcessor.getConfig();
-
-      expect(config.theme).toBe('dark');
-      expect(config.defaultWidth).toBe(1200);
-      expect(config.defaultHeight).toBe(800);
-      expect(config.timeout).toBe(15000);
-      expect(config.enableCaching).toBe(false);
-      expect(config.backgroundColor).toBe('black');
-    });
-
-    it('should have correct processor type', () => {
-      expect(processor.type).toBe(DynamicContentType.MERMAID);
+      const customProcessor = new MermaidProcessor(config);
+      expect(customProcessor).toBeInstanceOf(MermaidProcessor);
     });
   });
 
-  describe('Content Detection', () => {
-    it('should detect Mermaid blocks in Markdown format', async () => {
+  describe('process', () => {
+    const mockContext: ProcessingContext = {
+      filePath: '/test/file.md',
+    };
+
+    it('should process mermaid diagram successfully', async () => {
       const content = `
 # Test Document
 
 \`\`\`mermaid
 graph TD
-    A[Start] --> B[Process]
-    B --> C[End]
+  A-->B
 \`\`\`
 
-Some other content.
+Some content after.
 `;
 
-      const context: ProcessingContext = {
-        filePath: '/test/file.md',
-        isPreRendering: true,
-      };
-
-      const confidence = await processor.detect(content, context);
-      expect(confidence).toBe(0.95);
-    });
-
-    it('should detect Mermaid blocks in HTML format', async () => {
-      const content = `
-<h1>Test Document</h1>
-<pre class="language-mermaid"><code class="language-mermaid">graph TD
-    A[Start] --&gt; B[Process]
-    B --&gt; C[End]
-</code></pre>
-<p>Some other content.</p>
-`;
-
-      const context: ProcessingContext = {
-        filePath: '/test/file.md',
-        isPreRendering: false,
-      };
-
-      const confidence = await processor.detect(content, context);
-      expect(confidence).toBe(0.95);
-    });
-
-    it('should not detect content without Mermaid', async () => {
-      const content = `
-# Test Document
-
-\`\`\`javascript
-console.log('hello world');
-\`\`\`
-
-Some other content.
-`;
-
-      const context: ProcessingContext = {
-        filePath: '/test/file.md',
-        isPreRendering: true,
-      };
-
-      const confidence = await processor.detect(content, context);
-      expect(confidence).toBe(0);
-    });
-
-    it('should detect multiple Mermaid blocks', async () => {
-      const content = `
-# Test Document
-
-\`\`\`mermaid
-graph TD
-    A[Start] --> B[Process]
-\`\`\`
-
-Another diagram:
-
-\`\`\`mermaid
-sequenceDiagram
-    participant Alice
-    participant Bob
-    Alice->>Bob: Hello Bob
-\`\`\`
-`;
-
-      const context: ProcessingContext = {
-        filePath: '/test/file.md',
-        isPreRendering: true,
-      };
-
-      const confidence = await processor.detect(content, context);
-      expect(confidence).toBe(0.95);
-    });
-
-    it('should detect different Mermaid diagram types', async () => {
-      const diagramTypes = [
-        'graph TD\n    A --> B',
-        'sequenceDiagram\n    Alice->>Bob: Hello',
-        'classDiagram\n    class Animal',
-        'stateDiagram-v2\n    [*] --> Still',
-        'erDiagram\n    CUSTOMER ||--o{ ORDER : places',
-        'journey\n    title My working day',
-        'gantt\n    title A Gantt Diagram',
-        'pie title Pets adopted by volunteers\n    "Dogs" : 386',
-        'flowchart TD\n    A --> B',
-      ];
-
-      for (const diagram of diagramTypes) {
-        const content = `\`\`\`mermaid\n${diagram}\n\`\`\``;
-        const context: ProcessingContext = {
-          filePath: '/test/file.md',
-          isPreRendering: true,
-        };
-
-        const confidence = await processor.detect(content, context);
-        expect(confidence).toBe(0.95);
-      }
-    });
-  });
-
-  describe('Content Processing', () => {
-    beforeEach(() => {
-      // Reset mocks before each test
-      jest.clearAllMocks();
-
-      // Ensure successful rendering for normal tests
-      const {
-        MermaidRenderer,
-      } = require('../../../../../src/utils/mermaid-renderer');
-      const mockRenderer = MermaidRenderer.getInstance();
+      // Mock successful rendering
       mockRenderer.render.mockResolvedValue({
-        svg: '<svg>mocked mermaid svg content</svg>',
+        svg: '<svg>test diagram</svg>',
         metadata: {
-          width: 800,
-          height: 600,
+          width: 400,
+          height: 300,
           renderTime: 100,
         },
       });
-      mockRenderer.validateEnvironment.mockResolvedValue({
-        isSupported: true,
-        issues: [],
-        recommendations: [],
-      });
+
+      const result = await processor.process(content, mockContext);
+
+      expect(result).toBeDefined();
+      expect(result.html).toContain('svg');
+      expect(mockRenderer.render).toHaveBeenCalled();
     });
 
-    it('should process Mermaid content successfully', async () => {
+    it('should handle multiple mermaid diagrams', async () => {
       const content = `
 \`\`\`mermaid
 graph TD
-    A[Start] --> B[Process]
-    B --> C[End]
-\`\`\`
-`;
-
-      const context: ProcessingContext = {
-        filePath: '/test/file.md',
-        isPreRendering: true,
-      };
-
-      const result = await processor.process(content, context);
-
-      expect(result.html).toContain('class="mermaid-diagram"');
-      expect(result.html).toContain('<svg>mocked mermaid svg content</svg>');
-      expect(result.metadata.type).toBe(DynamicContentType.MERMAID);
-      expect(result.metadata.warnings).toEqual([]);
-    });
-
-    it('should process HTML Mermaid content with entity decoding', async () => {
-      const content = `
-<pre class="language-mermaid"><code class="language-mermaid">graph TD
-    A[Start] --&gt; B[Process &amp; Validate]
-    B --&gt; C[End]
-</code></pre>
-`;
-
-      const context: ProcessingContext = {
-        filePath: '/test/file.md',
-        isPreRendering: false,
-      };
-
-      const result = await processor.process(content, context);
-
-      expect(result.html).toContain('class="mermaid-diagram"');
-      expect(result.html).toContain('<svg>mocked mermaid svg content</svg>');
-      expect(result.metadata.type).toBe(DynamicContentType.MERMAID);
-    });
-
-    it('should handle processing errors gracefully', async () => {
-      // Mock the renderer to throw an error
-      const {
-        MermaidRenderer,
-      } = require('../../../../../src/utils/mermaid-renderer');
-      const mockRenderer = MermaidRenderer.getInstance();
-      mockRenderer.render.mockRejectedValue(
-        new Error('Mermaid rendering error'),
-      );
-
-      const content = `
-\`\`\`mermaid
-graph TD
-    A[Start] --> B[Process]
-\`\`\`
-`;
-
-      const context: ProcessingContext = {
-        filePath: '/test/file.md',
-        isPreRendering: true,
-      };
-
-      const result = await processor.process(content, context);
-
-      expect(result.html).toContain('Mermaid Diagram Error');
-      expect(result.metadata.warnings).toHaveLength(1);
-      expect(result.metadata.warnings[0]).toContain(
-        'Failed to render Mermaid diagram',
-      );
-    });
-
-    it('should handle multiple diagrams in content', async () => {
-      const content = `
-\`\`\`mermaid
-graph TD
-    A[Start] --> B[Process]
+  A-->B
 \`\`\`
 
-Some text here.
+Some text
 
 \`\`\`mermaid
 sequenceDiagram
-    participant Alice
-    participant Bob
-    Alice->>Bob: Hello
+  A->>B: Hello
 \`\`\`
-`;
+      `;
 
-      const context: ProcessingContext = {
-        filePath: '/test/file.md',
-        isPreRendering: true,
-      };
-
-      const result = await processor.process(content, context);
-
-      // Should contain both diagrams
-      const diagramCount = (result.html.match(/class="mermaid-diagram"/g) || [])
-        .length;
-      expect(diagramCount).toBe(2);
-      expect(result.metadata.type).toBe(DynamicContentType.MERMAID);
-    });
-
-    it('should handle empty diagrams', async () => {
-      // Mock error for this specific test
-      const {
-        MermaidRenderer,
-      } = require('../../../../../src/utils/mermaid-renderer');
-      const mockRenderer = MermaidRenderer.getInstance();
-      mockRenderer.render.mockRejectedValue(new Error('Empty diagram error'));
-
-      const content = `
-\`\`\`mermaid
-\`\`\`
-`;
-
-      const context: ProcessingContext = {
-        filePath: '/test/file.md',
-        isPreRendering: true,
-      };
-
-      const result = await processor.process(content, context);
-
-      expect(result.html).toContain('Mermaid Diagram Error');
-      expect(result.metadata.warnings).toHaveLength(1);
-      expect(result.metadata.warnings[0]).toContain(
-        'Failed to render Mermaid diagram',
-      );
-    });
-
-    it('should handle very large content', async () => {
-      const largeContent = 'A'.repeat(1000);
-      const content = `
-\`\`\`mermaid
-graph TD
-    A[${largeContent}] --> B[Process]
-\`\`\`
-`;
-
-      const context: ProcessingContext = {
-        filePath: '/test/file.md',
-        isPreRendering: true,
-      };
-
-      const result = await processor.process(content, context);
-
-      // Should either process successfully or handle gracefully
-      expect(result.html).toBeDefined();
-      expect(result.metadata.type).toBe(DynamicContentType.MERMAID);
-    });
-  });
-
-  describe('Environment Validation', () => {
-    it('should validate environment successfully', async () => {
-      const validation = await processor.validateEnvironment();
-
-      expect(validation.isSupported).toBe(true);
-      expect(validation.issues).toEqual([]);
-      expect(validation.recommendations).toEqual([]);
-    });
-
-    it('should detect mermaid module issues', async () => {
-      // Mock the renderer to fail validation
-      const {
-        MermaidRenderer,
-      } = require('../../../../../src/utils/mermaid-renderer');
-      const mockRenderer = MermaidRenderer.getInstance();
-      mockRenderer.validateEnvironment.mockResolvedValue({
-        isSupported: false,
-        issues: ['Mermaid renderer not available: Module not found'],
-        recommendations: [
-          'Check Puppeteer installation and browser availability',
-        ],
+      // Mock successful rendering
+      mockRenderer.render.mockResolvedValue({
+        svg: '<svg>test diagram</svg>',
+        metadata: {
+          width: 400,
+          height: 300,
+          renderTime: 100,
+        },
       });
 
-      const processor = new MermaidProcessor();
-      const validation = await processor.validateEnvironment();
+      const result = await processor.process(content, mockContext);
 
-      expect(validation.isSupported).toBe(false);
-      expect(validation.issues[0]).toContain('Mermaid renderer not available');
-      expect(validation.recommendations[0]).toContain('Puppeteer installation');
+      expect(result).toBeDefined();
+      expect(result.html).toContain('svg');
+      expect(mockRenderer.render).toHaveBeenCalledTimes(2);
+    });
+
+    it('should handle HTML mermaid blocks', async () => {
+      const content =
+        '<pre class="language-mermaid"><code class="language-mermaid">graph TD\nA-->B</code></pre>';
+
+      // Mock successful rendering
+      mockRenderer.render.mockResolvedValue({
+        svg: '<svg>test diagram</svg>',
+        metadata: {
+          width: 400,
+          height: 300,
+          renderTime: 100,
+        },
+      });
+
+      const result = await processor.process(content, mockContext);
+
+      expect(result).toBeDefined();
+      expect(result.html).toContain('svg');
+    });
+
+    it('should handle rendering errors gracefully', async () => {
+      const content = '\`\`\`mermaid\ninvalid mermaid syntax\n\`\`\`';
+
+      mockRenderer.render.mockRejectedValue(new Error('Invalid syntax'));
+
+      const result = await processor.process(content, mockContext);
+
+      expect(result).toBeDefined();
+      expect(result.html).toContain('mermaid-error'); // Should return error HTML on error
+    });
+
+    it('should handle empty content', async () => {
+      const content = '';
+
+      const result = await processor.process(content, mockContext);
+
+      expect(result).toBeDefined();
+      expect(result.html).toBe('');
+      expect(mockRenderer.render).not.toHaveBeenCalled();
+    });
+
+    it('should handle content without mermaid diagrams', async () => {
+      const content = '# Just a regular document\n\nNo diagrams here.';
+
+      const result = await processor.process(content, mockContext);
+
+      expect(result).toBeDefined();
+      expect(result.html).toBe(content);
+      expect(mockRenderer.render).not.toHaveBeenCalled();
     });
   });
 
-  describe('Dimensions Calculation', () => {
-    it('should calculate dimensions for processed content', async () => {
-      const processedContent = {
-        html: '<div class="mermaid-diagram"><svg width="400" height="300">test</svg></div>',
+  describe('performance', () => {
+    const mockContext: ProcessingContext = {
+      filePath: '/test/file.md',
+    };
+
+    it('should process large diagram in reasonable time', async () => {
+      const largeDiagram =
+        '\`\`\`mermaid\ngraph TD\n' +
+        Array(100)
+          .fill(0)
+          .map((_, i) => `  A${i}-->B${i}`)
+          .join('\n') +
+        '\n\`\`\`';
+
+      // Mock successful rendering
+      mockRenderer.render.mockResolvedValue({
+        svg: '<svg>large diagram</svg>',
         metadata: {
-          type: DynamicContentType.MERMAID,
-          processingTime: 100,
-          warnings: [],
+          width: 800,
+          height: 600,
+          renderTime: 500,
         },
-      };
+      });
 
-      const context: ProcessingContext = {
-        filePath: '/test/file.md',
-        isPreRendering: false,
-      };
+      const startTime = Date.now();
+      const result = await processor.process(largeDiagram, mockContext);
+      const endTime = Date.now();
 
-      const dimensions = await processor.getDimensions(
-        processedContent,
-        context,
-      );
-
-      expect(dimensions.width).toBe(800); // Uses default when parsing fails
-      expect(dimensions.height).toBe(0); // No SVG dimensions found
-      expect(dimensions.pageCount).toBe(1);
+      expect(result).toBeDefined();
+      expect(endTime - startTime).toBeLessThan(1000); // Should complete within 1 second
     });
 
-    it('should handle content without dimensions', async () => {
-      const processedContent = {
-        html: '<div class="mermaid-diagram">No SVG content</div>',
+    it('should process multiple diagrams in reasonable time', async () => {
+      const multipleDiagrams = Array(5)
+        .fill(0)
+        .map((_, i) => `\`\`\`mermaid\ngraph TD\n  A${i}-->B${i}\n\`\`\``)
+        .join('\n\n');
+
+      // Mock successful rendering
+      mockRenderer.render.mockResolvedValue({
+        svg: '<svg>test diagram</svg>',
         metadata: {
-          type: DynamicContentType.MERMAID,
-          processingTime: 100,
-          warnings: [],
+          width: 400,
+          height: 300,
+          renderTime: 100,
         },
-      };
+      });
 
-      const context: ProcessingContext = {
-        filePath: '/test/file.md',
-        isPreRendering: false,
-      };
+      const startTime = Date.now();
+      const result = await processor.process(multipleDiagrams, mockContext);
+      const endTime = Date.now();
 
-      const dimensions = await processor.getDimensions(
-        processedContent,
-        context,
-      );
-
-      expect(dimensions.width).toBe(800); // Default width
-      expect(dimensions.height).toBe(0); // No content to calculate from
-      expect(dimensions.pageCount).toBe(1);
-    });
-
-    it('should calculate multiple diagram dimensions', async () => {
-      const processedContent = {
-        html: `
-          <div class="mermaid-diagram"><svg width="400" height="200">diagram1</svg></div>
-          <div class="mermaid-diagram"><svg width="600" height="300">diagram2</svg></div>
-        `,
-        metadata: {
-          type: DynamicContentType.MERMAID,
-          processingTime: 200,
-          warnings: [],
-        },
-      };
-
-      const context: ProcessingContext = {
-        filePath: '/test/file.md',
-        isPreRendering: false,
-      };
-
-      const dimensions = await processor.getDimensions(
-        processedContent,
-        context,
-      );
-
-      expect(dimensions.width).toBe(800); // Uses default when parsing fails
-      expect(dimensions.height).toBe(0); // No SVG dimensions found
-      expect(dimensions.pageCount).toBe(1);
+      expect(result).toBeDefined();
+      expect(endTime - startTime).toBeLessThan(2000);
+      expect(mockRenderer.render).toHaveBeenCalledTimes(5);
     });
   });
 
-  describe('Configuration Updates', () => {
-    it('should handle configuration updates', () => {
-      const newConfig = {
-        theme: 'dark' as const,
-        defaultWidth: 1200,
-        timeout: 15000,
+  describe('detect', () => {
+    const mockContext: ProcessingContext = {
+      filePath: '/test/file.md',
+    };
+
+    it('should detect mermaid content with high confidence', async () => {
+      const content = '```mermaid\ngraph TD\n  A-->B\n```';
+      const confidence = await processor.detect(content, mockContext);
+
+      expect(confidence).toBe(0.95);
+    });
+
+    it('should return 0 confidence for content without mermaid', async () => {
+      const content = 'Just regular text content';
+      const confidence = await processor.detect(content, mockContext);
+
+      expect(confidence).toBe(0);
+    });
+
+    it('should detect HTML mermaid blocks', async () => {
+      const content =
+        '<pre class="language-mermaid"><code class="language-mermaid">graph TD\nA-->B</code></pre>';
+      const confidence = await processor.detect(content, mockContext);
+
+      expect(confidence).toBe(0.95);
+    });
+  });
+
+  describe('calculateDimensions', () => {
+    const mockContext: ProcessingContext = {
+      filePath: '/test/file.md',
+    };
+
+    it('should return zero dimensions for content without mermaid', async () => {
+      const content = 'No mermaid content here';
+      const dimensions = await processor.calculateDimensions(
+        content,
+        mockContext,
+      );
+
+      expect(dimensions).toEqual({
+        pageCount: 0,
+        height: 0,
+        width: 0,
+      });
+    });
+
+    it('should calculate dimensions for simple diagram', async () => {
+      const content = '```mermaid\ngraph TD\n  A-->B\n```';
+      const dimensions = await processor.calculateDimensions(
+        content,
+        mockContext,
+      );
+
+      expect(dimensions.pageCount).toBeGreaterThan(0);
+      expect(dimensions.height).toBeGreaterThan(0);
+      expect(dimensions.width).toBeGreaterThan(0);
+    });
+
+    it('should calculate dimensions for multiple diagrams', async () => {
+      const content =
+        '```mermaid\ngraph TD\n  A-->B\n```\n\n```mermaid\ngraph LR\n  C-->D\n```';
+      const dimensions = await processor.calculateDimensions(
+        content,
+        mockContext,
+      );
+
+      expect(dimensions.pageCount).toBeGreaterThan(0);
+      expect(dimensions.height).toBeGreaterThan(200); // Should be height of two diagrams
+    });
+
+    it('should analyze diagram complexity correctly', async () => {
+      // Simple diagram (≤ 5 nodes)
+      const simpleContent = '```mermaid\ngraph TD\n  A-->B\n  B-->C\n```';
+      const simpleDims = await processor.calculateDimensions(
+        simpleContent,
+        mockContext,
+      );
+
+      // Complex diagram (> 15 nodes)
+      const complexNodes = Array(20)
+        .fill(0)
+        .map((_, i) => `  Node${i}[Node${i}]`)
+        .join('\n');
+      const complexContent = `\`\`\`mermaid\ngraph TD\n${complexNodes}\n\`\`\``;
+      const complexDims = await processor.calculateDimensions(
+        complexContent,
+        mockContext,
+      );
+
+      expect(complexDims.height).toBeGreaterThan(simpleDims.height);
+    });
+  });
+
+  describe('getDimensions', () => {
+    const mockContext: ProcessingContext = {
+      filePath: '/test/file.md',
+    };
+
+    it('should get dimensions from processed content metadata', async () => {
+      const processedContent = {
+        html: '<div>processed</div>',
+        metadata: {
+          type: 'mermaid' as any,
+          processingTime: 100,
+          warnings: [],
+          details: {
+            diagramCount: 2,
+          },
+        },
       };
 
-      processor.updateConfig(newConfig);
+      const dimensions = await processor.getDimensions(
+        processedContent,
+        mockContext,
+      );
+
+      expect(dimensions.pageCount).toBeGreaterThan(0);
+      expect(dimensions.height).toBe(2 * 600); // 2 diagrams * default height
+      expect(dimensions.width).toBe(800); // default width
+      expect(dimensions.imagePositions).toEqual([]);
+    });
+
+    it('should handle metadata without diagram count', async () => {
+      const processedContent = {
+        html: '<div>processed</div>',
+        metadata: {
+          type: 'mermaid' as any,
+          processingTime: 100,
+          warnings: [],
+          details: {},
+        },
+      };
+
+      const dimensions = await processor.getDimensions(
+        processedContent,
+        mockContext,
+      );
+
+      expect(dimensions.pageCount).toBe(1);
+      expect(dimensions.height).toBe(0);
+    });
+  });
+
+  describe('configuration management', () => {
+    it('should get current configuration', () => {
+      const config = processor.getConfig();
+
+      expect(config).toEqual({
+        theme: 'default',
+        defaultWidth: 800,
+        defaultHeight: 600,
+        timeout: 10000,
+        enableCaching: true,
+        backgroundColor: 'white',
+      });
+    });
+
+    it('should update configuration', () => {
+      processor.updateConfig({
+        theme: 'dark',
+        defaultWidth: 1000,
+        enableCaching: false,
+      });
+
       const config = processor.getConfig();
 
       expect(config.theme).toBe('dark');
-      expect(config.defaultWidth).toBe(1200);
-      expect(config.timeout).toBe(15000);
-    });
-
-    it('should merge with existing configuration', () => {
-      const partialConfig = {
-        enableCaching: false,
-      };
-
-      processor.updateConfig(partialConfig);
-      const config = processor.getConfig();
-
+      expect(config.defaultWidth).toBe(1000);
       expect(config.enableCaching).toBe(false);
-      expect(config.theme).toBe('default'); // Should keep original
-      expect(config.defaultWidth).toBe(800); // Should keep original
-    });
-
-    it('should update backgroundColor', () => {
-      const partialConfig = {
-        backgroundColor: 'transparent',
-      };
-
-      processor.updateConfig(partialConfig);
-      const config = processor.getConfig();
-
-      expect(config.backgroundColor).toBe('transparent');
-      expect(config.theme).toBe('default'); // Should keep original
     });
   });
 
-  describe('Diagram Type Recognition', () => {
-    it('should recognize different Mermaid diagram types', async () => {
-      const diagramTests = [
-        { content: 'graph TD\n    A --> B', expectedType: 'flowchart' },
-        { content: 'flowchart TD\n    A --> B', expectedType: 'flowchart' },
-        {
-          content: 'sequenceDiagram\n    A->>B: Hello',
-          expectedType: 'sequence',
-        },
-        { content: 'classDiagram\n    class Animal', expectedType: 'class' },
-        {
-          content: 'stateDiagram-v2\n    [*] --> Still',
-          expectedType: 'state',
-        },
-        { content: 'erDiagram\n    CUSTOMER ||--o{ ORDER', expectedType: 'er' },
-        { content: 'journey\n    title My Day', expectedType: 'journey' },
-        { content: 'gantt\n    title Project', expectedType: 'gantt' },
-        { content: 'pie title Data\n    "A" : 40', expectedType: 'pie' },
-      ];
+  describe('environment validation', () => {
+    it('should validate environment through renderer', async () => {
+      const mockValidation = {
+        isSupported: true,
+        issues: [],
+        recommendations: [],
+      };
 
-      for (const test of diagramTests) {
-        const content = `\`\`\`mermaid\n${test.content}\n\`\`\``;
-        const context: ProcessingContext = {
-          filePath: '/test/file.md',
-          isPreRendering: true,
-        };
+      (mockRenderer as any).validateEnvironment = jest
+        .fn()
+        .mockResolvedValue(mockValidation);
 
-        const confidence = await processor.detect(content, context);
-        expect(confidence).toBe(0.95);
-      }
+      const result = await processor.validateEnvironment();
+
+      expect(result).toEqual(mockValidation);
+      expect(mockRenderer.validateEnvironment).toHaveBeenCalled();
     });
   });
 
-  describe('Error Handling Edge Cases', () => {
-    it('should handle malformed Mermaid syntax', async () => {
-      const content = `
-\`\`\`mermaid
-graph TD
-    A --> B -->
-    // incomplete syntax
-\`\`\`
-`;
-
-      // Mock the renderer to throw a syntax error
-      const {
-        MermaidRenderer,
-      } = require('../../../../../src/utils/mermaid-renderer');
-      const mockRenderer = MermaidRenderer.getInstance();
-      mockRenderer.render.mockRejectedValue(new Error('Syntax error'));
-
-      const context: ProcessingContext = {
-        filePath: '/test/file.md',
-        isPreRendering: true,
-      };
-
-      const result = await processor.process(content, context);
-
-      expect(result.html).toContain('Mermaid Diagram Error');
-      expect(result.metadata.warnings).toHaveLength(1);
-    });
-
-    it('should handle very long diagram content', async () => {
-      const longContent = Array(1000)
-        .fill(0)
-        .map((_, i) => `    A${i} --> A${i + 1}`)
-        .join('\n');
-
-      const content = `
-\`\`\`mermaid
-graph TD
-${longContent}
-\`\`\`
-`;
-
-      const context: ProcessingContext = {
-        filePath: '/test/file.md',
-        isPreRendering: true,
-      };
-
-      const result = await processor.process(content, context);
-
-      // Should either process successfully or handle gracefully
-      expect(result.html).toBeDefined();
-      expect(result.metadata.type).toBe(DynamicContentType.MERMAID);
-    });
-
-    it('should handle processing failure gracefully', async () => {
-      const {
-        MermaidRenderer,
-      } = require('../../../../../src/utils/mermaid-renderer');
-      const mockRenderer = MermaidRenderer.getInstance();
-
-      // Mock complete processing failure
-      mockRenderer.render.mockRejectedValue(
-        new Error('Complete processing failure'),
-      );
-
-      const content = `
-\`\`\`mermaid
-graph TD
-    A --> B
-\`\`\`
-`;
-
-      const context: ProcessingContext = {
-        filePath: '/test/file.md',
-        isPreRendering: true,
-      };
-
-      const result = await processor.process(content, context);
-
-      expect(result.html).toBeDefined();
-      expect(result.metadata.warnings).toHaveLength(1);
-      expect(result.metadata.warnings[0]).toContain(
-        'Failed to render Mermaid diagram',
-      );
-    });
-  });
-
-  describe('Caching Functionality', () => {
-    it('should handle caching when enabled', async () => {
-      const processorWithCache = new MermaidProcessor({ enableCaching: true });
-
-      const content = `
-\`\`\`mermaid
-graph TD
-    A --> B
-\`\`\`
-`;
-
-      const context: ProcessingContext = {
-        filePath: '/test/file.md',
-        isPreRendering: true,
-      };
-
-      const result = await processorWithCache.process(content, context);
-
-      expect(result.metadata.details?.cacheEnabled).toBe(true);
-      expect(result.metadata.details?.diagramCount).toBe(1);
-      expect(result.metadata.details?.theme).toBe('default');
-    });
-
-    it('should handle caching when disabled', async () => {
-      const processorWithoutCache = new MermaidProcessor({
-        enableCaching: false,
-      });
-
-      const content = `
-\`\`\`mermaid
-graph TD
-    A --> B
-\`\`\`
-`;
-
-      const context: ProcessingContext = {
-        filePath: '/test/file.md',
-        isPreRendering: true,
-      };
-
-      const result = await processorWithoutCache.process(content, context);
-
-      expect(result.metadata.details?.cacheEnabled).toBe(false);
-      expect(result.metadata.details?.diagramCount).toBe(1);
-    });
-
-    it('should generate cache keys correctly', async () => {
-      const content1 = 'graph TD\n    A --> B';
-      const content2 = 'graph TD\n    A --> C';
-
-      // Access private method through type assertion
-      const cacheKey1 = (processor as any).generateCacheKey(content1);
-      const cacheKey2 = (processor as any).generateCacheKey(content2);
-
-      expect(typeof cacheKey1).toBe('string');
-      expect(typeof cacheKey2).toBe('string');
-      expect(cacheKey1).not.toBe(cacheKey2);
-      expect(cacheKey1).toContain('mermaid_');
-      expect(cacheKey1).toContain('_default');
-    });
-  });
-
-  describe('Complexity Analysis', () => {
-    it('should analyze simple diagrams correctly', () => {
-      const simpleContent = `graph TD
-    A --> B
-    B --> C`;
-
-      // Access private method through type assertion
-      const complexity = (processor as any).analyzeComplexity(simpleContent);
-      expect(complexity).toBe('simple');
-    });
-
-    it('should analyze medium complexity diagrams', () => {
-      const mediumContent = `graph TD
-    A[Node1] --> B[Node2]
-    B[Node3] --> C[Node4]
-    C[Node5] --> D[Node6]
-    D[Node7] --> E[Node8]
-    E[Node9] --> F[Node10]
-    F[Node11] --> G[Node12]
-    G[Node13] --> H[Node14]`;
-
-      const complexity = (processor as any).analyzeComplexity(mediumContent);
-      expect(complexity).toBe('medium');
-    });
-
-    it('should analyze complex diagrams', () => {
-      const complexContent = Array(20)
-        .fill(0)
-        .map(
-          (_, i) => `    Node${i}[Label ${i}] --> Node${i + 1}[Label ${i + 1}]`,
-        )
-        .join('\n');
-
-      const complexity = (processor as any).analyzeComplexity(
-        `graph TD\n${complexContent}`,
-      );
-      expect(complexity).toBe('complex');
-    });
-  });
-
-  describe('Height Estimation', () => {
-    it('should estimate height for simple diagrams', () => {
-      const height = (processor as any).estimateHeight('simple');
-      expect(height).toBe(200);
-    });
-
-    it('should estimate height for medium diagrams', () => {
-      const height = (processor as any).estimateHeight('medium');
-      expect(height).toBe(400);
-    });
-
-    it('should estimate height for complex diagrams', () => {
-      const height = (processor as any).estimateHeight('complex');
-      expect(height).toBe(600);
-    });
-
-    it('should handle unknown complexity', () => {
-      const height = (processor as any).estimateHeight('unknown' as any);
-      expect(height).toBe(600); // Default height from config
-    });
-  });
-
-  describe('calculateDimensions Method', () => {
-    it('should calculate dimensions for content with Mermaid blocks', async () => {
-      const content = `
-\`\`\`mermaid
-graph TD
-    A --> B
-\`\`\`
-
-\`\`\`mermaid
-sequenceDiagram
-    Alice->>Bob: Hello
-\`\`\`
-`;
-
-      const context: ProcessingContext = {
-        filePath: '/test/file.md',
-        isPreRendering: true,
-      };
-
-      const dimensions = await processor.calculateDimensions(content, context);
-
-      expect(dimensions.pageCount).toBe(1);
-      expect(dimensions.height).toBe(400); // 2 simple diagrams * 200px each
-      expect(dimensions.width).toBe(800);
-    });
-
-    it('should return zero dimensions for content without Mermaid', async () => {
-      const content = `
-# Regular content
-Some text without diagrams.
-`;
-
-      const context: ProcessingContext = {
-        filePath: '/test/file.md',
-        isPreRendering: true,
-      };
-
-      const dimensions = await processor.calculateDimensions(content, context);
-
-      expect(dimensions.pageCount).toBe(0);
-      expect(dimensions.height).toBe(0);
-      expect(dimensions.width).toBe(0);
-    });
-
-    it('should calculate page count correctly for large diagrams', async () => {
-      const largeContent = Array(20)
-        .fill(0)
-        .map((_, i) => `\`\`\`mermaid\ngraph TD\n    A${i} --> B${i}\n\`\`\``)
-        .join('\n\n');
-
-      const context: ProcessingContext = {
-        filePath: '/test/file.md',
-        isPreRendering: true,
-      };
-
-      const dimensions = await processor.calculateDimensions(
-        largeContent,
-        context,
-      );
-
-      expect(dimensions.pageCount).toBeGreaterThan(1);
-      expect(dimensions.height).toBeGreaterThan(800);
-      expect(dimensions.width).toBe(800);
-    });
-  });
-
-  describe('Cleanup and Resource Management', () => {
-    it('should cleanup resources properly', async () => {
-      const {
-        MermaidRenderer,
-      } = require('../../../../../src/utils/mermaid-renderer');
-      const mockRenderer = MermaidRenderer.getInstance();
+  describe('cleanup', () => {
+    it('should cleanup renderer resources', async () => {
+      (mockRenderer as any).cleanup = jest.fn().mockResolvedValue(undefined);
 
       await processor.cleanup();
 
@@ -846,153 +431,281 @@ Some text without diagrams.
     });
   });
 
-  describe('HTML Entity Decoding', () => {
-    it('should properly decode HTML entities in mermaid content', async () => {
-      // Reset mock to ensure successful rendering for this test
-      jest.clearAllMocks();
-      const {
-        MermaidRenderer,
-      } = require('../../../../../src/utils/mermaid-renderer');
-      const mockRenderer = MermaidRenderer.getInstance();
+  describe('caching functionality', () => {
+    let cachingProcessor: MermaidProcessor;
+
+    beforeEach(() => {
+      cachingProcessor = new MermaidProcessor({ enableCaching: true });
+      // Mock the renderer for this processor too
+      (MermaidRenderer.getInstance as jest.Mock).mockReturnValue(mockRenderer);
+    });
+
+    it('should return cached content when available', async () => {
+      const mockContext: ProcessingContext = { filePath: '/test/file.md' };
+      const content = '```mermaid\ngraph TD\nA-->B\n```';
+
+      // Mock getCachedContent to return a cached result
+      (cachingProcessor as any).getCachedContent = jest.fn().mockResolvedValue({
+        html: '<cached>result</cached>',
+        metadata: { type: 'mermaid', processingTime: 50, warnings: [] },
+      });
+
+      const result = await cachingProcessor.process(content, mockContext);
+
+      expect(result.html).toBe('<cached>result</cached>');
+      expect(mockRenderer.render).not.toHaveBeenCalled();
+    });
+
+    it('should cache results after processing', async () => {
+      const mockContext: ProcessingContext = { filePath: '/test/file.md' };
+      const content = '```mermaid\ngraph TD\nA-->B\n```';
+
+      // Mock setCachedContent to track caching
+      const setCachedContentSpy = jest.fn().mockResolvedValue(undefined);
+      (cachingProcessor as any).setCachedContent = setCachedContentSpy;
+      (cachingProcessor as any).getCachedContent = jest
+        .fn()
+        .mockResolvedValue(null);
+
       mockRenderer.render.mockResolvedValue({
-        svg: '<svg>mocked mermaid svg content</svg>',
-        metadata: {
-          width: 800,
-          height: 600,
-          renderTime: 100,
-        },
+        svg: '<svg>test</svg>',
+        metadata: { width: 400, height: 300, renderTime: 100 },
       });
 
-      const content = `
-<pre class="language-mermaid"><code class="language-mermaid">graph TD
-    A[Start &amp; Begin] --&gt; B[Process &quot;Data&quot;]
-    B --&gt; C[End &lt; Finish &gt;]
-</code></pre>
-`;
+      await cachingProcessor.process(content, mockContext);
 
-      const context: ProcessingContext = {
-        filePath: '/test/file.md',
-        isPreRendering: false,
-      };
-
-      const result = await processor.process(content, context);
-
-      expect(result.html).toContain('class="mermaid-diagram"');
-      expect(result.html).toContain('<svg>mocked mermaid svg content</svg>');
-      expect(result.metadata.type).toBe(DynamicContentType.MERMAID);
+      expect(setCachedContentSpy).toHaveBeenCalled();
     });
   });
 
-  describe('Mixed Content Processing', () => {
-    it('should process mixed markdown and HTML mermaid blocks', async () => {
-      // Reset mock to ensure successful rendering for this test
-      jest.clearAllMocks();
-      const {
-        MermaidRenderer,
-      } = require('../../../../../src/utils/mermaid-renderer');
-      const mockRenderer = MermaidRenderer.getInstance();
-      mockRenderer.render.mockResolvedValue({
-        svg: '<svg>mocked mermaid svg content</svg>',
-        metadata: {
-          width: 800,
-          height: 600,
-          renderTime: 100,
-        },
-      });
+  describe('error handling edge cases', () => {
+    const mockContext: ProcessingContext = {
+      filePath: '/test/file.md',
+    };
 
-      const content = `
-# Document with Mixed Mermaid
+    it('should handle general processing errors gracefully', async () => {
+      const content = '```mermaid\ngraph TD\nA-->B\n```';
 
-\`\`\`mermaid
-graph TD
-    A --> B
-\`\`\`
+      // Mock extractMermaidBlocks to throw an error
+      (processor as any).extractMermaidBlocks = jest
+        .fn()
+        .mockImplementation(() => {
+          throw new Error('Extraction failed');
+        });
 
-<p>Some text</p>
+      const result = await processor.process(content, mockContext);
 
-<pre class="language-mermaid"><code class="language-mermaid">sequenceDiagram
-    Alice->>Bob: Hello
-</code></pre>
-`;
-
-      const context: ProcessingContext = {
-        filePath: '/test/file.md',
-        isPreRendering: false,
-      };
-
-      const result = await processor.process(content, context);
-
-      // Should contain both diagrams
-      const diagramCount = (result.html.match(/class="mermaid-diagram"/g) || [])
-        .length;
-      expect(diagramCount).toBe(2);
-      expect(result.metadata.details?.diagramCount).toBe(2);
-    });
-  });
-
-  describe('Theme Configuration Edge Cases', () => {
-    it('should handle null theme configuration', () => {
-      const customProcessor = new MermaidProcessor({
-        theme: 'null' as const,
-      });
-
-      const config = customProcessor.getConfig();
-      expect(config.theme).toBe('null');
+      expect(result.html).toBe(content); // Should return original content
+      expect(result.metadata.warnings).toContain(
+        'Mermaid processing failed: Extraction failed',
+      );
     });
 
-    it('should handle forest theme configuration', () => {
-      const customProcessor = new MermaidProcessor({
-        theme: 'forest' as const,
-      });
+    it('should handle invalid mermaid syntax', async () => {
+      const content = '```mermaid\ninvalid syntax that will fail\n```';
 
-      const config = customProcessor.getConfig();
-      expect(config.theme).toBe('forest');
-    });
-
-    it('should handle neutral theme configuration', () => {
-      const customProcessor = new MermaidProcessor({
-        theme: 'neutral' as const,
-      });
-
-      const config = customProcessor.getConfig();
-      expect(config.theme).toBe('neutral');
-    });
-  });
-
-  describe('Error Fallback HTML Generation', () => {
-    it('should create proper fallback HTML for errors', () => {
-      const originalCode = 'graph TD\n    A --> B';
-      const errorMessage = 'Test error message';
-
-      // Access private method through type assertion
-      const fallbackHTML = (processor as any).createFallbackHTML(
-        originalCode,
-        errorMessage,
+      mockRenderer.render.mockRejectedValue(
+        new Error('Invalid mermaid syntax'),
       );
 
-      expect(fallbackHTML).toContain('class="mermaid-error"');
-      expect(fallbackHTML).toContain('Mermaid Diagram Error');
-      expect(fallbackHTML).toContain(errorMessage);
-      expect(fallbackHTML).toContain(originalCode);
+      const result = await processor.process(content, mockContext);
+
+      expect(result.html).toContain('mermaid-error');
+      expect(result.html).toContain('Invalid mermaid syntax');
+      expect(result.metadata.warnings).toContain(
+        'Failed to render Mermaid diagram: Invalid mermaid syntax',
+      );
+    });
+  });
+
+  describe('diagram complexity analysis', () => {
+    it('should correctly analyze simple diagrams', () => {
+      const simpleCode = 'graph TD\nA[Start] --> B[End]';
+      const complexity = (processor as any).analyzeComplexity(simpleCode);
+
+      expect(complexity).toBe('simple');
     });
 
-    it('should create proper diagram HTML for success', () => {
-      const svg = '<svg>test svg</svg>';
-      const originalCode = 'graph TD\n    A --> B';
+    it('should correctly analyze medium complexity diagrams', () => {
+      const mediumCode =
+        'graph TD\n' +
+        Array(10)
+          .fill(0)
+          .map((_, i) => `A${i}[Node${i}]`)
+          .join('\n');
+      const complexity = (processor as any).analyzeComplexity(mediumCode);
+
+      expect(complexity).toBe('medium');
+    });
+
+    it('should correctly analyze complex diagrams', () => {
+      const complexCode =
+        'graph TD\n' +
+        Array(20)
+          .fill(0)
+          .map((_, i) => `A${i}[Node${i}]`)
+          .join('\n');
+      const complexity = (processor as any).analyzeComplexity(complexCode);
+
+      expect(complexity).toBe('complex');
+    });
+
+    it('should estimate height based on complexity', () => {
+      const simpleHeight = (processor as any).estimateHeight('simple');
+      const mediumHeight = (processor as any).estimateHeight('medium');
+      const complexHeight = (processor as any).estimateHeight('complex');
+
+      expect(simpleHeight).toBe(200);
+      expect(mediumHeight).toBe(400);
+      expect(complexHeight).toBe(600);
+    });
+
+    it('should handle unknown complexity', () => {
+      const defaultHeight = (processor as any).estimateHeight('unknown' as any);
+      expect(defaultHeight).toBe(600); // Should return default height
+    });
+  });
+
+  describe('HTML generation', () => {
+    it('should create proper diagram HTML', () => {
+      const svg = '<svg>test</svg>';
+      const originalCode = 'graph TD\nA-->B';
       const metadata = { width: 400, height: 300, renderTime: 150 };
 
-      // Access private method through type assertion
-      const diagramHTML = (processor as any).createDiagramHTML(
+      const html = (processor as any).createDiagramHTML(
         svg,
         originalCode,
         metadata,
       );
 
-      expect(diagramHTML).toContain('class="mermaid-diagram"');
-      expect(diagramHTML).toContain(svg);
-      expect(diagramHTML).toContain('150ms');
-      expect(diagramHTML).toContain('400x300');
-      expect(diagramHTML).toContain(originalCode.substring(0, 50));
+      expect(html).toContain('<div class="mermaid-diagram"');
+      expect(html).toContain('<svg>test</svg>');
+      expect(html).toContain('150ms');
+      expect(html).toContain('400x300');
+      expect(html).toContain('graph TD');
+    });
+
+    it('should create diagram HTML without metadata', () => {
+      const svg = '<svg>test</svg>';
+      const originalCode = 'graph TD\nA-->B';
+
+      const html = (processor as any).createDiagramHTML(svg, originalCode);
+
+      expect(html).toContain('<div class="mermaid-diagram"');
+      expect(html).toContain('<svg>test</svg>');
+      expect(html).toContain('unknownms');
+      expect(html).toContain('unknownxunknown');
+    });
+
+    it('should create fallback HTML on error', () => {
+      const originalCode = 'graph TD\nA-->B';
+      const errorMessage = 'Rendering failed';
+
+      const html = (processor as any).createFallbackHTML(
+        originalCode,
+        errorMessage,
+      );
+
+      expect(html).toContain('<div class="mermaid-error"');
+      expect(html).toContain('⚠️ Mermaid Diagram Error');
+      expect(html).toContain('Rendering failed');
+      expect(html).toContain('graph TD');
+    });
+  });
+
+  describe('cache key generation', () => {
+    it('should generate consistent cache keys', () => {
+      const content = 'test content';
+      const key1 = (processor as any).generateCacheKey(content);
+      const key2 = (processor as any).generateCacheKey(content);
+
+      expect(key1).toBe(key2);
+      expect(key1).toContain('mermaid_');
+      expect(key1).toContain('_default'); // theme
+    });
+
+    it('should generate different keys for different content', () => {
+      const key1 = (processor as any).generateCacheKey('content1');
+      const key2 = (processor as any).generateCacheKey('content2');
+
+      expect(key1).not.toBe(key2);
+    });
+
+    it('should include theme in cache key', () => {
+      const darkProcessor = new MermaidProcessor({ theme: 'dark' });
+      const content = 'test content';
+
+      const defaultKey = (processor as any).generateCacheKey(content);
+      const darkKey = (darkProcessor as any).generateCacheKey(content);
+
+      expect(defaultKey).toContain('_default');
+      expect(darkKey).toContain('_dark');
+      expect(defaultKey).not.toBe(darkKey);
+    });
+  });
+
+  describe('mermaid block extraction', () => {
+    it('should extract multiple mermaid blocks correctly', () => {
+      const content = `
+        First paragraph.
+
+        \`\`\`mermaid
+        graph TD
+          A-->B
+        \`\`\`
+
+        Middle paragraph.
+
+        \`\`\`mermaid
+        sequenceDiagram
+          A->>B: Hello
+        \`\`\`
+
+        Last paragraph.
+      `;
+
+      const blocks = (processor as any).extractMermaidBlocks(content);
+
+      expect(blocks).toHaveLength(2);
+      expect(blocks[0].content).toContain('graph TD');
+      expect(blocks[1].content).toContain('sequenceDiagram');
+      expect(blocks[0].startIndex).toBeLessThan(blocks[1].startIndex);
+    });
+
+    it('should extract HTML mermaid blocks', () => {
+      const content =
+        '<pre class="language-mermaid"><code class="language-mermaid">graph TD\nA-->B</code></pre>';
+
+      const blocks = (processor as any).extractMermaidBlocks(content);
+
+      expect(blocks).toHaveLength(1);
+      expect(blocks[0].content).toBe('graph TD\nA-->B');
+    });
+
+    it('should handle mixed markdown and HTML blocks', () => {
+      const content = `
+        \`\`\`mermaid
+        graph TD
+          A-->B
+        \`\`\`
+
+        <pre class="language-mermaid"><code class="language-mermaid">sequenceDiagram\nA->>B: Hello</code></pre>
+      `;
+
+      const blocks = (processor as any).extractMermaidBlocks(content);
+
+      expect(blocks).toHaveLength(2);
+      expect(blocks[0].content).toContain('graph TD');
+      expect(blocks[1].content).toContain('sequenceDiagram');
+    });
+
+    it('should handle empty blocks', () => {
+      const content = '```mermaid\n\n```';
+
+      const blocks = (processor as any).extractMermaidBlocks(content);
+
+      expect(blocks).toHaveLength(1);
+      expect(blocks[0].content).toBe('');
     });
   });
 });

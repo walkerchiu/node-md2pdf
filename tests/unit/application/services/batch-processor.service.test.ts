@@ -720,6 +720,147 @@ describe('BatchProcessorService', () => {
       }
     });
 
+    it('should handle different filename formats with files', async () => {
+      // Mock FileCollector to return a test file
+      const testFile = {
+        inputPath: '/project/test.md',
+        outputPath: '/output/test.pdf',
+        relativeInputPath: 'test.md',
+        size: 100,
+        lastModified: new Date(),
+      };
+
+      const mockFileCollector = {
+        collectFiles: jest.fn().mockResolvedValue([testFile]),
+      };
+      (service as unknown as ServiceWithCollector).fileCollector =
+        mockFileCollector;
+
+      const mockResult: TestFileProcessingResult = {
+        inputPath: '/project/test.md',
+        outputPath: '/output/test.pdf',
+        success: true,
+        processingTime: 10,
+        fileSize: 100,
+      };
+
+      mockFileProcessorService.processFile.mockResolvedValue(
+        JSON.parse(JSON.stringify(mockResult)) as unknown as ProcessFileReturn,
+      );
+
+      // Test with_timestamp format
+      const timestampConfig = {
+        ...sampleBatchConfig,
+        filenameFormat: BatchFilenameFormat.WITH_TIMESTAMP,
+      };
+      const timestampResult = (await service.processBatch(
+        timestampConfig,
+      )) as unknown as TestBatchProcessingResult;
+      expect(timestampResult.success).toBe(true);
+      expect(timestampResult.successfulFiles).toBe(1);
+
+      // Test with_date format
+      const dateConfig = {
+        ...sampleBatchConfig,
+        filenameFormat: BatchFilenameFormat.WITH_DATE,
+      };
+      const dateResult = (await service.processBatch(
+        dateConfig,
+      )) as unknown as TestBatchProcessingResult;
+      expect(dateResult.success).toBe(true);
+      expect(dateResult.successfulFiles).toBe(1);
+
+      // Test custom format
+      const customConfig = {
+        ...sampleBatchConfig,
+        filenameFormat: BatchFilenameFormat.CUSTOM,
+        customFilenamePattern: '{name}_{timestamp}_{date}',
+      };
+      const customResult = (await service.processBatch(
+        customConfig,
+      )) as unknown as TestBatchProcessingResult;
+      expect(customResult.success).toBe(true);
+      expect(customResult.successfulFiles).toBe(1);
+    });
+
+    it('should handle preserveDirectoryStructure setting', async () => {
+      const testFile = {
+        inputPath: '/project/subdir/test.md',
+        outputPath: '/output/subdir/test.pdf',
+        relativeInputPath: 'subdir/test.md',
+        size: 100,
+        lastModified: new Date(),
+      };
+
+      const mockFileCollector = {
+        collectFiles: jest.fn().mockResolvedValue([testFile]),
+      };
+      (service as unknown as ServiceWithCollector).fileCollector =
+        mockFileCollector;
+
+      const mockResult: TestFileProcessingResult = {
+        inputPath: '/project/subdir/test.md',
+        outputPath: '/output/subdir/test.pdf',
+        success: true,
+        processingTime: 10,
+        fileSize: 100,
+      };
+
+      mockFileProcessorService.processFile.mockResolvedValue(
+        JSON.parse(JSON.stringify(mockResult)) as unknown as ProcessFileReturn,
+      );
+
+      // Test preserveDirectoryStructure: true
+      const preserveConfig = {
+        ...sampleBatchConfig,
+        preserveDirectoryStructure: true,
+      };
+      const result = (await service.processBatch(
+        preserveConfig,
+      )) as unknown as TestBatchProcessingResult;
+      expect(result.success).toBe(true);
+      expect(result.successfulFiles).toBe(1);
+    });
+
+    it('should handle missing outputDirectory', async () => {
+      const testFile = {
+        inputPath: '/project/test.md',
+        outputPath: '/project/test.pdf',
+        relativeInputPath: 'test.md',
+        size: 100,
+        lastModified: new Date(),
+      };
+
+      const mockFileCollector = {
+        collectFiles: jest.fn().mockResolvedValue([testFile]),
+      };
+      (service as unknown as ServiceWithCollector).fileCollector =
+        mockFileCollector;
+
+      const mockResult: TestFileProcessingResult = {
+        inputPath: '/project/test.md',
+        outputPath: '/project/test.pdf',
+        success: true,
+        processingTime: 10,
+        fileSize: 100,
+      };
+
+      mockFileProcessorService.processFile.mockResolvedValue(
+        JSON.parse(JSON.stringify(mockResult)) as unknown as ProcessFileReturn,
+      );
+
+      // Test without outputDirectory
+      const noOutputDirConfig = {
+        ...sampleBatchConfig,
+        outputDirectory: '',
+      };
+      const result = (await service.processBatch(
+        noOutputDirConfig,
+      )) as unknown as TestBatchProcessingResult;
+      expect(result.success).toBe(true);
+      expect(result.successfulFiles).toBe(1);
+    });
+
     it('should handle various concurrency settings', async () => {
       const concurrencySettings = [1, 2, 3, 4, 5];
 

@@ -406,6 +406,22 @@ More content here.`;
       // Restore original method
       parser.parse = originalParse;
     });
+
+    it('should handle non-Error exceptions in validation', () => {
+      // Mock the parse method to throw a non-Error object
+      const originalParse = parser.parse;
+      parser.parse = jest.fn().mockImplementation(() => {
+        throw 'String error in validation'; // Non-Error exception
+      });
+
+      const validation = parser.validate('invalid content');
+
+      expect(validation.isValid).toBe(false);
+      expect(validation.errors).toContain('Unknown parsing error');
+
+      // Restore original method
+      parser.parse = originalParse;
+    });
   });
 
   describe('Slugify function', () => {

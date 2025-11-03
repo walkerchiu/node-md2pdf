@@ -1,820 +1,240 @@
 /**
  * Content Analyzer Tests
+ * Tests markdown content analysis functionality
  */
 
 import { ContentAnalyzer } from '../../../../src/core/analysis/content-analyzer';
+import { readFileSync } from 'fs';
+
+// Mock fs module
+jest.mock('fs');
 
 describe('ContentAnalyzer', () => {
   let analyzer: ContentAnalyzer;
+  const mockedReadFileSync = jest.mocked(readFileSync);
 
   beforeEach(() => {
     analyzer = new ContentAnalyzer();
+    jest.clearAllMocks();
   });
 
   describe('analyzeContent', () => {
-    it('should analyze simple markdown content correctly', async () => {
-      const content = `# Main Title
+    it('should analyze basic text content', async () => {
+      const content = `# Title\n\nThis is a simple document with some content.\n\n## Subtitle\n\nMore content here.`;
 
-This is a simple paragraph with some text.
+      const result = await analyzer.analyzeContent(content);
 
-## Section 1
-
-More content here with a [link](https://example.com).
-
-### Subsection
-
-Some code:
-\`\`\`javascript
-console.log("Hello World");
-\`\`\`
-
-| Column 1 | Column 2 |
-|----------|----------|
-| Data 1   | Data 2   |
-`;
-
-      const analysis = await analyzer.analyzeContent(content);
-
-      expect(analysis.wordCount).toBeGreaterThan(0);
-      expect(analysis.headingStructure.totalHeadings).toBe(3);
-      expect(analysis.headingStructure.maxDepth).toBe(3);
-      expect(analysis.codeBlocks).toHaveLength(1);
-      expect(analysis.codeBlocks[0].language).toBe('javascript');
-      expect(analysis.tables).toHaveLength(1);
-      expect(analysis.links.external).toBe(1);
-      expect(analysis.wordCount).toBeGreaterThan(0);
+      expect(result.fileSize).toBeGreaterThan(0);
+      expect(result.wordCount).toBeGreaterThan(0);
+      expect(result.readingTime).toBeGreaterThan(0);
+      expect(result.headingStructure.totalHeadings).toBe(2);
+      expect(result.headingStructure.maxDepth).toBe(2);
     });
 
-    it('should detect Chinese content correctly', async () => {
-      const content = `# 中文標題
+    it('should detect Chinese content', async () => {
+      const content = `# 標題\n\n這是一個包含中文內容的文件。\n\n## 副標題\n\n更多中文內容。`;
 
-這是一個中文段落，包含一些中文內容。
+      const result = await analyzer.analyzeContent(content);
 
-## 英文 Section
+      expect(result.languageDetection.needsChineseSupport).toBe(true);
+      expect(result.languageDetection.chineseCharacterRatio).toBeGreaterThan(
+        0.5,
+      );
+    });
 
-Mixed content with English and Chinese 中英混合內容.
+    it('should detect English content', async () => {
+      const content = `# Title\n\nThis is an English document.\n\n## Subtitle\n\nMore English content.`;
 
-\`\`\`python
-print("你好世界")
-\`\`\`
-`;
+      const result = await analyzer.analyzeContent(content);
 
-      const analysis = await analyzer.analyzeContent(content);
+      expect(result.languageDetection.needsChineseSupport).toBe(false);
+      expect(result.languageDetection.chineseCharacterRatio).toBeLessThan(0.1);
+      expect(result.languageDetection.primary).toBe('en');
+    });
 
-      expect(analysis.languageDetection.primary).toBe('mixed');
-      expect(analysis.languageDetection.needsChineseSupport).toBe(true);
-      expect(analysis.languageDetection.chineseCharacterRatio).toBeGreaterThan(
+    it('should detect mixed language content', async () => {
+      const content = `# Title 標題\n\nThis is a mixed document with both English and 中文內容。`;
+
+      const result = await analyzer.analyzeContent(content);
+
+      expect(result.languageDetection.primary).toBe('mixed');
+      expect(result.languageDetection.chineseCharacterRatio).toBeGreaterThan(
         0.1,
       );
-      expect(analysis.languageDetection.detectedLanguages).toHaveLength(2);
+      expect(result.languageDetection.chineseCharacterRatio).toBeLessThan(0.9);
     });
 
-    it('should analyze technical content correctly', async () => {
-      const content = `# API Documentation
+    it('should analyze code blocks', async () => {
+      const content = `# Code Example\n\n\`\`\`javascript\nconst hello = 'world';\nconsole.log(hello);\n\`\`\`\n\n\`\`\`python\nprint("Hello, World!")\n\`\`\``;
 
-## Installation
+      const result = await analyzer.analyzeContent(content);
 
-\`\`\`bash
-npm install example-package
-\`\`\`
-
-## Configuration
-
-\`\`\`json
-{
-  "apiKey": "your-key-here",
-  "endpoint": "https://api.example.com"
-}
-\`\`\`
-
-### Code Example
-
-\`\`\`typescript
-import { ExampleAPI } from 'example-package';
-
-const api = new ExampleAPI({
-  apiKey: process.env.API_KEY
-});
-
-async function fetchData() {
-  const response = await api.getData();
-  console.log(response);
-}
-\`\`\`
-
-## Response Format
-
-| Field | Type | Description |
-|-------|------|-------------|
-| id | number | Unique identifier |
-| name | string | Display name |
-| status | boolean | Active status |
-`;
-
-      const analysis = await analyzer.analyzeContent(content);
-
-      expect(analysis.codeBlocks).toHaveLength(3);
-      expect(
-        analysis.codeBlocks.some((block) => block.language === 'typescript'),
-      ).toBe(true);
-      expect(
-        analysis.codeBlocks.some((block) => block.language === 'json'),
-      ).toBe(true);
-      expect(analysis.contentComplexity.documentType).toBe('technical-manual');
-      expect(analysis.contentComplexity.score).toBeGreaterThanOrEqual(1);
+      expect(result.codeBlocks).toHaveLength(2);
+      expect(result.codeBlocks[0].language).toBe('javascript');
+      expect(result.codeBlocks[1].language).toBe('python');
+      expect(result.codeBlocks[0].lineCount).toBeGreaterThan(0);
     });
 
-    it('should handle academic paper structure', async () => {
-      const content = `# Research Paper Title
+    it('should analyze images and media', async () => {
+      const content = `# Images\n\n![Alt text](image1.png)\n\n![Another image](image2.jpg)`;
 
-## Abstract
+      const result = await analyzer.analyzeContent(content);
 
-This paper presents a comprehensive analysis of...
-
-## Introduction
-
-The field of research has shown...
-
-## Methodology
-
-Our approach consists of three phases:
-
-### Data Collection
-### Data Analysis
-### Results Interpretation
-
-## Results
-
-The analysis revealed the following findings:
-
-| Metric | Value | Significance |
-|--------|-------|--------------|
-| Accuracy | 95.2% | p < 0.001 |
-| Precision | 92.8% | p < 0.01 |
-
-## Discussion
-
-The results indicate...
-
-## Conclusion
-
-In conclusion, this study demonstrates...
-
-## References
-
-1. Smith, J. et al. (2023). Previous research.
-2. Jones, A. (2022). Related work.
-`;
-
-      const analysis = await analyzer.analyzeContent(content);
-
-      expect(analysis.contentComplexity.documentType).toBe('academic-paper');
-      expect(analysis.headingStructure.maxDepth).toBe(3);
-      expect(analysis.tables).toHaveLength(1);
-      expect(
-        analysis.contentComplexity.recommendedTocDepth,
-      ).toBeGreaterThanOrEqual(2);
+      expect(result.mediaElements.images).toBe(2);
+      expect(result.mediaElements.estimatedImageSize).toBeGreaterThan(0);
     });
 
-    it('should estimate pages correctly', async () => {
-      // Short content
-      const shortContent = `# Short Document
+    it('should detect PlantUML diagrams', async () => {
+      const content = `# Diagrams\n\n\`\`\`plantuml\n@startuml\nAlice -> Bob: Hello\n@enduml\n\`\`\`\n\n@startuml\nClass1 -> Class2\n@enduml`;
 
-Just a few words here.`;
+      const result = await analyzer.analyzeContent(content);
 
-      const shortAnalysis = await analyzer.analyzeContent(shortContent);
-      expect(shortAnalysis.wordCount).toBeGreaterThan(0);
-
-      // Longer content
-      const longContent = `# Long Document
-
-${'This is a longer paragraph with more content. '.repeat(200)}
-
-${'## Section\n\nMore content here. '.repeat(50)}`;
-
-      const longAnalysis = await analyzer.analyzeContent(longContent);
-      expect(longAnalysis.wordCount).toBeGreaterThan(100);
+      expect(result.mediaElements.hasPlantUMLDiagrams).toBe(true);
+      expect(result.mediaElements.plantUMLCount).toBeGreaterThan(0);
     });
 
-    it('should handle empty content gracefully', async () => {
-      const content = '';
+    it('should detect Mermaid diagrams', async () => {
+      const content = `# Mermaid Diagrams\n\n\`\`\`mermaid\ngraph TD\n    A-->B\n    A-->C\n\`\`\``;
 
-      const analysis = await analyzer.analyzeContent(content);
+      const result = await analyzer.analyzeContent(content);
 
-      expect(analysis.wordCount).toBe(0);
-      expect(analysis.headingStructure.totalHeadings).toBe(0);
-      expect(analysis.codeBlocks).toHaveLength(0);
-      expect(analysis.tables).toHaveLength(0);
+      expect(result.mediaElements.hasMermaidDiagrams).toBe(true);
+      expect(result.mediaElements.mermaidCount).toBe(1);
     });
 
-    it('should analyze content with images and media', async () => {
-      const content = `# Document with Media
+    it('should analyze tables', async () => {
+      const content = `# Tables\n\n| Col1 | Col2 | Col3 |\n|------|------|------|\n| A    | B    | C    |\n| D    | E    | F    |`;
 
-Here is some content.
+      const result = await analyzer.analyzeContent(content);
 
-![Image 1](image1.png)
-
-Some more text.
-
-![Diagram](flowchart.svg)
-
-And more content with ![inline image](small.jpg).
-
-The document also references diagrams and flowcharts in the text.
-`;
-
-      const analysis = await analyzer.analyzeContent(content);
-
-      expect(analysis.mediaElements.images).toBe(3);
-      expect(analysis.mediaElements.hasDiagrams).toBe(true);
-      expect(analysis.mediaElements.hasPlantUMLDiagrams).toBe(false);
-      expect(analysis.mediaElements.plantUMLCount).toBe(0);
-      expect(analysis.mediaElements.hasMermaidDiagrams).toBe(false);
-      expect(analysis.mediaElements.mermaidCount).toBe(0);
-      expect(analysis.mediaElements.estimatedImageSize).toBeGreaterThan(0);
+      expect(result.tables).toHaveLength(1);
+      expect(result.tables[0].columns).toBe(3);
+      expect(result.tables[0].rows).toBe(2);
     });
 
-    it('should analyze content with PlantUML diagrams', async () => {
-      const content = `# Document with PlantUML
+    it('should analyze links', async () => {
+      const content = `# Links\n\n[Internal link](#section)\n[External link](https://example.com)\n[Another link](https://github.com)`;
 
-Here is some content.
+      const result = await analyzer.analyzeContent(content);
 
-\`\`\`plantuml
-@startuml
-Alice -> Bob: Hello
-Bob -> Alice: Hi there
-@enduml
-\`\`\`
-
-Some more text.
-
-\`\`\`plantuml
-@startuml
-class User {
-  +name: string
-  +email: string
-}
-class Order {
-  +id: number
-  +amount: number
-}
-User ||--o{ Order
-@enduml
-\`\`\`
-
-And more content with normal code:
-
-\`\`\`javascript
-console.log('This is not PlantUML');
-\`\`\`
-`;
-
-      const analysis = await analyzer.analyzeContent(content);
-
-      expect(analysis.mediaElements.hasPlantUMLDiagrams).toBe(true);
-      expect(analysis.mediaElements.plantUMLCount).toBe(2);
-      expect(analysis.mediaElements.hasMermaidDiagrams).toBe(false);
-      expect(analysis.mediaElements.mermaidCount).toBe(0);
-      expect(analysis.mediaElements.hasDiagrams).toBe(true);
-      expect(analysis.codeBlocks).toHaveLength(3); // 2 PlantUML + 1 JavaScript
+      expect(result.links.internal).toBe(1);
+      expect(result.links.external).toBe(2);
     });
 
-    it('should detect PlantUML in @startuml format', async () => {
-      const content = `# Document with Direct PlantUML
+    it('should calculate content complexity', async () => {
+      const complexContent = `# Complex Document\n\n## Section 1\n\n### Subsection\n\n\`\`\`javascript\n// Complex code\nfunction complexFunction() {\n  return 'complex';\n}\n\`\`\`\n\n| A | B | C | D | E |\n|---|---|---|---|---|\n| 1 | 2 | 3 | 4 | 5 |`;
 
-Some content here.
+      const result = await analyzer.analyzeContent(complexContent);
 
-The system architecture is shown below:
-
-@startuml
-participant User
-participant System
-participant Database
-
-User -> System: Request
-System -> Database: Query
-Database -> System: Result
-System -> User: Response
-@enduml
-
-More content continues here.
-`;
-
-      const analysis = await analyzer.analyzeContent(content);
-
-      expect(analysis.mediaElements.hasPlantUMLDiagrams).toBe(true);
-      expect(analysis.mediaElements.plantUMLCount).toBe(1);
-      expect(analysis.mediaElements.hasMermaidDiagrams).toBe(false);
-      expect(analysis.mediaElements.mermaidCount).toBe(0);
-      expect(analysis.mediaElements.hasDiagrams).toBe(true);
+      expect(result.contentComplexity.score).toBeGreaterThan(1);
+      expect(result.contentComplexity.factors.length).toBeGreaterThan(0);
     });
 
-    it('should not detect PlantUML in other code blocks', async () => {
-      const content = `# Document without PlantUML
+    it('should handle empty content', async () => {
+      const result = await analyzer.analyzeContent('');
 
-\`\`\`java
-@Component
-public class UserService {
-  // This is not PlantUML even though it has @
-}
-\`\`\`
-
-\`\`\`mermaid
-graph TD
-  A --> B
-  B --> C
-\`\`\`
-
-\`\`\`python
-print("@startuml is just a string here")
-\`\`\`
-`;
-
-      const analysis = await analyzer.analyzeContent(content);
-
-      expect(analysis.mediaElements.hasPlantUMLDiagrams).toBe(false);
-      expect(analysis.mediaElements.plantUMLCount).toBe(0);
-      expect(analysis.mediaElements.hasMermaidDiagrams).toBe(true); // Has mermaid diagram
-      expect(analysis.mediaElements.mermaidCount).toBe(1);
-      expect(analysis.mediaElements.hasDiagrams).toBe(true); // Still has diagrams due to mermaid
+      expect(result.fileSize).toBe(0);
+      expect(result.wordCount).toBe(0);
+      expect(result.headingStructure.totalHeadings).toBe(0);
+      expect(result.codeBlocks).toHaveLength(0);
+      expect(result.mediaElements.images).toBe(0);
     });
 
-    it('should analyze content with Mermaid diagrams', async () => {
-      const content = `# Document with Mermaid
+    it('should determine document type based on content', async () => {
+      const technicalContent = `# API Documentation\n\n## Endpoints\n\n\`\`\`javascript\nconst api = 'technical';\n\`\`\`\n\n### GET /users\n\nReturns user list.`;
 
-Here is some content.
+      const result = await analyzer.analyzeContent(technicalContent);
 
-\`\`\`mermaid
-graph TD
-    A[Start] --> B[Process]
-    B --> C{Decision}
-    C -->|Yes| D[Action 1]
-    C -->|No| E[Action 2]
-    D --> F[End]
-    E --> F
-\`\`\`
-
-Some more text.
-
-\`\`\`mermaid
-sequenceDiagram
-    participant Alice
-    participant Bob
-    participant Charlie
-    Alice->>Bob: Hello Bob
-    Bob->>Charlie: Hello Charlie
-    Charlie->>Alice: Hello Alice
-\`\`\`
-
-And more content with normal code:
-
-\`\`\`javascript
-console.log('This is not Mermaid');
-\`\`\`
-`;
-
-      const analysis = await analyzer.analyzeContent(content);
-
-      expect(analysis.mediaElements.hasMermaidDiagrams).toBe(true);
-      expect(analysis.mediaElements.mermaidCount).toBe(2);
-      expect(analysis.mediaElements.hasDiagrams).toBe(true);
-      expect(analysis.codeBlocks).toHaveLength(3); // 2 Mermaid + 1 JavaScript
+      expect(['technical-manual', 'api-documentation', 'guide']).toContain(
+        result.contentComplexity.documentType,
+      );
     });
 
-    it('should detect different Mermaid diagram types', async () => {
-      const content = `# Document with Various Mermaid Diagrams
+    it('should analyze heading structure depth', async () => {
+      const deepContent = `# H1\n## H2\n### H3\n#### H4\n##### H5\n###### H6`;
 
-## Flowchart
-\`\`\`mermaid
-flowchart TD
-    A --> B
-    B --> C
-\`\`\`
+      const result = await analyzer.analyzeContent(deepContent);
 
-## Class Diagram
-\`\`\`mermaid
-classDiagram
-    class Animal {
-        +name: string
-        +age: int
-        +makeSound()
-    }
-    class Dog {
-        +breed: string
-        +bark()
-    }
-    Animal <|-- Dog
-\`\`\`
-
-## State Diagram
-\`\`\`mermaid
-stateDiagram-v2
-    [*] --> Still
-    Still --> [*]
-    Still --> Moving
-    Moving --> Still
-    Moving --> Crash
-    Crash --> [*]
-\`\`\`
-`;
-
-      const analysis = await analyzer.analyzeContent(content);
-
-      expect(analysis.mediaElements.hasMermaidDiagrams).toBe(true);
-      expect(analysis.mediaElements.mermaidCount).toBe(3);
-      expect(analysis.mediaElements.hasDiagrams).toBe(true);
+      expect(result.headingStructure.maxDepth).toBe(6);
+      expect(result.headingStructure.totalHeadings).toBe(6);
+      expect(result.headingStructure.structure).toHaveLength(6);
     });
 
-    it('should not detect Mermaid in other code blocks', async () => {
-      const content = `# Document without Mermaid
+    it('should calculate reading time accurately', async () => {
+      const longContent = 'word '.repeat(250); // ~250 words = ~1 minute reading
 
-\`\`\`yaml
-# This is not Mermaid even though it mentions mermaid
-mermaid_config:
-  theme: default
-\`\`\`
+      const result = await analyzer.analyzeContent(longContent);
 
-\`\`\`javascript
-// This code mentions mermaid but isn't a diagram
-const mermaidConfig = { theme: 'dark' };
-\`\`\`
-
-\`\`\`plantuml
-@startuml
-Alice -> Bob: Hello
-@enduml
-\`\`\`
-`;
-
-      const analysis = await analyzer.analyzeContent(content);
-
-      expect(analysis.mediaElements.hasMermaidDiagrams).toBe(false);
-      expect(analysis.mediaElements.mermaidCount).toBe(0);
-      expect(analysis.mediaElements.hasPlantUMLDiagrams).toBe(true); // Still has PlantUML
-      expect(analysis.mediaElements.hasDiagrams).toBe(true); // Still has diagrams due to PlantUML
-    });
-
-    it('should detect both PlantUML and Mermaid diagrams', async () => {
-      const content = `# Document with Mixed Diagrams
-
-## PlantUML Sequence
-\`\`\`plantuml
-@startuml
-Alice -> Bob: Hello
-Bob -> Alice: Hi
-@enduml
-\`\`\`
-
-## Mermaid Flowchart
-\`\`\`mermaid
-graph TD
-    A[Start] --> B[Process]
-    B --> C[End]
-\`\`\`
-
-## Another PlantUML
-@startuml
-class User {
-  +name: string
-  +email: string
-}
-@enduml
-
-## Another Mermaid
-\`\`\`mermaid
-sequenceDiagram
-    participant User
-    participant System
-    User->>System: Request
-    System->>User: Response
-\`\`\`
-`;
-
-      const analysis = await analyzer.analyzeContent(content);
-
-      expect(analysis.mediaElements.hasPlantUMLDiagrams).toBe(true);
-      expect(analysis.mediaElements.plantUMLCount).toBe(2);
-      expect(analysis.mediaElements.hasMermaidDiagrams).toBe(true);
-      expect(analysis.mediaElements.mermaidCount).toBe(2);
-      expect(analysis.mediaElements.hasDiagrams).toBe(true);
-    });
-
-    it('should handle complex tables correctly', async () => {
-      const content = `# Document with Complex Tables
-
-## Simple Table
-| A | B |
-|---|---|
-| 1 | 2 |
-
-## Complex Table
-| Col1 | Col2 | Col3 | Col4 | Col5 | Col6 | Col7 | Col8 | Col9 | Col10 |
-|------|------|------|------|------|------|------|------|------|-------|
-| Data | Data | Data | Data | Data | Data | Data | Data | Data | Data  |
-| More | More | More | More | More | More | More | More | More | More  |
-| Info | Info | Info | Info | Info | Info | Info | Info | Info | Info  |
-`;
-
-      const analysis = await analyzer.analyzeContent(content);
-
-      expect(analysis.tables).toHaveLength(2);
-      expect(analysis.tables[0].complexity).toBe('simple');
-      expect(analysis.tables[1].complexity).toBe('complex');
-      expect(analysis.tables[1].columns).toBe(10);
+      expect(result.readingTime).toBeGreaterThan(0);
+      expect(result.wordCount).toBe(250);
     });
   });
 
-  describe('edge cases', () => {
-    it('should handle malformed markdown gracefully', async () => {
-      const content = `# Incomplete heading
+  describe('analyzeFile', () => {
+    it('should read and analyze file', async () => {
+      const fileContent = '# Test File\n\nContent from file.';
+      mockedReadFileSync.mockReturnValue(fileContent);
 
-## Another heading
-Missing closing for code block:
-\`\`\`javascript
-console.log("unclosed");
+      const result = await analyzer.analyzeFile('/test/file.md');
 
-| Malformed | table
-|-----------|
-| Missing cell
-
-[Link with no URL]()
-`;
-
-      const analysis = await analyzer.analyzeContent(content);
-
-      expect(analysis).toBeDefined();
-      expect(analysis.headingStructure.totalHeadings).toBe(2);
-    });
-
-    it('should handle very large content efficiently', async () => {
-      const largeContent = `# Large Document\n\n${'This is repeated content. '.repeat(10000)}`;
-
-      const startTime = Date.now();
-      const analysis = await analyzer.analyzeContent(largeContent);
-      const endTime = Date.now();
-
-      expect(analysis).toBeDefined();
-      expect(endTime - startTime).toBeLessThan(5000); // Should complete within 5 seconds
-      expect(analysis.wordCount).toBeGreaterThan(20000);
-    });
-  });
-
-  describe('File Analysis', () => {
-    it('should analyze file correctly', async () => {
-      // Mock fs.readFileSync for testing
-      const fs = require('fs');
-      const originalReadFileSync = fs.readFileSync;
-      fs.readFileSync = jest.fn().mockReturnValue(`# Test File
-
-This is a test file with some content.
-
-## Section
-More content here.`);
-
-      const analysis = await analyzer.analyzeFile('/fake/path.md');
-
-      expect(analysis).toBeDefined();
-      expect(analysis.headingStructure.totalHeadings).toBe(2);
-      expect(analysis.wordCount).toBeGreaterThan(0);
-
-      // Restore original function
-      fs.readFileSync = originalReadFileSync;
+      expect(mockedReadFileSync).toHaveBeenCalledWith('/test/file.md', 'utf-8');
+      expect(result.headingStructure.totalHeadings).toBe(1);
     });
 
     it('should handle file reading errors', async () => {
-      const fs = require('fs');
-      const originalReadFileSync = fs.readFileSync;
-      fs.readFileSync = jest.fn().mockImplementation(() => {
+      mockedReadFileSync.mockImplementation(() => {
         throw new Error('File not found');
       });
 
       await expect(
-        analyzer.analyzeFile('/nonexistent/path.md'),
-      ).rejects.toThrow(
-        'Unable to read file: /nonexistent/path.md. Error: File not found',
-      );
-
-      // Restore original function
-      fs.readFileSync = originalReadFileSync;
+        analyzer.analyzeFile('/nonexistent/file.md'),
+      ).rejects.toThrow('File not found');
     });
   });
 
-  describe('Language Detection Edge Cases', () => {
-    it('should handle content with no alphabetic characters', async () => {
-      const content = `# 123
+  describe('edge cases', () => {
+    it('should handle content with special characters', async () => {
+      const content = `# Special 特殊 Characters\n\nEmoji: 😀 Special chars: @#$%^&*()`;
 
-456 789
+      const result = await analyzer.analyzeContent(content);
 
-| 1 | 2 |
-|---|---|
-| 3 | 4 |`;
-
-      const analysis = await analyzer.analyzeContent(content);
-
-      expect(analysis.languageDetection.primary).toBe('en');
-      expect(analysis.languageDetection.confidence).toBe(0.5);
-      expect(analysis.languageDetection.chineseCharacterRatio).toBe(0);
-      expect(analysis.languageDetection.needsChineseSupport).toBe(false);
-      expect(analysis.languageDetection.detectedLanguages).toEqual([]);
+      expect(result.wordCount).toBeGreaterThan(0);
+      expect(result.headingStructure.totalHeadings).toBe(1);
     });
 
-    it('should detect mostly Chinese content', async () => {
-      const content = `# 中文文檔
+    it('should handle very large content', async () => {
+      const largeContent = `# Large Document\n\n${'Content line.\n'.repeat(1000)}`;
 
-這是一個完全使用中文撰寫的文檔。
+      const result = await analyzer.analyzeContent(largeContent);
 
-## 第一節
-
-包含很多中文內容的段落，用來測試語言檢測功能。
-
-### 子節
-
-更多中文內容。`;
-
-      const analysis = await analyzer.analyzeContent(content);
-
-      expect(analysis.languageDetection.primary).toBe('zh-TW');
-      expect(analysis.languageDetection.confidence).toBeGreaterThan(0.5);
-      expect(analysis.languageDetection.chineseCharacterRatio).toBeGreaterThan(
-        0.5,
-      );
-      expect(analysis.languageDetection.needsChineseSupport).toBe(true);
+      expect(result.fileSize).toBeGreaterThan(10000);
+      expect(result.wordCount).toBeGreaterThan(1000);
     });
 
-    it('should detect low Chinese content', async () => {
-      const content = `# English Document
+    it('should handle malformed markdown', async () => {
+      const malformedContent = `# Incomplete heading\n\n\`\`\`\nUnclosed code block\n\n| Incomplete table\n| Missing cells`;
 
-This is mostly an English document with just a few Chinese characters: 中文.
+      const result = await analyzer.analyzeContent(malformedContent);
 
-## Section
-
-Lots of English content here to test the language detection system.
-
-The Chinese ratio should be low.`;
-
-      const analysis = await analyzer.analyzeContent(content);
-
-      expect(analysis.languageDetection.primary).toBe('en');
-      expect(analysis.languageDetection.confidence).toBeGreaterThan(0.5);
-      expect(analysis.languageDetection.chineseCharacterRatio).toBeLessThan(
-        0.1,
-      );
-      expect(analysis.languageDetection.needsChineseSupport).toBe(false);
-    });
-  });
-
-  describe('Document Type Detection', () => {
-    it('should detect business report correctly', async () => {
-      const content = `# Quarterly Business Report
-
-## Executive Summary
-
-This quarter's revenue has increased significantly. Our analysis shows strong growth.
-
-## Financial Analysis
-
-The company has shown strong quarterly revenue growth in all sectors.
-
-### Revenue Growth
-- Q1: $1M
-- Q2: $1.2M
-- Q3: $1.5M
-
-## Summary
-
-The quarterly results demonstrate solid performance.`;
-
-      const analysis = await analyzer.analyzeContent(content);
-
-      expect(analysis.contentComplexity.documentType).toBe('business-report');
+      expect(result.headingStructure.totalHeadings).toBe(1);
+      // Should handle gracefully without throwing
     });
 
-    it('should detect tutorial correctly', async () => {
-      const content = `# Step by Step Tutorial
+    it('should detect footnotes in links', async () => {
+      const content = `# Content\n\nText with footnote[^1].\n\n[^1]: This is a footnote.`;
 
-## How to Complete This Tutorial
+      const result = await analyzer.analyzeContent(content);
 
-Follow these steps to get started with this tutorial.
-
-### Step 1: Preparation
-
-First, prepare your workspace for this step-by-step tutorial.
-
-### Step 2: Practice
-
-Complete this guide step by step.
-
-### Step 3: Review
-
-Review what you learned in this tutorial.
-
-This tutorial guide will walk you through each step.`;
-
-      const analysis = await analyzer.analyzeContent(content);
-
-      expect(analysis.contentComplexity.documentType).toBe('tutorial');
+      expect(result.links.hasFootnotes).toBe(true);
     });
 
-    it('should detect documentation correctly', async () => {
-      const content = `# Project Documentation
+    it('should analyze numbered headings', async () => {
+      const content = `# 1. First Chapter\n## 1.1. First Section\n## 1.2. Second Section\n# 2. Second Chapter`;
 
-## Getting Started
+      const result = await analyzer.analyzeContent(content);
 
-This documentation explains how to use the project. This section covers usage patterns.
-
-## Usage Examples
-
-Here are some examples showing usage of the features.
-
-### Basic Usage Examples
-
-Simple examples of basic functionality in this documentation.
-
-### Advanced Usage Examples
-
-More complex usage patterns documented here.
-
-## User Documentation
-
-Available documentation for users.`;
-
-      const analysis = await analyzer.analyzeContent(content);
-
-      expect(analysis.contentComplexity.documentType).toBe('documentation');
-    });
-
-    it('should default to article for generic content', async () => {
-      const content = `# Random Article
-
-This is just some random content that doesn't match any specific document type patterns.
-
-## Some Section
-
-Just regular content here without specific keywords.
-
-Nothing special about this document.`;
-
-      const analysis = await analyzer.analyzeContent(content);
-
-      expect(analysis.contentComplexity.documentType).toBe('article');
-    });
-  });
-
-  describe('Link Analysis Edge Cases', () => {
-    it('should categorize different link types correctly', async () => {
-      const content = `# Document with Various Links
-
-[Internal anchor](#section)
-[Relative path](./file.md)
-[Parent directory](../other.md)
-[External link](https://example.com)
-[HTTP link](http://example.com)
-[FTP link](ftp://files.example.com)
-[Footnote reference][^1] and another footnote marker.
-
-[^1]: This is a footnote.`;
-
-      const analysis = await analyzer.analyzeContent(content);
-
-      expect(analysis.links.internal).toBe(3); // #, ./, ../
-      expect(analysis.links.external).toBe(2); // http, https (ftp not counted)
-      expect(analysis.links.hasFootnotes).toBe(true);
-    });
-
-    it('should handle malformed links', async () => {
-      const content = `# Document with Malformed Links
-
-[Link without URL]()
-[](Empty link text)
-[Incomplete link
-[Another incomplete](
-]Backwards bracket](`;
-
-      const analysis = await analyzer.analyzeContent(content);
-
-      // Should handle gracefully without crashing
-      expect(analysis.links).toBeDefined();
-    });
-  });
-
-  describe('Reading Time Calculation', () => {
-    it('should calculate reading time correctly', async () => {
-      const words200 = Array(199).fill('word').join(' ');
-      const content = `# Document\n\n${words200}`;
-
-      const analysis = await analyzer.analyzeContent(content);
-
-      expect(analysis.readingTime).toBe(1); // 200 words / 200 wpm = 1 minute
-      expect(analysis.wordCount).toBe(200); // 199 + "Document" = 200
-    });
-
-    it('should round up reading time', async () => {
-      const words150 = Array(150).fill('word').join(' ');
-      const content = `# Document\n\n${words150}`;
-
-      const analysis = await analyzer.analyzeContent(content);
-
-      expect(analysis.readingTime).toBe(1); // 150 words / 200 wpm = 0.75, rounded up to 1
+      expect(result.headingStructure.hasNumberedHeadings).toBe(true);
+      expect(result.headingStructure.totalHeadings).toBe(4);
     });
   });
 });

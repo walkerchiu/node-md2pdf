@@ -457,5 +457,112 @@ describe('FileProcessorService', () => {
         );
       });
     });
+
+    describe('title extraction edge cases', () => {
+      it('should use metadata title when no H1 heading exists', async () => {
+        // Mock markdown without H1 heading
+        const markdownWithoutH1 =
+          'Just some paragraph content without headers.';
+        const parsedContentWithoutH1: ParsedMarkdown = {
+          content: '<p>Just some paragraph content without headers.</p>',
+          headings: [
+            { level: 2, text: 'H2 Header', id: 'h2-header' } as Heading,
+          ],
+          metadata: { title: 'Title from Metadata' },
+        };
+
+        // Setup necessary mocks
+        mockFileSystemManager.exists.mockResolvedValue(true);
+        mockFileSystemManager.getStats.mockResolvedValue(mockFileStats);
+        mockFileSystemManager.readFile.mockResolvedValue(markdownWithoutH1);
+        mockMarkdownParserService.parseMarkdownFile.mockResolvedValue(
+          parsedContentWithoutH1,
+        );
+        mockPDFGeneratorService.generatePDF.mockResolvedValue(mockPDFResult);
+
+        const result = await service.processFile('/test/input.md', {
+          outputPath: '/test/output.pdf',
+          includeTOC: true,
+          tocOptions: { maxDepth: 3 },
+        });
+
+        expect(result.success).toBe(true);
+        expect(mockPDFGeneratorService.generatePDF).toHaveBeenCalledWith(
+          expect.any(String),
+          '/test/output.pdf',
+          expect.objectContaining({
+            title: 'Title from Metadata',
+          }),
+        );
+      });
+
+      it('should use default title when no H1 heading and no metadata title', async () => {
+        // Mock markdown without H1 and without metadata title
+        const markdownWithoutTitle = 'Just some content.';
+        const parsedContentWithoutTitle: ParsedMarkdown = {
+          content: '<p>Just some content.</p>',
+          headings: [],
+          metadata: {},
+        };
+
+        // Setup necessary mocks
+        mockFileSystemManager.exists.mockResolvedValue(true);
+        mockFileSystemManager.getStats.mockResolvedValue(mockFileStats);
+        mockFileSystemManager.readFile.mockResolvedValue(markdownWithoutTitle);
+        mockMarkdownParserService.parseMarkdownFile.mockResolvedValue(
+          parsedContentWithoutTitle,
+        );
+        mockPDFGeneratorService.generatePDF.mockResolvedValue(mockPDFResult);
+
+        const result = await service.processFile('/test/input.md', {
+          outputPath: '/test/output.pdf',
+          includeTOC: true,
+          tocOptions: { maxDepth: 3 },
+        });
+
+        expect(result.success).toBe(true);
+        expect(mockPDFGeneratorService.generatePDF).toHaveBeenCalledWith(
+          expect.any(String),
+          '/test/output.pdf',
+          expect.objectContaining({
+            title: 'Markdown Document',
+          }),
+        );
+      });
+
+      it('should handle TOC options with custom title', async () => {
+        const tocOptionsWithTitle = {
+          maxDepth: 3,
+          includePageNumbers: true,
+          title: 'Custom TOC Title',
+        };
+
+        // Setup necessary mocks
+        mockFileSystemManager.exists.mockResolvedValue(true);
+        mockFileSystemManager.getStats.mockResolvedValue(mockFileStats);
+        mockFileSystemManager.readFile.mockResolvedValue(mockOriginalMarkdown);
+        mockMarkdownParserService.parseMarkdownFile.mockResolvedValue(
+          mockParsedContent,
+        );
+        mockPDFGeneratorService.generatePDF.mockResolvedValue(mockPDFResult);
+
+        const result = await service.processFile('/test/input.md', {
+          outputPath: '/test/output.pdf',
+          includeTOC: true,
+          tocOptions: tocOptionsWithTitle,
+        });
+
+        expect(result.success).toBe(true);
+        expect(mockPDFGeneratorService.generatePDF).toHaveBeenCalledWith(
+          expect.any(String),
+          '/test/output.pdf',
+          expect.objectContaining({
+            tocOptions: expect.objectContaining({
+              title: 'Custom TOC Title',
+            }),
+          }),
+        );
+      });
+    });
   });
 });

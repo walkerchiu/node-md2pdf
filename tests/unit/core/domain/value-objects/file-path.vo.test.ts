@@ -234,6 +234,127 @@ describe('FilePath Value Object', () => {
     });
   });
 
+  describe('withExtension method', () => {
+    it('should create FilePath with different extension', () => {
+      const originalPath = new FilePath('/path/to/document.md');
+      const newPath = originalPath.withExtension('.markdown');
+
+      expect(newPath.value).toBe('/path/to/document.markdown');
+      expect(originalPath.value).toBe('/path/to/document.md'); // Original unchanged
+    });
+
+    it('should handle extension changes correctly', () => {
+      const originalPath = new FilePath('/path/to/document.markdown');
+      const newPath = originalPath.withExtension('.md');
+
+      expect(newPath.value).toBe('/path/to/document.md');
+      expect(newPath.extension).toBe('.md');
+    });
+  });
+
+  describe('withDirectory method', () => {
+    it('should create FilePath in different directory', () => {
+      const originalPath = new FilePath('/original/path/document.md');
+      const newPath = originalPath.withDirectory('/new/path');
+
+      expect(newPath.value).toBe('/new/path/document.md');
+      expect(newPath.directory).toBe('/new/path');
+      expect(originalPath.value).toBe('/original/path/document.md'); // Original unchanged
+    });
+
+    it('should preserve filename when changing directory', () => {
+      const originalPath = new FilePath('/old/dir/my-file.markdown');
+      const newPath = originalPath.withDirectory('/new/directory');
+
+      expect(newPath.filename).toBe('my-file.markdown');
+      expect(newPath.basename).toBe('my-file');
+    });
+  });
+
+  describe('relativeTo method', () => {
+    it('should create relative path from base FilePath', () => {
+      const targetPath = new FilePath('/projects/myapp/src/document.md');
+      const basePath = new FilePath('/projects/myapp/readme.md');
+
+      const relativePath = targetPath.relativeTo(basePath);
+      expect(relativePath).toBe('src/document.md');
+    });
+
+    it('should handle paths at same level', () => {
+      const targetPath = new FilePath('/projects/document1.md');
+      const basePath = new FilePath('/projects/document2.md');
+
+      const relativePath = targetPath.relativeTo(basePath);
+      expect(relativePath).toBe('document1.md');
+    });
+  });
+
+  describe('static fromRelative method', () => {
+    it('should create FilePath from relative path', () => {
+      const filePath = FilePath.fromRelative(
+        'subdirectory/file.md',
+        '/base/path',
+      );
+
+      expect(filePath.value).toBe(
+        path.resolve('/base/path', 'subdirectory/file.md'),
+      );
+      expect(filePath.filename).toBe('file.md');
+    });
+
+    it('should handle relative paths with parent directory references', () => {
+      const filePath = FilePath.fromRelative(
+        '../other/file.markdown',
+        '/base/current',
+      );
+
+      const expectedPath = path.resolve(
+        '/base/current',
+        '../other/file.markdown',
+      );
+      expect(filePath.value).toBe(expectedPath);
+    });
+  });
+
+  describe('Windows-specific character validation', () => {
+    it('should reject Windows invalid characters when on Windows', () => {
+      // Mock process.platform to be win32 for this test
+      const originalPlatform = process.platform;
+      Object.defineProperty(process, 'platform', {
+        value: 'win32',
+      });
+
+      try {
+        expect(() => new FilePath('/path/with<bracket.md')).toThrow(
+          ValueObjectValidationError,
+        );
+        expect(() => new FilePath('/path/with>bracket.md')).toThrow(
+          ValueObjectValidationError,
+        );
+        expect(() => new FilePath('/path/with:colon.md')).toThrow(
+          ValueObjectValidationError,
+        );
+        expect(() => new FilePath('/path/with"quote.md')).toThrow(
+          ValueObjectValidationError,
+        );
+        expect(() => new FilePath('/path/with|pipe.md')).toThrow(
+          ValueObjectValidationError,
+        );
+        expect(() => new FilePath('/path/with?question.md')).toThrow(
+          ValueObjectValidationError,
+        );
+        expect(() => new FilePath('/path/with*asterisk.md')).toThrow(
+          ValueObjectValidationError,
+        );
+      } finally {
+        // Restore original platform
+        Object.defineProperty(process, 'platform', {
+          value: originalPlatform,
+        });
+      }
+    });
+  });
+
   describe('edge cases and platform specific behavior', () => {
     it('should handle very long paths', () => {
       const longPath = '/very/long/path/'.repeat(50) + 'file.md';

@@ -366,4 +366,66 @@ describe('PerformanceMonitor', () => {
       process.memoryUsage = originalMemoryUsage;
     });
   });
+
+  describe('forceGarbageCollection', () => {
+    it('should return false when gc is not available', () => {
+      const originalGc = global.gc;
+      delete (global as { gc?: unknown }).gc;
+
+      const result = performanceMonitor.forceGarbageCollection();
+      expect(result).toBe(false);
+
+      if (originalGc) {
+        global.gc = originalGc;
+      }
+    });
+
+    it('should return true when gc is available and succeeds', () => {
+      global.gc = jest.fn();
+
+      const result = performanceMonitor.forceGarbageCollection();
+      expect(result).toBe(true);
+      expect(global.gc).toHaveBeenCalled();
+
+      delete (global as { gc?: unknown }).gc;
+    });
+
+    it('should return false when gc throws error', () => {
+      global.gc = jest.fn().mockImplementation(() => {
+        throw new Error('GC error');
+      });
+
+      const result = performanceMonitor.forceGarbageCollection();
+      expect(result).toBe(false);
+
+      delete (global as { gc?: unknown }).gc;
+    });
+  });
+
+  describe('clearHistory', () => {
+    it('should clear all historical data', () => {
+      // Clear history
+      performanceMonitor.clearHistory();
+
+      // Verify history is cleared
+      const warnings = performanceMonitor.getWarnings();
+      expect(warnings).toEqual([]);
+    });
+  });
+
+  describe('getWarnings', () => {
+    it('should return current warnings', () => {
+      // Initially should be empty
+      const warnings = performanceMonitor.getWarnings();
+      expect(Array.isArray(warnings)).toBe(true);
+    });
+
+    it('should return a copy of warnings array', () => {
+      const warnings1 = performanceMonitor.getWarnings();
+      const warnings2 = performanceMonitor.getWarnings();
+
+      expect(warnings1).not.toBe(warnings2); // Different array instances
+      expect(warnings1).toEqual(warnings2); // Same content
+    });
+  });
 });
