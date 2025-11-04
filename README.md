@@ -95,6 +95,9 @@ When you start the app, you'll see this friendly menu:
 ✅ **Code blocks** - With syntax highlighting.<br/>
 ✅ **Tables** - Full table support with proper formatting.<br/>
 ✅ **Links & Images** - Handles automatically with image path resolution.<br/>
+✅ **HTML Links** - Full support for `<a>` tags with attributes like `target="_blank"`.<br/>
+✅ **Superscript & Subscript** - Scientific notation with `<sup>` and `<sub>` tags (e.g., E=mc²).<br/>
+✅ **Text Alignment** - Utility classes for left, center, right, and justified text alignment.<br/>
 ✅ **Quotes & Dividers** - Maintains original formatting.<br/>
 ✅ **PlantUML Diagrams** - Local-first rendering with automatic fallback to remote server.<br/>
 ✅ **Mermaid Diagrams** - Flowcharts, sequence diagrams, Gantt charts with local rendering.<br/>
@@ -128,6 +131,7 @@ Handle multiple files efficiently:
 - **Mermaid Settings**: Local rendering with theme customization and caching.
 - **Admonitions**: 8 professional callout types with custom SVG icons, perfect alignment, and theme colors.
 - **Syntax Highlighting**: PrismJS-powered code highlighting with support for 50+ programming languages and customizable themes.
+- **HTML Support**: Enhanced HTML tag support including hyperlinks with attributes, superscript/subscript for scientific notation, and text alignment utility classes (`.text-left`, `.text-center`, `.text-right`, `.text-justify`).
 - **Image Processing**: Automatic path resolution and base64 embedding.
 
 ## 🔧 Requirements

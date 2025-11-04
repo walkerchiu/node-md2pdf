@@ -139,6 +139,29 @@ export class PDFTemplates {
         text-decoration: underline;
       }
 
+      /* Text alignment utility classes */
+      .text-left { text-align: left; }
+      .text-center { text-align: center; }
+      .text-right { text-align: right; }
+      .text-justify { text-align: justify; }
+
+      /* Superscript and subscript support */
+      sup {
+        font-size: 0.75em;
+        line-height: 0;
+        position: relative;
+        vertical-align: baseline;
+        top: -0.5em;
+      }
+
+      sub {
+        font-size: 0.75em;
+        line-height: 0;
+        position: relative;
+        vertical-align: baseline;
+        bottom: -0.25em;
+      }
+
       img {
         max-width: 100%;
         height: auto;

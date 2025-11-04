@@ -599,6 +599,94 @@ More content here.`;
     });
   });
 
+  describe('HTML Support Features', () => {
+    it('should support hyperlinks with HTML anchor tags', () => {
+      const markdown =
+        'Visit <a href="https://example.com" target="_blank">our website</a> for more info.';
+      const result = parser.parse(markdown);
+
+      expect(result.content).toContain(
+        '<a href="https://example.com" target="_blank">our website</a>',
+      );
+    });
+
+    it('should support superscript tags', () => {
+      const markdown = "E = mc<sup>2</sup> is Einstein's famous equation.";
+      const result = parser.parse(markdown);
+
+      expect(result.content).toContain('mc<sup>2</sup>');
+    });
+
+    it('should support subscript tags', () => {
+      const markdown = 'Water molecule is H<sub>2</sub>O.';
+      const result = parser.parse(markdown);
+
+      expect(result.content).toContain('H<sub>2</sub>O');
+    });
+
+    it('should support mixed superscript and subscript', () => {
+      const markdown =
+        'Chemical reaction: CO<sub>2</sub> + H<sub>2</sub>O → X<sup>n</sup>';
+      const result = parser.parse(markdown);
+
+      expect(result.content).toContain('CO<sub>2</sub>');
+      expect(result.content).toContain('H<sub>2</sub>O');
+      expect(result.content).toContain('X<sup>n</sup>');
+    });
+
+    it('should filter HTML from heading text in TOC', () => {
+      const markdown = `# Heading with <strong>Bold</strong> Text
+## Chapter with <em>Italic</em> Content
+### Section with <code>Code</code> Element`;
+
+      const result = parser.parse(markdown);
+
+      // Check that HTML is stripped from heading text
+      expect(result.headings[0].text).toBe('Heading with Bold Text');
+      expect(result.headings[1].text).toBe('Chapter with Italic Content');
+      expect(result.headings[2].text).toBe('Section with Code Element');
+
+      // But HTML should remain in content
+      expect(result.content).toContain('<strong>Bold</strong>');
+      expect(result.content).toContain('<em>Italic</em>');
+      expect(result.content).toContain('<code>Code</code>');
+    });
+
+    it('should filter HTML from complex headings with mixed elements', () => {
+      const markdown = `# Complex <strong>Bold <em>Italic</em></strong> <code>Code</code> Heading
+## Chemical H<sub>2</sub>O and E=mc<sup>2</sup> Formula
+### Link to <a href="#test">Another Section</a>`;
+
+      const result = parser.parse(markdown);
+
+      // Text should be cleaned but readable
+      expect(result.headings[0].text).toBe('Complex Bold Italic Code Heading');
+      expect(result.headings[1].text).toBe('Chemical H2O and E=mc2 Formula');
+      expect(result.headings[2].text).toBe('Link to Another Section');
+    });
+
+    it('should preserve HTML entities in text content', () => {
+      const markdown = 'Use &lt;script&gt; tags with &amp; symbols.';
+      const result = parser.parse(markdown);
+
+      expect(result.content).toContain('&lt;script&gt;');
+      expect(result.content).toContain('&amp;');
+    });
+
+    it('should handle HTML in Setext-style headings', () => {
+      const markdown = `Heading with <em>Emphasis</em>
+=================================
+
+Subheading with <strong>Strong</strong>
+---------------------------------------`;
+
+      const result = parser.parse(markdown);
+
+      expect(result.headings[0].text).toBe('Heading with Emphasis');
+      expect(result.headings[1].text).toBe('Subheading with Strong');
+    });
+  });
+
   describe('Edge cases and error paths', () => {
     it('should handle code highlighting with empty language', () => {
       const markdown = '```\nno language specified\n```';
