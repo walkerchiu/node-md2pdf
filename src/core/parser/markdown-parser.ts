@@ -62,6 +62,7 @@ export class MarkdownParser {
    */
   private configurePlugins(): void {
     // Add anchor plugin for heading anchors
+    // Use headerLink to wrap the entire heading content in the anchor
     this.md.use(anchor, {
       permalink: anchor.permalink.headerLink(),
       level: [1, 2, 3, 4, 5, 6],
@@ -76,10 +77,51 @@ export class MarkdownParser {
   }
 
   /**
-   * Generate slug for headings
+   * Remove HTML tags from text
+   */
+  private stripHtml(text: string): string {
+    return (
+      text
+        .replace(/<[^>]*>/g, '') // Remove HTML tags
+        .replace(/&lt;/g, '<')
+        .replace(/&gt;/g, '>')
+        .replace(/&amp;/g, '&')
+        .replace(/&quot;/g, '"')
+        .replace(/&#39;/g, "'")
+        .replace(/&nbsp;/g, ' ')
+        .replace(/&hellip;/g, '...')
+        .replace(/&mdash;/g, '—')
+        .replace(/&ndash;/g, '–')
+        .replace(/&rsquo;/g, "'")
+        .replace(/&lsquo;/g, "'")
+        .replace(/&rdquo;/g, '"')
+        .replace(/&ldquo;/g, '"')
+        // Remove any remaining HTML entities
+        .replace(/&[a-zA-Z0-9#]+;/g, '')
+        .replace(/\s+/g, ' ') // Normalize whitespace
+        .trim()
+    );
+  }
+
+  /**
+   * Generate slug for headings - must match markdown-it-anchor plugin
+   * This function should match exactly what markdown-it-anchor does
    */
   private slugify(text: string): string {
-    return text
+    // First strip HTML tags, then create slug
+    // This must match the behavior of markdown-it-anchor plugin
+    const cleanText = text
+      .replace(/<[^>]*>/g, '') // Remove HTML tags
+      .replace(/&lt;/g, '<')
+      .replace(/&gt;/g, '>')
+      .replace(/&amp;/g, '&')
+      .replace(/&quot;/g, '"')
+      .replace(/&#39;/g, "'")
+      .replace(/&nbsp;/g, ' ')
+      .replace(/&[a-zA-Z0-9#]+;/g, '') // Remove remaining HTML entities
+      .trim();
+
+    return cleanText
       .toLowerCase()
       .replace(/\s+/g, '-')
       .replace(/[^\w\-\u4e00-\u9fff]/g, '') // Keep Chinese characters
@@ -146,6 +188,24 @@ export class MarkdownParser {
   }
 
   /**
+   * Remove user-defined links from headings while preserving header-anchor links
+   */
+  private removeUserLinksFromHeadings(html: string): string {
+    // Match heading tags (h1-h6) and remove user links within them
+    return html.replace(
+      /(<h[1-6][^>]*>)(.*?)(<\/h[1-6]>)/g,
+      (_match, openTag, content, closeTag) => {
+        // Only remove non-header-anchor links from heading content
+        const cleanContent = content.replace(
+          /<a(?![^>]*class="header-anchor")[^>]*>(.*?)<\/a>/g,
+          '$1',
+        );
+        return openTag + cleanContent + closeTag;
+      },
+    );
+  }
+
+  /**
    * Parse markdown content to HTML
    */
   public parse(content: string): ParsedMarkdown {
@@ -155,6 +215,9 @@ export class MarkdownParser {
 
       // Render HTML (highlight function handles initial code block structure)
       let html = this.md.render(preprocessedContent);
+
+      // Post-process HTML: remove user-defined links from headings to prevent nested anchor issues
+      html = this.removeUserLinksFromHeadings(html);
 
       // Post-process HTML for syntax highlighting (only for non-diagram code blocks)
       html = this.syntaxHighlighter.processContent(html);
@@ -228,13 +291,14 @@ export class MarkdownParser {
       const atxMatch = trimmedLine.match(/^(#{1,6})\s+(.+)$/);
       if (atxMatch) {
         const level = atxMatch[1].length;
-        const text = atxMatch[2].trim();
-        const baseId = this.slugify(text);
+        const rawText = atxMatch[2].trim();
+        const text = this.stripHtml(rawText); // Strip HTML from heading text for display
+        const baseId = this.slugify(rawText); // Use original text for ID generation
         const uniqueId = this.generateUniqueId(baseId, usedIds);
 
         headings.push({
           level,
-          text,
+          text, // Clean text without HTML for display
           id: uniqueId,
           anchor: `#${uniqueId}`,
         });
@@ -247,24 +311,26 @@ export class MarkdownParser {
         const nextLine = lines[i + 1].trim();
         if (nextLine.match(/^=+$/)) {
           // H1 - underlined with ===
-          const text = trimmedLine;
-          const baseId = this.slugify(text);
+          const rawText = trimmedLine;
+          const text = this.stripHtml(rawText); // Strip HTML from heading text for display
+          const baseId = this.slugify(rawText); // Use original text for ID generation
           const uniqueId = this.generateUniqueId(baseId, usedIds);
           headings.push({
             level: 1,
-            text,
+            text, // Clean text without HTML for display
             id: uniqueId,
             anchor: `#${uniqueId}`,
           });
           i++; // Skip the underline
         } else if (nextLine.match(/^-{3,}$/)) {
           // H2 - underlined with --- (must be 3 or more dashes to avoid conflicts with horizontal rules)
-          const text = trimmedLine;
-          const baseId = this.slugify(text);
+          const rawText = trimmedLine;
+          const text = this.stripHtml(rawText); // Strip HTML from heading text for display
+          const baseId = this.slugify(rawText); // Use original text for ID generation
           const uniqueId = this.generateUniqueId(baseId, usedIds);
           headings.push({
             level: 2,
-            text,
+            text, // Clean text without HTML for display
             id: uniqueId,
             anchor: `#${uniqueId}`,
           });

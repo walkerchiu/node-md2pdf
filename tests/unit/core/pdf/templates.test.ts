@@ -65,6 +65,33 @@ describe('PDFTemplates', () => {
       expect(css).toContain('page-break-after: avoid');
       expect(css).toContain('page-break-inside: avoid');
     });
+
+    it('should include text alignment utility classes', () => {
+      const css = PDFTemplates.getDefaultCSS();
+
+      expect(css).toContain('.text-left { text-align: left; }');
+      expect(css).toContain('.text-center { text-align: center; }');
+      expect(css).toContain('.text-right { text-align: right; }');
+      expect(css).toContain('.text-justify { text-align: justify; }');
+    });
+
+    it('should include superscript and subscript styles', () => {
+      const css = PDFTemplates.getDefaultCSS();
+
+      expect(css).toContain('sup {');
+      expect(css).toContain('font-size: 0.75em');
+      expect(css).toContain('top: -0.5em');
+      expect(css).toContain('sub {');
+      expect(css).toContain('bottom: -0.25em');
+    });
+
+    it('should include proper positioning for sup and sub elements', () => {
+      const css = PDFTemplates.getDefaultCSS();
+
+      expect(css).toContain('position: relative');
+      expect(css).toContain('vertical-align: baseline');
+      expect(css).toContain('line-height: 0');
+    });
   });
 
   describe('getChineseCSS', () => {
