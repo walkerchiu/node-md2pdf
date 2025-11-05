@@ -8,6 +8,7 @@ import chalk from 'chalk';
 import { APPLICATION_SERVICE_NAMES } from '../../application/container';
 import { FileCollector } from '../../core/batch/file-collector';
 import { DEFAULT_MARGINS } from '../../infrastructure/config/constants';
+import { TOCReturnLinkLevel } from '../../types';
 import { BatchConversionConfig, BatchFilenameFormat } from '../../types/batch';
 import { PathCleaner } from '../../utils/path-cleaner';
 import { CliUIManager } from '../ui/cli-ui-manager';
@@ -309,6 +310,39 @@ export class BatchInteractiveMode {
         when: (answers: any) => answers.includeTOC,
       },
       {
+        type: 'list',
+        name: 'tocReturnLinksLevel',
+        message: this.translationManager.t('batch.tocReturnLinksLevel'),
+        choices: [
+          {
+            name: this.translationManager.t('batch.tocReturnLinksLevels.0'),
+            value: 0,
+          },
+          {
+            name: this.translationManager.t('batch.tocReturnLinksLevels.1'),
+            value: 1,
+          },
+          {
+            name: this.translationManager.t('batch.tocReturnLinksLevels.2'),
+            value: 2,
+          },
+          {
+            name: this.translationManager.t('batch.tocReturnLinksLevels.3'),
+            value: 3,
+          },
+          {
+            name: this.translationManager.t('batch.tocReturnLinksLevels.4'),
+            value: 4,
+          },
+          {
+            name: this.translationManager.t('batch.tocReturnLinksLevels.5'),
+            value: 5,
+          },
+        ],
+        default: 3,
+        when: (answers: any) => answers.includeTOC,
+      },
+      {
         type: 'confirm',
         name: 'includePageNumbers',
         message: this.translationManager.t('batch.includePageNumbers'),
@@ -362,6 +396,7 @@ export class BatchInteractiveMode {
       customFilenamePattern?: string;
       includeTOC: boolean;
       tocDepth: number;
+      tocReturnLinksLevel: number;
       includePageNumbers: boolean;
       chineseFontSupport: boolean;
       maxConcurrentProcesses: number;
@@ -376,6 +411,8 @@ export class BatchInteractiveMode {
       customFilenamePattern: answers.customFilenamePattern ?? '',
       includeTOC: answers.includeTOC,
       tocDepth: answers.tocDepth || 2,
+      tocReturnLinksLevel: (answers.tocReturnLinksLevel ??
+        3) as TOCReturnLinkLevel,
       includePageNumbers: answers.includePageNumbers,
       chineseFontSupport: answers.chineseFontSupport,
       maxConcurrentProcesses: answers.maxConcurrentProcesses,
@@ -559,6 +596,8 @@ export class BatchInteractiveMode {
       const fileOptions: Record<string, unknown> = {
         outputPath: config.outputDirectory,
         includeTOC: config.includeTOC,
+        includePageNumbers: config.includePageNumbers,
+        tocReturnLinksLevel: config.tocReturnLinksLevel,
         tocOptions: config.includeTOC
           ? {
               maxDepth: config.tocDepth,

@@ -303,6 +303,51 @@ export class InteractiveMode {
         when: (answers: any) => answers.includeTOC,
       },
       {
+        type: 'list',
+        name: 'tocReturnLinksLevel',
+        message: this.translationManager.t('interactive.tocReturnLinksLevel'),
+        choices: [
+          {
+            name: this.translationManager.t(
+              'interactive.tocReturnLinksLevels.0',
+            ),
+            value: 0,
+          },
+          {
+            name: this.translationManager.t(
+              'interactive.tocReturnLinksLevels.1',
+            ),
+            value: 1,
+          },
+          {
+            name: this.translationManager.t(
+              'interactive.tocReturnLinksLevels.2',
+            ),
+            value: 2,
+          },
+          {
+            name: this.translationManager.t(
+              'interactive.tocReturnLinksLevels.3',
+            ),
+            value: 3,
+          },
+          {
+            name: this.translationManager.t(
+              'interactive.tocReturnLinksLevels.4',
+            ),
+            value: 4,
+          },
+          {
+            name: this.translationManager.t(
+              'interactive.tocReturnLinksLevels.5',
+            ),
+            value: 5,
+          },
+        ],
+        default: 3,
+        when: (answers: any) => answers.includeTOC,
+      },
+      {
         type: 'confirm',
         name: 'includePageNumbers',
         message: this.translationManager.t('interactive.includePageNumbers'),
@@ -396,6 +441,7 @@ export class InteractiveMode {
         outputPath,
         includeTOC: config.includeTOC,
         includePageNumbers: config.includePageNumbers, // Add this setting for CSS @page rules
+        tocReturnLinksLevel: config.tocReturnLinksLevel ?? 0, // Add TOC return links level with default
         pdfOptions: {
           margin: DEFAULT_MARGINS.NORMAL,
           displayHeaderFooter: false, // Force disable - using CSS @page instead

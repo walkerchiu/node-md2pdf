@@ -143,7 +143,7 @@ export class TOCGenerator {
     const tocTitle = this.getTOCTitle();
 
     return `
-<div class="${cssClasses.container}">
+<div id="toc" class="${cssClasses.container}">
   <h2 class="${cssClasses.title}">${tocTitle}</h2>
   ${listHtml}
 </div>`.trim();

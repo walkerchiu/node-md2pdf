@@ -199,12 +199,21 @@ export const enTranslations: TranslationKey = {
     includeTOC: 'Include table of contents?',
     selectTocDepth: 'Please select table of contents depth:',
     tocLevels: {
-      1: '1 level (H1 only)',
-      2: '2 levels (H1-H2)',
-      3: '3 levels (H1-H3)',
-      4: '4 levels (H1-H4)',
-      5: '5 levels (H1-H5)',
-      6: '6 levels (H1-H6)',
+      1: '1 level (# only)',
+      2: '2 levels (# and ##)',
+      3: '3 levels (# through ###)',
+      4: '4 levels (# through ####)',
+      5: '5 levels (# through #####)',
+      6: '6 levels (# through ######)',
+    },
+    tocReturnLinksLevel: 'Select section range for return-to-TOC anchor links:',
+    tocReturnLinksLevels: {
+      0: '0. None',
+      1: '1. H2 sections',
+      2: '2. H2-H3 sections',
+      3: '3. H2-H4 sections',
+      4: '4. H2-H5 sections',
+      5: '5. H2-H6 sections',
     },
     includePageNumbers: 'Include page numbers?',
     chineseFontSupport:
@@ -294,12 +303,21 @@ export const enTranslations: TranslationKey = {
     includeTOCPrompt: 'Include table of contents?',
     selectTocDepth: 'Select table of contents depth:',
     tocLevels: {
-      1: '1. 1 level (H1 only)',
-      2: '2. 2 levels (H1-H2)',
-      3: '3. 3 levels (H1-H3)',
-      4: '4. 4 levels (H1-H4)',
-      5: '5. 5 levels (H1-H5)',
-      6: '6. 6 levels (H1-H6)',
+      1: '1 level (# only)',
+      2: '2 levels (# and ##)',
+      3: '3 levels (# through ###)',
+      4: '4 levels (# through ####)',
+      5: '5 levels (# through #####)',
+      6: '6 levels (# through ######)',
+    },
+    tocReturnLinksLevel: 'Select section range for return-to-TOC anchor links:',
+    tocReturnLinksLevels: {
+      0: '0. None',
+      1: '1. H2 sections',
+      2: '2. H2-H3 sections',
+      3: '3. H2-H4 sections',
+      4: '4. H2-H5 sections',
+      5: '5. H2-H6 sections',
     },
     includePageNumbers: 'Include page numbers?',
     chineseFontSupport:
@@ -676,5 +694,10 @@ export const enTranslations: TranslationKey = {
     documentMetadata: 'Document Metadata',
     securitySettings: 'Security Settings',
     templateManagement: 'Template Management',
+  },
+
+  // Anchor links
+  anchorLinks: {
+    backToToc: '↑ Back to TOC',
   },
 };

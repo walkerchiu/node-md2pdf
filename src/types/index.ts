@@ -2,12 +2,16 @@
  * MD2PDF core type definitions
  */
 
+// TOC return link level type
+export type TOCReturnLinkLevel = 0 | 1 | 2 | 3 | 4 | 5;
+
 // Configuration types
 export interface ConversionConfig {
   inputPath: string;
   outputPath?: string;
   includeTOC: boolean;
   tocDepth: number;
+  tocReturnLinksLevel?: TOCReturnLinkLevel;
   includePageNumbers: boolean;
   chineseFontSupport: boolean;
   theme?: string;

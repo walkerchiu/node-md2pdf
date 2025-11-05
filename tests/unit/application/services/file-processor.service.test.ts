@@ -11,6 +11,7 @@ import {
   IFileSystemManager,
   FileStats,
 } from '../../../../src/infrastructure/filesystem/types';
+import { ITranslationManager } from '../../../../src/infrastructure/i18n/types';
 import {
   MD2PDFError,
   FileNotFoundError,
@@ -26,6 +27,7 @@ describe('FileProcessorService', () => {
   let mockFileSystemManager: jest.Mocked<IFileSystemManager>;
   let mockMarkdownParserService: jest.Mocked<IMarkdownParserService>;
   let mockPDFGeneratorService: jest.Mocked<IPDFGeneratorService>;
+  let mockTranslator: jest.Mocked<ITranslationManager>;
 
   const mockOriginalMarkdown = '# Test Document\n\nThis is a test document.';
 
@@ -129,6 +131,17 @@ describe('FileProcessorService', () => {
       forceHealthCheck: jest.fn(),
     };
 
+    mockTranslator = {
+      t: jest.fn((key: string) => key),
+      setLocale: jest.fn(),
+      getCurrentLocale: jest.fn().mockReturnValue('en'),
+      getSupportedLocales: jest.fn().mockReturnValue(['en', 'zh-TW']),
+      translate: jest.fn(),
+      hasTranslation: jest.fn().mockReturnValue(true),
+      loadTranslations: jest.fn(),
+      getTranslations: jest.fn().mockReturnValue({}),
+    };
+
     service = new FileProcessorService(
       mockLogger,
       mockErrorHandler,
@@ -136,6 +149,7 @@ describe('FileProcessorService', () => {
       mockFileSystemManager,
       mockMarkdownParserService,
       mockPDFGeneratorService,
+      mockTranslator,
     );
   });
 
@@ -562,6 +576,116 @@ describe('FileProcessorService', () => {
             }),
           }),
         );
+      });
+    });
+
+    describe('anchor links functionality', () => {
+      it('should add anchor links when tocReturnLinksLevel is enabled', async () => {
+        // Mock a markdown with multiple headings
+        const markdownWithHeadings = '# Title\n## Section 1\n### Subsection';
+        const parsedContentWithHeadings: ParsedMarkdown = {
+          content: '<h1>Title</h1><h2>Section 1</h2><h3>Subsection</h3>',
+          headings: [
+            { level: 1, text: 'Title', id: 'title' } as Heading,
+            { level: 2, text: 'Section 1', id: 'section-1' } as Heading,
+            { level: 3, text: 'Subsection', id: 'subsection' } as Heading,
+          ],
+          metadata: { title: 'Test with Anchors' },
+        };
+
+        // Setup mocks
+        mockFileSystemManager.exists.mockResolvedValue(true);
+        mockFileSystemManager.getStats.mockResolvedValue(mockFileStats);
+        mockFileSystemManager.readFile.mockResolvedValue(markdownWithHeadings);
+        mockMarkdownParserService.parseMarkdownFile.mockResolvedValue(
+          parsedContentWithHeadings,
+        );
+        mockPDFGeneratorService.generatePDF.mockResolvedValue(mockPDFResult);
+        mockTranslator.t.mockReturnValue('Back to TOC');
+
+        const result = await service.processFile('/test/input.md', {
+          outputPath: '/test/output.pdf',
+          tocReturnLinksLevel: 2, // Enable anchor links for H2-H3
+          includeTOC: true,
+        });
+
+        expect(result.success).toBe(true);
+        expect(mockTranslator.t).toHaveBeenCalledWith('anchorLinks.backToToc');
+        expect(mockLogger.debug).toHaveBeenCalledWith(
+          'Adding return-to-TOC anchor links',
+        );
+      });
+
+      it('should not add anchor links when tocReturnLinksLevel is 0', async () => {
+        // Setup necessary mocks
+        mockFileSystemManager.exists.mockResolvedValue(true);
+        mockFileSystemManager.getStats.mockResolvedValue(mockFileStats);
+        mockFileSystemManager.readFile.mockResolvedValue(mockOriginalMarkdown);
+        mockMarkdownParserService.parseMarkdownFile.mockResolvedValue(
+          mockParsedContent,
+        );
+        mockPDFGeneratorService.generatePDF.mockResolvedValue(mockPDFResult);
+
+        const result = await service.processFile('/test/input.md', {
+          outputPath: '/test/output.pdf',
+          tocReturnLinksLevel: 0, // Disable anchor links
+        });
+
+        expect(result.success).toBe(true);
+        expect(mockLogger.debug).not.toHaveBeenCalledWith(
+          'Adding return-to-TOC anchor links',
+        );
+      });
+
+      it('should not add anchor links when no headings exist', async () => {
+        const markdownWithoutHeadings = 'Just plain text content.';
+        const parsedContentWithoutHeadings: ParsedMarkdown = {
+          content: '<p>Just plain text content.</p>',
+          headings: [],
+          metadata: {},
+        };
+
+        // Setup mocks
+        mockFileSystemManager.exists.mockResolvedValue(true);
+        mockFileSystemManager.getStats.mockResolvedValue(mockFileStats);
+        mockFileSystemManager.readFile.mockResolvedValue(
+          markdownWithoutHeadings,
+        );
+        mockMarkdownParserService.parseMarkdownFile.mockResolvedValue(
+          parsedContentWithoutHeadings,
+        );
+        mockPDFGeneratorService.generatePDF.mockResolvedValue(mockPDFResult);
+
+        const result = await service.processFile('/test/input.md', {
+          outputPath: '/test/output.pdf',
+          tocReturnLinksLevel: 2,
+        });
+
+        expect(result.success).toBe(true);
+        expect(mockLogger.debug).not.toHaveBeenCalledWith(
+          'Adding return-to-TOC anchor links',
+        );
+      });
+    });
+
+    describe('convertTOCReturnLinkLevelToDepth', () => {
+      it('should convert TOCReturnLinkLevel values to correct AnchorLinksDepth', () => {
+        const convertMethod = (service as any).convertTOCReturnLinkLevelToDepth;
+
+        expect(convertMethod(0)).toBe('none');
+        expect(convertMethod(1)).toBe(2); // H2 sections
+        expect(convertMethod(2)).toBe(3); // H2-H3 sections
+        expect(convertMethod(3)).toBe(4); // H2-H4 sections
+        expect(convertMethod(4)).toBe(5); // H2-H5 sections
+        expect(convertMethod(5)).toBe(6); // H2-H6 sections
+      });
+
+      it('should return "none" for invalid level values', () => {
+        const convertMethod = (service as any).convertTOCReturnLinkLevelToDepth;
+
+        expect(convertMethod(-1)).toBe('none');
+        expect(convertMethod(6)).toBe('none');
+        expect(convertMethod(999)).toBe('none');
       });
     });
   });

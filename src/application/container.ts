@@ -114,6 +114,7 @@ export class ApplicationServices {
           c.resolve('fileSystem'),
           c.resolve(APPLICATION_SERVICE_NAMES.MARKDOWN_PARSER),
           c.resolve(APPLICATION_SERVICE_NAMES.PDF_GENERATOR),
+          c.resolve('translator'),
         ),
     );
 

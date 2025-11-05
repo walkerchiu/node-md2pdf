@@ -719,6 +719,7 @@ export class SmartConversionMode {
       return {
         includeTOC: includeTOC,
         includePageNumbers: includeTOC, // Enable page numbers when TOC is enabled
+        tocReturnLinksLevel: includeTOC ? 3 : 0, // Smart default: H2-H4 when TOC enabled
         tocOptions: includeTOC
           ? {
               maxDepth: tocDepth,
@@ -743,6 +744,7 @@ export class SmartConversionMode {
     // Follow the same pattern as single file and batch processing
     const baseConfig: any = {
       includeTOC: includeTOC,
+      tocReturnLinksLevel: includeTOC ? 3 : 0, // Smart default: H2-H4 when TOC enabled
       tocOptions: includeTOC
         ? {
             maxDepth: tocDepth,

@@ -5,13 +5,15 @@
 
 import * as path from 'path';
 
+import { AnchorLinksGenerator } from '../../core/anchor-links/anchor-links-generator';
+import { AnchorLinksDepth } from '../../core/anchor-links/types';
 import { PDFGeneratorOptions, PDFGenerationResult } from '../../core/pdf/types';
 import { TOCGeneratorOptions } from '../../core/toc/types';
 import {
   MD2PDFError,
   FileNotFoundError,
 } from '../../infrastructure/error/errors';
-import { ParsedMarkdown } from '../../types/index';
+import { ParsedMarkdown, TOCReturnLinkLevel } from '../../types/index';
 import { ImagePathResolver } from '../../utils/image-path-resolver';
 
 import { IMarkdownParserService } from './markdown-parser.service';
@@ -20,12 +22,14 @@ import { IPDFGeneratorService } from './pdf-generator.service';
 import type { IConfigManager } from '../../infrastructure/config/types';
 import type { IErrorHandler } from '../../infrastructure/error/types';
 import type { IFileSystemManager } from '../../infrastructure/filesystem/types';
+import type { ITranslationManager } from '../../infrastructure/i18n/types';
 import type { ILogger } from '../../infrastructure/logging/types';
 
 export interface FileProcessingOptions {
   outputPath?: string;
   includeTOC?: boolean;
   includePageNumbers?: boolean;
+  tocReturnLinksLevel?: TOCReturnLinkLevel;
   tocOptions?: Partial<TOCGeneratorOptions>;
   pdfOptions?: Partial<PDFGeneratorOptions>;
   customStyles?: string;
@@ -58,6 +62,7 @@ export class FileProcessorService implements IFileProcessorService {
     private readonly fileSystemManager: IFileSystemManager,
     private readonly markdownParserService: IMarkdownParserService,
     private readonly pdfGeneratorService: IPDFGeneratorService,
+    private readonly translator: ITranslationManager,
   ) {
     // _configManager is reserved for future configuration options
     void this._configManager;
@@ -111,6 +116,44 @@ export class FileProcessorService implements IFileProcessorService {
           finalHtmlContent,
           options.customStyles,
         );
+      }
+
+      // Generate anchor links if enabled
+      if (
+        options.tocReturnLinksLevel &&
+        options.tocReturnLinksLevel > 0 &&
+        parsedContent.headings.length > 0
+      ) {
+        this.logger.debug('Adding return-to-TOC anchor links');
+        const anchorDepth = this.convertTOCReturnLinkLevelToDepth(
+          options.tocReturnLinksLevel,
+        );
+
+        const anchorLinksGenerator = new AnchorLinksGenerator(
+          {
+            enabled: true,
+            anchorDepth: anchorDepth,
+            linkText: this.translator.t('anchorLinks.backToToc'),
+            alignment: 'right',
+          },
+          this.translator,
+        );
+
+        const result = anchorLinksGenerator.insertAnchorLinks(
+          finalHtmlContent,
+          parsedContent.headings,
+          options.includeTOC,
+        );
+
+        finalHtmlContent = result.modifiedHtml;
+
+        if (result.linksInserted > 0) {
+          this.logger.debug(`Inserted ${result.linksInserted} anchor links`);
+
+          // Add anchor links CSS styles
+          const anchorStyles = anchorLinksGenerator.getStyles();
+          finalHtmlContent = this.injectStyles(finalHtmlContent, anchorStyles);
+        }
       }
 
       // Generate PDF
@@ -298,6 +341,30 @@ export class FileProcessorService implements IFileProcessorService {
         'FileProcessorService.generateOutputPath',
       );
       throw wrappedError;
+    }
+  }
+
+  /**
+   * Convert TOCReturnLinkLevel to AnchorLinksDepth
+   */
+  private convertTOCReturnLinkLevelToDepth(
+    level: TOCReturnLinkLevel,
+  ): AnchorLinksDepth {
+    switch (level) {
+      case 0:
+        return 'none';
+      case 1:
+        return 2; // H2 sections
+      case 2:
+        return 3; // H2-H3 sections
+      case 3:
+        return 4; // H2-H4 sections
+      case 4:
+        return 5; // H2-H5 sections
+      case 5:
+        return 6; // H2-H6 sections
+      default:
+        return 'none';
     }
   }
 

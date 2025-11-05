@@ -15,6 +15,7 @@ Transform your Markdown documents into beautiful PDFs with automatic table of co
 🎨 **Customization** - Adjust styling, covers, headers, and footers.<br/>
 🔧 **Settings** - Save preferences for future use.<br/>
 📑 **Auto TOC** - Generate clickable table of contents from headings.<br/>
+🔗 **Anchor Links** - Smart back-to-TOC navigation links inserted at section endings for improved document navigation.<br/>
 📊 **PlantUML Diagrams** - Local and remote diagram rendering with automatic installation detection.<br/>
 📈 **Mermaid Diagrams** - Modern flowcharts, sequence diagrams, and Gantt charts.<br/>
 🎨 **Admonitions** - 8 professional callout block types with custom SVG icons and perfect alignment.<br/>
@@ -131,6 +132,7 @@ Handle multiple files efficiently:
 - **Mermaid Settings**: Local rendering with theme customization and caching.
 - **Admonitions**: 8 professional callout types with custom SVG icons, perfect alignment, and theme colors.
 - **Syntax Highlighting**: PrismJS-powered code highlighting with support for 50+ programming languages and customizable themes.
+- **Smart Navigation**: Back-to-TOC anchor links with configurable depth levels (H2-H6), automatic insertion at section endings, and customizable alignment (left/center/right).
 - **HTML Support**: Enhanced HTML tag support including hyperlinks with attributes, superscript/subscript for scientific notation, and text alignment utility classes (`.text-left`, `.text-center`, `.text-right`, `.text-justify`).
 - **Image Processing**: Automatic path resolution and base64 embedding.
 
