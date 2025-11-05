@@ -96,6 +96,7 @@ async function main(): Promise<void> {
               outputPath,
               includeTOC: true,
               includePageNumbers: true,
+              tocReturnLinksLevel: 3, // Smart default: H2-H4 when TOC enabled
             });
 
             if (result.success) {

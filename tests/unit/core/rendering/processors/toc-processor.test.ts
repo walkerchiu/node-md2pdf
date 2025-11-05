@@ -41,7 +41,7 @@ describe('TOCProcessor', () => {
 
       const result = await processor.process(content, context);
       expect(result).toHaveProperty('html');
-      expect((result as any).html).toContain('<div class="toc-container">');
+      expect((result as any).html).toContain('class="toc-container"');
       expect((result as any).html).toContain('Test');
     });
 

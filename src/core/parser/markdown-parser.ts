@@ -9,9 +9,9 @@ import MarkdownIt from 'markdown-it';
 import anchor from 'markdown-it-anchor';
 
 import { ParsedMarkdown, Heading } from '../../types/index';
+import { SyntaxHighlighter } from '../rendering/processors/syntax-highlighter';
 
 import admonitionsPlugin from './plugins/markdown-it-admonitions';
-import { SyntaxHighlighter } from '../rendering/processors/syntax-highlighter';
 
 export interface MarkdownParserOptions {
   html: boolean;

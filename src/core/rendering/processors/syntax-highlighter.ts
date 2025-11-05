@@ -4,6 +4,7 @@
  */
 
 import Prism from 'prismjs';
+
 import {
   DEFAULT_SYNTAX_HIGHLIGHTING,
   DEFAULT_CSS_TEMPLATE,

@@ -199,12 +199,21 @@ export const zhTWTranslations: TranslationKey = {
     includeTOC: '包含目錄？',
     selectTocDepth: '請選擇目錄深度：',
     tocLevels: {
-      1: '1 層（僅 H1）',
-      2: '2 層（H1-H2）',
-      3: '3 層（H1-H3）',
-      4: '4 層（H1-H4）',
-      5: '5 層（H1-H5）',
-      6: '6 層（H1-H6）',
+      1: '1 層（僅 # ）',
+      2: '2 層（# 和 ##）',
+      3: '3 層（# 到 ###）',
+      4: '4 層（# 到 ####）',
+      5: '5 層（# 到 #####）',
+      6: '6 層（# 到 ######）',
+    },
+    tocReturnLinksLevel: '選擇返回目錄錨點連結的章節範圍：',
+    tocReturnLinksLevels: {
+      0: '0. 不需要',
+      1: '1. H2 章節',
+      2: '2. H2-H3 章節',
+      3: '3. H2-H4 章節',
+      4: '4. H2-H5 章節',
+      5: '5. H2-H6 章節',
     },
     includePageNumbers: '包含頁碼？',
     chineseFontSupport:
@@ -294,12 +303,21 @@ export const zhTWTranslations: TranslationKey = {
     includeTOCPrompt: '包含目錄？',
     selectTocDepth: '選擇目錄深度：',
     tocLevels: {
-      1: '1. 1 層（僅 H1）',
-      2: '2. 2 層（H1-H2）',
-      3: '3. 3 層（H1-H3）',
-      4: '4. 4 層（H1-H4）',
-      5: '5. 5 層（H1-H5）',
-      6: '6. 6 層（H1-H6）',
+      1: '1 層（僅 # ）',
+      2: '2 層（# 和 ##）',
+      3: '3 層（# 到 ###）',
+      4: '4 層（# 到 ####）',
+      5: '5 層（# 到 #####）',
+      6: '6 層（# 到 ######）',
+    },
+    tocReturnLinksLevel: '選擇返回目錄錨點連結的章節範圍：',
+    tocReturnLinksLevels: {
+      0: '0. 不需要',
+      1: '1. H2 章節',
+      2: '2. H2-H3 章節',
+      3: '3. H2-H4 章節',
+      4: '4. H2-H5 章節',
+      5: '5. H2-H6 章節',
     },
     includePageNumbers: '包含頁碼？',
     chineseFontSupport:
@@ -675,5 +693,10 @@ export const zhTWTranslations: TranslationKey = {
     documentMetadata: '文件屬性',
     securitySettings: '安全性',
     templateManagement: '範本',
+  },
+
+  // Anchor links
+  anchorLinks: {
+    backToToc: '↑ 返回目錄',
   },
 };
