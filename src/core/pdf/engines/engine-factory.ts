@@ -3,7 +3,6 @@
  * Creates and manages PDF engine instances
  */
 
-import { ChromeHeadlessPDFEngine } from './chrome-headless-engine';
 import { PuppeteerPDFEngine } from './puppeteer-engine';
 import { IPDFEngine, IPDFEngineFactory } from './types';
 
@@ -16,7 +15,6 @@ export class PDFEngineFactory implements IPDFEngineFactory {
   constructor() {
     // Register default engines
     this.registerEngine('puppeteer', PuppeteerPDFEngine);
-    this.registerEngine('chrome-headless', ChromeHeadlessPDFEngine);
   }
 
   async createEngine(

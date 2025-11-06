@@ -15,6 +15,7 @@ Transform your Markdown documents into beautiful PDFs with automatic table of co
 🎨 **Customization** - Adjust styling, covers, headers, and footers.<br/>
 🔧 **Settings** - Save preferences for future use.<br/>
 📑 **Auto TOC** - Generate clickable table of contents from headings.<br/>
+🔖 **PDF Bookmarks** - Automatic PDF navigation bookmarks with hierarchical outline structure.<br/>
 🔗 **Anchor Links** - Smart back-to-TOC navigation links inserted at section endings for improved document navigation.<br/>
 📊 **PlantUML Diagrams** - Local and remote diagram rendering with automatic installation detection.<br/>
 📈 **Mermaid Diagrams** - Modern flowcharts, sequence diagrams, and Gantt charts.<br/>
@@ -90,7 +91,7 @@ When you start the app, you'll see this friendly menu:
 
 ## 📋 Supported Markdown Features
 
-✅ **Headings** (H1-H6) - Automatically creates table of contents.<br/>
+✅ **Headings** (H1-H6) - Automatically creates table of contents and PDF bookmarks.<br/>
 ✅ **Text formatting** - Bold, italic, strikethrough.<br/>
 ✅ **Lists** - Ordered, unordered, and nested lists.<br/>
 ✅ **Code blocks** - With syntax highlighting.<br/>
@@ -103,6 +104,7 @@ When you start the app, you'll see this friendly menu:
 ✅ **PlantUML Diagrams** - Local-first rendering with automatic fallback to remote server.<br/>
 ✅ **Mermaid Diagrams** - Flowcharts, sequence diagrams, Gantt charts with local rendering.<br/>
 ✅ **Admonitions** - Professional callout blocks: `:::info`, `:::tip`, `:::warning`, `:::danger`, `:::success`, `:::note`, `:::important`, `:::example`.<br/>
+✅ **PDF Bookmarks** - Automatic hierarchical navigation bookmarks with configurable depth and TOC integration.<br/>
 ✅ **Chinese Support** - Perfect support for Chinese characters.
 
 ## 💡 Smart Features
@@ -128,6 +130,7 @@ Handle multiple files efficiently:
 - **Page Structure**: Configure headers, footers, and margins with interactive presets.
 - **Style Themes**: Choose from professional templates (business, academic, technical).
 - **Table of Contents**: Customizable depth and styling.
+- **PDF Bookmarks**: Configurable hierarchical navigation with depth control and automatic TOC integration.
 - **PlantUML Settings**: Local-first rendering with automatic installation detection and remote fallback.
 - **Mermaid Settings**: Local rendering with theme customization and caching.
 - **Admonitions**: 8 professional callout types with custom SVG icons, perfect alignment, and theme colors.
@@ -409,6 +412,7 @@ tail -f logs/md2pdf.log
 4. **Batch Mode**: Use batch processing for multiple files - it's more efficient.
 5. **PlantUML**: Install PlantUML locally for faster diagram rendering and better performance.
 6. **Logging**: Use file logging in production for better troubleshooting.
+7. **PDF Bookmarks**: Enable automatic bookmarks for better PDF navigation - they're automatically created when TOC is enabled.
 
 ## 📊 What Makes This Special
 
@@ -418,6 +422,7 @@ tail -f logs/md2pdf.log
 - **Error Recovery**: Smart error handling and recovery mechanisms.
 - **Performance**: Optimized for both single files and batch processing.
 - **User Experience**: Interactive CLI with guided workflows.
+- **PDF Navigation**: Advanced bookmark system with hierarchical structure and smart TOC integration.
 
 ## 🤝 Contributing
 

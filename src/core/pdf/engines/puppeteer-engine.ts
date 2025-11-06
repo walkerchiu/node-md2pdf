@@ -31,6 +31,8 @@ export class PuppeteerPDFEngine implements IPDFEngine {
     supportsChineseText: true,
     supportsTOC: true,
     supportsHeaderFooter: true,
+    supportsBookmarks: true,
+    supportsOutlineGeneration: true,
   };
 
   private browser: Browser | null = null;
@@ -175,7 +177,11 @@ export class PuppeteerPDFEngine implements IPDFEngine {
           timeout: 30000,
         });
 
-        const pdfOptions = this.buildPDFOptions(resolvedOutputPath, options);
+        const pdfOptions = this.buildPDFOptions(
+          resolvedOutputPath,
+          options,
+          context,
+        );
         const pdfBuffer = await page.pdf(pdfOptions);
 
         const generationTime = Date.now() - startTime;
@@ -229,8 +235,9 @@ export class PuppeteerPDFEngine implements IPDFEngine {
   private buildPDFOptions(
     outputPath: string,
     options: PDFEngineOptions,
+    _context: PDFGenerationContext,
   ): PDFOptions {
-    return {
+    const pdfOptions: PDFOptions = {
       path: outputPath,
       format: options.format as 'A4' | 'A3' | 'A5' | 'Legal' | 'Letter',
       landscape: options.orientation === 'landscape',
@@ -242,6 +249,43 @@ export class PuppeteerPDFEngine implements IPDFEngine {
       scale: options.scale || 1,
       preferCSSPageSize: options.preferCSSPageSize || false,
     };
+
+    // Add bookmark outline if bookmarks are enabled
+    if (_context.bookmarks?.enabled) {
+      // Enable Puppeteer's experimental outline generation
+      (pdfOptions as any).outline = true;
+    }
+
+    return pdfOptions;
+  }
+
+  /**
+   * Convert bookmark outline to Puppeteer outline format
+   */
+  private convertToOutline(
+    bookmarkOutline: Array<{
+      title: string;
+      dest: number | string;
+      children?: unknown[];
+    }>,
+  ): unknown[] {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    return bookmarkOutline.map((item: any) => {
+      const result: any = {
+        title: item.title,
+        dest: item.dest,
+      };
+
+      if (
+        item.children &&
+        Array.isArray(item.children) &&
+        item.children.length > 0
+      ) {
+        result.children = this.convertToOutline(item.children);
+      }
+
+      return result;
+    });
   }
 
   private async getPageCount(page: Page): Promise<number> {

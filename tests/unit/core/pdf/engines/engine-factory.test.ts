@@ -5,7 +5,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { PDFEngineFactory } from '../../../../../src/core/pdf/engines/engine-factory';
 import { PuppeteerPDFEngine } from '../../../../../src/core/pdf/engines/puppeteer-engine';
-import { ChromeHeadlessPDFEngine } from '../../../../../src/core/pdf/engines/chrome-headless-engine';
 
 describe('PDFEngineFactory', () => {
   let factory: PDFEngineFactory;
@@ -19,8 +18,7 @@ describe('PDFEngineFactory', () => {
       const availableEngines = factory.getAvailableEngines();
 
       expect(availableEngines).toContain('puppeteer');
-      expect(availableEngines).toContain('chrome-headless');
-      expect(availableEngines).toHaveLength(2);
+      expect(availableEngines).toHaveLength(1);
     });
 
     it('should allow registering custom engines', () => {
@@ -41,7 +39,7 @@ describe('PDFEngineFactory', () => {
 
       const availableEngines = factory.getAvailableEngines();
       expect(availableEngines).toContain('custom');
-      expect(availableEngines).toHaveLength(3);
+      expect(availableEngines).toHaveLength(2);
     });
 
     it('should allow unregistering engines', () => {
@@ -69,14 +67,6 @@ describe('PDFEngineFactory', () => {
 
       expect(engine).toBeInstanceOf(PuppeteerPDFEngine);
       expect(engine.name).toBe('puppeteer');
-      expect(engine.capabilities).toBeDefined();
-    });
-
-    it('should create Chrome Headless engine', async () => {
-      const engine = await factory.createEngine('chrome-headless');
-
-      expect(engine).toBeInstanceOf(ChromeHeadlessPDFEngine);
-      expect(engine.name).toBe('chrome-headless');
       expect(engine.capabilities).toBeDefined();
     });
 

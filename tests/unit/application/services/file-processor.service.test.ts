@@ -224,6 +224,12 @@ describe('FileProcessorService', () => {
         mockParsedContent.content,
         outputPath,
         {
+          bookmarkOptions: {
+            enabled: true,
+            includePageNumbers: true,
+            maxDepth: 2,
+            useExistingTOC: false,
+          },
           enableChineseSupport: true,
           headings: mockParsedContent.headings,
           includeTOC: true,
@@ -320,6 +326,12 @@ describe('FileProcessorService', () => {
         mockParsedContent.content,
         outputPath,
         {
+          bookmarkOptions: {
+            enabled: true,
+            includePageNumbers: true,
+            maxDepth: 3,
+            useExistingTOC: false,
+          },
           enableChineseSupport: true,
           headings: mockParsedContent.headings,
           includeTOC: true,

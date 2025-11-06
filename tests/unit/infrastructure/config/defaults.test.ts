@@ -53,8 +53,8 @@ describe('Default Configuration Values', () => {
 
     it('should define PDF engine configuration', () => {
       expect(defaultConfig.pdf.engines.primary).toBe('puppeteer');
-      expect(defaultConfig.pdf.engines.fallback).toEqual(['chrome-headless']);
-      expect(defaultConfig.pdf.engines.strategy).toBe('health-first');
+      expect(defaultConfig.pdf.engines.fallback).toEqual([]);
+      expect(defaultConfig.pdf.engines.strategy).toBe('primary-first');
       expect(defaultConfig.pdf.engines.healthCheck.interval).toBe(30000);
       expect(defaultConfig.pdf.engines.healthCheck.enabled).toBe(true);
     });
