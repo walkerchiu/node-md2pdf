@@ -189,12 +189,10 @@ export class ConfigAccessor {
         CONFIG_KEYS.PDF.ENGINES.PRIMARY,
         'puppeteer',
       ),
-      fallback: this.configManager.get(CONFIG_KEYS.PDF.ENGINES.FALLBACK, [
-        'chrome-headless',
-      ]),
+      fallback: this.configManager.get(CONFIG_KEYS.PDF.ENGINES.FALLBACK, []),
       strategy: this.configManager.get(
         CONFIG_KEYS.PDF.ENGINES.STRATEGY,
-        'health-first',
+        'primary-first',
       ),
       healthCheck: this.getEngineHealthCheckConfig(),
       resourceLimits: this.getResourceLimitsConfig(),

@@ -27,8 +27,8 @@ describe('ConfigSchema', () => {
           useEnhancedEngine: true,
           engines: {
             primary: 'puppeteer',
-            fallback: ['chrome-headless'],
-            strategy: 'health-first',
+            fallback: [],
+            strategy: 'primary-first',
             healthCheck: {
               interval: 30000,
               enabled: true,

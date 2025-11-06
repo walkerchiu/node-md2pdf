@@ -103,6 +103,8 @@ describe('PuppeteerPDFEngine', () => {
         supportsChineseText: true,
         supportsTOC: true,
         supportsHeaderFooter: true,
+        supportsBookmarks: true,
+        supportsOutlineGeneration: true,
       });
     });
 

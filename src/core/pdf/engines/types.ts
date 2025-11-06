@@ -32,6 +32,21 @@ export interface PDFGenerationContext {
     includePageNumbers: boolean;
     title?: string;
   };
+  bookmarks?: {
+    enabled: boolean;
+    maxDepth?: number;
+    includePageNumbers?: boolean;
+    useExistingTOC?: boolean;
+    outline?: Array<{
+      title: string;
+      dest: number | string;
+      children?: Array<{
+        title: string;
+        dest: number | string;
+        children?: unknown[];
+      }>;
+    }>;
+  };
 }
 
 export interface PDFEngineResult {
@@ -66,6 +81,8 @@ export interface PDFEngineCapabilities {
   supportsChineseText: boolean;
   supportsTOC: boolean;
   supportsHeaderFooter: boolean;
+  supportsBookmarks: boolean;
+  supportsOutlineGeneration: boolean;
 }
 
 /**

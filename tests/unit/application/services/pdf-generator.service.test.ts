@@ -45,7 +45,7 @@ jest.mock('../../../../src/core/pdf/engines', () => {
     cleanup: jest.fn(() => Promise.resolve()),
     getEngineStatus: jest.fn(() => new Map()),
     performHealthChecks: jest.fn(() => Promise.resolve()),
-    getAvailableEngines: jest.fn(() => ['puppeteer', 'chrome-headless']),
+    getAvailableEngines: jest.fn(() => ['puppeteer']),
     forceHealthCheck: jest.fn(() => Promise.resolve()),
     getHealthyEngines: jest.fn(() => ['puppeteer']),
     getEngineMetrics: jest.fn(() => new Map()),
@@ -60,7 +60,7 @@ jest.mock('../../../../src/core/pdf/engines', () => {
     PrimaryFirstSelectionStrategy: jest.fn(),
     DEFAULT_ENGINE_CONFIG: {
       primaryEngine: 'puppeteer',
-      fallbackEngines: ['chrome-headless'],
+      fallbackEngines: [],
       healthCheckInterval: 30000,
       maxRetries: 2,
       retryDelay: 1000,
@@ -694,7 +694,7 @@ describe('PDFGeneratorService', () => {
     it('should get available engines', () => {
       const engines = service.getAvailableEngines();
       expect(mockEngineManagerInstance.getAvailableEngines).toHaveBeenCalled();
-      expect(engines).toEqual(['puppeteer', 'chrome-headless']);
+      expect(engines).toEqual(['puppeteer']);
     });
 
     it('should return empty array when engine manager not initialized', () => {

@@ -366,8 +366,8 @@ describe('ConfigAccessor', () => {
     it('should return complete engine configuration', () => {
       const expectedConfig = {
         primary: 'puppeteer',
-        fallback: ['chrome-headless'],
-        strategy: 'health-first',
+        fallback: [],
+        strategy: 'primary-first',
         healthCheck: {
           interval: 30000,
           enabled: true,
@@ -401,11 +401,11 @@ describe('ConfigAccessor', () => {
       );
       expect(mockConfigManager.get).toHaveBeenCalledWith(
         CONFIG_KEYS.PDF.ENGINES.FALLBACK,
-        ['chrome-headless'],
+        [],
       );
       expect(mockConfigManager.get).toHaveBeenCalledWith(
         CONFIG_KEYS.PDF.ENGINES.STRATEGY,
-        'health-first',
+        'primary-first',
       );
     });
   });

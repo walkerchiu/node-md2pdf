@@ -9,7 +9,6 @@ import type { PDFEngineManagerConfig } from './types';
 
 // Engine implementations
 export { PuppeteerPDFEngine } from './puppeteer-engine';
-export { ChromeHeadlessPDFEngine } from './chrome-headless-engine';
 
 // Engine management
 export { PDFEngineManager } from './engine-manager';
@@ -27,7 +26,7 @@ export {
 // Default configurations
 export const DEFAULT_ENGINE_CONFIG: PDFEngineManagerConfig = {
   primaryEngine: 'puppeteer',
-  fallbackEngines: ['chrome-headless'] as string[],
+  fallbackEngines: [] as string[],
   healthCheckInterval: 30000, // 30 seconds
   maxRetries: 2,
   retryDelay: 1000, // 1 second

@@ -42,6 +42,8 @@ class MockPDFEngine implements IPDFEngine {
       supportsChineseText: true,
       supportsTOC: true,
       supportsHeaderFooter: true,
+      supportsBookmarks: true,
+      supportsOutlineGeneration: true,
     },
     private shouldThrowOnInit: boolean = false,
     private shouldThrowOnHealthCheck: boolean = false,
@@ -133,10 +135,6 @@ class MockPDFEngineFactory implements IPDFEngineFactory {
 
   constructor() {
     this.engines.set('puppeteer', () => new MockPDFEngine('puppeteer'));
-    this.engines.set(
-      'chrome-headless',
-      () => new MockPDFEngine('chrome-headless'),
-    );
     this.engines.set('playwright', () => new MockPDFEngine('playwright'));
   }
 
@@ -184,7 +182,7 @@ describe('PDFEngineManager', () => {
     mockStrategy = new HealthFirstSelectionStrategy();
     mockConfig = {
       primaryEngine: 'puppeteer',
-      fallbackEngines: ['chrome-headless', 'playwright'],
+      fallbackEngines: ['playwright'],
       healthCheckInterval: 30000,
       maxRetries: 3,
       retryDelay: 1000,
@@ -225,9 +223,8 @@ describe('PDFEngineManager', () => {
 
       const availableEngines = manager.getAvailableEngines();
       expect(availableEngines).toContain('puppeteer');
-      expect(availableEngines).toContain('chrome-headless');
       expect(availableEngines).toContain('playwright');
-      expect(availableEngines).toHaveLength(3);
+      expect(availableEngines).toHaveLength(2);
 
       expect(mockLogger.info).toHaveBeenCalledWith(
         expect.stringContaining('✅ Initialized puppeteer engine successfully'),
@@ -235,14 +232,13 @@ describe('PDFEngineManager', () => {
     });
 
     it('should handle engine initialization failures gracefully', async () => {
-      mockFactory.setShouldThrowOnCreate(['chrome-headless']);
+      mockFactory.setShouldThrowOnCreate(['playwright']);
 
       await manager.initialize();
 
       const availableEngines = manager.getAvailableEngines();
       expect(availableEngines).toContain('puppeteer');
-      expect(availableEngines).toContain('playwright');
-      expect(availableEngines).not.toContain('chrome-headless');
+      expect(availableEngines).not.toContain('playwright');
 
       expect(mockLogger.warn).toHaveBeenCalledWith(
         expect.stringContaining('Failed to initialize'),
@@ -266,7 +262,7 @@ describe('PDFEngineManager', () => {
       await manager.initialize();
 
       const availableEngines = manager.getAvailableEngines();
-      expect(availableEngines).toHaveLength(3); // primary + 2 fallbacks
+      expect(availableEngines).toHaveLength(2); // primary + 1 fallback
     });
 
     it('should start health monitoring when interval is configured', async () => {

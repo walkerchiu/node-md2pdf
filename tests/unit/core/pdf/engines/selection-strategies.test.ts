@@ -30,6 +30,8 @@ class MockPDFEngine implements IPDFEngine {
       supportsChineseText: true,
       supportsTOC: true,
       supportsHeaderFooter: true,
+      supportsBookmarks: false,
+      supportsOutlineGeneration: false,
     },
     private canHandleResult: boolean = true,
   ) {}
@@ -107,7 +109,6 @@ describe('PDF Engine Selection Strategies', () => {
 
     mockEngines = [
       new MockPDFEngine('puppeteer'),
-      new MockPDFEngine('chrome-headless'),
       new MockPDFEngine('playwright'),
     ];
 
@@ -121,17 +122,6 @@ describe('PDF Engine Selection Strategies', () => {
           averageGenerationTime: 1500,
           successRate: 90,
           memoryUsage: 150 * 1024 * 1024,
-        },
-      },
-      {
-        isHealthy: true,
-        engineName: 'chrome-headless',
-        lastCheck: new Date(),
-        errors: [],
-        performance: {
-          averageGenerationTime: 1200,
-          successRate: 95,
-          memoryUsage: 120 * 1024 * 1024,
         },
       },
       {
@@ -397,6 +387,8 @@ describe('PDF Engine Selection Strategies', () => {
           supportsChineseText: false,
           supportsTOC: false,
           supportsHeaderFooter: false,
+          supportsBookmarks: false,
+          supportsOutlineGeneration: false,
         }),
         new MockPDFEngine('advanced-engine', '1.0.0', {
           supportedFormats: ['A4', 'A3'],
@@ -405,6 +397,8 @@ describe('PDF Engine Selection Strategies', () => {
           supportsChineseText: true,
           supportsTOC: true,
           supportsHeaderFooter: true,
+          supportsBookmarks: true,
+          supportsOutlineGeneration: true,
         }),
       ];
 
@@ -447,6 +441,8 @@ describe('PDF Engine Selection Strategies', () => {
           supportsChineseText: false,
           supportsTOC: true,
           supportsHeaderFooter: true,
+          supportsBookmarks: false,
+          supportsOutlineGeneration: false,
         }),
         new MockPDFEngine('with-chinese', '1.0.0', {
           supportedFormats: ['A4'],
@@ -455,6 +451,8 @@ describe('PDF Engine Selection Strategies', () => {
           supportsChineseText: true,
           supportsTOC: true,
           supportsHeaderFooter: true,
+          supportsBookmarks: true,
+          supportsOutlineGeneration: true,
         }),
       ];
 
@@ -517,8 +515,8 @@ describe('PDF Engine Selection Strategies', () => {
 
     it('should record performance and adapt selection', async () => {
       // Record good performance for one engine
-      strategy.recordPerformance('chrome-headless', true, 800);
-      strategy.recordPerformance('chrome-headless', true, 900);
+      strategy.recordPerformance('playwright', true, 800);
+      strategy.recordPerformance('playwright', true, 900);
 
       // Record poor performance for another
       strategy.recordPerformance('puppeteer', false, 5000);
@@ -532,7 +530,7 @@ describe('PDF Engine Selection Strategies', () => {
 
       expect(selectedEngine).toBeTruthy();
       // Should prefer the engine with better recorded performance
-      expect(selectedEngine?.name).toBe('chrome-headless');
+      expect(selectedEngine?.name).toBe('playwright');
     });
 
     it('should give higher weight to recent performance', async () => {
@@ -548,7 +546,7 @@ describe('PDF Engine Selection Strategies', () => {
 
       // Record recent good performance for another engine
       for (let i = 0; i < 5; i++) {
-        strategy.recordPerformance('chrome-headless', true, 800);
+        strategy.recordPerformance('playwright', true, 800);
       }
 
       const selectedEngine = await strategy.selectEngine(
@@ -557,7 +555,7 @@ describe('PDF Engine Selection Strategies', () => {
         mockHealthStatuses,
       );
 
-      expect(selectedEngine?.name).toBe('chrome-headless');
+      expect(selectedEngine?.name).toBe('playwright');
     });
 
     it('should limit performance history size', async () => {

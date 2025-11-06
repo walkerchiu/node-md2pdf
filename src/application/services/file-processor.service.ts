@@ -196,6 +196,16 @@ export class FileProcessorService implements IFileProcessorService {
                 }),
             },
           }),
+          // Enable PDF bookmarks by default when TOC is enabled
+          ...(options.includeTOC && {
+            bookmarkOptions: {
+              enabled: true,
+              maxDepth: options.tocOptions?.maxDepth || 3,
+              includePageNumbers:
+                options.tocOptions?.includePageNumbers !== false,
+              useExistingTOC: false,
+            },
+          }),
         },
       );
 

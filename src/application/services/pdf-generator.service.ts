@@ -4,6 +4,8 @@
  * Provides enterprise-grade PDF generation with multi-engine support
  */
 
+import { BookmarkGenerator } from '../../core/bookmarks/bookmark-generator';
+import { BookmarkOptions } from '../../core/bookmarks/types';
 import {
   ConversionStartedEvent,
   ConversionCompletedEvent,
@@ -52,6 +54,7 @@ export interface IPDFGeneratorService {
         includePageNumbers: boolean;
         title?: string;
       };
+      bookmarkOptions?: BookmarkOptions;
     },
   ): Promise<PDFGenerationResult>;
 
@@ -184,6 +187,7 @@ export class PDFGeneratorService implements IPDFGeneratorService {
         includePageNumbers: boolean;
         title?: string;
       };
+      bookmarkOptions?: BookmarkOptions;
     } = {},
   ): Promise<PDFGenerationResult> {
     if (!this.isInitialized || !this.engineManager) {
@@ -524,6 +528,7 @@ export class PDFGeneratorService implements IPDFGeneratorService {
         includePageNumbers: boolean;
         title?: string;
       };
+      bookmarkOptions?: BookmarkOptions;
       twoStageRendering?: {
         enabled?: boolean;
         forceAccuratePageNumbers?: boolean;
@@ -572,6 +577,52 @@ export class PDFGeneratorService implements IPDFGeneratorService {
       includePageNumbers,
     );
 
+    // Generate bookmarks if enabled
+    let bookmarkData;
+    if (options.bookmarkOptions?.enabled) {
+      try {
+        const bookmarkGenerator = new BookmarkGenerator();
+
+        // Extract headings from HTML content if not provided
+        const headingsToUse =
+          options.headings || this.extractHeadingsFromHTML(enhancedHtmlContent);
+
+        // Generate bookmarks from headings
+        const result = await bookmarkGenerator.generateFromHeadings(
+          headingsToUse,
+          options.bookmarkOptions,
+        );
+
+        bookmarkData = {
+          enabled: true,
+          maxDepth: options.bookmarkOptions.maxDepth || 3,
+          includePageNumbers:
+            options.bookmarkOptions.includePageNumbers || false,
+          useExistingTOC: options.bookmarkOptions.useExistingTOC || false,
+          outline: result.outline.map((item) => ({
+            title: item.title,
+            dest: item.dest || '',
+            children:
+              item.children?.map((child) => ({
+                title: child.title,
+                dest: child.dest || '',
+                children: child.children || [],
+              })) || [],
+          })),
+        };
+
+        this.logger.info('Generated bookmarks', {
+          totalBookmarks: result.metadata.totalBookmarks,
+          maxDepth: result.metadata.maxDepth,
+        });
+      } catch (error) {
+        this.logger.warn('Failed to generate bookmarks', {
+          error: (error as Error).message,
+        });
+        bookmarkData = undefined;
+      }
+    }
+
     // Build generation context
     const context: PDFGenerationContext = {
       htmlContent: enhancedHtmlContent,
@@ -585,6 +636,11 @@ export class PDFGeneratorService implements IPDFGeneratorService {
         includePageNumbers: true,
       },
     };
+
+    // Add bookmarks if they were successfully generated
+    if (bookmarkData) {
+      context.bookmarks = bookmarkData;
+    }
 
     // Build engine options
     const engineOptions: PDFEngineOptions =
@@ -784,6 +840,35 @@ export class PDFGeneratorService implements IPDFGeneratorService {
       pageNumbers,
       features,
     };
+  }
+
+  /**
+   * Extract headings from HTML content for bookmark generation
+   */
+  private extractHeadingsFromHTML(htmlContent: string): Heading[] {
+    const headings: Heading[] = [];
+    const headingRegex =
+      /<h([1-6])[^>]*(?:id="([^"]+)")?[^>]*>(.*?)<\/h[1-6]>/gi;
+    let match;
+    let index = 0;
+
+    while ((match = headingRegex.exec(htmlContent)) !== null) {
+      const level = parseInt(match[1], 10);
+      const id = match[2] || `heading-${index}`;
+      const text = match[3].replace(/<[^>]+>/g, '').trim(); // Strip HTML tags from text
+
+      if (text) {
+        headings.push({
+          level,
+          text,
+          id,
+          anchor: `#${id}`,
+        });
+        index++;
+      }
+    }
+
+    return headings;
   }
 
   // Old TOC generation methods removed
