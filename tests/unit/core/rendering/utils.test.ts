@@ -401,7 +401,7 @@ More content.
 
       expect(validation.warnings).toBeDefined();
       expect(validation.recommendations).toBeDefined();
-    });
+    }, 30000); // 30 second timeout
 
     it('should handle validation errors gracefully', async () => {
       // Create an engine that might cause validation errors

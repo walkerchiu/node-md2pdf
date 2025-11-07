@@ -16,6 +16,7 @@ import type { ILogger } from '../../infrastructure/logging/types';
 export interface ITOCGeneratorService {
   generateTOC(
     headings: Heading[],
+    documentLanguage?: string,
     options?: Partial<TOCGeneratorOptions>,
   ): Promise<TOCGenerationResult>;
   validateHeadings(headings: Heading[]): Promise<boolean>;
@@ -76,6 +77,7 @@ export class TOCGeneratorService implements ITOCGeneratorService {
 
   async generateTOC(
     headings: Heading[],
+    documentLanguage?: string,
     options?: Partial<TOCGeneratorOptions>,
   ): Promise<TOCGenerationResult> {
     if (!this.isInitialized || !this.tocGenerator) {
@@ -97,7 +99,7 @@ export class TOCGeneratorService implements ITOCGeneratorService {
       }
 
       const startTime = Date.now();
-      const result = generator.generateTOC(headings);
+      const result = generator.generateTOC(headings, documentLanguage);
       const duration = Date.now() - startTime;
 
       this.logger.info(

@@ -13,7 +13,11 @@ import * as path from 'path';
 
 import * as fs from 'fs-extra';
 
-import { defaultConfig, environmentMappings } from './defaults';
+import {
+  defaultConfig,
+  environmentMappings,
+  SYSTEM_DEFINED_KEYS,
+} from './defaults';
 
 import type { IConfigManager, ConfigOptions } from './types';
 
@@ -60,7 +64,15 @@ export class ConfigManager implements IConfigManager {
   async save(): Promise<void> {
     try {
       await fs.ensureDir(path.dirname(this.configPath));
-      await fs.writeJson(this.configPath, this.config, { spaces: 2 });
+
+      // Filter out system-defined values before saving
+      const userConfigurableSettings = this.filterUserConfigurableSettings(
+        this.config,
+      );
+
+      await fs.writeJson(this.configPath, userConfigurableSettings, {
+        spaces: 2,
+      });
     } catch (error) {
       // Silently fail for now, as config saving is not critical
       // In a real implementation, we might want to log this
@@ -96,6 +108,43 @@ export class ConfigManager implements IConfigManager {
   }
 
   /**
+   * Filter out system-defined keys from configuration object
+   * These keys should not be saved to user config file
+   */
+  private filterUserConfigurableSettings(
+    config: Record<string, unknown>,
+  ): Record<string, unknown> {
+    const filteredConfig = this.deepClone(config) as Record<string, unknown>;
+
+    // Remove system-defined keys
+    SYSTEM_DEFINED_KEYS.forEach((key: string) => {
+      this.deleteNestedValue(filteredConfig, key);
+    });
+
+    return filteredConfig;
+  }
+
+  /**
+   * Delete a nested property from an object
+   */
+  private deleteNestedValue(obj: Record<string, unknown>, path: string): void {
+    const keys = path.split('.');
+    const lastKey = keys.pop();
+    if (!lastKey) return;
+
+    let current: Record<string, unknown> = obj;
+    for (const key of keys) {
+      if (current[key] && typeof current[key] === 'object') {
+        current = current[key] as Record<string, unknown>;
+      } else {
+        return; // Path doesn't exist
+      }
+    }
+
+    delete current[lastKey];
+  }
+
+  /**
    * Synchronously create user preferences file from default configuration
    * This ensures the user has a preferences file they can modify
    */
@@ -104,8 +153,15 @@ export class ConfigManager implements IConfigManager {
       // Ensure the directory exists
       fs.ensureDirSync(path.dirname(this.configPath));
 
-      // Write the default configuration as user preferences
-      fs.writeJsonSync(this.configPath, this.config, { spaces: 2 });
+      // Filter out system-defined values before saving
+      const userConfigurableSettings = this.filterUserConfigurableSettings(
+        this.config,
+      );
+
+      // Write the filtered configuration as user preferences
+      fs.writeJsonSync(this.configPath, userConfigurableSettings, {
+        spaces: 2,
+      });
 
       // Notify listeners that config file was created
       this.notifyConfigCreated();

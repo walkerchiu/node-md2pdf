@@ -87,7 +87,6 @@ describe('BatchProcessorService', () => {
     includeTOC: true,
     tocDepth: 3,
     includePageNumbers: true,
-    chineseFontSupport: true,
   };
 
   const sampleFileOptions: FileProcessingOptions = {

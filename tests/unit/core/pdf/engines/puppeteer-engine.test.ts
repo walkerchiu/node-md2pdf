@@ -298,7 +298,6 @@ describe('PuppeteerPDFEngine', () => {
 
       const puppeteer = require('puppeteer');
       expect(puppeteer.__mockPage.pdf).toHaveBeenCalledWith({
-        path: '/tmp/test-output.pdf',
         format: 'A4',
         landscape: false,
         margin: { top: '1in', bottom: '1in', left: '1in', right: '1in' },

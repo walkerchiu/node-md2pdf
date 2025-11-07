@@ -6,6 +6,7 @@
 import { existsSync, mkdirSync } from 'fs';
 import { dirname, resolve } from 'path';
 
+import { PDFDocument } from 'pdf-lib';
 import puppeteer, { Browser, Page, PDFOptions } from 'puppeteer';
 
 import { DEFAULT_MARGINS } from '../../../infrastructure/config/constants';
@@ -182,7 +183,29 @@ export class PuppeteerPDFEngine implements IPDFEngine {
           options,
           context,
         );
-        const pdfBuffer = await page.pdf(pdfOptions);
+
+        // Generate PDF with Puppeteer (without path to get buffer)
+        const tempPdfOptions = { ...pdfOptions };
+        delete tempPdfOptions.path; // Remove path to get buffer instead of writing to file
+        const pdfBuffer = await page.pdf(tempPdfOptions);
+
+        // Add metadata using pdf-lib if metadata is available
+        let finalPdfBuffer = pdfBuffer;
+        if (context.metadata) {
+          try {
+            finalPdfBuffer = await this.addMetadataToPdf(
+              pdfBuffer,
+              context.metadata,
+            );
+          } catch (error) {
+            // Log error but continue with original PDF if metadata addition fails
+            console.warn('Failed to add metadata to PDF:', error);
+          }
+        }
+
+        // Write the final PDF to file
+        const fs = await import('fs/promises');
+        await fs.writeFile(resolvedOutputPath, finalPdfBuffer);
 
         const generationTime = Date.now() - startTime;
         this.updateMetrics(true, generationTime);
@@ -192,7 +215,7 @@ export class PuppeteerPDFEngine implements IPDFEngine {
           outputPath: resolvedOutputPath,
           metadata: {
             pages: await this.getPageCount(page),
-            fileSize: pdfBuffer.length,
+            fileSize: finalPdfBuffer.length,
             generationTime,
             engineUsed: this.name,
           },
@@ -224,6 +247,7 @@ export class PuppeteerPDFEngine implements IPDFEngine {
     // Since we're now using two-stage rendering exclusively,
     // TOC generation is handled by TwoStageRenderingEngine
     // This method only handles basic HTML generation
+    // PDF metadata is now handled by pdf-lib post-processing
     return PDFTemplates.getFullHTML(
       context.htmlContent,
       context.title,
@@ -232,10 +256,59 @@ export class PuppeteerPDFEngine implements IPDFEngine {
     );
   }
 
+  /**
+   * Add metadata to PDF using pdf-lib
+   */
+  private async addMetadataToPdf(
+    pdfBuffer: Buffer,
+    metadata: any,
+  ): Promise<Buffer> {
+    const pdfDoc = await PDFDocument.load(pdfBuffer);
+
+    // Set standard PDF metadata fields
+    if (metadata.title) {
+      pdfDoc.setTitle(metadata.title);
+    }
+    if (metadata.author) {
+      pdfDoc.setAuthor(metadata.author);
+    }
+    if (metadata.subject) {
+      pdfDoc.setSubject(metadata.subject);
+    }
+    if (metadata.keywords) {
+      // Split keywords string into array if it contains commas
+      const keywordsArray =
+        typeof metadata.keywords === 'string'
+          ? metadata.keywords.split(',').map((k: string) => k.trim())
+          : [metadata.keywords];
+      pdfDoc.setKeywords(keywordsArray);
+    }
+    // Set system fixed creator and producer
+    pdfDoc.setCreator('MD2PDF');
+    pdfDoc.setProducer('MD2PDF with pdf-lib');
+
+    // Set creation and modification dates
+    const now = new Date();
+    if (metadata.creationDate) {
+      pdfDoc.setCreationDate(metadata.creationDate);
+    } else {
+      pdfDoc.setCreationDate(now);
+    }
+    if (metadata.modDate) {
+      pdfDoc.setModificationDate(metadata.modDate);
+    } else {
+      pdfDoc.setModificationDate(now);
+    }
+
+    // Save the modified PDF
+    const modifiedPdfBytes = await pdfDoc.save();
+    return Buffer.from(modifiedPdfBytes);
+  }
+
   private buildPDFOptions(
     outputPath: string,
     options: PDFEngineOptions,
-    _context: PDFGenerationContext,
+    context: PDFGenerationContext,
   ): PDFOptions {
     const pdfOptions: PDFOptions = {
       path: outputPath,
@@ -250,8 +323,11 @@ export class PuppeteerPDFEngine implements IPDFEngine {
       preferCSSPageSize: options.preferCSSPageSize || false,
     };
 
+    // Note: Puppeteer doesn't directly support PDF metadata in PDFOptions
+    // Metadata is set via HTML meta tags in generateFullHTML method
+
     // Add bookmark outline if bookmarks are enabled
-    if (_context.bookmarks?.enabled) {
+    if (context.bookmarks?.enabled) {
       // Enable Puppeteer's experimental outline generation
       (pdfOptions as any).outline = true;
     }

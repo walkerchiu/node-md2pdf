@@ -7,6 +7,7 @@ import * as path from 'path';
 
 import { AnchorLinksGenerator } from '../../core/anchor-links/anchor-links-generator';
 import { AnchorLinksDepth } from '../../core/anchor-links/types';
+import { MetadataService } from '../../core/metadata/service';
 import { PDFGeneratorOptions, PDFGenerationResult } from '../../core/pdf/types';
 import { TOCGeneratorOptions } from '../../core/toc/types';
 import {
@@ -19,6 +20,7 @@ import { ImagePathResolver } from '../../utils/image-path-resolver';
 import { IMarkdownParserService } from './markdown-parser.service';
 import { IPDFGeneratorService } from './pdf-generator.service';
 
+import type { DocumentMetadata } from '../../core/metadata/types';
 import type { IConfigManager } from '../../infrastructure/config/types';
 import type { IErrorHandler } from '../../infrastructure/error/types';
 import type { IFileSystemManager } from '../../infrastructure/filesystem/types';
@@ -33,6 +35,8 @@ export interface FileProcessingOptions {
   tocOptions?: Partial<TOCGeneratorOptions>;
   pdfOptions?: Partial<PDFGeneratorOptions>;
   customStyles?: string;
+  metadata?: Partial<DocumentMetadata>;
+  extractMetadata?: boolean;
 }
 
 export interface FileProcessingResult {
@@ -43,6 +47,7 @@ export interface FileProcessingResult {
   pdfResult: PDFGenerationResult;
   processingTime: number;
   fileSize: number;
+  metadata?: DocumentMetadata;
 }
 
 export interface IFileProcessorService {
@@ -55,17 +60,18 @@ export interface IFileProcessorService {
 }
 
 export class FileProcessorService implements IFileProcessorService {
+  private readonly metadataService: MetadataService;
+
   constructor(
     private readonly logger: ILogger,
     private readonly errorHandler: IErrorHandler,
-    private readonly _configManager: IConfigManager, // Reserved for future use, eslint-disable-line @typescript-eslint/no-unused-vars
+    private readonly configManager: IConfigManager,
     private readonly fileSystemManager: IFileSystemManager,
     private readonly markdownParserService: IMarkdownParserService,
     private readonly pdfGeneratorService: IPDFGeneratorService,
     private readonly translator: ITranslationManager,
   ) {
-    // _configManager is reserved for future configuration options
-    void this._configManager;
+    this.metadataService = new MetadataService(this.logger);
   }
 
   async processFile(
@@ -94,6 +100,54 @@ export class FileProcessorService implements IFileProcessorService {
       this.logger.debug('Parsing Markdown content');
       const parsedContent =
         await this.markdownParserService.parseMarkdownFile(inputPath);
+
+      // Extract document metadata
+      let extractedMetadata: DocumentMetadata | undefined;
+      if (options.extractMetadata !== false) {
+        this.logger.debug('Extracting document metadata');
+        try {
+          const metadataConfig = this.configManager.get('metadata', {}) as any;
+          const result = await this.metadataService.extractMetadataSimple(
+            originalMarkdownContent,
+            inputPath,
+            metadataConfig,
+          );
+
+          if (result.metadata) {
+            extractedMetadata = result.metadata;
+
+            // Merge with manually provided metadata (manual metadata takes precedence)
+            if (options.metadata) {
+              extractedMetadata = this.metadataService.mergeMetadata(
+                extractedMetadata,
+                options.metadata,
+              );
+            }
+
+            // Log metadata summary
+            const summary =
+              this.metadataService.generateSummary(extractedMetadata);
+            this.logger.info(`Extracted metadata: ${summary}`);
+
+            // Log any warnings
+            if (result.warnings.length > 0) {
+              result.warnings.forEach((warning) => {
+                this.logger.warn(`Metadata warning: ${warning}`);
+              });
+            }
+          }
+        } catch (error) {
+          this.logger.warn(
+            `Metadata extraction failed: ${(error as Error).message}`,
+            error,
+          );
+          // Use manual metadata if extraction fails
+          extractedMetadata = options.metadata;
+        }
+      } else {
+        // Use only manually provided metadata
+        extractedMetadata = options.metadata;
+      }
 
       // All TOC processing is now handled by two-stage rendering
       let finalHtmlContent = parsedContent.content;
@@ -143,6 +197,7 @@ export class FileProcessorService implements IFileProcessorService {
           finalHtmlContent,
           parsedContent.headings,
           options.includeTOC,
+          extractedMetadata?.language,
         );
 
         finalHtmlContent = result.modifiedHtml;
@@ -163,9 +218,10 @@ export class FileProcessorService implements IFileProcessorService {
         tocOptions: options.tocOptions,
       });
 
-      // Extract title: prioritize first H1 heading, then metadata title, then default
+      // Extract title: prioritize extracted metadata title, then first H1 heading, then parsed metadata, then default
       const firstH1 = parsedContent.headings.find((h) => h.level === 1);
       const documentTitle =
+        extractedMetadata?.title ||
         firstH1?.text ||
         (parsedContent.metadata?.title as string) ||
         'Markdown Document';
@@ -174,11 +230,13 @@ export class FileProcessorService implements IFileProcessorService {
         finalHtmlContent,
         outputPath,
         {
+          // Pass extracted metadata to PDF generator
+          ...(extractedMetadata && { metadata: extractedMetadata }),
           ...(options.customStyles && { customCSS: options.customStyles }),
           title: documentTitle,
           headings: parsedContent.headings,
           markdownContent: originalMarkdownContent, // Use original markdown content for page estimation
-          enableChineseSupport: true,
+          enableChineseSupport: extractedMetadata?.language === 'zh-TW',
           ...(options.includePageNumbers !== undefined && {
             includePageNumbers: options.includePageNumbers,
           }),
@@ -195,6 +253,10 @@ export class FileProcessorService implements IFileProcessorService {
                   title: (options.tocOptions as any).title,
                 }),
             },
+          }),
+          // Pass document language from metadata
+          ...(extractedMetadata?.language && {
+            documentLanguage: extractedMetadata.language,
           }),
           // Enable PDF bookmarks by default when TOC is enabled
           ...(options.includeTOC && {
@@ -223,6 +285,7 @@ export class FileProcessorService implements IFileProcessorService {
         pdfResult,
         processingTime,
         fileSize,
+        ...(extractedMetadata && { metadata: extractedMetadata }),
       };
 
       this.logger.info(

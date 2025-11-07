@@ -85,7 +85,6 @@ describe('InteractiveMode', () => {
     includeTOC: true,
     tocDepth: 2,
     includePageNumbers: true,
-    chineseFontSupport: true,
   };
 
   const mockProcessingResult = {
@@ -196,7 +195,6 @@ describe('InteractiveMode', () => {
           outputPath: expect.stringContaining('test.pdf'),
           tocDepth: 2,
           includePageNumbers: true,
-          chineseFontSupport: true,
         })
         .mockResolvedValueOnce({ confirmed: true });
 
@@ -216,7 +214,7 @@ describe('InteractiveMode', () => {
           outputPath: mockConversionConfig.outputPath,
           tocDepth: mockConversionConfig.tocDepth,
           includePageNumbers: mockConversionConfig.includePageNumbers,
-          chineseFontSupport: mockConversionConfig.chineseFontSupport,
+          // chineseFontSupport removed
         })
         .mockResolvedValueOnce({ confirmed: false });
 
@@ -250,7 +248,7 @@ describe('InteractiveMode', () => {
           outputPath: mockConversionConfig.outputPath,
           tocDepth: mockConversionConfig.tocDepth,
           includePageNumbers: mockConversionConfig.includePageNumbers,
-          chineseFontSupport: mockConversionConfig.chineseFontSupport,
+          // chineseFontSupport removed
         })
         .mockResolvedValueOnce({ confirmed: false });
 
@@ -272,7 +270,6 @@ describe('InteractiveMode', () => {
           outputPath: 'document.pdf',
           tocDepth: 3,
           includePageNumbers: false,
-          chineseFontSupport: false,
         })
         .mockResolvedValueOnce({ confirmed: false });
 
@@ -296,10 +293,6 @@ describe('InteractiveMode', () => {
             type: 'confirm',
             name: 'includePageNumbers',
           }),
-          expect.objectContaining({
-            type: 'confirm',
-            name: 'chineseFontSupport',
-          }),
         ]),
       );
     });
@@ -311,7 +304,7 @@ describe('InteractiveMode', () => {
           outputPath: mockConversionConfig.outputPath,
           tocDepth: mockConversionConfig.tocDepth,
           includePageNumbers: mockConversionConfig.includePageNumbers,
-          chineseFontSupport: mockConversionConfig.chineseFontSupport,
+          // chineseFontSupport removed
         })
         .mockResolvedValueOnce({ confirmed: false });
 
@@ -338,7 +331,7 @@ describe('InteractiveMode', () => {
           outputPath: mockConversionConfig.outputPath,
           tocDepth: mockConversionConfig.tocDepth,
           includePageNumbers: mockConversionConfig.includePageNumbers,
-          chineseFontSupport: mockConversionConfig.chineseFontSupport,
+          // chineseFontSupport removed
         })
         .mockResolvedValueOnce({ confirmed: false });
 
@@ -367,7 +360,7 @@ describe('InteractiveMode', () => {
           outputPath: mockConversionConfig.outputPath,
           tocDepth: mockConversionConfig.tocDepth,
           includePageNumbers: mockConversionConfig.includePageNumbers,
-          chineseFontSupport: mockConversionConfig.chineseFontSupport,
+          // chineseFontSupport removed
         })
         .mockResolvedValueOnce({ confirmed: false });
 
@@ -394,7 +387,7 @@ describe('InteractiveMode', () => {
           outputPath: mockConversionConfig.outputPath,
           tocDepth: mockConversionConfig.tocDepth,
           includePageNumbers: mockConversionConfig.includePageNumbers,
-          chineseFontSupport: mockConversionConfig.chineseFontSupport,
+          // chineseFontSupport removed
         })
         .mockResolvedValueOnce({ confirmed: false });
 
@@ -427,7 +420,7 @@ describe('InteractiveMode', () => {
           outputPath: mockConversionConfig.outputPath,
           tocDepth: mockConversionConfig.tocDepth,
           includePageNumbers: mockConversionConfig.includePageNumbers,
-          chineseFontSupport: mockConversionConfig.chineseFontSupport,
+          // chineseFontSupport removed
         })
         .mockResolvedValueOnce({ confirmed: true });
 
@@ -445,19 +438,12 @@ describe('InteractiveMode', () => {
         expect.stringContaining('test.pdf'),
       );
       expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('2'));
-      expect(consoleSpy).toHaveBeenCalledWith(
-        expect.stringContaining('interactive.yes'),
-      );
-      expect(consoleSpy).toHaveBeenCalledWith(
-        expect.stringContaining('interactive.yes'),
-      );
     });
 
     it('should display "No" for disabled options', async () => {
       const configWithDisabledOptions = {
         ...mockConversionConfig,
         includePageNumbers: false,
-        chineseFontSupport: false,
       };
 
       mockInquirerPrompt
@@ -468,7 +454,6 @@ describe('InteractiveMode', () => {
           outputPath: configWithDisabledOptions.outputPath,
           tocDepth: configWithDisabledOptions.tocDepth,
           includePageNumbers: configWithDisabledOptions.includePageNumbers,
-          chineseFontSupport: configWithDisabledOptions.chineseFontSupport,
         })
         .mockResolvedValueOnce({ confirmed: false });
 
@@ -489,7 +474,7 @@ describe('InteractiveMode', () => {
           outputPath: mockConversionConfig.outputPath,
           tocDepth: mockConversionConfig.tocDepth,
           includePageNumbers: mockConversionConfig.includePageNumbers,
-          chineseFontSupport: mockConversionConfig.chineseFontSupport,
+          // chineseFontSupport removed
         })
         .mockResolvedValueOnce({ confirmed: true });
 
@@ -513,7 +498,7 @@ describe('InteractiveMode', () => {
           outputPath: mockConversionConfig.outputPath,
           tocDepth: mockConversionConfig.tocDepth,
           includePageNumbers: mockConversionConfig.includePageNumbers,
-          chineseFontSupport: mockConversionConfig.chineseFontSupport,
+          // chineseFontSupport removed
         })
         .mockResolvedValueOnce({ confirmed: false });
 
@@ -532,7 +517,7 @@ describe('InteractiveMode', () => {
           includeTOC: mockConversionConfig.includeTOC,
           tocDepth: mockConversionConfig.tocDepth,
           includePageNumbers: mockConversionConfig.includePageNumbers,
-          chineseFontSupport: mockConversionConfig.chineseFontSupport,
+          // chineseFontSupport removed
         })
         .mockResolvedValueOnce({ confirmed: true });
 
@@ -552,7 +537,6 @@ describe('InteractiveMode', () => {
             displayHeaderFooter: false, // Changed to false due to CSS @page approach
             printBackground: true,
           }),
-          customStyles: expect.stringContaining('Noto Sans CJK SC'),
         }),
       );
     });
@@ -560,7 +544,6 @@ describe('InteractiveMode', () => {
     it('should perform conversion without Chinese font support', async () => {
       const configWithoutChinese = {
         ...mockConversionConfig,
-        chineseFontSupport: false,
       };
 
       mockInquirerPrompt
@@ -569,7 +552,6 @@ describe('InteractiveMode', () => {
           outputPath: configWithoutChinese.outputPath,
           tocDepth: configWithoutChinese.tocDepth,
           includePageNumbers: configWithoutChinese.includePageNumbers,
-          chineseFontSupport: configWithoutChinese.chineseFontSupport,
         })
         .mockResolvedValueOnce({ confirmed: true });
 
@@ -577,8 +559,8 @@ describe('InteractiveMode', () => {
 
       expect(mockFileProcessorService.processFile).toHaveBeenCalledWith(
         expect.stringContaining('test.md'),
-        expect.not.objectContaining({
-          customStyles: expect.stringContaining('Noto Sans CJK SC'),
+        expect.objectContaining({
+          outputPath: expect.stringContaining('.pdf'),
         }),
       );
     });
@@ -595,7 +577,6 @@ describe('InteractiveMode', () => {
           outputPath: configWithoutOutput.outputPath,
           tocDepth: configWithoutOutput.tocDepth,
           includePageNumbers: configWithoutOutput.includePageNumbers,
-          chineseFontSupport: configWithoutOutput.chineseFontSupport,
         })
         .mockResolvedValueOnce({ confirmed: true });
 
@@ -616,7 +597,7 @@ describe('InteractiveMode', () => {
           outputPath: mockConversionConfig.outputPath,
           tocDepth: mockConversionConfig.tocDepth,
           includePageNumbers: mockConversionConfig.includePageNumbers,
-          chineseFontSupport: mockConversionConfig.chineseFontSupport,
+          // chineseFontSupport removed
         })
         .mockResolvedValueOnce({ confirmed: true });
 
@@ -655,7 +636,6 @@ describe('InteractiveMode', () => {
           outputPath: configWithPageNumbers.outputPath,
           tocDepth: configWithPageNumbers.tocDepth,
           includePageNumbers: configWithPageNumbers.includePageNumbers,
-          chineseFontSupport: configWithPageNumbers.chineseFontSupport,
         })
         .mockResolvedValueOnce({ confirmed: true });
 
@@ -686,7 +666,6 @@ describe('InteractiveMode', () => {
           outputPath: configWithoutPageNumbers.outputPath,
           tocDepth: configWithoutPageNumbers.tocDepth,
           includePageNumbers: configWithoutPageNumbers.includePageNumbers,
-          chineseFontSupport: configWithoutPageNumbers.chineseFontSupport,
         })
         .mockResolvedValueOnce({ confirmed: true });
 
@@ -713,7 +692,7 @@ describe('InteractiveMode', () => {
           outputPath: mockConversionConfig.outputPath,
           tocDepth: mockConversionConfig.tocDepth,
           includePageNumbers: mockConversionConfig.includePageNumbers,
-          chineseFontSupport: mockConversionConfig.chineseFontSupport,
+          // chineseFontSupport removed
         })
         .mockResolvedValueOnce({ confirmed: true });
 
@@ -735,7 +714,7 @@ describe('InteractiveMode', () => {
           outputPath: mockConversionConfig.outputPath,
           tocDepth: mockConversionConfig.tocDepth,
           includePageNumbers: mockConversionConfig.includePageNumbers,
-          chineseFontSupport: mockConversionConfig.chineseFontSupport,
+          // chineseFontSupport removed
         })
         .mockResolvedValueOnce({ confirmed: true });
 
@@ -759,7 +738,7 @@ describe('InteractiveMode', () => {
           outputPath: mockConversionConfig.outputPath,
           tocDepth: mockConversionConfig.tocDepth,
           includePageNumbers: mockConversionConfig.includePageNumbers,
-          chineseFontSupport: mockConversionConfig.chineseFontSupport,
+          // chineseFontSupport removed
         })
         .mockResolvedValueOnce({ confirmed: true });
 
@@ -852,7 +831,7 @@ describe('InteractiveMode', () => {
           outputPath: mockConversionConfig.outputPath,
           tocDepth: mockConversionConfig.tocDepth,
           includePageNumbers: mockConversionConfig.includePageNumbers,
-          chineseFontSupport: mockConversionConfig.chineseFontSupport,
+          // chineseFontSupport removed
         })
         .mockResolvedValueOnce({ confirmed: true });
 
@@ -877,7 +856,6 @@ describe('InteractiveMode', () => {
           includeTOC: configWithMaxTocDepth.includeTOC,
           tocDepth: configWithMaxTocDepth.tocDepth,
           includePageNumbers: configWithMaxTocDepth.includePageNumbers,
-          chineseFontSupport: configWithMaxTocDepth.chineseFontSupport,
         })
         .mockResolvedValueOnce({ confirmed: true });
 
@@ -899,7 +877,6 @@ describe('InteractiveMode', () => {
         outputPath: 'document.pdf',
         tocDepth: 2,
         includePageNumbers: true,
-        chineseFontSupport: false,
       };
 
       mockInquirerPrompt
@@ -910,7 +887,6 @@ describe('InteractiveMode', () => {
           outputPath: configWithMarkdownExtension.outputPath,
           tocDepth: configWithMarkdownExtension.tocDepth,
           includePageNumbers: configWithMarkdownExtension.includePageNumbers,
-          chineseFontSupport: configWithMarkdownExtension.chineseFontSupport,
         })
         .mockResolvedValueOnce({ confirmed: true });
 
@@ -934,7 +910,6 @@ describe('InteractiveMode', () => {
           outputPath: configWithEmptyOutput.outputPath,
           tocDepth: configWithEmptyOutput.tocDepth,
           includePageNumbers: configWithEmptyOutput.includePageNumbers,
-          chineseFontSupport: configWithEmptyOutput.chineseFontSupport,
         })
         .mockResolvedValueOnce({ confirmed: true });
 
@@ -963,7 +938,7 @@ describe('InteractiveMode', () => {
           outputPath: mockConversionConfig.outputPath,
           tocDepth: mockConversionConfig.tocDepth,
           includePageNumbers: mockConversionConfig.includePageNumbers,
-          chineseFontSupport: mockConversionConfig.chineseFontSupport,
+          // chineseFontSupport removed
         })
         .mockResolvedValueOnce({ confirmed: true });
 
@@ -994,7 +969,7 @@ describe('InteractiveMode', () => {
           outputPath: mockConversionConfig.outputPath,
           tocDepth: mockConversionConfig.tocDepth,
           includePageNumbers: mockConversionConfig.includePageNumbers,
-          chineseFontSupport: mockConversionConfig.chineseFontSupport,
+          // chineseFontSupport removed
         })
         .mockResolvedValueOnce({ confirmed: true });
 
@@ -1025,7 +1000,7 @@ describe('InteractiveMode', () => {
           outputPath: mockConversionConfig.outputPath,
           tocDepth: mockConversionConfig.tocDepth,
           includePageNumbers: mockConversionConfig.includePageNumbers,
-          chineseFontSupport: mockConversionConfig.chineseFontSupport,
+          // chineseFontSupport removed
         })
         .mockResolvedValueOnce({ confirmed: true });
 
@@ -1054,7 +1029,7 @@ describe('InteractiveMode', () => {
           outputPath: mockConversionConfig.outputPath,
           tocDepth: mockConversionConfig.tocDepth,
           includePageNumbers: mockConversionConfig.includePageNumbers,
-          chineseFontSupport: mockConversionConfig.chineseFontSupport,
+          // chineseFontSupport removed
         })
         .mockResolvedValueOnce({ confirmed: false });
 
@@ -1063,30 +1038,6 @@ describe('InteractiveMode', () => {
       // Verify cancellation flow - debug messages are not shown in non-verbose mode
       expect(consoleWarnSpy).toHaveBeenCalledWith('⚠️ interactive.cancelled');
       expect(mockFileProcessorService.processFile).not.toHaveBeenCalled();
-    });
-
-    it('should display proper Chinese font message to user', async () => {
-      mockInquirerPrompt
-        .mockResolvedValueOnce({ inputPath: mockConversionConfig.inputPath })
-        .mockResolvedValueOnce({
-          outputPath: mockConversionConfig.outputPath,
-          tocDepth: mockConversionConfig.tocDepth,
-          includePageNumbers: mockConversionConfig.includePageNumbers,
-          chineseFontSupport: mockConversionConfig.chineseFontSupport,
-        })
-        .mockResolvedValueOnce({ confirmed: false });
-
-      await interactiveMode.start();
-
-      const promptCall = mockInquirerPrompt.mock
-        .calls[1][0] as PromptQuestion[];
-      const chineseFontQuestion = promptCall.find(
-        (q: PromptQuestion) => q.name === 'chineseFontSupport',
-      )!;
-
-      expect(chineseFontQuestion.message).toContain(
-        'interactive.chineseFontSupport',
-      );
     });
   });
 });

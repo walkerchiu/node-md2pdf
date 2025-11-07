@@ -26,6 +26,18 @@ export interface PDFGenerationContext {
   title?: string;
   customCSS?: string;
   enableChineseSupport?: boolean;
+  metadata?: {
+    title?: string;
+    author?: string;
+    subject?: string;
+    keywords?: string;
+    creator?: string;
+    producer?: string;
+    creationDate?: Date;
+    modDate?: Date;
+    // Extended metadata fields (will be passed as custom properties)
+    [key: string]: any;
+  };
   toc?: {
     enabled: boolean;
     maxDepth: number;

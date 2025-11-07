@@ -49,7 +49,6 @@ describe('OutputManager', () => {
       includeTOC: true,
       tocDepth: 3,
       includePageNumbers: true,
-      chineseFontSupport: false,
     };
 
     mockFiles = [

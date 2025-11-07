@@ -381,12 +381,6 @@ export class BatchInteractiveMode {
         default: true,
       },
       {
-        type: 'confirm',
-        name: 'chineseFontSupport',
-        message: this.translationManager.t('batch.chineseFontSupport'),
-        default: true,
-      },
-      {
         type: 'list',
         name: 'maxConcurrentProcesses',
         message: this.translationManager.t(
@@ -430,7 +424,6 @@ export class BatchInteractiveMode {
       tocDepth: number;
       tocReturnLinksLevel: number;
       includePageNumbers: boolean;
-      chineseFontSupport: boolean;
       maxConcurrentProcesses: number;
       continueOnError: boolean;
     };
@@ -446,7 +439,6 @@ export class BatchInteractiveMode {
       tocReturnLinksLevel: (answers.tocReturnLinksLevel ??
         3) as TOCReturnLinkLevel,
       includePageNumbers: answers.includePageNumbers,
-      chineseFontSupport: answers.chineseFontSupport,
       maxConcurrentProcesses: answers.maxConcurrentProcesses,
       continueOnError: answers.continueOnError,
     };
@@ -548,15 +540,7 @@ export class BatchInteractiveMode {
         ),
       );
     }
-    console.log(
-      chalk.white(
-        this.translationManager.t('batch.chineseSupport', {
-          enabled: config.chineseFontSupport
-            ? this.translationManager.t('batch.enabled')
-            : this.translationManager.t('batch.disabled'),
-        }),
-      ),
-    );
+    // Chinese font support is now automatically determined by document language
     console.log(
       chalk.white(
         this.translationManager.t('batch.concurrentProcesses', {
@@ -634,7 +618,6 @@ export class BatchInteractiveMode {
           ? {
               maxDepth: config.tocDepth,
               includePageNumbers: config.includePageNumbers,
-              title: this.translationManager.t('pdfContent.tocTitle'),
             }
           : {},
         pdfOptions: {
@@ -646,14 +629,6 @@ export class BatchInteractiveMode {
           printBackground: true,
         },
       };
-
-      if (config.chineseFontSupport) {
-        fileOptions.customStyles = `
-          * {
-            font-family: 'Noto Sans CJK SC', Arial, sans-serif !important;
-          }
-        `;
-      }
 
       // Enable two-stage rendering for batch processing when TOC with page numbers is requested
       if (config.includeTOC && config.includePageNumbers) {

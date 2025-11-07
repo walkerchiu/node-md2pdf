@@ -11,7 +11,10 @@ import {
   AnchorLinkTemplate,
 } from './types';
 
-import type { ITranslationManager } from '../../infrastructure/i18n/types';
+import type {
+  ITranslationManager,
+  SupportedLocale,
+} from '../../infrastructure/i18n/types';
 
 export class AnchorLinksGenerator {
   private options: Required<AnchorLinksOptions>;
@@ -36,12 +39,25 @@ export class AnchorLinksGenerator {
   }
 
   /**
+   * Update link text based on document language
+   */
+  updateLinkTextForDocumentLanguage(documentLanguage?: string): void {
+    if (
+      !this.options.linkText ||
+      this.options.linkText === this.getDefaultLinkText()
+    ) {
+      this.options.linkText = this.getDefaultLinkText(documentLanguage);
+    }
+  }
+
+  /**
    * Insert anchor links into HTML content
    */
   insertAnchorLinks(
     htmlContent: string,
     headings: Heading[],
     hasTOC?: boolean,
+    documentLanguage?: string,
   ): AnchorLinksGenerationResult {
     if (!this.options.enabled || !headings || headings.length === 0) {
       return {
@@ -49,6 +65,11 @@ export class AnchorLinksGenerator {
         linksInserted: 0,
         processedSections: [],
       };
+    }
+
+    // Update link text based on document language
+    if (documentLanguage) {
+      this.updateLinkTextForDocumentLanguage(documentLanguage);
     }
 
     // Filter headings within specified depth range
@@ -356,12 +377,47 @@ export class AnchorLinksGenerator {
   }
 
   /**
-   * Get default link text
+   * Get default link text with optional document language
    */
-  private getDefaultLinkText(): string {
-    if (this.translator) {
-      return this.translator.t('anchorLinks.backToToc');
+  private getDefaultLinkText(documentLanguage?: string): string {
+    if (!this.translator) {
+      return '↑ Back to TOC';
     }
-    return '↑ Back to TOC';
+
+    // If we have document language and it's supported, use translate method
+    if (documentLanguage) {
+      // Convert document language to supported locale
+      const supportedLocale = this.convertToSupportedLocale(documentLanguage);
+      if (supportedLocale) {
+        return this.translator.translate(
+          'anchorLinks.backToToc',
+          supportedLocale,
+        );
+      }
+    }
+
+    // Fallback to current UI language
+    return this.translator.t('anchorLinks.backToToc');
+  }
+
+  /**
+   * Convert document language code to supported locale
+   */
+  private convertToSupportedLocale(
+    languageCode: string,
+  ): SupportedLocale | null {
+    // Normalize language codes to supported locales
+    switch (languageCode.toLowerCase()) {
+      case 'zh':
+      case 'zh-tw':
+      case 'zh-hant':
+        return 'zh-TW';
+      case 'en':
+      case 'en-us':
+      case 'en-gb':
+        return 'en';
+      default:
+        return null;
+    }
   }
 }

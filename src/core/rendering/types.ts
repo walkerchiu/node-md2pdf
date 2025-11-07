@@ -63,6 +63,9 @@ export interface ProcessingContext {
 
   /** Logger instance for debug and info messages */
   logger?: any;
+
+  /** Document language for content localization */
+  documentLanguage?: string;
 }
 
 export interface ProcessedContent {

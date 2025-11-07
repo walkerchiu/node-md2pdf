@@ -178,7 +178,7 @@ describe('ConfigManager', () => {
 
       configManager = new ConfigManager({ useEnvironmentVariables: true });
 
-      expect(configManager.get('language.default')).toBe('fr');
+      expect(configManager.get('language.ui')).toBe('fr');
       expect(configManager.get('pdf.format')).toBe('A3');
     });
 

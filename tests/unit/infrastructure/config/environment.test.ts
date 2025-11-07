@@ -169,6 +169,7 @@ describe('EnvironmentConfig', () => {
     it('should not warn when development mode has explicit verbose setting', () => {
       process.env.NODE_ENV = 'development';
       process.env.MD2PDF_VERBOSE = 'true';
+      process.env.MD2PDF_LOG_LEVEL = 'debug'; // Set compatible log level
 
       const result = EnvironmentConfig.validateConfig();
 

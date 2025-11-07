@@ -116,7 +116,10 @@ export class TOCProcessor extends BaseProcessor {
         console.info(
           'TOC: Pre-rendering stage - generating TOC without page numbers',
         );
-        const tocResult = this.tocGenerator.generateTOC(headings);
+        const tocResult = this.tocGenerator.generateTOC(
+          headings,
+          context.documentLanguage,
+        );
         tocHTML = tocResult.html;
       } else {
         // Final rendering stage: check if page numbers are needed
@@ -142,7 +145,10 @@ export class TOCProcessor extends BaseProcessor {
         } else {
           // Generate TOC without page numbers
           console.info('TOC: Generating simple TOC without page numbers');
-          const tocResult = this.tocGenerator.generateTOC(headings);
+          const tocResult = this.tocGenerator.generateTOC(
+            headings,
+            context.documentLanguage,
+          );
           tocHTML = tocResult.html;
         }
       }
@@ -285,6 +291,7 @@ export class TOCProcessor extends BaseProcessor {
       const tocResult = this.tocGenerator.generateTOCWithPageNumbers(
         filteredHeadings,
         adjustedPageNumbers,
+        context.documentLanguage,
       );
 
       console.info('TOC: 3-stage process completed successfully');
@@ -298,7 +305,10 @@ export class TOCProcessor extends BaseProcessor {
         error,
       );
       // Fallback to regular TOC generation
-      const tocResult = this.tocGenerator.generateTOC(headings);
+      const tocResult = this.tocGenerator.generateTOC(
+        headings,
+        context.documentLanguage,
+      );
       return {
         html: tocResult.html,
         pageNumbers: {},
@@ -646,6 +656,7 @@ export class TOCProcessor extends BaseProcessor {
       const tocResult = this.tocGenerator.generateTOCWithPageNumbers(
         headings,
         pageNumbers,
+        context.documentLanguage,
       );
 
       if (!tocResult.html) {
