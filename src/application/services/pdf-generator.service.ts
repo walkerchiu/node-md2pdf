@@ -55,6 +55,18 @@ export interface IPDFGeneratorService {
         title?: string;
       };
       bookmarkOptions?: BookmarkOptions;
+      documentLanguage?: string;
+      metadata?: {
+        title?: string;
+        author?: string;
+        subject?: string;
+        keywords?: string;
+        creator?: string;
+        producer?: string;
+        creationDate?: Date;
+        modDate?: Date;
+        [key: string]: any;
+      };
     },
   ): Promise<PDFGenerationResult>;
 
@@ -529,6 +541,18 @@ export class PDFGeneratorService implements IPDFGeneratorService {
         title?: string;
       };
       bookmarkOptions?: BookmarkOptions;
+      documentLanguage?: string;
+      metadata?: {
+        title?: string;
+        author?: string;
+        subject?: string;
+        keywords?: string;
+        creator?: string;
+        producer?: string;
+        creationDate?: Date;
+        modDate?: Date;
+        [key: string]: any;
+      };
       twoStageRendering?: {
         enabled?: boolean;
         forceAccuratePageNumbers?: boolean;
@@ -630,6 +654,7 @@ export class PDFGeneratorService implements IPDFGeneratorService {
       title: options.title || '',
       customCSS: options.customCSS || '',
       enableChineseSupport: options.enableChineseSupport || false,
+      ...(options.metadata && { metadata: options.metadata }),
       toc: options.tocOptions || {
         enabled: false,
         maxDepth: 3,
@@ -735,6 +760,7 @@ export class PDFGeneratorService implements IPDFGeneratorService {
     options: {
       markdownContent?: string;
       headings?: Heading[];
+      documentLanguage?: string;
       tocOptions?: {
         enabled: boolean;
         maxDepth: number;
@@ -786,6 +812,9 @@ export class PDFGeneratorService implements IPDFGeneratorService {
         },
         isPreRendering: false,
         logger: this.logger,
+        ...(options.documentLanguage && {
+          documentLanguage: options.documentLanguage,
+        }),
       };
 
       this.logger.debug('Calling two-stage rendering engine with context:', {

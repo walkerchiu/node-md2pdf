@@ -268,14 +268,10 @@ export class SettingsMode {
       const currentLocale = this.translationManager.getCurrentLocale();
 
       // Log the configuration change
-      this.uiManager.logConfigChange(
-        'language.default',
-        currentLocale,
-        newLocale,
-      );
+      this.uiManager.logConfigChange('language.ui', currentLocale, newLocale);
 
       this.translationManager.setLocale(newLocale);
-      this.configManager.set('language.default', newLocale);
+      this.configManager.set('language.ui', newLocale);
       await this.configManager.save();
 
       console.log();

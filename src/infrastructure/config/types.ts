@@ -197,4 +197,31 @@ export interface ConfigSchema {
     newOrchestrator: boolean;
     forceLegacyMode: boolean;
   };
+
+  // Document metadata settings
+  metadata: {
+    enabled: boolean;
+    autoExtraction: {
+      fromFrontmatter: boolean;
+      fromContent: boolean;
+      fromFilename: boolean;
+      computeStats: boolean;
+    };
+    defaults: {
+      language: string;
+      title?: string;
+      author?: string;
+      subject?: string;
+      keywords?: string;
+      creator?: string;
+      producer?: string;
+    };
+    frontmatterMapping: Record<string, string>;
+    validation: {
+      requireTitle: boolean;
+      requireAuthor: boolean;
+      maxKeywordLength: number;
+      maxSubjectLength: number;
+    };
+  };
 }

@@ -353,12 +353,6 @@ export class InteractiveMode {
         message: this.translationManager.t('interactive.includePageNumbers'),
         default: true,
       },
-      {
-        type: 'confirm',
-        name: 'chineseFontSupport',
-        message: this.translationManager.t('interactive.chineseFontSupport'),
-        default: true,
-      },
     ]);
 
     const combined = Object.assign(
@@ -395,9 +389,6 @@ export class InteractiveMode {
         `${this.translationManager.t('interactive.pageNumbers')} ${config.includePageNumbers ? this.translationManager.t('interactive.yes') : this.translationManager.t('interactive.no')}`,
       );
     }
-    this.uiManager.showMessage(
-      `${this.translationManager.t('interactive.chineseSupport')} ${config.chineseFontSupport ? this.translationManager.t('interactive.yes') : this.translationManager.t('interactive.no')}`,
-    );
 
     this.uiManager.showSeparator();
     this.uiManager.showNewline();
@@ -464,14 +455,7 @@ export class InteractiveMode {
         `Header/footer ${config.includePageNumbers ? 'enabled' : 'disabled'} via CSS @page rules`,
       );
 
-      // Step 2: Add Chinese font support CSS if needed
-      if (config.chineseFontSupport) {
-        processingOptions.customStyles = `
-          * {
-            font-family: 'Noto Sans CJK SC', Arial, sans-serif !important;
-          }
-        `;
-      }
+      // Chinese font support is now automatically handled based on document language
 
       // Step 2.5: Analyze content and determine if two-stage rendering should be enabled
       if (config.includeTOC && config.includePageNumbers) {

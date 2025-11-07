@@ -73,7 +73,7 @@ async function main(): Promise<void> {
 
     // Configure CLI commands
     program
-      .name('md2pdf')
+      .name('MD2PDF')
       .description(
         'Convert Markdown documents to PDF files with professional table of contents',
       )

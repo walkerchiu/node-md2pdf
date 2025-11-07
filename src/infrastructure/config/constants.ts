@@ -199,6 +199,67 @@ export const DEFAULT_SYNTAX_HIGHLIGHTING = {
   },
 } as const;
 
+// Default metadata values
+export const DEFAULT_METADATA = {
+  ENABLED: true,
+  AUTO_EXTRACTION: {
+    FROM_FRONTMATTER: true,
+    FROM_CONTENT: true,
+    FROM_FILENAME: false,
+    COMPUTE_STATS: true,
+  },
+  DEFAULTS: {
+    LANGUAGE: 'en',
+    TITLE: 'Document Title',
+    AUTHOR: 'Author Name',
+    SUBJECT: 'Document Subject',
+    KEYWORDS: 'keywords, tags, categories',
+    CREATOR: 'MD2PDF',
+    PRODUCER: 'MD2PDF',
+  },
+  FRONTMATTER_MAPPING: {
+    title: 'title',
+    author: 'author',
+    authors: 'author',
+    description: 'subject',
+    subject: 'subject',
+    keywords: 'keywords',
+    tags: 'keywords',
+    organization: 'organization',
+    org: 'organization',
+    company: 'organization',
+    department: 'department',
+    dept: 'department',
+    team: 'team',
+    category: 'category',
+    type: 'category',
+    version: 'version',
+    lang: 'language',
+    language: 'language',
+    copyright: 'copyright',
+    license: 'license',
+    confidential: 'confidentiality',
+    confidentiality: 'confidentiality',
+    email: 'email',
+    contact: 'email',
+    website: 'website',
+    url: 'website',
+  },
+  VALIDATION: {
+    REQUIRE_TITLE: false,
+    REQUIRE_AUTHOR: false,
+    MAX_KEYWORD_LENGTH: 255,
+    MAX_SUBJECT_LENGTH: 512,
+  },
+} as const;
+
+// System-defined values that should NOT be saved to user config
+// These are intrinsic properties of MD2PDF software
+export const SYSTEM_DEFINED_KEYS = [
+  'metadata.defaults.creator',
+  'metadata.defaults.producer',
+] as const;
+
 /**
  * Configuration constants and keys for type-safe access
  */
@@ -247,6 +308,7 @@ export const CONFIG_KEYS = {
     TITLE: 'toc.title',
   },
   LANGUAGE: {
+    UI: 'language.ui',
     DEFAULT: 'language.default',
     AVAILABLE: 'language.available',
   },
@@ -309,5 +371,30 @@ export const CONFIG_KEYS = {
     ENHANCED_CLI: 'features.enhancedCli',
     NEW_ORCHESTRATOR: 'features.newOrchestrator',
     FORCE_LEGACY_MODE: 'features.forceLegacyMode',
+  },
+  METADATA: {
+    ENABLED: 'metadata.enabled',
+    AUTO_EXTRACTION: {
+      FROM_FRONTMATTER: 'metadata.autoExtraction.fromFrontmatter',
+      FROM_CONTENT: 'metadata.autoExtraction.fromContent',
+      FROM_FILENAME: 'metadata.autoExtraction.fromFilename',
+      COMPUTE_STATS: 'metadata.autoExtraction.computeStats',
+    },
+    DEFAULTS: {
+      TITLE: 'metadata.defaults.title',
+      AUTHOR: 'metadata.defaults.author',
+      SUBJECT: 'metadata.defaults.subject',
+      KEYWORDS: 'metadata.defaults.keywords',
+      LANGUAGE: 'metadata.defaults.language',
+      ORGANIZATION: 'metadata.defaults.organization',
+      COPYRIGHT: 'metadata.defaults.copyright',
+    },
+    FRONTMATTER_MAPPING: 'metadata.frontmatterMapping',
+    VALIDATION: {
+      REQUIRE_TITLE: 'metadata.validation.requireTitle',
+      REQUIRE_AUTHOR: 'metadata.validation.requireAuthor',
+      MAX_KEYWORD_LENGTH: 'metadata.validation.maxKeywordLength',
+      MAX_SUBJECT_LENGTH: 'metadata.validation.maxSubjectLength',
+    },
   },
 } as const;

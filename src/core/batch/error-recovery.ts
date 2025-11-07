@@ -165,11 +165,6 @@ export class ErrorRecoveryManager {
     // PDF generation related recommendations
     if (errorsByType[ErrorType.PDF_GENERATION_ERROR] > 0) {
       recommendations.push('Consider processing problematic files separately');
-      if (config.chineseFontSupport) {
-        recommendations.push(
-          'Try disabling Chinese font support for faster processing',
-        );
-      }
     }
 
     return { patterns, recommendations };

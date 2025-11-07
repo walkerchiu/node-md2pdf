@@ -11,7 +11,10 @@ import {
   TOCItemNested,
 } from './types';
 
-import type { ITranslationManager } from '../../infrastructure/i18n/types';
+import type {
+  ITranslationManager,
+  SupportedLocale,
+} from '../../infrastructure/i18n/types';
 
 export class TOCGenerator {
   private options: Required<TOCGeneratorOptions>;
@@ -43,7 +46,10 @@ export class TOCGenerator {
   /**
    * Generate TOC from headings
    */
-  generateTOC(headings: Heading[]): TOCGenerationResult {
+  generateTOC(
+    headings: Heading[],
+    documentLanguage?: string,
+  ): TOCGenerationResult {
     if (!headings || headings.length === 0) {
       return this.createEmptyResult();
     }
@@ -56,7 +62,7 @@ export class TOCGenerator {
     const tree = this.buildHierarchy(flatItems);
 
     // Generate HTML
-    const html = this.generateHTML(tree);
+    const html = this.generateHTML(tree, documentLanguage);
 
     // Calculate statistics
     const stats = this.calculateStats(flatItems);
@@ -131,7 +137,10 @@ export class TOCGenerator {
   /**
    * Generate HTML from hierarchical structure
    */
-  private generateHTML(tree: TOCItemNested[]): string {
+  private generateHTML(
+    tree: TOCItemNested[],
+    documentLanguage?: string,
+  ): string {
     if (tree.length === 0) {
       return '';
     }
@@ -140,7 +149,7 @@ export class TOCGenerator {
     const listHtml = this.generateListHTML(tree, cssClasses);
 
     // Get localized TOC title
-    const tocTitle = this.getTOCTitle();
+    const tocTitle = this.getTOCTitle(documentLanguage);
 
     return `
 <div id="toc" class="${cssClasses.container}">
@@ -150,15 +159,48 @@ export class TOCGenerator {
   }
 
   /**
-   * Get localized TOC title
+   * Get localized TOC title based on document language
    */
-  private getTOCTitle(): string {
-    if (this.translator) {
-      return this.translator.t('pdfContent.tocTitle');
+  private getTOCTitle(documentLanguage?: string): string {
+    if (!this.translator) {
+      return 'Table of Contents';
     }
 
-    // Fallback to English if no translator is available
-    return 'Table of Contents';
+    // If we have document language and it's supported, use translate method
+    if (documentLanguage) {
+      // Convert document language to supported locale
+      const supportedLocale = this.convertToSupportedLocale(documentLanguage);
+      if (supportedLocale) {
+        return this.translator.translate(
+          'pdfContent.tocTitle',
+          supportedLocale,
+        );
+      }
+    }
+
+    // Fallback to current UI language
+    return this.translator.t('pdfContent.tocTitle');
+  }
+
+  /**
+   * Convert document language code to supported locale
+   */
+  private convertToSupportedLocale(
+    languageCode: string,
+  ): SupportedLocale | null {
+    // Normalize language codes to supported locales
+    switch (languageCode.toLowerCase()) {
+      case 'zh':
+      case 'zh-tw':
+      case 'zh-hant':
+        return 'zh-TW';
+      case 'en':
+      case 'en-us':
+      case 'en-gb':
+        return 'en';
+      default:
+        return null;
+    }
   }
 
   /**
@@ -280,8 +322,9 @@ export class TOCGenerator {
   generateTOCWithPageNumbers(
     headings: Heading[],
     pageNumbers: Record<string, number>,
+    documentLanguage?: string,
   ): TOCGenerationResult {
-    const result = this.generateTOC(headings);
+    const result = this.generateTOC(headings, documentLanguage);
 
     // Update flat items with page numbers
     this.updatePageNumbers(result.items, pageNumbers);
@@ -290,7 +333,7 @@ export class TOCGenerator {
     const tree = this.buildHierarchy(result.items);
 
     // Regenerate HTML with page numbers
-    const html = this.generateHTML(tree);
+    const html = this.generateHTML(tree, documentLanguage);
 
     return {
       ...result,

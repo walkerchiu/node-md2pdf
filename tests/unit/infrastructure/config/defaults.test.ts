@@ -206,7 +206,7 @@ describe('Default Configuration Values', () => {
 
   describe('environmentMappings', () => {
     it('should define all required environment variable mappings', () => {
-      expect(environmentMappings['MD2PDF_LANG']).toBe('language.default');
+      expect(environmentMappings['MD2PDF_LANG']).toBe('language.ui');
       expect(environmentMappings['MD2PDF_PDF_FORMAT']).toBe('pdf.format');
       expect(environmentMappings['MD2PDF_TOC_ENABLED']).toBe('toc.enabled');
       expect(environmentMappings['MD2PDF_TOC_DEPTH']).toBe('toc.depth');

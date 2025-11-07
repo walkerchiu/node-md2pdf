@@ -13,7 +13,6 @@ export interface ConversionConfig {
   tocDepth: number;
   tocReturnLinksLevel?: TOCReturnLinkLevel;
   includePageNumbers: boolean;
-  chineseFontSupport: boolean;
   theme?: string;
 }
 

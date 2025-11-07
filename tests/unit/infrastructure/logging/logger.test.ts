@@ -23,6 +23,9 @@ describe('Logger (Unified)', () => {
     tempDir = await fs.mkdtemp(join(tmpdir(), 'logger-test-'));
     logFilePath = join(tempDir, 'test.log');
 
+    // Set environment variable to ensure debug level logging in tests
+    process.env.MD2PDF_LOG_LEVEL = 'debug';
+
     // Mock all console methods
     consoleMethods = {
       error: jest.spyOn(console, 'error').mockImplementation(),
@@ -44,6 +47,9 @@ describe('Logger (Unified)', () => {
 
     // Restore all console methods
     Object.values(consoleMethods).forEach((spy) => spy.mockRestore());
+
+    // Reset environment variable
+    delete process.env.MD2PDF_LOG_LEVEL;
 
     // Remove temp directory
     try {
@@ -438,7 +444,7 @@ describe('Logger (Unified)', () => {
       await logger.enableFileLogging(config);
       logger.info('Hybrid strategy message');
 
-      await new Promise((resolve) => setTimeout(resolve, 100));
+      await new Promise((resolve) => setTimeout(resolve, 200));
 
       // Should write to both console and file
       expect(consoleMethods.log).toHaveBeenCalled();

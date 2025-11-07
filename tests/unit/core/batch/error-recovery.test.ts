@@ -70,7 +70,6 @@ describe('ErrorRecoveryManager', () => {
       includeTOC: true,
       tocDepth: 3,
       includePageNumbers: true,
-      chineseFontSupport: false,
     };
 
     // Setup default mocks
@@ -475,7 +474,7 @@ describe('ErrorRecoveryManager', () => {
       );
 
       expect(analysis.recommendations).toContain(
-        'Try disabling Chinese font support for faster processing',
+        'Consider processing problematic files separately',
       );
     });
   });

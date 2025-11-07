@@ -56,7 +56,6 @@ describe('FileCollector', () => {
       includeTOC: true,
       tocDepth: 3,
       includePageNumbers: true,
-      chineseFontSupport: false,
     };
   });
 

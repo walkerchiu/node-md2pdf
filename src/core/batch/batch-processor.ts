@@ -247,6 +247,10 @@ export class BatchProcessor {
           title: 'Table of Contents',
         },
       });
+      // Determine Chinese font support based on document language
+      const documentLanguage = parsed.metadata?.language as string | undefined;
+      const needsChineseSupport = documentLanguage === 'zh-TW';
+
       const pdfOptions: {
         title?: string;
         customCSS?: string;
@@ -258,9 +262,9 @@ export class BatchProcessor {
         title: path.basename(file.inputPath, path.extname(file.inputPath)),
         headings: parsed.headings,
         markdownContent: originalContent,
-        enableChineseSupport: config.chineseFontSupport,
+        enableChineseSupport: needsChineseSupport,
       };
-      if (config.chineseFontSupport) {
+      if (needsChineseSupport) {
         pdfOptions.styleOptions = {
           fontFamily: 'Noto Sans CJK SC, Arial, sans-serif',
         };

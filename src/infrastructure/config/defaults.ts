@@ -10,7 +10,9 @@ import {
   DEFAULT_PLANTUML,
   DEFAULT_MERMAID,
   DEFAULT_SYNTAX_HIGHLIGHTING,
+  DEFAULT_METADATA,
   CONFIG_KEYS,
+  SYSTEM_DEFINED_KEYS,
 } from './constants';
 
 import type { ConfigSchema } from './types';
@@ -134,6 +136,31 @@ export const defaultConfig: ConfigSchema = {
     newOrchestrator: process.env.MD2PDF_USE_NEW_ORCHESTRATOR !== 'false',
     forceLegacyMode: process.env.MD2PDF_FORCE_LEGACY === 'true',
   },
+  metadata: {
+    enabled: DEFAULT_METADATA.ENABLED,
+    autoExtraction: {
+      fromFrontmatter: DEFAULT_METADATA.AUTO_EXTRACTION.FROM_FRONTMATTER,
+      fromContent: DEFAULT_METADATA.AUTO_EXTRACTION.FROM_CONTENT,
+      fromFilename: DEFAULT_METADATA.AUTO_EXTRACTION.FROM_FILENAME,
+      computeStats: DEFAULT_METADATA.AUTO_EXTRACTION.COMPUTE_STATS,
+    },
+    defaults: {
+      language: DEFAULT_METADATA.DEFAULTS.LANGUAGE,
+      title: DEFAULT_METADATA.DEFAULTS.TITLE,
+      author: DEFAULT_METADATA.DEFAULTS.AUTHOR,
+      subject: DEFAULT_METADATA.DEFAULTS.SUBJECT,
+      keywords: DEFAULT_METADATA.DEFAULTS.KEYWORDS,
+      creator: DEFAULT_METADATA.DEFAULTS.CREATOR,
+      producer: DEFAULT_METADATA.DEFAULTS.PRODUCER,
+    },
+    frontmatterMapping: DEFAULT_METADATA.FRONTMATTER_MAPPING,
+    validation: {
+      requireTitle: DEFAULT_METADATA.VALIDATION.REQUIRE_TITLE,
+      requireAuthor: DEFAULT_METADATA.VALIDATION.REQUIRE_AUTHOR,
+      maxKeywordLength: DEFAULT_METADATA.VALIDATION.MAX_KEYWORD_LENGTH,
+      maxSubjectLength: DEFAULT_METADATA.VALIDATION.MAX_SUBJECT_LENGTH,
+    },
+  },
 };
 
 // Export constants for use in other parts of the system
@@ -144,14 +171,16 @@ export {
   DEFAULT_PLANTUML,
   DEFAULT_MERMAID,
   DEFAULT_SYNTAX_HIGHLIGHTING,
+  DEFAULT_METADATA,
   CONFIG_KEYS,
+  SYSTEM_DEFINED_KEYS,
 };
 
 /**
  * Environment variable mappings
  */
 export const environmentMappings: Record<string, string> = {
-  MD2PDF_LANG: 'language.default',
+  MD2PDF_LANG: 'language.ui',
   MD2PDF_PDF_FORMAT: 'pdf.format',
   MD2PDF_TOC_ENABLED: 'toc.enabled',
   MD2PDF_TOC_DEPTH: 'toc.depth',

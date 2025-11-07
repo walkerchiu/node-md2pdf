@@ -59,7 +59,6 @@ describe('BatchProcessor', () => {
       includeTOC: true,
       tocDepth: 3,
       includePageNumbers: true,
-      chineseFontSupport: false,
       preserveDirectoryStructure: false,
       filenameFormat: BatchFilenameFormat.ORIGINAL,
       maxConcurrentProcesses: 2,
@@ -152,7 +151,6 @@ describe('BatchProcessor', () => {
         includeTOC: true,
         tocDepth: 3,
         includePageNumbers: true,
-        chineseFontSupport: false,
         preserveDirectoryStructure: false,
         filenameFormat: BatchFilenameFormat.ORIGINAL,
         maxConcurrentProcesses: 1,
@@ -195,7 +193,6 @@ describe('BatchProcessor', () => {
         includeTOC: true,
         tocDepth: 3,
         includePageNumbers: true,
-        chineseFontSupport: false,
         preserveDirectoryStructure: false,
         filenameFormat: BatchFilenameFormat.ORIGINAL,
         maxConcurrentProcesses: 1,
@@ -219,7 +216,6 @@ describe('BatchProcessor', () => {
         includeTOC: true,
         tocDepth: 3,
         includePageNumbers: true,
-        chineseFontSupport: false,
         preserveDirectoryStructure: false,
         filenameFormat: BatchFilenameFormat.ORIGINAL,
         maxConcurrentProcesses: 1,
@@ -239,7 +235,6 @@ describe('BatchProcessor', () => {
         includeTOC: true,
         tocDepth: 3,
         includePageNumbers: true,
-        chineseFontSupport: false,
         preserveDirectoryStructure: false,
         filenameFormat: BatchFilenameFormat.ORIGINAL,
         maxConcurrentProcesses: 1,
@@ -271,7 +266,6 @@ describe('BatchProcessor', () => {
         includeTOC: true,
         tocDepth: 3,
         includePageNumbers: true,
-        chineseFontSupport: false,
       };
 
       const result = await processor.processBatch(invalidConfig);
@@ -331,7 +325,6 @@ describe('BatchProcessor', () => {
         includeTOC: true,
         tocDepth: 3,
         includePageNumbers: true,
-        chineseFontSupport: false,
       };
 
       const result = await processor.processBatch(config, {
@@ -356,7 +349,6 @@ describe('BatchProcessor', () => {
         includeTOC: true,
         tocDepth: 3,
         includePageNumbers: true,
-        chineseFontSupport: false,
       };
 
       // Set up mock to simulate operation
@@ -374,6 +366,172 @@ describe('BatchProcessor', () => {
       });
 
       expect(result).toBeDefined();
+    });
+
+    it('should handle abort signal during processing', async () => {
+      const controller = new AbortController();
+      const config: BatchConversionConfig = {
+        inputPattern: '*.md',
+        outputDirectory: '/output',
+        theme: 'default',
+        preserveDirectoryStructure: false,
+        filenameFormat: BatchFilenameFormat.ORIGINAL,
+        maxConcurrentProcesses: 1,
+        continueOnError: true,
+        includeTOC: true,
+        tocDepth: 3,
+        includePageNumbers: true,
+      };
+
+      const validFiles: BatchFileInfo[] = [
+        {
+          inputPath: '/input/test1.md',
+          outputPath: '/output/test1.pdf',
+          relativeInputPath: 'test1.md',
+          size: 1024,
+          lastModified: new Date(),
+        },
+      ];
+
+      mockFileCollector.collectFiles.mockResolvedValue(validFiles);
+      mockFileCollector.validateFiles.mockResolvedValue({
+        valid: validFiles,
+        invalid: [],
+      });
+      mockOutputManager.prepareOutputDirectories.mockResolvedValue();
+      mockOutputManager.resolveFileNameConflicts.mockResolvedValue(validFiles);
+      mockOutputManager.validateOutputPaths.mockResolvedValue({
+        valid: validFiles,
+        invalid: [],
+      });
+
+      // Abort during processing
+      setTimeout(() => controller.abort(), 50);
+
+      try {
+        await processor.processBatch(config, {
+          signal: controller.signal,
+        });
+      } catch (error) {
+        expect(error).toBeInstanceOf(Error);
+        expect((error as Error).message).toContain('cancelled');
+      }
+    });
+
+    it('should handle file processing errors with onFileError callback', async () => {
+      const config: BatchConversionConfig = {
+        inputPattern: '*.md',
+        outputDirectory: '/output',
+        theme: 'default',
+        preserveDirectoryStructure: false,
+        filenameFormat: BatchFilenameFormat.ORIGINAL,
+        maxConcurrentProcesses: 1,
+        continueOnError: true,
+        includeTOC: true,
+        tocDepth: 3,
+        includePageNumbers: true,
+      };
+
+      const validFiles: BatchFileInfo[] = [
+        {
+          inputPath: '/input/test1.md',
+          outputPath: '/output/test1.pdf',
+          relativeInputPath: 'test1.md',
+          size: 1024,
+          lastModified: new Date(),
+        },
+      ];
+
+      const onFileError = jest.fn();
+
+      mockFileCollector.collectFiles.mockResolvedValue(validFiles);
+      mockFileCollector.validateFiles.mockResolvedValue({
+        valid: validFiles,
+        invalid: [],
+      });
+      mockOutputManager.prepareOutputDirectories.mockResolvedValue();
+      mockOutputManager.resolveFileNameConflicts.mockResolvedValue(validFiles);
+      mockOutputManager.validateOutputPaths.mockResolvedValue({
+        valid: validFiles,
+        invalid: [],
+      });
+
+      // Mock file system to cause processing failure
+      const fs = require('fs');
+      const originalReadFile = fs.promises.readFile;
+      fs.promises.readFile = jest
+        .fn()
+        .mockRejectedValue(new Error('File read error'));
+
+      const result = await processor.processBatch(config, {
+        onFileError,
+      });
+
+      expect(onFileError).toHaveBeenCalledWith(
+        expect.objectContaining({
+          inputPath: '/input/test1.md',
+          error: expect.any(Error),
+          canRetry: expect.any(Boolean),
+        }),
+      );
+
+      // Restore original function
+      fs.promises.readFile = originalReadFile;
+    });
+
+    it('should handle rejected promise during file processing', async () => {
+      const config: BatchConversionConfig = {
+        inputPattern: '*.md',
+        outputDirectory: '/output',
+        theme: 'default',
+        preserveDirectoryStructure: false,
+        filenameFormat: BatchFilenameFormat.ORIGINAL,
+        maxConcurrentProcesses: 1,
+        continueOnError: true,
+        includeTOC: true,
+        tocDepth: 3,
+        includePageNumbers: true,
+      };
+
+      const validFiles: BatchFileInfo[] = [
+        {
+          inputPath: '/input/test1.md',
+          outputPath: '/output/test1.pdf',
+          relativeInputPath: 'test1.md',
+          size: 1024,
+          lastModified: new Date(),
+        },
+      ];
+
+      const onFileError = jest.fn();
+
+      mockFileCollector.collectFiles.mockResolvedValue(validFiles);
+      mockFileCollector.validateFiles.mockResolvedValue({
+        valid: validFiles,
+        invalid: [],
+      });
+      mockOutputManager.prepareOutputDirectories.mockResolvedValue();
+      mockOutputManager.resolveFileNameConflicts.mockResolvedValue(validFiles);
+      mockOutputManager.validateOutputPaths.mockResolvedValue({
+        valid: validFiles,
+        invalid: [],
+      });
+
+      // Mock processFile to throw error
+      const originalProcessFile = processor['processFile'];
+      processor['processFile'] = jest
+        .fn()
+        .mockRejectedValue(new Error('Processing failed'));
+
+      const result = await processor.processBatch(config, {
+        onFileError,
+      });
+
+      expect(result.errors.length).toBeGreaterThan(0);
+      expect(onFileError).toHaveBeenCalled();
+
+      // Restore original function
+      processor['processFile'] = originalProcessFile;
     });
   });
 });

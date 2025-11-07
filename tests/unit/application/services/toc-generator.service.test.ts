@@ -242,6 +242,7 @@ describe('TOCGeneratorService', () => {
       expect(result).toEqual(mockTOCResult);
       expect(mockTOCGeneratorInstance.generateTOC).toHaveBeenCalledWith(
         sampleHeadings,
+        undefined,
       );
       expect(mockLogger.debug).toHaveBeenCalledWith(
         `Generating TOC from ${sampleHeadings.length} headings`,
@@ -257,7 +258,7 @@ describe('TOCGeneratorService', () => {
         includePageNumbers: false,
       };
 
-      await service.generateTOC(sampleHeadings, customOptions);
+      await service.generateTOC(sampleHeadings, undefined, customOptions);
 
       expect(MockTOCGenerator).toHaveBeenCalledTimes(2); // Once for initialization, once for custom options
       expect(mockConfigManager.get).toHaveBeenCalledWith('toc', {});
@@ -304,7 +305,7 @@ describe('TOCGeneratorService', () => {
       });
 
       try {
-        await service.generateTOC(sampleHeadings, { maxDepth: 2 });
+        await service.generateTOC(sampleHeadings, undefined, { maxDepth: 2 });
       } catch (error) {
         expect(error).toBeInstanceOf(MD2PDFError);
         const wrappedError = error as MD2PDFError;
