@@ -7,6 +7,7 @@ import * as path from 'path';
 import { FileSystemManager } from '../../../../src/infrastructure/filesystem/manager';
 import {
   FileNotFoundError,
+  FilePermissionError,
   MD2PDFError,
 } from '../../../../src/infrastructure/error/errors';
 
@@ -521,6 +522,211 @@ describe('FileSystemManager', () => {
 
         const absolute = fileManager.getAbsolutePath('relative/path');
         expect(path.isAbsolute(absolute)).toBe(true);
+      });
+    });
+
+    describe('Error Handling Coverage Enhancement', () => {
+      it('should throw FilePermissionError for EACCES errors', async () => {
+        const mockError = new Error(
+          'Permission denied',
+        ) as NodeJS.ErrnoException;
+        mockError.code = 'EACCES';
+
+        // Mock exists to return true so we don't get FileNotFoundError first
+        jest.spyOn(fileManager, 'exists').mockResolvedValueOnce(true);
+
+        // Mock fs.readFile to throw EACCES error
+        jest
+          .spyOn(require('fs-extra'), 'readFile')
+          .mockRejectedValueOnce(mockError);
+
+        await expect(
+          fileManager.readFile('/restricted/file.txt'),
+        ).rejects.toThrow(FilePermissionError);
+
+        // Restore mocks
+        (fileManager.exists as jest.Mock).mockRestore();
+        (require('fs-extra').readFile as jest.Mock).mockRestore();
+      });
+
+      it('should throw MD2PDFError for generic read errors', async () => {
+        const mockError = new Error('Generic file system error');
+
+        // Mock exists to return true so we don't get FileNotFoundError first
+        jest.spyOn(fileManager, 'exists').mockResolvedValueOnce(true);
+
+        // Mock fs.readFile to throw generic error
+        jest
+          .spyOn(require('fs-extra'), 'readFile')
+          .mockRejectedValueOnce(mockError);
+
+        await expect(fileManager.readFile('/error/file.txt')).rejects.toThrow(
+          MD2PDFError,
+        );
+
+        (fileManager.exists as jest.Mock).mockRestore();
+        (require('fs-extra').readFile as jest.Mock).mockRestore();
+      });
+
+      it('should handle writeFile permission errors', async () => {
+        const mockError = new Error(
+          'Permission denied',
+        ) as NodeJS.ErrnoException;
+        mockError.code = 'EACCES';
+
+        // Mock createDirectory to succeed first
+        jest.spyOn(fileManager, 'createDirectory').mockResolvedValueOnce();
+
+        // Mock fs.writeFile to throw EACCES error
+        jest
+          .spyOn(require('fs-extra'), 'writeFile')
+          .mockRejectedValueOnce(mockError);
+
+        await expect(
+          fileManager.writeFile('/restricted/write.txt', 'content'),
+        ).rejects.toThrow(FilePermissionError);
+
+        (fileManager.createDirectory as jest.Mock).mockRestore();
+        (require('fs-extra').writeFile as jest.Mock).mockRestore();
+      });
+
+      it('should handle writeFile generic errors', async () => {
+        const mockError = new Error('Disk full');
+
+        // Mock createDirectory to succeed first
+        jest.spyOn(fileManager, 'createDirectory').mockResolvedValueOnce();
+
+        // Mock fs.writeFile to throw generic error
+        jest
+          .spyOn(require('fs-extra'), 'writeFile')
+          .mockRejectedValueOnce(mockError);
+
+        await expect(
+          fileManager.writeFile('/full/disk.txt', 'content'),
+        ).rejects.toThrow(MD2PDFError);
+
+        (fileManager.createDirectory as jest.Mock).mockRestore();
+        (require('fs-extra').writeFile as jest.Mock).mockRestore();
+      });
+
+      it('should handle appendFile errors', async () => {
+        const mockError = new Error('Append failed');
+
+        jest
+          .spyOn(require('fs-extra'), 'appendFile')
+          .mockRejectedValueOnce(mockError);
+
+        await expect(
+          fileManager.appendFile('/error/append.txt', 'content'),
+        ).rejects.toThrow(MD2PDFError);
+
+        require('fs-extra').appendFile.mockRestore();
+      });
+
+      it('should handle copyFile errors', async () => {
+        const mockError = new Error('Copy failed');
+
+        jest
+          .spyOn(require('fs-extra'), 'copy')
+          .mockRejectedValueOnce(mockError);
+
+        await expect(
+          fileManager.copyFile('/source.txt', '/dest.txt'),
+        ).rejects.toThrow(MD2PDFError);
+
+        require('fs-extra').copy.mockRestore();
+      });
+
+      it('should handle moveFile errors', async () => {
+        const mockError = new Error('Move failed') as NodeJS.ErrnoException;
+        mockError.code = 'EXDEV';
+
+        jest
+          .spyOn(require('fs-extra'), 'move')
+          .mockRejectedValueOnce(mockError);
+
+        await expect(
+          fileManager.moveFile('/source.txt', '/dest.txt'),
+        ).rejects.toThrow(MD2PDFError);
+
+        require('fs-extra').move.mockRestore();
+      });
+
+      it('should handle deleteFile errors', async () => {
+        const mockError = new Error('Delete failed');
+
+        // Mock exists to return true so file exists check passes
+        jest.spyOn(fileManager, 'exists').mockResolvedValueOnce(true);
+
+        // Mock fs.unlink to throw error
+        jest
+          .spyOn(require('fs-extra'), 'unlink')
+          .mockRejectedValueOnce(mockError);
+
+        await expect(fileManager.deleteFile('/error/file.txt')).rejects.toThrow(
+          MD2PDFError,
+        );
+
+        (fileManager.exists as jest.Mock).mockRestore();
+        (require('fs-extra').unlink as jest.Mock).mockRestore();
+      });
+
+      it('should handle listDirectory errors', async () => {
+        const mockError = new Error('Directory read failed');
+
+        jest
+          .spyOn(require('fs-extra'), 'readdir')
+          .mockRejectedValueOnce(mockError);
+
+        await expect(fileManager.listDirectory('/error/dir')).rejects.toThrow(
+          MD2PDFError,
+        );
+
+        require('fs-extra').readdir.mockRestore();
+      });
+
+      it('should handle createDirectory errors', async () => {
+        const mockError = new Error('Directory creation failed');
+
+        jest
+          .spyOn(require('fs-extra'), 'ensureDir')
+          .mockRejectedValueOnce(mockError);
+
+        await expect(fileManager.createDirectory('/error/dir')).rejects.toThrow(
+          MD2PDFError,
+        );
+
+        require('fs-extra').ensureDir.mockRestore();
+      });
+
+      it('should handle getStats errors', async () => {
+        const mockError = new Error('Stat failed');
+
+        jest
+          .spyOn(require('fs-extra'), 'stat')
+          .mockRejectedValueOnce(mockError);
+
+        await expect(fileManager.getStats('/error/file.txt')).rejects.toThrow(
+          MD2PDFError,
+        );
+
+        require('fs-extra').stat.mockRestore();
+      });
+
+      it('should handle findFiles glob errors', async () => {
+        const mockError = new Error('Glob pattern failed');
+
+        // Mock glob.sync to throw error
+        const glob = require('glob');
+        jest.spyOn(glob, 'sync').mockImplementation(() => {
+          throw mockError;
+        });
+
+        await expect(
+          fileManager.findFiles('*.txt', '/error/pattern'),
+        ).rejects.toThrow(MD2PDFError);
+
+        (glob.sync as jest.Mock).mockRestore();
       });
     });
   });

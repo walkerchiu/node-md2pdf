@@ -10,6 +10,7 @@ import {
 import { ServiceContainer } from '../../../src/shared/container';
 import type { ILogger } from '../../../src/infrastructure/logging/types';
 import type { IConfigManager } from '../../../src/infrastructure/config/types';
+import { defaultConfig } from '../../../src/infrastructure/config/defaults';
 
 // Mock all external dependencies
 jest.mock('../../../src/infrastructure/logging/environment-aware.services');
@@ -46,6 +47,8 @@ describe('ApplicationServices', () => {
       onConfigChanged: jest.fn(),
       setAndSave: jest.fn(),
       getConfigPath: jest.fn(),
+      getConfig: jest.fn(() => ({ ...defaultConfig })),
+      updateConfig: jest.fn(),
     };
 
     // Mock service container

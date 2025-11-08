@@ -7,6 +7,7 @@ import { IPDFGeneratorService } from '../../../../src/application/services/pdf-g
 import { ILogger } from '../../../../src/infrastructure/logging/types';
 import { IErrorHandler } from '../../../../src/infrastructure/error/types';
 import { IConfigManager } from '../../../../src/infrastructure/config/types';
+import { defaultConfig } from '../../../../src/infrastructure/config/defaults';
 import {
   IFileSystemManager,
   FileStats,
@@ -87,6 +88,8 @@ describe('FileProcessorService', () => {
       onConfigChanged: jest.fn(),
       setAndSave: jest.fn().mockResolvedValue(undefined),
       getConfigPath: jest.fn().mockReturnValue('/mock/config/path'),
+      getConfig: jest.fn(() => ({ ...defaultConfig })),
+      updateConfig: jest.fn(),
     };
 
     mockFileSystemManager = {

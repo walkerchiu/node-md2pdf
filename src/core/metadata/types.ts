@@ -14,8 +14,8 @@ export interface StandardPdfMetadata {
   // System fields (usually auto-generated)
   creator?: string; // Application that created the original document
   producer?: string; // Application that converted/produced the PDF
-  creationDate?: Date; // Creation date
-  modDate?: Date; // Modification date
+  creationDate?: Date | string; // Creation date (supports both Date object and ISO string)
+  modDate?: Date | string; // Modification date (supports both Date object and ISO string)
 }
 
 // Extended metadata fields for enhanced functionality

@@ -20,6 +20,7 @@ import { MD2PDFError } from '../../../../src/infrastructure/error/errors';
 import type { ILogger } from '../../../../src/infrastructure/logging/types';
 import type { IErrorHandler } from '../../../../src/infrastructure/error/types';
 import type { IConfigManager } from '../../../../src/infrastructure/config/types';
+import { defaultConfig } from '../../../../src/infrastructure/config/defaults';
 
 // Mock the core page structure modules
 jest.mock('../../../../src/core/page-structure/header-footer-manager', () => ({
@@ -206,6 +207,8 @@ describe('PageStructureService', () => {
       onConfigChanged: jest.fn(),
       setAndSave: jest.fn(),
       getConfigPath: jest.fn(),
+      getConfig: jest.fn(() => ({ ...defaultConfig })),
+      updateConfig: jest.fn(),
     };
 
     // Sample test data

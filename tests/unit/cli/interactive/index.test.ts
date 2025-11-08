@@ -11,6 +11,7 @@ import type { IErrorHandler } from '../../../../src/infrastructure/error/types';
 import type { IFileProcessorService } from '../../../../src/application/services/file-processor.service';
 import { ConversionConfig } from '../../../../src/types';
 import { createMockTranslator } from '../../helpers/mock-translator';
+import { defaultConfig } from '../../../../src/infrastructure/config/defaults';
 
 // Mock chalk
 jest.mock('chalk', () => ({
@@ -164,6 +165,13 @@ describe('InteractiveMode', () => {
       set: jest.fn(),
       has: jest.fn(),
       save: jest.fn(),
+      getAll: jest.fn(() => ({})),
+      onConfigCreated: jest.fn(),
+      onConfigChanged: jest.fn(),
+      setAndSave: jest.fn(),
+      getConfigPath: jest.fn(() => '/mock/config/path'),
+      getConfig: jest.fn(() => ({ ...defaultConfig })),
+      updateConfig: jest.fn(),
     });
 
     interactiveMode = new InteractiveMode(container);
@@ -288,10 +296,11 @@ describe('InteractiveMode', () => {
       expect(mockInquirerPrompt.mock.calls[1][0]).toEqual(
         expect.arrayContaining([
           expect.objectContaining({ type: 'input', name: 'outputPath' }),
+          expect.objectContaining({ type: 'confirm', name: 'includeTOC' }),
           expect.objectContaining({ type: 'list', name: 'tocDepth' }),
           expect.objectContaining({
-            type: 'confirm',
-            name: 'includePageNumbers',
+            type: 'list',
+            name: 'tocReturnLinksLevel',
           }),
         ]),
       );

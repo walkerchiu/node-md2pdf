@@ -25,6 +25,10 @@ describe('ErrorHandler', () => {
     const h = new ErrorHandler();
     expect(h.isRecoverable(recoverable)).toBe(true);
     expect(h.isRecoverable(nonRecoverable)).toBe(false);
+
+    // Test default case for non-MD2PDFError
+    const standardError = new Error('standard error');
+    expect(h.isRecoverable(standardError)).toBe(false);
   });
 
   test('categorizeError recognizes MD2PDFError and common messages', () => {
@@ -62,6 +66,20 @@ describe('ErrorHandler', () => {
     expect(h.getSuggestions(new PuppeteerError('crash'))[0]).toContain(
       'Reinstall Puppeteer',
     );
+
+    // Test default case for unknown error types
+    const unknownError = new Error('unknown error type');
+    const suggestions = h.getSuggestions(unknownError);
+    expect(suggestions[0]).toContain(
+      'Check the console output for more details',
+    );
+    expect(suggestions[1]).toContain(
+      'Ensure all dependencies are properly installed',
+    );
+    expect(suggestions[2]).toContain('Try restarting the application');
+    expect(suggestions[3]).toContain(
+      'Report this issue if the problem persists',
+    );
   });
 
   test('handleError logs to console when no logger provided', async () => {
@@ -78,5 +96,58 @@ describe('ErrorHandler', () => {
     expect(logs.length).toBeGreaterThanOrEqual(2);
     const flat = logs.map((l) => (l as unknown[]).join(' ')).join('\n');
     expect(flat).toContain('Error context: context-1');
+  });
+
+  test('handleError logs to logger when provided', async () => {
+    const mockLogger = {
+      error: jest.fn(),
+      warn: jest.fn(),
+      info: jest.fn(),
+      debug: jest.fn(),
+      log: jest.fn(),
+      setLevel: jest.fn(),
+      getLevel: jest.fn().mockReturnValue('info'),
+    };
+
+    const h = new ErrorHandler(mockLogger);
+    const err = new MD2PDFError('test error', 'TEST_CODE', 'test', false);
+
+    await h.handleError(err, 'test-context');
+
+    // Should call logger.error for the main error and context
+    expect(mockLogger.error).toHaveBeenCalledTimes(2);
+    expect(mockLogger.error).toHaveBeenNthCalledWith(
+      1,
+      '[test] TEST_CODE: test error',
+      err,
+    );
+    expect(mockLogger.error).toHaveBeenNthCalledWith(
+      2,
+      'Error context: test-context',
+    );
+  });
+
+  test('handleError without context', async () => {
+    const mockLogger = {
+      error: jest.fn(),
+      warn: jest.fn(),
+      info: jest.fn(),
+      debug: jest.fn(),
+      log: jest.fn(),
+      setLevel: jest.fn(),
+      getLevel: jest.fn().mockReturnValue('info'),
+    };
+
+    const h = new ErrorHandler(mockLogger);
+    const err = new Error('simple error');
+
+    await h.handleError(err);
+
+    // Should only call logger.error once for the main error (no context)
+    expect(mockLogger.error).toHaveBeenCalledTimes(1);
+    expect(mockLogger.error).toHaveBeenCalledWith(
+      '[unknown] Error: simple error',
+      err,
+    );
   });
 });

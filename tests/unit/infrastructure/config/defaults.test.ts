@@ -91,8 +91,9 @@ describe('Default Configuration Values', () => {
     it('should define TOC configuration', () => {
       expect(defaultConfig.toc.enabled).toBe(true);
       expect(defaultConfig.toc.depth).toBe(3);
-      expect(defaultConfig.toc.title.en).toBe('Table of Contents');
-      expect(defaultConfig.toc.title['zh-tw']).toBe('目錄');
+      expect(defaultConfig.toc.title).toBeDefined();
+      expect(defaultConfig.toc.title?.en).toBe('Table of Contents');
+      expect(defaultConfig.toc.title?.['zh-tw']).toBe('目錄');
     });
 
     it('should define rendering configuration', () => {

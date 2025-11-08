@@ -37,6 +37,7 @@ export interface FileProcessingOptions {
   customStyles?: string;
   metadata?: Partial<DocumentMetadata>;
   extractMetadata?: boolean;
+  headersFootersConfig?: import('../../core/headers-footers/types').HeadersFootersConfig;
 }
 
 export interface FileProcessingResult {

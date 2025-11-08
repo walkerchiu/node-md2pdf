@@ -7,6 +7,7 @@ import { CliUIManager } from '../../../../src/cli/ui/cli-ui-manager';
 import type { ITranslationManager } from '../../../../src/infrastructure/i18n/types';
 import type { ILogger } from '../../../../src/infrastructure/logging/types';
 import type { IConfigManager } from '../../../../src/infrastructure/config/types';
+import { defaultConfig } from '../../../../src/infrastructure/config/defaults';
 
 // Mock chalk with proper typing
 jest.mock('chalk', () => ({
@@ -79,6 +80,8 @@ describe('CliUIManager - Enhanced Branch Coverage Tests', () => {
       onConfigChanged: jest.fn(),
       setAndSave: jest.fn(),
       getConfigPath: jest.fn(() => '/mock/config/path'),
+      getConfig: jest.fn(() => ({ ...defaultConfig })),
+      updateConfig: jest.fn(),
     } as IConfigManager;
   });
 

@@ -1479,13 +1479,16 @@ export class LogManagementService extends EventEmitter {
     maxSize: number;
     isBufferEnabled: boolean;
   } {
-    this.ensureInitialized();
-
     const defaultStatus = {
       size: 0,
       maxSize: 0,
       isBufferEnabled: false,
     };
+
+    // Return default status if not initialized
+    if (!this.isInitialized) {
+      return defaultStatus;
+    }
 
     if ('getBufferSize' in this.strategy) {
       const bufferSize = (this.strategy as any).getBufferSize();

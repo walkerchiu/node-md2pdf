@@ -18,6 +18,7 @@ import type { ILogger } from '../../../../src/infrastructure/logging/types';
 import type { IErrorHandler } from '../../../../src/infrastructure/error/types';
 import type { IConfigManager } from '../../../../src/infrastructure/config/types';
 import type { ITranslationManager } from '../../../../src/infrastructure/i18n/types';
+import { defaultConfig } from '../../../../src/infrastructure/config/defaults';
 import { MD2PDFError } from '../../../../src/infrastructure/error/errors';
 
 // Mock the core modules
@@ -151,6 +152,8 @@ describe('TOCGeneratorService', () => {
       onConfigChanged: jest.fn(),
       setAndSave: jest.fn().mockResolvedValue(undefined),
       getConfigPath: jest.fn().mockReturnValue('/mock/config/path'),
+      getConfig: jest.fn(() => ({ ...defaultConfig })),
+      updateConfig: jest.fn(),
     };
 
     // Mock ITranslationManager
