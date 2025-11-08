@@ -2,6 +2,8 @@
  * Configuration management types
  */
 
+import type { HeadersFootersConfig } from '../../core/headers-footers';
+
 export interface IConfigManager {
   get<T = unknown>(key: string, defaultValue?: T): T;
   set<T = unknown>(key: string, value: T): void;
@@ -15,6 +17,10 @@ export interface IConfigManager {
   ): void;
   setAndSave<T = unknown>(key: string, value: T): Promise<void>;
   getConfigPath(): string;
+
+  // High-level config management methods
+  getConfig(): MD2PDFConfig;
+  updateConfig(config: MD2PDFConfig): Promise<void>;
 }
 
 export interface ConfigOptions {
@@ -105,7 +111,7 @@ export interface ConfigSchema {
   toc: {
     enabled: boolean;
     depth: number;
-    title: {
+    title?: {
       en: string;
       'zh-tw': string;
     };
@@ -224,4 +230,10 @@ export interface ConfigSchema {
       maxSubjectLength: number;
     };
   };
+
+  // Headers and footers settings
+  headersFooters: HeadersFootersConfig;
 }
+
+// Main configuration type alias
+export type MD2PDFConfig = ConfigSchema;

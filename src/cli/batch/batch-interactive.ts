@@ -35,6 +35,7 @@ export class BatchInteractiveMode {
   private batchProcessorService: IBatchProcessorService;
   private progressUI: BatchProgressUI;
   private uiManager: CliUIManager;
+  private configManager: IConfigManager;
 
   constructor(container: ServiceContainer) {
     this.logger = container.resolve<ILogger>('logger');
@@ -45,12 +46,12 @@ export class BatchInteractiveMode {
       APPLICATION_SERVICE_NAMES.BATCH_PROCESSOR,
     );
     this.progressUI = new BatchProgressUI(this.translationManager);
-    const configManager = container.resolve<IConfigManager>('config');
+    this.configManager = container.resolve<IConfigManager>('config');
     this.uiManager = new CliUIManager(
       this.translationManager,
       this.logger,
       {},
-      configManager,
+      this.configManager,
     );
   }
 
@@ -342,12 +343,17 @@ export class BatchInteractiveMode {
         default: 3,
         when: (answers: any) => answers.includeTOC,
       },
-      {
-        type: 'confirm',
-        name: 'includePageNumbers',
-        message: this.translationManager.t('batch.includePageNumbers'),
-        default: true,
-      },
+      // Conditionally ask about page numbers only if headers/footers are not configured
+      ...((await this.shouldAskPageNumbers())
+        ? [
+            {
+              type: 'confirm' as const,
+              name: 'includePageNumbers',
+              message: this.translationManager.t('batch.includePageNumbers'),
+              default: true,
+            },
+          ]
+        : []),
       {
         type: 'list',
         name: 'maxConcurrentProcesses',
@@ -577,26 +583,91 @@ export class BatchInteractiveMode {
     process.on('SIGTERM', handleCancel);
 
     try {
+      // Update headers/footers configuration based on page numbers choice
+      if (config.includePageNumbers) {
+        try {
+          const currentConfig = this.configManager.getConfig();
+
+          // Update footer configuration to enable page numbers
+          const updatedConfig = {
+            ...currentConfig,
+            headersFooters: {
+              ...currentConfig.headersFooters,
+              footer: {
+                ...currentConfig.headersFooters.footer,
+                enabled: true,
+                pageNumber: {
+                  ...currentConfig.headersFooters.footer.pageNumber,
+                  mode: 'show' as const,
+                  enabled: true,
+                  alignment: 'right' as const,
+                },
+              },
+            },
+          };
+
+          await this.configManager.updateConfig(updatedConfig);
+          this.logger.debug(
+            'Updated headers/footers configuration to enable page numbers in footer for batch processing',
+          );
+        } catch (error) {
+          this.logger.warn(
+            'Failed to update headers/footers configuration for batch processing:',
+            error,
+          );
+        }
+      }
+
+      // Get user's headers/footers preferences
+      const userConfig = this.configManager.getConfig();
+      const headersFootersConfig = userConfig.headersFooters;
+
       const fileOptions: Record<string, unknown> = {
         outputPath: config.outputDirectory,
         includeTOC: config.includeTOC,
-        includePageNumbers: config.includePageNumbers,
         tocReturnLinksLevel: config.tocReturnLinksLevel,
         tocOptions: config.includeTOC
           ? {
               maxDepth: config.tocDepth,
               includePageNumbers: config.includePageNumbers,
+              title: this.translationManager.t('pdfContent.tocTitle'),
             }
           : {},
         pdfOptions: {
           margin: DEFAULT_MARGINS.NORMAL,
-          displayHeaderFooter: config.includePageNumbers,
-          footerTemplate: config.includePageNumbers
-            ? '<div style="font-size:10px; width:100%; text-align:center;">Page <span class="pageNumber"></span> of <span class="totalPages"></span></div>'
-            : '',
+          displayHeaderFooter: false, // Force disable - using CSS @page instead
+          footerTemplate: '', // Disable Puppeteer templates - using CSS @page instead
           printBackground: true,
         },
       };
+
+      // Use headers/footers config if available, otherwise fallback to legacy page numbers
+      if (
+        headersFootersConfig &&
+        (headersFootersConfig.header.enabled ||
+          headersFootersConfig.footer.enabled)
+      ) {
+        fileOptions.headersFootersConfig = headersFootersConfig;
+
+        // Determine if page numbers should be shown in TOC based on headers/footers config
+        if (config.includeTOC) {
+          const shouldShowPageNumbers =
+            headersFootersConfig.header.pageNumber.enabled ||
+            headersFootersConfig.footer.pageNumber.enabled;
+          (fileOptions.tocOptions as any).includePageNumbers =
+            shouldShowPageNumbers;
+        }
+      } else if (config.includePageNumbers) {
+        fileOptions.includePageNumbers = config.includePageNumbers; // Legacy fallback
+
+        // Set TOC page numbers for legacy mode
+        if (config.includeTOC) {
+          (fileOptions.tocOptions as any).includePageNumbers =
+            config.includePageNumbers;
+        }
+      }
+
+      // Chinese font support can be configured via custom styles if needed
 
       // Enable two-stage rendering for batch processing when TOC with page numbers is requested
       if (config.includeTOC && config.includePageNumbers) {
@@ -748,5 +819,20 @@ export class BatchInteractiveMode {
         error,
       );
     }
+  }
+
+  /**
+   * Check if we should ask about page numbers based on user's headers/footers preferences
+   */
+  private async shouldAskPageNumbers(): Promise<boolean> {
+    const userConfig = this.configManager.getConfig();
+    const headersFootersConfig = userConfig.headersFooters;
+
+    // If headers/footers are configured and enabled, don't ask about page numbers
+    return !(
+      headersFootersConfig &&
+      (headersFootersConfig.header.enabled ||
+        headersFootersConfig.footer.enabled)
+    );
   }
 }

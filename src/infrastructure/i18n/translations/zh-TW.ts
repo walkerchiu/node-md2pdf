@@ -450,6 +450,205 @@ export const zhTWTranslations: TranslationKey = {
     pressEnterToContinue: '按 Enter 鍵繼續…',
   },
 
+  // Headers and footers configuration
+  headersFooters: {
+    // Basic information
+    basicInfo: {
+      title: '頁首和頁尾設定',
+      subtitle: '設定文件頁首和頁尾的顯示內容',
+    },
+
+    // Section titles
+    sections: {
+      header: '頁首',
+      footer: '頁尾',
+      headerSettings: '頁首設定',
+      footerSettings: '頁尾設定',
+      globalSettings: '全域設定',
+    },
+
+    // Enable/disable controls
+    enable: {
+      header: '啟用頁首',
+      footer: '啟用頁尾',
+      toggle: '啟用',
+      disable: '停用',
+    },
+
+    // Field types and labels (shared across UI)
+    fields: {
+      title: '標題',
+      pageNumber: '頁碼',
+      dateTime: '日期時間',
+      copyright: '版權資訊',
+      message: '自定義消息',
+      author: '作者',
+      organization: '組織',
+      version: '版本',
+      category: '類別',
+    },
+
+    // Display modes (unified configuration)
+    modes: {
+      none: '不顯示',
+      custom: '自定義',
+      show: '顯示',
+      metadata: '從元資料',
+      'metadata-creation': '從元資料取得創建日期',
+      'metadata-modification': '從元資料取得修改日期',
+      'date-short': '短日期 (2024/01/01)',
+      'date-long': '長日期 (2024 年 1 月 1 日)',
+      'date-iso': 'ISO 日期 (2024-01-01)',
+      'datetime-short': '短日期時間 (2024/01/01 12:00)',
+      'datetime-long': '長日期時間 (2024 年 1 月 1 日 12:00:00)',
+    },
+
+    // Alignment options (shared across UI)
+    alignment: {
+      left: '左對齊',
+      center: '置中',
+      right: '右對齊',
+    },
+
+    // Menu and configuration options
+    menu: {
+      returnToCustomization: '返回客製化設定選單',
+      previewSettings: '預覽設定',
+      configureHeader: '設定頁首',
+      configureFooter: '設定頁尾',
+      resetToDefaults: '重設為預設值',
+      selectConfigOption: '選擇配置選項：',
+      returnToPrevious: '返回上一層選單',
+    },
+
+    // Field configuration options
+    configure: {
+      title: '設定標題',
+      pageNumber: '設定頁碼',
+      dateTime: '設定日期時間',
+      copyright: '設定版權資訊',
+      message: '設定自定義訊息',
+      author: '設定作者',
+      organization: '設定組織',
+      version: '設定版本',
+      category: '設定類別',
+    },
+
+    // User prompts
+    prompts: {
+      selectOption: '選擇頁首和頁尾選項',
+      selectTitleMode: '選擇標題顯示方式：',
+      selectPageNumberMode: '選擇頁碼顯示方式：',
+      selectDateTimeMode: '選擇日期時間顯示方式：',
+      selectCopyrightMode: '選擇版權資訊顯示方式：',
+      selectMessageMode: '選擇其他訊息顯示方式：',
+      selectAuthorMode: '選擇作者顯示模式：',
+      selectOrganizationMode: '選擇組織顯示模式：',
+      selectVersionMode: '選擇版本顯示模式：',
+      selectCategoryMode: '選擇類別顯示模式：',
+      selectAlignment: '選擇對齊方式：',
+      enterCustomTitle: '輸入自定義標題：',
+      enterCustomAuthor: '輸入版權資訊：',
+      enterCustomMessage: '輸入其他訊息：',
+      enterAuthorValue: '輸入自定義作者資訊：',
+      enterOrganizationValue: '輸入自定義組織資訊：',
+      enterVersionValue: '輸入自定義版本資訊：',
+      enterCategoryValue: '輸入自定義類別資訊：',
+      confirmReset: '確定要將所有頁首和頁尾設定重設為預設值嗎？',
+    },
+
+    // Status and state messages
+    status: {
+      enabled: '已啟用',
+      disabled: '已停用',
+      headerEnabled: '頁首已啟用',
+      headerDisabled: '頁首已停用',
+      footerEnabled: '頁尾已啟用',
+      footerDisabled: '頁尾已停用',
+    },
+
+    // Save confirmations and messages
+    messages: {
+      settingsSaved: '頁首和頁尾設定已儲存',
+      headerSettingsSaved: '頁首設定已儲存',
+      footerSettingsSaved: '頁尾設定已儲存',
+      settingsError: '儲存頁首和頁尾設定時發生錯誤',
+      titleSaved: '標題設定已保存',
+      pageNumberSaved: '頁碼設定已保存',
+      dateTimeSaved: '日期時間設定已保存',
+      copyrightSaved: '版權資訊設定已保存',
+      messageSaved: '自定義消息設定已保存',
+      authorSaved: '作者設定已保存',
+      organizationSaved: '組織設定已保存',
+      versionSaved: '版本設定已保存',
+      headerEnabledSaved: '頁首已啟用',
+      headerDisabledSaved: '頁首已停用',
+      footerEnabledSaved: '頁尾已啟用',
+      footerDisabledSaved: '頁尾已停用',
+      confirmReset: '確定要重設為預設設定嗎？這將清除所有自定義設定。',
+      resetComplete: '已重設為預設設定',
+      resetCancelled: '取消重設',
+    },
+
+    // Examples
+    examples: {
+      dateShort: '2024/01/01',
+      dateLong: '2024 年 1 月 1 日',
+      dateIso: '2024-01-01',
+      datetimeShort: '2024/01/01 12:00',
+      datetimeLong: '2024 年 1 月 1 日 12:00:00',
+      title: '我的文件標題',
+      pageNumber: '第 1 頁，共 10 頁',
+      dateTime: '2024/01/15 14:30',
+      copyright: '© 2024 某某公司',
+      message: '機密文件',
+      author: '小明',
+      organization: '某某公司',
+      version: '1.0.0',
+    },
+
+    // Preview-specific translations (that cannot be shared)
+    preview: {
+      title: '頁首頁尾配置預覽',
+      pageLayoutPreview: '頁面布局預覽',
+      detailedConfigSummary: '詳細配置摘要',
+      documentContent: '文件內容',
+      contentDescription: '這裡是您的 Markdown 內容',
+      sectionDisabled: '此部分已停用',
+      headerDisabled: '頁首已停用',
+      footerDisabled: '頁尾已停用',
+      configurationStatistics: '配置統計',
+      totalEnabledFields: '啟用欄位總數',
+      headerFields: '頁首欄位',
+      footerFields: '頁尾欄位',
+
+      // Example values for different field types
+      titleExample: '文件標題',
+      pageNumberExample: '頁碼',
+      dateTimeExample: '日期時間',
+      copyrightExample: '© 2024 某某公司',
+      messageExample: '機密文件',
+      authorExample: '小明',
+      organizationExample: '某某公司',
+      versionExample: '1.0.0',
+
+      // Alignment options
+      alignCenter: '置中對齊',
+      alignRight: '右對齊',
+
+      // Legacy fields (kept for backward compatibility)
+      copyrightInfo: '版權資訊',
+      noContent: '無內容',
+
+      // Recommendations subsection
+      recommendations: {
+        noFields: '建議：至少啟用一個欄位以顯示頁首或頁尾',
+        tooManyFields: '建議：欄位較多，請確保頁面布局不會過於擁擠',
+        goodConfiguration: '配置看起來很好！',
+      },
+    },
+  },
+
   // Batch processing mode
   batch: {
     title: '📚 批次處理',
@@ -860,7 +1059,50 @@ export const zhTWTranslations: TranslationKey = {
     current: '當前',
     enabled: '已啟用',
     disabled: '已停用',
+    notSet: '未設定',
+    preview: '預覽',
+    custom: '自定義',
+    none: '無',
+    fromMetadata: '從元資料',
     pressEnter: '按 Enter 鍵繼續...',
+
+    // Status messages
+    status: {
+      enabled: '已啟用',
+      disabled: '已停用',
+      notSet: '未設定',
+    },
+
+    // Field names (shared across different modules)
+    fields: {
+      title: '標題',
+      pageNumber: '頁碼',
+      dateTime: '日期時間',
+      copyright: '版權資訊',
+      message: '訊息',
+      author: '作者',
+      organization: '組織',
+      version: '版本',
+    },
+
+    // Alignment (shared across different modules)
+    alignment: {
+      left: '左對齊',
+      center: '置中',
+      right: '右對齊',
+    },
+
+    // Examples for preview/demo purposes
+    examples: {
+      title: '文件標題',
+      pageNumber: '第 1 頁，共 10 頁',
+      dateTime: '2024/01/15 14:30',
+      copyright: '© 2024 某某公司',
+      message: '機密文件',
+      author: '小明',
+      organization: '某某公司',
+      version: '1.0.0',
+    },
   },
 
   // Short text (used for menu abbreviations)

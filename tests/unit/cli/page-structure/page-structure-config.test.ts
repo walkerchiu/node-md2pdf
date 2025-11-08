@@ -198,7 +198,7 @@ describe('PageStructureConfigUI', () => {
           message: 'pageStructure.menu.title',
           choices: [
             {
-              name: '📄 使用預設模板 - 快速配置專業頁首頁尾',
+              name: '📄 使用預設模板 - 快速配置專業頁首和頁尾',
               value: 'preset',
             },
             {

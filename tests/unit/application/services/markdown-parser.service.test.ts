@@ -11,6 +11,7 @@ import type { ILogger } from '../../../../src/infrastructure/logging/types';
 import type { IErrorHandler } from '../../../../src/infrastructure/error/types';
 import type { IConfigManager } from '../../../../src/infrastructure/config/types';
 import type { IFileSystemManager } from '../../../../src/infrastructure/filesystem/types';
+import { defaultConfig } from '../../../../src/infrastructure/config/defaults';
 import { ParsedMarkdown, Heading } from '../../../../src/types/index';
 import {
   MD2PDFError,
@@ -102,6 +103,8 @@ More content.`;
       onConfigChanged: jest.fn(),
       setAndSave: jest.fn().mockResolvedValue(undefined),
       getConfigPath: jest.fn().mockReturnValue('/mock/config/path'),
+      getConfig: jest.fn(() => ({ ...defaultConfig })),
+      updateConfig: jest.fn(),
     };
 
     // Mock IFileSystemManager

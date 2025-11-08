@@ -465,6 +465,111 @@ describe('Logger (Unified)', () => {
     });
   });
 
+  describe('Error Handling', () => {
+    it('should handle file logging enable errors when strategy creation fails', async () => {
+      // Create a logger instance and mock its strategy creation to fail
+      const testLogger = new Logger({ level: 'debug' });
+
+      // Mock the HybridLoggerStrategy constructor to throw
+      const OriginalHybridStrategy =
+        require('../../../../src/infrastructure/logging/strategies').HybridLoggerStrategy;
+      const mockHybridStrategy = jest.fn(() => {
+        throw new Error('Strategy creation failed');
+      });
+
+      // Replace the constructor temporarily
+      require('../../../../src/infrastructure/logging/strategies').HybridLoggerStrategy =
+        mockHybridStrategy;
+
+      const config: FileLoggingConfig = {
+        filePath: '/tmp/test.log',
+      };
+
+      await expect(testLogger.enableFileLogging(config)).rejects.toThrow(
+        'Failed to enable file logging',
+      );
+
+      // Restore original constructor
+      require('../../../../src/infrastructure/logging/strategies').HybridLoggerStrategy =
+        OriginalHybridStrategy;
+
+      await testLogger.cleanup();
+    });
+
+    it('should handle file logging disable errors gracefully', async () => {
+      const config: FileLoggingConfig = {
+        filePath: logFilePath,
+      };
+
+      await logger.enableFileLogging(config);
+
+      // Mock the strategy cleanup to throw an error
+      const originalCleanup = logger['strategy'].cleanup;
+      logger['strategy'].cleanup = jest
+        .fn()
+        .mockRejectedValue(new Error('Cleanup failed'));
+
+      await expect(logger.disableFileLogging()).rejects.toThrow(
+        'Failed to disable file logging',
+      );
+
+      // Restore original method
+      logger['strategy'].cleanup = originalCleanup;
+    });
+
+    it('should throw error when rotating logs without file logging enabled', async () => {
+      await expect(logger.rotateLogs()).rejects.toThrow(
+        'File logging is not enabled',
+      );
+    });
+
+    it('should throw error when strategy does not support rotation', async () => {
+      // Set file logging as enabled but use a non-HybridLoggerStrategy
+      logger['fileLoggingEnabled'] = true;
+      const originalStrategy = logger['strategy'];
+      logger['strategy'] = {
+        write: jest.fn(),
+        cleanup: jest.fn(),
+      } as any;
+
+      await expect(logger.rotateLogs()).rejects.toThrow(
+        'Current strategy does not support log rotation',
+      );
+
+      // Restore strategy and state
+      logger['strategy'] = originalStrategy;
+      logger['fileLoggingEnabled'] = false;
+    });
+
+    it('should return default stats when file logging is disabled', async () => {
+      const stats = await logger.getLogStats();
+      expect(stats).toEqual({
+        totalEntries: 0,
+        currentFileSize: 0,
+        rotationCount: 0,
+        isRotationNeeded: false,
+      });
+    });
+
+    it('should throw error when strategy does not support stats', async () => {
+      // Set file logging as enabled but use a non-HybridLoggerStrategy
+      logger['fileLoggingEnabled'] = true;
+      const originalStrategy = logger['strategy'];
+      logger['strategy'] = {
+        write: jest.fn(),
+        cleanup: jest.fn(),
+      } as any;
+
+      await expect(logger.getLogStats()).rejects.toThrow(
+        'Current strategy does not support log statistics',
+      );
+
+      // Restore strategy and state
+      logger['strategy'] = originalStrategy;
+      logger['fileLoggingEnabled'] = false;
+    });
+  });
+
   describe('Unified Logger Design', () => {
     it('should implement IEnhancedLogger interface', () => {
       expect(logger.enableFileLogging).toBeDefined();

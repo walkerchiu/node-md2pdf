@@ -13,6 +13,10 @@ import {
   InMemoryEventPublisher,
 } from '../../core/domain/events';
 import {
+  HeaderFooterGenerator,
+  HeaderFooterContext,
+} from '../../core/headers-footers';
+import {
   PDFEngineManager,
   PDFEngineFactory,
   HealthFirstSelectionStrategy,
@@ -63,8 +67,8 @@ export interface IPDFGeneratorService {
         keywords?: string;
         creator?: string;
         producer?: string;
-        creationDate?: Date;
-        modDate?: Date;
+        creationDate?: Date | string;
+        modDate?: Date | string;
         [key: string]: any;
       };
     },
@@ -81,6 +85,7 @@ export class PDFGeneratorService implements IPDFGeneratorService {
   private engineManager: PDFEngineManager | null = null;
   private isInitialized = false;
   private eventPublisher: InMemoryEventPublisher;
+  private headerFooterGenerator: HeaderFooterGenerator;
 
   constructor(
     private readonly logger: ILogger,
@@ -91,6 +96,11 @@ export class PDFGeneratorService implements IPDFGeneratorService {
     _pageStructureService?: IPageStructureService,
   ) {
     this.eventPublisher = new InMemoryEventPublisher();
+    // Initialize HeaderFooterGenerator with dependencies
+    this.headerFooterGenerator = new HeaderFooterGenerator(
+      this.translationManager,
+      this.logger,
+    );
   }
 
   async initialize(): Promise<void> {
@@ -295,6 +305,7 @@ export class PDFGeneratorService implements IPDFGeneratorService {
 
   /**
    * Inject CSS @page rules directly into HTML content for header/footer
+   * Integrates with the new headers/footers configuration system
    */
   private injectCSSPageRules(
     htmlContent: string,
@@ -317,110 +328,79 @@ export class PDFGeneratorService implements IPDFGeneratorService {
         `Injecting CSS @page rules for header/footer - includePageNumbers: ${includePageNumbers}`,
       );
 
-      // Only generate CSS if page numbers are requested
-      if (!includePageNumbers) {
+      // Check if headers/footers are configured in user settings
+      const config = this.configManager.getConfig();
+      const headersFootersConfig = config.headersFooters;
+
+      let cssPageRules = '';
+
+      if (
+        headersFootersConfig &&
+        (headersFootersConfig.header.enabled ||
+          headersFootersConfig.footer.enabled)
+      ) {
+        this.logger.debug('Using configured headers/footers system');
+
+        // Prepare context for HeaderFooterGenerator
+        const firstH1 = options.headings?.find((h) => h.level === 1);
+
+        const context = {
+          documentTitle: options.title,
+          firstH1Title: firstH1?.text,
+          pageNumber: 1, // CSS counters will handle actual page numbers
+          totalPages: 1, // CSS counters will handle actual total pages
+          currentDate: new Date(),
+          // author: undefined, // Can be extended later
+          // customMessage: undefined, // Can be extended later
+        } as HeaderFooterContext;
+
+        // Generate CSS using the new HeaderFooterGenerator
+        cssPageRules = this.headerFooterGenerator.generateCSSPageRules(
+          headersFootersConfig,
+          context,
+        );
+      } else if (includePageNumbers) {
+        this.logger.debug('Falling back to legacy includePageNumbers mode');
+
+        // Fallback to backward-compatible mode
+        const firstH1 = options.headings?.find((h) => h.level === 1);
+        const documentTitle =
+          firstH1?.text || options.title || 'Markdown Document';
+
+        const context = {
+          documentTitle: options.title,
+          firstH1Title: firstH1?.text,
+          pageNumber: 1,
+          totalPages: 1,
+          currentDate: new Date(),
+        } as HeaderFooterContext;
+
+        cssPageRules = this.headerFooterGenerator.generateBackwardCompatibleCSS(
+          includePageNumbers,
+          documentTitle,
+          context,
+        );
+      } else {
         this.logger.debug(
           'Page numbers not enabled - skipping CSS @page injection',
         );
-        // No header/footer needed - just return the original content
         return htmlContent;
       }
 
-      // Get the document title - prioritize first H1 heading
-      const firstH1 = options.headings?.find((h) => h.level === 1);
-      const documentTitle =
-        firstH1?.text || options.title || 'Markdown Document';
-
-      // Escape quotes in document title for CSS content property
-      const escapedTitle = documentTitle.replace(/"/g, '\\"');
-
-      // Get appropriate margins for pages with header/footer
-      const marginsWithHeaderFooter = DEFAULT_MARGINS.WITH_HEADER_FOOTER;
-
-      // Generate CSS for header and footer using @page rules
-      const cssPageRules = `
-        <style>
-          @media print {
-            @page {
-              margin-top: ${marginsWithHeaderFooter.top};
-              margin-bottom: ${marginsWithHeaderFooter.bottom};
-              margin-left: ${marginsWithHeaderFooter.left};
-              margin-right: ${marginsWithHeaderFooter.right};
-
-              @top-left {
-                content: "${escapedTitle}";
-                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', 'Helvetica Neue', Helvetica, Arial, sans-serif;
-                font-size: 12px;
-                color: #333;
-                text-align: left;
-                padding: 0;
-                border: none;
-                background: none;
-              }
-
-              @bottom-right {
-                content: "${this.getPageNumberFormat()}";
-                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', 'Helvetica Neue', Helvetica, Arial, sans-serif;
-                font-size: 12px;
-                color: #333;
-                text-align: right;
-                padding: 0;
-                border: none;
-                background: none;
-              }
-            }
-
-            /* Ensure body content doesn't interfere with header/footer */
-            body {
-              margin: 0;
-              padding: 0;
-            }
-          }
-        </style>
-      `;
+      // If no CSS was generated, return original content
+      if (!cssPageRules.trim()) {
+        this.logger.debug(
+          'No CSS rules generated - returning original content',
+        );
+        return htmlContent;
+      }
 
       this.logger.debug(
         `Generated CSS @page rules: ${cssPageRules.slice(0, 200)}...`,
       );
 
-      // Check if HTML already has a <head> section
-      if (htmlContent.includes('<head>')) {
-        // Insert CSS rules into existing <head>
-        const result = htmlContent.replace('</head>', `${cssPageRules}</head>`);
-        this.logger.debug(
-          `CSS injected into existing <head> - result length: ${result.length}`,
-        );
-        return result;
-      } else if (htmlContent.includes('<html>')) {
-        // Add <head> section with CSS rules after <html> tag
-        const result = htmlContent.replace(
-          '<html>',
-          `<html><head>${cssPageRules}</head>`,
-        );
-        this.logger.debug(
-          `CSS injected with new <head> section - result length: ${result.length}`,
-        );
-        return result;
-      } else {
-        // Wrap content with full HTML structure
-        const result = `
-          <!DOCTYPE html>
-          <html>
-            <head>
-              <meta charset="UTF-8">
-              <meta name="viewport" content="width=device-width, initial-scale=1.0">
-              ${cssPageRules}
-            </head>
-            <body>
-              ${htmlContent}
-            </body>
-          </html>
-        `;
-        this.logger.debug(
-          `CSS injected with full HTML wrapper - result length: ${result.length}`,
-        );
-        return result;
-      }
+      // Inject CSS into HTML content
+      return this.injectCSSIntoHTML(htmlContent, cssPageRules);
     } catch (error) {
       this.logger.warn(
         `Failed to inject CSS @page rules: ${(error as Error).message}`,
@@ -432,24 +412,46 @@ export class PDFGeneratorService implements IPDFGeneratorService {
   }
 
   /**
-   * Get internationalized page number format for CSS @page rules
+   * Helper method to inject CSS rules into HTML content
    */
-  private getPageNumberFormat(): string {
-    try {
-      // Get localized page number format
-      const pageTemplate = this.translationManager.t('pdfContent.pageNumber');
-
-      // Replace placeholders with CSS counter values
-      // CSS counter(page) and counter(pages) will be replaced at render time
-      return pageTemplate
-        .replace(/\{\{page\}\}/g, '" counter(page) "')
-        .replace(/\{\{totalPages\}\}/g, '" counter(pages) "');
-    } catch (error) {
-      // Fallback to default format if translation fails
-      this.logger.warn(
-        `Failed to get internationalized page number format: ${(error as Error).message}`,
+  private injectCSSIntoHTML(htmlContent: string, cssRules: string): string {
+    // Check if HTML already has a <head> section
+    if (htmlContent.includes('<head>')) {
+      // Insert CSS rules into existing <head>
+      const result = htmlContent.replace('</head>', `${cssRules}</head>`);
+      this.logger.debug(
+        `CSS injected into existing <head> - result length: ${result.length}`,
       );
-      return '"Page " counter(page) " of " counter(pages)';
+      return result;
+    } else if (htmlContent.includes('<html>')) {
+      // Add <head> section with CSS rules after <html> tag
+      const result = htmlContent.replace(
+        '<html>',
+        `<html><head>${cssRules}</head>`,
+      );
+      this.logger.debug(
+        `CSS injected with new <head> section - result length: ${result.length}`,
+      );
+      return result;
+    } else {
+      // Wrap content with full HTML structure
+      const result = `
+        <!DOCTYPE html>
+        <html>
+          <head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            ${cssRules}
+          </head>
+          <body>
+            ${htmlContent}
+          </body>
+        </html>
+      `;
+      this.logger.debug(
+        `CSS injected with full HTML wrapper - result length: ${result.length}`,
+      );
+      return result;
     }
   }
 
@@ -549,8 +551,8 @@ export class PDFGeneratorService implements IPDFGeneratorService {
         keywords?: string;
         creator?: string;
         producer?: string;
-        creationDate?: Date;
-        modDate?: Date;
+        creationDate?: Date | string;
+        modDate?: Date | string;
         [key: string]: any;
       };
       twoStageRendering?: {

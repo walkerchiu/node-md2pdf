@@ -10,6 +10,8 @@ import {
   EnvironmentAwareLoggingFactory,
 } from '../../../../src/infrastructure/logging/environment-aware-factory';
 
+import type { ILogger } from '../../../../src/infrastructure/logging/types';
+
 // Mock dependencies
 jest.mock('../../../../src/infrastructure/logging/environment-aware-factory');
 jest.mock('../../../../src/infrastructure/logging/logger');
@@ -277,6 +279,25 @@ describe('EnvironmentAwareServices', () => {
       expect(
         mockLoggingEnvironmentConfig.isFileLoggingEnabled,
       ).toHaveBeenCalled();
+    });
+
+    it('should handle log management service when logger resolution fails', () => {
+      const container = new ServiceContainer();
+
+      // Register log management service with manual factory to simulate lines 64-66
+      container.registerSingleton('logManagement', (c) => {
+        const logger = c.tryResolve<ILogger>('logger'); // This should return undefined
+        return EnvironmentAwareLoggingFactory.createLogManagementService(
+          logger,
+        );
+      });
+
+      const logManagement = container.resolve('logManagement');
+
+      expect(logManagement).toBeDefined();
+      expect(
+        mockEnvironmentAwareLoggingFactory.createLogManagementService,
+      ).toHaveBeenCalledWith(undefined);
     });
   });
 });

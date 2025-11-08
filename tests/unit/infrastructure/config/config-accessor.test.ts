@@ -13,6 +13,7 @@ import {
   CONFIG_KEYS,
   DEFAULT_MARGINS,
   DEFAULT_CSS_TEMPLATE,
+  defaultConfig,
 } from '../../../../src/infrastructure/config/defaults';
 
 describe('ConfigAccessor', () => {
@@ -30,6 +31,8 @@ describe('ConfigAccessor', () => {
       onConfigChanged: jest.fn(),
       setAndSave: jest.fn(),
       getConfigPath: jest.fn(),
+      getConfig: jest.fn(() => ({ ...defaultConfig })),
+      updateConfig: jest.fn(),
     };
 
     configAccessor = new ConfigAccessor(mockConfigManager);

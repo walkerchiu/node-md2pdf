@@ -19,6 +19,7 @@ import type { ILogger } from '../../../../src/infrastructure/logging/types';
 import type { IErrorHandler } from '../../../../src/infrastructure/error/types';
 import type { IConfigManager } from '../../../../src/infrastructure/config/types';
 import type { IFileSystemManager } from '../../../../src/infrastructure/filesystem/types';
+import { defaultConfig } from '../../../../src/infrastructure/config/defaults';
 import { MD2PDFError } from '../../../../src/infrastructure/error/errors';
 import fs from 'fs';
 import { FileCollector } from '../../../../src/core/batch/file-collector';
@@ -147,6 +148,8 @@ describe('BatchProcessorService', () => {
       onConfigChanged: jest.fn(),
       setAndSave: jest.fn().mockResolvedValue(undefined),
       getConfigPath: jest.fn().mockReturnValue('/mock/config/path'),
+      getConfig: jest.fn(() => ({ ...defaultConfig })),
+      updateConfig: jest.fn(),
     };
 
     // Mock IFileSystemManager

@@ -3,6 +3,8 @@
  * Single source of truth for all default settings
  */
 
+import { DEFAULT_HEADERS_FOOTERS_CONFIG } from '../../core/headers-footers';
+
 import {
   DEFAULT_MARGINS,
   DEFAULT_CSS_TEMPLATE,
@@ -161,6 +163,7 @@ export const defaultConfig: ConfigSchema = {
       maxSubjectLength: DEFAULT_METADATA.VALIDATION.MAX_SUBJECT_LENGTH,
     },
   },
+  headersFooters: DEFAULT_HEADERS_FOOTERS_CONFIG,
 };
 
 // Export constants for use in other parts of the system

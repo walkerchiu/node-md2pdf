@@ -66,10 +66,18 @@ export class MetadataService {
 
     // Handle dates
     if (metadata.creationDate) {
-      pdfInfo.CreationDate = metadata.creationDate.toISOString();
+      const creationDate =
+        metadata.creationDate instanceof Date
+          ? metadata.creationDate
+          : new Date(metadata.creationDate);
+      pdfInfo.CreationDate = creationDate.toISOString();
     }
     if (metadata.modDate) {
-      pdfInfo.ModDate = metadata.modDate.toISOString();
+      const modDate =
+        metadata.modDate instanceof Date
+          ? metadata.modDate
+          : new Date(metadata.modDate);
+      pdfInfo.ModDate = modDate.toISOString();
     }
 
     return pdfInfo;

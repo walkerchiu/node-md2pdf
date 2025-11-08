@@ -19,6 +19,7 @@ import { CliRenderer } from './utils/cli-renderer';
 
 import type { IFileProcessorService } from '../application/services/file-processor.service';
 import type { ISmartDefaultsService } from '../application/services/smart-defaults.service';
+import type { IConfigManager } from '../infrastructure/config/types';
 import type { ITranslationManager } from '../infrastructure/i18n/types';
 import type { ILogger } from '../infrastructure/logging/types';
 import type { ServiceContainer } from '../shared/container';
@@ -35,6 +36,7 @@ export class SmartConversionMode {
   private fileProcessorService: IFileProcessorService;
   private logger: ILogger;
   private translationManager: ITranslationManager;
+  private configManager: IConfigManager;
   private recentFilesManager: RecentFilesManager;
   private renderer: CliRenderer;
 
@@ -46,6 +48,7 @@ export class SmartConversionMode {
     this.fileProcessorService = this.container.resolve('fileProcessor');
     this.logger = this.container.resolve('logger');
     this.translationManager = this.container.resolve('translator');
+    this.configManager = this.container.resolve('config');
     this.recentFilesManager = new RecentFilesManager();
     this.renderer = new CliRenderer();
   }
@@ -510,12 +513,79 @@ export class SmartConversionMode {
       ? this.getRecommendedTOCDepth(choice.config, analysis)
       : Math.min(analysis.headingStructure.maxDepth, 3);
 
+    // Get user's headers/footers preferences
+    const userConfig = this.configManager.getConfig();
+    const headersFootersConfig = userConfig.headersFooters;
+
     // Display smart decisions
     this.renderer.info(chalk.cyan('\n📋 Smart Configuration Applied:'));
     this.renderer.info(
       `   📚 Table of Contents: ${includeTOC ? 'Yes' : 'No'}${includeTOC ? ` (${tocDepth} levels)` : ''}`,
     );
-    if (includeTOC) {
+
+    // Display headers/footers information based on user preferences
+    if (
+      headersFootersConfig &&
+      (headersFootersConfig.header.enabled ||
+        headersFootersConfig.footer.enabled)
+    ) {
+      if (headersFootersConfig.header.enabled) {
+        const headerItems: string[] = [];
+        if (headersFootersConfig.header.title.enabled)
+          headerItems.push(
+            this.translationManager.t('headersFooters.fields.title'),
+          );
+        if (headersFootersConfig.header.pageNumber.enabled)
+          headerItems.push(
+            this.translationManager.t('headersFooters.fields.pageNumber'),
+          );
+        if (headersFootersConfig.header.dateTime.enabled)
+          headerItems.push(
+            this.translationManager.t('headersFooters.fields.dateTime'),
+          );
+        if (headersFootersConfig.header.copyright.enabled)
+          headerItems.push(
+            this.translationManager.t('headersFooters.fields.copyright'),
+          );
+        if (headersFootersConfig.header.message.enabled)
+          headerItems.push(
+            this.translationManager.t('headersFooters.fields.message'),
+          );
+
+        this.renderer.info(
+          `   📄 ${this.translationManager.t('headersFooters.sections.header')}: ${headerItems.length > 0 ? headerItems.join('、') : this.translationManager.t('headersFooters.status.enabled')}`,
+        );
+      }
+
+      if (headersFootersConfig.footer.enabled) {
+        const footerItems: string[] = [];
+        if (headersFootersConfig.footer.title.enabled)
+          footerItems.push(
+            this.translationManager.t('headersFooters.fields.title'),
+          );
+        if (headersFootersConfig.footer.pageNumber.enabled)
+          footerItems.push(
+            this.translationManager.t('headersFooters.fields.pageNumber'),
+          );
+        if (headersFootersConfig.footer.dateTime.enabled)
+          footerItems.push(
+            this.translationManager.t('headersFooters.fields.dateTime'),
+          );
+        if (headersFootersConfig.footer.copyright.enabled)
+          footerItems.push(
+            this.translationManager.t('headersFooters.fields.copyright'),
+          );
+        if (headersFootersConfig.footer.message.enabled)
+          footerItems.push(
+            this.translationManager.t('headersFooters.fields.message'),
+          );
+
+        this.renderer.info(
+          `   📄 ${this.translationManager.t('headersFooters.sections.footer')}: ${footerItems.length > 0 ? footerItems.join('、') : this.translationManager.t('headersFooters.status.enabled')}`,
+        );
+      }
+    } else if (includeTOC) {
+      // Fallback to legacy page numbers display when no headers/footers configured
       this.renderer.info(`   📄 Page Numbers: Yes`);
     }
     this.renderer.info('');
@@ -560,6 +630,7 @@ export class SmartConversionMode {
         analysis,
         includeTOC,
         tocDepth,
+        headersFootersConfig,
       );
 
       // Start progress indication
@@ -707,6 +778,7 @@ export class SmartConversionMode {
     analysis: ContentAnalysis,
     includeTOC: boolean,
     tocDepth: number,
+    headersFootersConfig?: import('../core/headers-footers/types').HeadersFootersConfig,
   ): any {
     // Determine if two-stage rendering should be enabled
     const shouldEnableTwoStage = this.shouldEnableTwoStageRendering(
@@ -716,9 +788,8 @@ export class SmartConversionMode {
 
     if (!config) {
       // Return basic configuration matching single file and batch processing
-      return {
+      const baseConfig: any = {
         includeTOC: includeTOC,
-        includePageNumbers: includeTOC, // Enable page numbers when TOC is enabled
         tocReturnLinksLevel: includeTOC ? 3 : 0, // Smart default: H2-H4 when TOC enabled
         tocOptions: includeTOC
           ? {
@@ -738,6 +809,19 @@ export class SmartConversionMode {
           },
         }),
       };
+
+      // Use headers/footers config if available, otherwise fallback to legacy page numbers
+      if (
+        headersFootersConfig &&
+        (headersFootersConfig.header.enabled ||
+          headersFootersConfig.footer.enabled)
+      ) {
+        baseConfig.headersFootersConfig = headersFootersConfig;
+      } else {
+        baseConfig.includePageNumbers = includeTOC; // Legacy fallback
+      }
+
+      return baseConfig;
     }
 
     // Convert Smart Defaults configuration to file processor configuration
@@ -816,11 +900,24 @@ export class SmartConversionMode {
       }
     }
 
+    // Use headers/footers config if available, otherwise keep legacy page numbers
+    if (
+      headersFootersConfig &&
+      (headersFootersConfig.header.enabled ||
+        headersFootersConfig.footer.enabled)
+    ) {
+      baseConfig.headersFootersConfig = headersFootersConfig;
+      // Remove legacy includePageNumbers when using new headers/footers system
+      delete baseConfig.includePageNumbers;
+    }
+
     // Add two-stage rendering support for all configurations
     if (shouldEnableTwoStage) {
       baseConfig.twoStageRendering = {
         enabled: true,
-        forceAccuratePageNumbers: includeTOC && baseConfig.includePageNumbers,
+        forceAccuratePageNumbers:
+          includeTOC &&
+          (baseConfig.includePageNumbers || baseConfig.headersFootersConfig),
         maxPerformanceImpact: 100, // Allow up to 100% performance impact for accuracy
       };
     }

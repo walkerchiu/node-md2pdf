@@ -470,6 +470,209 @@ export const enTranslations: TranslationKey = {
     pressEnterToContinue: 'Press Enter to continue...',
   },
 
+  // Headers and footers configuration
+  headersFooters: {
+    // Basic information
+    basicInfo: {
+      title: 'Headers & Footers Settings',
+      subtitle: 'Configure document header and footer content',
+    },
+
+    // Section titles
+    sections: {
+      header: 'Header',
+      footer: 'Footer',
+      headerSettings: 'Header Settings',
+      footerSettings: 'Footer Settings',
+      globalSettings: 'Global Settings',
+    },
+
+    // Enable/disable controls
+    enable: {
+      header: 'Enable Header',
+      footer: 'Enable Footer',
+      toggle: 'Enable',
+      disable: 'Disable',
+    },
+
+    // Field types and labels
+    fields: {
+      title: 'Title',
+      pageNumber: 'Page Number',
+      dateTime: 'Date Time',
+      copyright: 'Copyright',
+      message: 'Custom Message',
+      author: 'Author',
+      organization: 'Organization',
+      version: 'Version',
+      category: 'Category',
+    },
+
+    // Display modes (unified configuration)
+    modes: {
+      none: "Don't show",
+      custom: 'Custom',
+      show: 'Show',
+      metadata: 'From metadata',
+      'metadata-creation': 'Creation date from metadata',
+      'metadata-modification': 'Modification date from metadata',
+      'date-short': 'Date short (2024/01/01)',
+      'date-long': 'Date long (January 1, 2024)',
+      'date-iso': 'Date ISO (2024-01-01)',
+      'datetime-short': 'DateTime short (2024/01/01 12:00)',
+      'datetime-long': 'DateTime long (January 1, 2024 12:00:00 PM)',
+    },
+
+    // Alignment options
+    alignment: {
+      left: 'Left',
+      center: 'Center',
+      right: 'Right',
+    },
+
+    // Menu and configuration options
+    menu: {
+      returnToCustomization: 'Return to Customization Menu',
+      previewSettings: 'Preview Settings',
+      configureHeader: 'Configure Header',
+      configureFooter: 'Configure Footer',
+      resetToDefaults: 'Reset to Defaults',
+      selectConfigOption: 'Select configuration option:',
+      returnToPrevious: 'Return to previous menu',
+    },
+
+    // Field configuration options
+    configure: {
+      title: 'Configure Title',
+      pageNumber: 'Configure Page Number',
+      dateTime: 'Configure Date/Time',
+      copyright: 'Configure Copyright',
+      message: 'Configure Custom message',
+      author: 'Configure Author',
+      organization: 'Configure Organization',
+      version: 'Configure Version',
+      category: 'Configure Category',
+    },
+
+    // User prompts
+    prompts: {
+      selectOption: 'Select headers & footers option',
+      selectTitleMode: 'Select title display mode:',
+      selectPageNumberMode: 'Select page number display mode:',
+      selectDateTimeMode: 'Select date time display mode:',
+      selectCopyrightMode: 'Select copyright display mode:',
+      selectMessageMode: 'Select custom message display mode:',
+      selectAuthorMode: 'Select author display mode:',
+      selectOrganizationMode: 'Select organization display mode:',
+      selectVersionMode: 'Select version display mode:',
+      selectCategoryMode: 'Select category display mode:',
+      selectAlignment: 'Select alignment:',
+      enterCustomTitle: 'Enter custom title:',
+      enterCustomAuthor: 'Enter copyright information:',
+      enterCustomMessage: 'Enter custom message:',
+      enterAuthorValue: 'Enter custom author value:',
+      enterOrganizationValue: 'Enter custom organization value:',
+      enterVersionValue: 'Enter custom version value:',
+      enterCategoryValue: 'Enter custom category value:',
+      confirmReset:
+        'Are you sure you want to reset all headers & footers settings to defaults?',
+    },
+
+    // Status and state messages
+    status: {
+      enabled: 'Enabled',
+      disabled: 'Disabled',
+      headerEnabled: 'Header enabled',
+      headerDisabled: 'Header disabled',
+      footerEnabled: 'Footer enabled',
+      footerDisabled: 'Footer disabled',
+    },
+
+    // Save confirmations and messages
+    messages: {
+      settingsSaved: 'Headers & footers settings saved',
+      headerSettingsSaved: 'Header settings saved',
+      footerSettingsSaved: 'Footer settings saved',
+      settingsError: 'Error saving headers & footers settings',
+      titleSaved: 'Title settings saved',
+      pageNumberSaved: 'Page number settings saved',
+      dateTimeSaved: 'Date time settings saved',
+      copyrightSaved: 'Copyright settings saved',
+      messageSaved: 'Message settings saved',
+      authorSaved: 'Author settings saved',
+      organizationSaved: 'Organization settings saved',
+      versionSaved: 'Version settings saved',
+      headerEnabledSaved: 'Header enabled',
+      headerDisabledSaved: 'Header disabled',
+      footerEnabledSaved: 'Footer enabled',
+      footerDisabledSaved: 'Footer disabled',
+      confirmReset:
+        'Are you sure you want to reset to default settings? This will clear all custom configurations.',
+      resetComplete: 'Reset to default settings complete',
+      resetCancelled: 'Reset cancelled',
+    },
+
+    // Examples
+    examples: {
+      dateShort: '2024/01/01',
+      dateLong: 'January 1, 2024',
+      dateIso: '2024-01-01',
+      datetimeShort: '2024/01/01 12:00',
+      datetimeLong: 'January 1, 2024 12:00:00 PM',
+      title: 'My Document Title',
+      pageNumber: 'Page 1 of 10',
+      dateTime: '2024/01/15 14:30',
+      copyright: '© 2024 Company Name',
+      message: 'Confidential Document',
+      author: 'John Doe',
+      organization: 'Tech Company',
+      version: '1.0.0',
+    },
+
+    // Preview-specific translations (that cannot be shared)
+    preview: {
+      title: 'Headers & Footers Configuration Preview',
+      pageLayoutPreview: 'Page Layout Preview',
+      detailedConfigSummary: 'Detailed Configuration Summary',
+      documentContent: 'Document Content',
+      contentDescription: 'Your Markdown content goes here',
+      sectionDisabled: 'This section is disabled',
+      headerDisabled: 'Header disabled',
+      footerDisabled: 'Footer disabled',
+      configurationStatistics: 'Configuration Statistics',
+      totalEnabledFields: 'Total enabled fields',
+      headerFields: 'Header fields',
+      footerFields: 'Footer fields',
+
+      // Example values for different field types
+      titleExample: 'My Document Title',
+      pageNumberExample: 'Page number',
+      dateTimeExample: 'Date time',
+      copyrightExample: '© 2024 My Company',
+      messageExample: 'Confidential Document',
+      authorExample: 'John Doe',
+      organizationExample: 'My Company',
+      versionExample: '1.0.0',
+
+      // Alignment options
+      alignCenter: 'Center aligned',
+      alignRight: 'Right aligned',
+
+      // Legacy fields (kept for backward compatibility)
+      copyrightInfo: 'Copyright information',
+      noContent: 'No content',
+
+      // Recommendations subsection
+      recommendations: {
+        noFields:
+          'Suggestion: Enable at least one field to display headers or footers',
+        tooManyFields:
+          'Suggestion: Many fields enabled, ensure page layout is not too crowded',
+        goodConfiguration: 'Configuration looks good!',
+      },
+    },
+  },
+
   // Batch Processing Mode
   batch: {
     title: '📚 Batch Processing',
@@ -895,7 +1098,50 @@ export const enTranslations: TranslationKey = {
     current: 'Current',
     enabled: 'Enabled',
     disabled: 'Disabled',
+    notSet: 'Not set',
+    preview: 'Preview',
+    custom: 'Custom',
+    none: 'None',
+    fromMetadata: 'From metadata',
     pressEnter: 'Press Enter to continue...',
+
+    // Status messages
+    status: {
+      enabled: 'Enabled',
+      disabled: 'Disabled',
+      notSet: 'Not set',
+    },
+
+    // Field names (shared across different modules)
+    fields: {
+      title: 'Title',
+      pageNumber: 'Page Number',
+      dateTime: 'Date Time',
+      copyright: 'Copyright',
+      message: 'Message',
+      author: 'Author',
+      organization: 'Organization',
+      version: 'Version',
+    },
+
+    // Alignment (shared across different modules)
+    alignment: {
+      left: 'Left aligned',
+      center: 'Center aligned',
+      right: 'Right aligned',
+    },
+
+    // Examples for preview/demo purposes
+    examples: {
+      title: 'My Document Title',
+      pageNumber: 'Page 1 of 10',
+      dateTime: '2024/01/15 14:30',
+      copyright: '© 2024 My Company',
+      message: 'Confidential Document',
+      author: 'John Doe',
+      organization: 'My Company',
+      version: '1.0.0',
+    },
   },
 
   // Short text (for menu shortcuts)

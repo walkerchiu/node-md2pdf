@@ -373,4 +373,19 @@ export class ConfigManager implements IConfigManager {
   getConfigPath(): string {
     return this.configPath;
   }
+
+  /**
+   * Get the complete configuration as typed MD2PDFConfig
+   */
+  getConfig(): import('./types').MD2PDFConfig {
+    return this.config as unknown as import('./types').MD2PDFConfig;
+  }
+
+  /**
+   * Update the complete configuration with typed MD2PDFConfig
+   */
+  async updateConfig(config: import('./types').MD2PDFConfig): Promise<void> {
+    this.config = config as unknown as Record<string, unknown>;
+    await this.save();
+  }
 }

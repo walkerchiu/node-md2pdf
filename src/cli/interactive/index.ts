@@ -347,12 +347,19 @@ export class InteractiveMode {
         default: 3,
         when: (answers: any) => answers.includeTOC,
       },
-      {
-        type: 'confirm',
-        name: 'includePageNumbers',
-        message: this.translationManager.t('interactive.includePageNumbers'),
-        default: true,
-      },
+      // Conditionally ask about page numbers only if headers/footers are not configured
+      ...((await this.shouldAskPageNumbers())
+        ? [
+            {
+              type: 'confirm' as const,
+              name: 'includePageNumbers',
+              message: this.translationManager.t(
+                'interactive.includePageNumbers',
+              ),
+              default: true,
+            },
+          ]
+        : []),
     ]);
 
     const combined = Object.assign(
@@ -422,16 +429,54 @@ export class InteractiveMode {
         outputPath: config.outputPath,
       });
 
-      // Step 1: Prepare processing options
+      // Step 1: Update headers/footers configuration based on page numbers choice
+      if (config.includePageNumbers) {
+        try {
+          const currentConfig = this.configManager.getConfig();
+
+          // Update footer configuration to enable page numbers
+          const updatedConfig = {
+            ...currentConfig,
+            headersFooters: {
+              ...currentConfig.headersFooters,
+              footer: {
+                ...currentConfig.headersFooters.footer,
+                enabled: true,
+                pageNumber: {
+                  ...currentConfig.headersFooters.footer.pageNumber,
+                  mode: 'show' as const,
+                  enabled: true,
+                  alignment: 'right' as const,
+                },
+              },
+            },
+          };
+
+          await this.configManager.updateConfig(updatedConfig);
+          this.logger.debug(
+            'Updated headers/footers configuration to enable page numbers in footer',
+          );
+        } catch (error) {
+          this.logger.warn(
+            'Failed to update headers/footers configuration:',
+            error,
+          );
+        }
+      }
+
+      // Step 2: Prepare processing options
       spinner.text = this.translationManager.t('interactive.preparingOptions');
       const outputPath =
         config.outputPath ||
         config.inputPath.replace(/\.(md|markdown)$/, '.pdf');
 
+      // Get user's headers/footers preferences
+      const userConfig = this.configManager.getConfig();
+      const headersFootersConfig = userConfig.headersFooters;
+
       const processingOptions: FileProcessingOptions = {
         outputPath,
         includeTOC: config.includeTOC,
-        includePageNumbers: config.includePageNumbers, // Add this setting for CSS @page rules
         tocReturnLinksLevel: config.tocReturnLinksLevel ?? 0, // Add TOC return links level with default
         pdfOptions: {
           margin: DEFAULT_MARGINS.NORMAL,
@@ -441,11 +486,28 @@ export class InteractiveMode {
         },
       };
 
+      // Use headers/footers config if available, otherwise fallback to legacy page numbers
+      if (
+        headersFootersConfig &&
+        (headersFootersConfig.header.enabled ||
+          headersFootersConfig.footer.enabled)
+      ) {
+        processingOptions.headersFootersConfig = headersFootersConfig;
+      } else if (config.includePageNumbers) {
+        processingOptions.includePageNumbers = config.includePageNumbers; // Legacy fallback
+      }
+
       // Add tocOptions conditionally to avoid undefined assignment
       if (config.includeTOC) {
+        // Determine if page numbers should be shown in TOC based on headers/footers config or legacy setting
+        const shouldShowPageNumbers = headersFootersConfig
+          ? headersFootersConfig.header.pageNumber.enabled ||
+            headersFootersConfig.footer.pageNumber.enabled
+          : (config.includePageNumbers ?? true);
+
         processingOptions.tocOptions = {
           maxDepth: config.tocDepth,
-          includePageNumbers: config.includePageNumbers,
+          includePageNumbers: shouldShowPageNumbers,
         };
       }
 
@@ -544,6 +606,21 @@ export class InteractiveMode {
       );
       throw error;
     }
+  }
+
+  /**
+   * Check if we should ask about page numbers based on user's headers/footers preferences
+   */
+  private async shouldAskPageNumbers(): Promise<boolean> {
+    const userConfig = this.configManager.getConfig();
+    const headersFootersConfig = userConfig.headersFooters;
+
+    // If headers/footers are configured and enabled, don't ask about page numbers
+    return !(
+      headersFootersConfig &&
+      (headersFootersConfig.header.enabled ||
+        headersFootersConfig.footer.enabled)
+    );
   }
 
   /**

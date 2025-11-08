@@ -33,8 +33,8 @@ export interface PDFGenerationContext {
     keywords?: string;
     creator?: string;
     producer?: string;
-    creationDate?: Date;
-    modDate?: Date;
+    creationDate?: Date | string;
+    modDate?: Date | string;
     // Extended metadata fields (will be passed as custom properties)
     [key: string]: any;
   };
