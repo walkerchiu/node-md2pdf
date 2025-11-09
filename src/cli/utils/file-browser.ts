@@ -173,7 +173,7 @@ export class FileBrowser {
       }
 
       return this.sortItems(items, sortBy, sortOrder);
-    } catch (error) {
+    } catch {
       this.renderer.warn(
         chalk.yellow(`⚠️  Cannot access directory: ${dirPath}`),
       );
@@ -190,7 +190,7 @@ export class FileBrowser {
     // Navigation options
     if (dirname(currentPath) !== currentPath) {
       choices.push({
-        name: chalk.gray(this.translationManager.t('fileBrowser.upOneLevel')),
+        name: `${this.translationManager.t('fileBrowser.upOneLevel')}`,
         value: '__up__',
         short: this.translationManager.t('fileBrowser.directory'),
       });
@@ -199,16 +199,12 @@ export class FileBrowser {
     // Utility options
     choices.push(
       {
-        name: chalk.gray(
-          this.translationManager.t('fileBrowser.returnToMainMenu'),
-        ),
+        name: `${this.translationManager.t('fileBrowser.returnToMainMenu')}`,
         value: '__back_to_main__',
         short: this.translationManager.t('cli.options.back'),
       },
       {
-        name: chalk.blue(
-          '🔍 ' + this.translationManager.t('fileBrowser.searchingFiles'),
-        ),
+        name: `🔍 ${this.translationManager.t('fileBrowser.searchingFiles')}`,
         value: '__search__',
         short: this.translationManager.t('fileBrowser.searchingFiles'),
       },
@@ -231,7 +227,7 @@ export class FileBrowser {
     // Add directories
     directories.forEach((dir) => {
       choices.push({
-        name: chalk.cyan(`📁 ${dir.name}/`),
+        name: `📁 ${dir.name}/ ${chalk.gray(`- ${this.translationManager.t('fileBrowser.directory')}`)}`,
         value: dir.path,
         short: dir.name,
       });
@@ -242,9 +238,7 @@ export class FileBrowser {
       const sizeStr = this.formatFileSize(file.size || 0);
       const modifiedStr = this.formatDate(file.modified);
       choices.push({
-        name: chalk.green(
-          `📄 ${file.name} ${chalk.gray(`(${sizeStr}, ${modifiedStr})`)}`,
-        ),
+        name: `📄 ${file.name} ${chalk.gray(`(${sizeStr}, ${modifiedStr})`)}`,
         value: file.path,
         short: file.name,
       });
@@ -254,9 +248,7 @@ export class FileBrowser {
     if (otherFiles.length > 0 && otherFiles.length < 5) {
       otherFiles.forEach((file) => {
         choices.push({
-          name: chalk.dim(
-            `📄 ${file.name} (${this.translationManager.t('fileBrowser.notMarkdown')})`,
-          ),
+          name: `📄 ${file.name} ${chalk.gray(`(${this.translationManager.t('fileBrowser.notMarkdown')})`)}`,
           value: file.path,
           short: file.name,
         });
