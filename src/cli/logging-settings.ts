@@ -95,7 +95,7 @@ export class LoggingSettings {
     );
     console.log(
       chalk.blue(
-        `│  ${this.translationManager.t('logging.header.fileLogging')}: ${(fileEnabled ? chalk.green(this.translationManager.t('common.enabled')) : chalk.red(this.translationManager.t('common.disabled'))).padEnd(20)}   │`,
+        `│  ${this.translationManager.t('logging.header.fileLogging')}: ${(fileEnabled ? chalk.green(this.translationManager.t('common.status.enabled')) : chalk.red(this.translationManager.t('common.status.disabled'))).padEnd(20)}   │`,
       ),
     );
     console.log(
@@ -117,7 +117,7 @@ export class LoggingSettings {
         message: this.translationManager.t('logging.menu.selectOption'),
         choices: [
           {
-            name: `0. ${this.translationManager.t('logging.menu.returnToSettings')}`,
+            name: `0. ${this.translationManager.t('common.menu.returnToPrevious')}`,
             value: 'back',
           },
           {
@@ -191,19 +191,19 @@ export class LoggingSettings {
         message: this.translationManager.t('logging.level.selectPrompt'),
         choices: [
           {
-            name: `ERROR  - ${this.translationManager.t('logging.level.errorShort')} ${currentLevel === 'error' ? chalk.green(`(${this.translationManager.t('common.current')})`) : ''}`,
+            name: `ERROR  - ${this.translationManager.t('logging.level.errorShort')} ${currentLevel === 'error' ? chalk.green(`(${this.translationManager.t('common.status.current')})`) : ''}`,
             value: 'error',
           },
           {
-            name: `WARN   - ${this.translationManager.t('logging.level.warnShort')} ${currentLevel === 'warn' ? chalk.green(`(${this.translationManager.t('common.current')})`) : ''}`,
+            name: `WARN   - ${this.translationManager.t('logging.level.warnShort')} ${currentLevel === 'warn' ? chalk.green(`(${this.translationManager.t('common.status.current')})`) : ''}`,
             value: 'warn',
           },
           {
-            name: `INFO   - ${this.translationManager.t('logging.level.infoShort')} ${currentLevel === 'info' ? chalk.green(`(${this.translationManager.t('common.current')})`) : ''}`,
+            name: `INFO   - ${this.translationManager.t('logging.level.infoShort')} ${currentLevel === 'info' ? chalk.green(`(${this.translationManager.t('common.status.current')})`) : ''}`,
             value: 'info',
           },
           {
-            name: `DEBUG  - ${this.translationManager.t('logging.level.debugShort')} ${currentLevel === 'debug' ? chalk.green(`(${this.translationManager.t('common.current')})`) : ''}`,
+            name: `DEBUG  - ${this.translationManager.t('logging.level.debugShort')} ${currentLevel === 'debug' ? chalk.green(`(${this.translationManager.t('common.status.current')})`) : ''}`,
             value: 'debug',
           },
         ],
@@ -266,12 +266,29 @@ export class LoggingSettings {
     );
     console.log();
 
+    console.log(
+      chalk.gray(
+        `${this.translationManager.t('logging.file.currentStatus')}: ${fileEnabled ? this.translationManager.t('common.status.enabled') : this.translationManager.t('common.status.disabled')}`,
+      ),
+    );
+    console.log();
+
     const result = await inquirer.default.prompt([
       {
-        type: 'confirm',
+        type: 'list',
         name: 'toggle',
-        message: `${this.translationManager.t('logging.file.currentStatus')}: ${fileEnabled ? this.translationManager.t('common.enabled') : this.translationManager.t('common.disabled')}. ${fileEnabled ? this.translationManager.t('logging.file.disablePrompt') : this.translationManager.t('logging.file.enablePrompt')}?`,
-        default: fileEnabled ? false : true, // When enabled, default to "No" (don't change). When disabled, default to "Yes" (change to enable)
+        message: `${fileEnabled ? this.translationManager.t('logging.file.disablePrompt') : this.translationManager.t('logging.file.enablePrompt')}?`,
+        choices: [
+          {
+            name: this.translationManager.t('common.status.yes'),
+            value: true,
+          },
+          {
+            name: this.translationManager.t('common.status.no'),
+            value: false,
+          },
+        ],
+        default: fileEnabled ? 1 : 0, // When enabled, default to "No" (index 1). When disabled, default to "Yes" (index 0)
       },
     ]);
 
@@ -420,11 +437,11 @@ export class LoggingSettings {
         message: this.translationManager.t('logging.format.selectPrompt'),
         choices: [
           {
-            name: `text - ${this.translationManager.t('logging.format.textChoice')} ${currentFormat === 'text' ? chalk.green(`(${this.translationManager.t('common.current')})`) : ''}`,
+            name: `text - ${this.translationManager.t('logging.format.textChoice')} ${currentFormat === 'text' ? chalk.green(`(${this.translationManager.t('common.status.current')})`) : ''}`,
             value: 'text',
           },
           {
-            name: `json - ${this.translationManager.t('logging.format.jsonChoice')} ${currentFormat === 'json' ? chalk.green(`(${this.translationManager.t('common.current')})`) : ''}`,
+            name: `json - ${this.translationManager.t('logging.format.jsonChoice')} ${currentFormat === 'json' ? chalk.green(`(${this.translationManager.t('common.status.current')})`) : ''}`,
             value: 'json',
           },
         ],
@@ -586,7 +603,9 @@ export class LoggingSettings {
       {
         type: 'input',
         name: 'continue',
-        message: this.translationManager.t('common.pressEnter'),
+        message: this.translationManager.t(
+          'common.actions.pressEnterToContinue',
+        ),
       },
     ]);
   }

@@ -16,6 +16,7 @@ import { PathCleaner } from '../utils/path-cleaner';
 
 import { RecentFilesManager } from './config/recent-files';
 import { CliRenderer } from './utils/cli-renderer';
+import { I18nHelpers } from './utils/i18n-helpers';
 
 import type { IFileProcessorService } from '../application/services/file-processor.service';
 import type { ISmartDefaultsService } from '../application/services/smart-defaults.service';
@@ -39,6 +40,7 @@ export class SmartConversionMode {
   private configManager: IConfigManager;
   private recentFilesManager: RecentFilesManager;
   private renderer: CliRenderer;
+  private i18nHelpers: I18nHelpers;
 
   constructor(private readonly container?: ServiceContainer) {
     if (!this.container) {
@@ -51,6 +53,7 @@ export class SmartConversionMode {
     this.configManager = this.container.resolve('config');
     this.recentFilesManager = new RecentFilesManager();
     this.renderer = new CliRenderer();
+    this.i18nHelpers = new I18nHelpers(this.translationManager);
   }
 
   /**
@@ -147,24 +150,27 @@ export class SmartConversionMode {
         message: this.translationManager.t(
           'smartConversion.fileSelectionPrompt',
         ),
-        choices: [
-          {
-            name: this.translationManager.t('smartConversion.returnToMainMenu'),
-            value: 'back',
-          },
-          {
-            name: this.translationManager.t('smartConversion.browseFiles'),
-            value: 'browse',
-          },
-          {
-            name: this.translationManager.t('smartConversion.enterManually'),
-            value: 'manual',
-          },
-          {
-            name: this.translationManager.t('smartConversion.chooseRecent'),
-            value: 'recent',
-          },
-        ],
+        choices: this.i18nHelpers.createNumberedChoices(
+          [
+            {
+              key: 'common.menu.returnToMain',
+              value: 'back',
+            },
+            {
+              key: 'smartConversion.browseFiles',
+              value: 'browse',
+            },
+            {
+              key: 'smartConversion.enterManually',
+              value: 'manual',
+            },
+            {
+              key: 'smartConversion.chooseRecent',
+              value: 'recent',
+            },
+          ],
+          0,
+        ),
         default: 'browse',
       },
     ]);
@@ -532,56 +538,44 @@ export class SmartConversionMode {
       if (headersFootersConfig.header.enabled) {
         const headerItems: string[] = [];
         if (headersFootersConfig.header.title.enabled)
-          headerItems.push(
-            this.translationManager.t('headersFooters.fields.title'),
-          );
+          headerItems.push(this.translationManager.t('common.fields.title'));
         if (headersFootersConfig.header.pageNumber.enabled)
           headerItems.push(
-            this.translationManager.t('headersFooters.fields.pageNumber'),
+            this.translationManager.t('common.fields.pageNumber'),
           );
         if (headersFootersConfig.header.dateTime.enabled)
-          headerItems.push(
-            this.translationManager.t('headersFooters.fields.dateTime'),
-          );
+          headerItems.push(this.translationManager.t('common.fields.dateTime'));
         if (headersFootersConfig.header.copyright.enabled)
           headerItems.push(
-            this.translationManager.t('headersFooters.fields.copyright'),
+            this.translationManager.t('common.fields.copyright'),
           );
         if (headersFootersConfig.header.message.enabled)
-          headerItems.push(
-            this.translationManager.t('headersFooters.fields.message'),
-          );
+          headerItems.push(this.translationManager.t('common.fields.message'));
 
         this.renderer.info(
-          `   📄 ${this.translationManager.t('headersFooters.sections.header')}: ${headerItems.length > 0 ? headerItems.join('、') : this.translationManager.t('headersFooters.status.enabled')}`,
+          `   📄 ${this.translationManager.t('headersFooters.sections.header')}: ${headerItems.length > 0 ? headerItems.join('、') : this.translationManager.t('common.status.enabled')}`,
         );
       }
 
       if (headersFootersConfig.footer.enabled) {
         const footerItems: string[] = [];
         if (headersFootersConfig.footer.title.enabled)
-          footerItems.push(
-            this.translationManager.t('headersFooters.fields.title'),
-          );
+          footerItems.push(this.translationManager.t('common.fields.title'));
         if (headersFootersConfig.footer.pageNumber.enabled)
           footerItems.push(
-            this.translationManager.t('headersFooters.fields.pageNumber'),
+            this.translationManager.t('common.fields.pageNumber'),
           );
         if (headersFootersConfig.footer.dateTime.enabled)
-          footerItems.push(
-            this.translationManager.t('headersFooters.fields.dateTime'),
-          );
+          footerItems.push(this.translationManager.t('common.fields.dateTime'));
         if (headersFootersConfig.footer.copyright.enabled)
           footerItems.push(
-            this.translationManager.t('headersFooters.fields.copyright'),
+            this.translationManager.t('common.fields.copyright'),
           );
         if (headersFootersConfig.footer.message.enabled)
-          footerItems.push(
-            this.translationManager.t('headersFooters.fields.message'),
-          );
+          footerItems.push(this.translationManager.t('common.fields.message'));
 
         this.renderer.info(
-          `   📄 ${this.translationManager.t('headersFooters.sections.footer')}: ${footerItems.length > 0 ? footerItems.join('、') : this.translationManager.t('headersFooters.status.enabled')}`,
+          `   📄 ${this.translationManager.t('headersFooters.sections.footer')}: ${footerItems.length > 0 ? footerItems.join('、') : this.translationManager.t('common.status.enabled')}`,
         );
       }
     } else if (includeTOC) {

@@ -210,8 +210,8 @@ describe('BatchProgressUI', () => {
             'batchProgress.outputDirectory': 'Output Directory:',
             'batchProgress.concurrentProcesses': 'Concurrent Processes:',
             'batchProgress.continueOnError': 'Continue on Error:',
-            'common.yes': 'Yes',
-            'common.no': 'No',
+            'common.status.yes': 'Yes',
+            'common.status.no': 'No',
             'batchProgress.batchComplete':
               'Batch conversion completed successfully!',
             'batchProgress.batchPartialSuccess':
@@ -311,8 +311,12 @@ describe('BatchProgressUI', () => {
         expect(mockTranslationManager.t).toHaveBeenCalledWith(
           'batchProgress.inputPattern',
         );
-        expect(mockTranslationManager.t).toHaveBeenCalledWith('common.no');
-        expect(mockTranslationManager.t).toHaveBeenCalledWith('common.yes');
+        expect(mockTranslationManager.t).toHaveBeenCalledWith(
+          'common.status.no',
+        );
+        expect(mockTranslationManager.t).toHaveBeenCalledWith(
+          'common.status.yes',
+        );
       });
     });
 

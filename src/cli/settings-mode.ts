@@ -7,6 +7,7 @@ import chalk from 'chalk';
 
 import { LoggingSettings } from './logging-settings';
 import { CliUIManager } from './ui/cli-ui-manager';
+import { I18nHelpers } from './utils/i18n-helpers';
 
 import type { IConfigManager } from '../infrastructure/config/types';
 import type {
@@ -21,6 +22,7 @@ export class SettingsMode {
   private translationManager: ITranslationManager;
   private configManager: IConfigManager;
   private uiManager: CliUIManager;
+  private i18nHelpers: I18nHelpers;
 
   constructor(private readonly container: ServiceContainer) {
     this.logger = this.container.resolve<ILogger>('logger');
@@ -33,6 +35,7 @@ export class SettingsMode {
       {},
       this.configManager,
     );
+    this.i18nHelpers = new I18nHelpers(this.translationManager);
   }
 
   /**
@@ -119,25 +122,23 @@ export class SettingsMode {
         type: 'list',
         name: 'option',
         message: this.translationManager.t('cli.prompts.selectLanguage'),
-        choices: [
-          {
-            name: this.translationManager.t('cli.settingsMenu.returnToMain'),
-            value: 'back',
-            short: this.translationManager.t('short.back'),
-          },
-          {
-            name: this.translationManager.t(
-              'cli.settingsMenu.languageSettings',
-            ),
-            value: 'language',
-            short: this.translationManager.t('short.languageSettings'),
-          },
-          {
-            name: this.translationManager.t('cli.settingsMenu.loggingSettings'),
-            value: 'logging',
-            short: this.translationManager.t('short.loggingSettings'),
-          },
-        ],
+        choices: this.i18nHelpers.createNumberedChoices(
+          [
+            {
+              key: 'common.menu.returnToMain',
+              value: 'back',
+            },
+            {
+              key: 'cli.settingsMenu.languageSettings',
+              value: 'language',
+            },
+            {
+              key: 'cli.settingsMenu.loggingSettings',
+              value: 'logging',
+            },
+          ],
+          0,
+        ),
         default: 'language',
         pageSize: 12,
       },
@@ -165,9 +166,8 @@ export class SettingsMode {
 
         const choices = [
           {
-            name: this.translationManager.t(
-              'cli.settingsMenu.returnToSettings',
-            ),
+            name:
+              '0. ' + this.translationManager.t('common.menu.returnToPrevious'),
             value: 'back',
             short: this.translationManager.t('cli.options.back'),
           },
@@ -226,7 +226,7 @@ export class SettingsMode {
         type: 'input',
         name: 'continue',
         message: this.translationManager.t(
-          'cli.settingsMenu.pressEnterToContinue',
+          'common.actions.pressEnterToContinue',
         ),
       },
     ]);

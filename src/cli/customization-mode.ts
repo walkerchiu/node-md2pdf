@@ -18,6 +18,8 @@ import {
 } from '../core/headers-footers';
 import { defaultConfig } from '../infrastructure/config/defaults';
 
+import { I18nHelpers } from './utils/i18n-helpers';
+
 import type { IConfigManager } from '../infrastructure/config/types';
 import type { ITranslationManager } from '../infrastructure/i18n/types';
 import type { ILogger } from '../infrastructure/logging/types';
@@ -27,12 +29,14 @@ export class CustomizationMode {
   private logger: ILogger;
   private translationManager: ITranslationManager;
   private configManager: IConfigManager;
+  private i18nHelpers: I18nHelpers;
 
   constructor(private readonly container: ServiceContainer) {
     this.logger = this.container.resolve<ILogger>('logger');
     this.translationManager =
       this.container.resolve<ITranslationManager>('translator');
     this.configManager = this.container.resolve<IConfigManager>('config');
+    this.i18nHelpers = new I18nHelpers(this.translationManager);
   }
 
   /**
@@ -135,50 +139,35 @@ export class CustomizationMode {
         message: this.translationManager.t(
           'customization.selectCustomizationOption',
         ),
-        choices: [
-          {
-            name: this.translationManager.t(
-              'cli.customizationMenu.returnToMain',
-            ),
-            value: 'back',
-            short: this.translationManager.t('short.back'),
-          },
-          {
-            name: this.translationManager.t(
-              'cli.customizationMenu.coverDesign',
-            ),
-            value: 'cover',
-            short: this.translationManager.t('short.coverDesign'),
-          },
-          {
-            name: this.translationManager.t(
-              'cli.customizationMenu.headersFooters',
-            ),
-            value: 'headers',
-            short: this.translationManager.t('short.headersFooters'),
-          },
-          {
-            name: this.translationManager.t(
-              'cli.customizationMenu.documentMetadata',
-            ),
-            value: 'metadata',
-            short: this.translationManager.t('short.documentMetadata'),
-          },
-          {
-            name: this.translationManager.t(
-              'cli.customizationMenu.securitySettings',
-            ),
-            value: 'security',
-            short: this.translationManager.t('short.securitySettings'),
-          },
-          {
-            name: this.translationManager.t(
-              'cli.customizationMenu.templateManagement',
-            ),
-            value: 'templates',
-            short: this.translationManager.t('short.templateManagement'),
-          },
-        ],
+        choices: this.i18nHelpers.createNumberedChoices(
+          [
+            {
+              key: 'common.menu.returnToMain',
+              value: 'back',
+            },
+            {
+              key: 'cli.customizationMenu.coverDesign',
+              value: 'cover',
+            },
+            {
+              key: 'cli.customizationMenu.headersFooters',
+              value: 'headers',
+            },
+            {
+              key: 'cli.customizationMenu.documentMetadata',
+              value: 'metadata',
+            },
+            {
+              key: 'cli.customizationMenu.securitySettings',
+              value: 'security',
+            },
+            {
+              key: 'cli.customizationMenu.templateManagement',
+              value: 'templates',
+            },
+          ],
+          0,
+        ),
         default: 'cover',
         pageSize: 12,
       },
@@ -443,46 +432,53 @@ export class CustomizationMode {
         message: this.translationManager.t('cli.documentMetadata.selectOption'),
         choices: [
           {
-            name: this.translationManager.t(
-              'cli.documentMetadata.returnToCustomization',
-            ),
+            name:
+              '0. ' + this.translationManager.t('common.menu.returnToPrevious'),
             value: 'back',
-            short: this.translationManager.t('short.back'),
+            short: this.translationManager.t('common.actions.back'),
           },
           {
-            name: this.translationManager.t(
-              'cli.documentMetadata.previewSettings',
-            ),
+            name:
+              '1. ' +
+              this.translationManager.t('cli.documentMetadata.previewSettings'),
             value: 'preview',
           },
           {
-            name: this.translationManager.t(
-              'cli.documentMetadata.configureExtractedInfo',
-            ),
+            name:
+              '2. ' +
+              this.translationManager.t(
+                'cli.documentMetadata.configureExtractedInfo',
+              ),
             value: 'configure-extraction',
           },
           {
-            name: this.translationManager.t(
-              'cli.documentMetadata.configureBasicInfo',
-            ),
+            name:
+              '3. ' +
+              this.translationManager.t(
+                'cli.documentMetadata.configureBasicInfo',
+              ),
             value: 'configure-basic',
           },
           {
-            name: this.translationManager.t(
-              'cli.documentMetadata.configureFrontmatterMapping',
-            ),
+            name:
+              '4. ' +
+              this.translationManager.t(
+                'cli.documentMetadata.configureFrontmatterMapping',
+              ),
             value: 'configure-frontmatter',
           },
           {
-            name: this.translationManager.t(
-              'cli.documentMetadata.configureValidation',
-            ),
+            name:
+              '5. ' +
+              this.translationManager.t(
+                'cli.documentMetadata.configureValidation',
+              ),
             value: 'configure-validation',
           },
           {
-            name: this.translationManager.t(
-              'cli.documentMetadata.resetToDefaults',
-            ),
+            name:
+              '6. ' +
+              this.translationManager.t('cli.documentMetadata.resetToDefaults'),
             value: 'reset-defaults',
           },
         ],
@@ -517,19 +513,19 @@ export class CustomizationMode {
       ),
     );
     console.log(
-      `   ${this.translationManager.t('cli.documentMetadata.currentSettings.enabled')}: ${metadata.enabled ? chalk.green(this.translationManager.t('cli.documentMetadata.currentSettings.yes')) : chalk.red(this.translationManager.t('cli.documentMetadata.currentSettings.no'))}`,
+      `   ${this.translationManager.t('common.status.enabled')}: ${metadata.enabled ? chalk.green(this.translationManager.t('common.status.yes')) : chalk.red(this.translationManager.t('common.status.no'))}`,
     );
     console.log(
-      `   ${this.translationManager.t('cli.documentMetadata.currentSettings.fromFrontmatter')}: ${metadata.autoExtraction?.fromFrontmatter ? chalk.green(this.translationManager.t('cli.documentMetadata.currentSettings.yes')) : chalk.red(this.translationManager.t('cli.documentMetadata.currentSettings.no'))}`,
+      `   ${this.translationManager.t('cli.documentMetadata.currentSettings.fromFrontmatter')}: ${metadata.autoExtraction?.fromFrontmatter ? chalk.green(this.translationManager.t('common.status.yes')) : chalk.red(this.translationManager.t('common.status.no'))}`,
     );
     console.log(
-      `   ${this.translationManager.t('cli.documentMetadata.currentSettings.fromContent')}: ${metadata.autoExtraction?.fromContent ? chalk.green(this.translationManager.t('cli.documentMetadata.currentSettings.yes')) : chalk.red(this.translationManager.t('cli.documentMetadata.currentSettings.no'))}`,
+      `   ${this.translationManager.t('cli.documentMetadata.currentSettings.fromContent')}: ${metadata.autoExtraction?.fromContent ? chalk.green(this.translationManager.t('common.status.yes')) : chalk.red(this.translationManager.t('common.status.no'))}`,
     );
     console.log(
-      `   ${this.translationManager.t('cli.documentMetadata.currentSettings.fromFilename')}: ${metadata.autoExtraction?.fromFilename ? chalk.green(this.translationManager.t('cli.documentMetadata.currentSettings.yes')) : chalk.red(this.translationManager.t('cli.documentMetadata.currentSettings.no'))}`,
+      `   ${this.translationManager.t('cli.documentMetadata.currentSettings.fromFilename')}: ${metadata.autoExtraction?.fromFilename ? chalk.green(this.translationManager.t('common.status.yes')) : chalk.red(this.translationManager.t('common.status.no'))}`,
     );
     console.log(
-      `   ${this.translationManager.t('cli.documentMetadata.currentSettings.computeStats')}: ${metadata.autoExtraction?.computeStats ? chalk.green(this.translationManager.t('cli.documentMetadata.currentSettings.yes')) : chalk.red(this.translationManager.t('cli.documentMetadata.currentSettings.no'))}`,
+      `   ${this.translationManager.t('cli.documentMetadata.currentSettings.computeStats')}: ${metadata.autoExtraction?.computeStats ? chalk.green(this.translationManager.t('common.status.yes')) : chalk.red(this.translationManager.t('common.status.no'))}`,
     );
 
     console.log(
@@ -538,25 +534,25 @@ export class CustomizationMode {
       ),
     );
     console.log(
-      `   ${this.translationManager.t('cli.documentMetadata.currentSettings.title')}: ${metadata.defaults?.title ? chalk.green(metadata.defaults.title) : chalk.gray(this.translationManager.t('cli.documentMetadata.currentSettings.autoDetect'))}`,
+      `   ${this.translationManager.t('common.fields.title')}: ${metadata.defaults?.title ? chalk.green(metadata.defaults.title) : chalk.gray(this.translationManager.t('common.status.autoDetect'))}`,
     );
     console.log(
-      `   ${this.translationManager.t('cli.documentMetadata.currentSettings.author')}: ${metadata.defaults?.author ? chalk.green(metadata.defaults.author) : chalk.gray(this.translationManager.t('cli.documentMetadata.currentSettings.notSet'))}`,
+      `   ${this.translationManager.t('common.fields.author')}: ${metadata.defaults?.author ? chalk.green(metadata.defaults.author) : chalk.gray(this.translationManager.t('common.status.notSet'))}`,
     );
     console.log(
-      `   ${this.translationManager.t('cli.documentMetadata.currentSettings.subject')}: ${metadata.defaults?.subject ? chalk.green(metadata.defaults.subject) : chalk.gray(this.translationManager.t('cli.documentMetadata.currentSettings.notSet'))}`,
+      `   ${this.translationManager.t('common.fields.subject')}: ${metadata.defaults?.subject ? chalk.green(metadata.defaults.subject) : chalk.gray(this.translationManager.t('common.status.notSet'))}`,
     );
     console.log(
-      `   ${this.translationManager.t('cli.documentMetadata.currentSettings.keywords')}: ${metadata.defaults?.keywords ? chalk.green(metadata.defaults.keywords) : chalk.gray(this.translationManager.t('cli.documentMetadata.currentSettings.notSet'))}`,
+      `   ${this.translationManager.t('common.fields.keywords')}: ${metadata.defaults?.keywords ? chalk.green(metadata.defaults.keywords) : chalk.gray(this.translationManager.t('common.status.notSet'))}`,
     );
     console.log(
-      `   ${this.translationManager.t('cli.documentMetadata.currentSettings.language')}: ${chalk.green(metadata.defaults?.language || 'en')}`,
+      `   ${this.translationManager.t('common.fields.language')}: ${chalk.green(this.translationManager.t(`cli.languages.${metadata.defaults?.language || 'en'}`))}`,
     );
     console.log(
-      `   ${this.translationManager.t('cli.documentMetadata.currentSettings.organization')}: ${metadata.defaults?.organization ? chalk.green(metadata.defaults.organization) : chalk.gray(this.translationManager.t('cli.documentMetadata.currentSettings.notSet'))}`,
+      `   ${this.translationManager.t('common.fields.organization')}: ${metadata.defaults?.organization ? chalk.green(metadata.defaults.organization) : chalk.gray(this.translationManager.t('common.status.notSet'))}`,
     );
     console.log(
-      `   ${this.translationManager.t('cli.documentMetadata.currentSettings.copyright')}: ${metadata.defaults?.copyright ? chalk.green(metadata.defaults.copyright) : chalk.gray(this.translationManager.t('cli.documentMetadata.currentSettings.notSet'))}`,
+      `   ${this.translationManager.t('common.fields.copyright')}: ${metadata.defaults?.copyright ? chalk.green(metadata.defaults.copyright) : chalk.gray(this.translationManager.t('common.status.notSet'))}`,
     );
 
     console.log(
@@ -565,16 +561,16 @@ export class CustomizationMode {
       ),
     );
     console.log(
-      `   ${this.translationManager.t('cli.documentMetadata.currentSettings.requireTitle')}: ${metadata.validation?.requireTitle ? chalk.green(this.translationManager.t('cli.documentMetadata.currentSettings.yes')) : chalk.red(this.translationManager.t('cli.documentMetadata.currentSettings.no'))}`,
+      `   ${this.translationManager.t('cli.documentMetadata.validation.requireTitle')}: ${metadata.validation?.requireTitle ? chalk.green(this.translationManager.t('common.status.yes')) : chalk.red(this.translationManager.t('common.status.no'))}`,
     );
     console.log(
-      `   ${this.translationManager.t('cli.documentMetadata.currentSettings.requireAuthor')}: ${metadata.validation?.requireAuthor ? chalk.green(this.translationManager.t('cli.documentMetadata.currentSettings.yes')) : chalk.red(this.translationManager.t('cli.documentMetadata.currentSettings.no'))}`,
+      `   ${this.translationManager.t('cli.documentMetadata.validation.requireAuthor')}: ${metadata.validation?.requireAuthor ? chalk.green(this.translationManager.t('common.status.yes')) : chalk.red(this.translationManager.t('common.status.no'))}`,
     );
     console.log(
-      `   ${this.translationManager.t('cli.documentMetadata.currentSettings.maxKeywordsLength')}: ${chalk.blue(metadata.validation?.maxKeywordLength || 255)}`,
+      `   ${this.translationManager.t('cli.documentMetadata.validation.maxKeywordLength')}: ${chalk.blue(metadata.validation?.maxKeywordLength || 255)}`,
     );
     console.log(
-      `   ${this.translationManager.t('cli.documentMetadata.currentSettings.maxSubjectLength')}: ${chalk.blue(metadata.validation?.maxSubjectLength || 512)}`,
+      `   ${this.translationManager.t('cli.documentMetadata.validation.maxSubjectLength')}: ${chalk.blue(metadata.validation?.maxSubjectLength || 512)}`,
     );
 
     await this.pressAnyKey();
@@ -605,7 +601,7 @@ export class CustomizationMode {
       ),
     );
     console.log(
-      `   ${this.translationManager.t('cli.documentMetadata.currentSettings.mainExtraction')}: ${currentMetadata.enabled ? chalk.green(`✅ ${this.translationManager.t('cli.documentMetadata.currentSettings.enabled')}`) : chalk.red(`❌ ${this.translationManager.t('cli.documentMetadata.currentSettings.disabled')}`)}`,
+      `   ${this.translationManager.t('cli.documentMetadata.currentSettings.mainExtraction')}: ${currentMetadata.enabled ? chalk.green(`✅ ${this.translationManager.t('common.status.enabled')}`) : chalk.red(`❌ ${this.translationManager.t('common.status.disabled')}`)}`,
     );
     if (currentMetadata.enabled) {
       console.log(
@@ -886,25 +882,31 @@ export class CustomizationMode {
           ),
           choices: [
             {
-              name: this.translationManager.t('common.back'),
+              name: '0. ' + this.translationManager.t('common.actions.back'),
               value: 'back',
             },
             {
-              name: this.translationManager.t(
-                'cli.documentMetadata.frontmatterMapping.addNewMapping',
-              ),
+              name:
+                '1. ' +
+                this.translationManager.t(
+                  'cli.documentMetadata.frontmatterMapping.addNewMapping',
+                ),
               value: 'add',
             },
             {
-              name: this.translationManager.t(
-                'cli.documentMetadata.frontmatterMapping.editMapping',
-              ),
+              name:
+                '2. ' +
+                this.translationManager.t(
+                  'cli.documentMetadata.frontmatterMapping.editMapping',
+                ),
               value: 'edit',
             },
             {
-              name: this.translationManager.t(
-                'cli.documentMetadata.frontmatterMapping.removeMapping',
-              ),
+              name:
+                '3. ' +
+                this.translationManager.t(
+                  'cli.documentMetadata.frontmatterMapping.removeMapping',
+                ),
               value: 'remove',
             },
           ],
@@ -1032,7 +1034,7 @@ export class CustomizationMode {
         ),
         choices: [
           {
-            name: this.translationManager.t('common.back'),
+            name: this.translationManager.t('common.actions.back'),
             value: '_back',
           },
           ...Object.keys(currentMappings).map((key) => ({
@@ -1115,7 +1117,7 @@ export class CustomizationMode {
         ),
         choices: [
           {
-            name: this.translationManager.t('common.back'),
+            name: this.translationManager.t('common.actions.back'),
             value: '_back',
           },
           ...Object.keys(currentMappings).map((key) => ({
@@ -1311,7 +1313,7 @@ export class CustomizationMode {
         type: 'input',
         name: 'continue',
         message: this.translationManager.t(
-          'customization.pressEnterToContinue',
+          'common.actions.pressEnterToContinue',
         ),
       },
     ]);
@@ -1364,7 +1366,7 @@ export class CustomizationMode {
         ),
         choices: [
           {
-            name: `0. ${this.translationManager.t('headersFooters.menu.returnToCustomization')}`,
+            name: `0. ${this.translationManager.t('common.menu.returnToPrevious')}`,
             value: 'back',
           },
           {
@@ -1429,7 +1431,7 @@ export class CustomizationMode {
             ),
           );
       console.log(
-        `${this.translationManager.t('headersFooters.status.enabled')}: ${statusText}`,
+        `${this.translationManager.t('common.status.enabled')}: ${statusText}`,
       );
       console.log();
 
@@ -1445,9 +1447,7 @@ export class CustomizationMode {
             {
               name:
                 '0. ' +
-                this.translationManager.t(
-                  'headersFooters.menu.returnToPrevious',
-                ),
+                this.translationManager.t('common.menu.returnToPrevious'),
               value: 'back',
             },
             {
@@ -1685,15 +1685,15 @@ export class CustomizationMode {
         ),
         choices: [
           {
-            name: this.translationManager.t('headersFooters.modes.none'),
+            name: this.translationManager.t('common.displayModes.none'),
             value: 'none',
           },
           {
-            name: this.translationManager.t('headersFooters.modes.metadata'),
+            name: this.translationManager.t('common.displayModes.metadata'),
             value: 'metadata',
           },
           {
-            name: this.translationManager.t('headersFooters.modes.custom'),
+            name: this.translationManager.t('common.displayModes.custom'),
             value: 'custom',
           },
         ],
@@ -1725,15 +1725,15 @@ export class CustomizationMode {
         ),
         choices: [
           {
-            name: this.translationManager.t('headersFooters.alignment.left'),
+            name: this.translationManager.t('common.alignment.left'),
             value: 'left',
           },
           {
-            name: this.translationManager.t('headersFooters.alignment.center'),
+            name: this.translationManager.t('common.alignment.center'),
             value: 'center',
           },
           {
-            name: this.translationManager.t('headersFooters.alignment.right'),
+            name: this.translationManager.t('common.alignment.right'),
             value: 'right',
           },
         ],
@@ -1772,11 +1772,11 @@ export class CustomizationMode {
         ),
         choices: [
           {
-            name: this.translationManager.t('headersFooters.modes.none'),
+            name: this.translationManager.t('common.displayModes.none'),
             value: 'none',
           },
           {
-            name: this.translationManager.t('headersFooters.modes.show'),
+            name: this.translationManager.t('common.displayModes.show'),
             value: 'show',
           },
         ],
@@ -1790,15 +1790,15 @@ export class CustomizationMode {
         ),
         choices: [
           {
-            name: this.translationManager.t('headersFooters.alignment.left'),
+            name: this.translationManager.t('common.alignment.left'),
             value: 'left',
           },
           {
-            name: this.translationManager.t('headersFooters.alignment.center'),
+            name: this.translationManager.t('common.alignment.center'),
             value: 'center',
           },
           {
-            name: this.translationManager.t('headersFooters.alignment.right'),
+            name: this.translationManager.t('common.alignment.right'),
             value: 'right',
           },
         ],
@@ -1831,30 +1831,30 @@ export class CustomizationMode {
         ),
         choices: [
           {
-            name: this.translationManager.t('headersFooters.modes.none'),
+            name: this.translationManager.t('common.displayModes.none'),
             value: 'none',
           },
           {
-            name: this.translationManager.t('headersFooters.modes.date-short'),
+            name: this.translationManager.t('common.displayModes.date-short'),
             value: 'date-short',
           },
           {
-            name: this.translationManager.t('headersFooters.modes.date-long'),
+            name: this.translationManager.t('common.displayModes.date-long'),
             value: 'date-long',
           },
           {
-            name: this.translationManager.t('headersFooters.modes.date-iso'),
+            name: this.translationManager.t('common.displayModes.date-iso'),
             value: 'date-iso',
           },
           {
             name: this.translationManager.t(
-              'headersFooters.modes.datetime-short',
+              'common.displayModes.datetime-short',
             ),
             value: 'datetime-short',
           },
           {
             name: this.translationManager.t(
-              'headersFooters.modes.datetime-long',
+              'common.displayModes.datetime-long',
             ),
             value: 'datetime-long',
           },
@@ -1869,15 +1869,15 @@ export class CustomizationMode {
         ),
         choices: [
           {
-            name: this.translationManager.t('headersFooters.alignment.left'),
+            name: this.translationManager.t('common.alignment.left'),
             value: 'left',
           },
           {
-            name: this.translationManager.t('headersFooters.alignment.center'),
+            name: this.translationManager.t('common.alignment.center'),
             value: 'center',
           },
           {
-            name: this.translationManager.t('headersFooters.alignment.right'),
+            name: this.translationManager.t('common.alignment.right'),
             value: 'right',
           },
         ],
@@ -1910,11 +1910,11 @@ export class CustomizationMode {
         ),
         choices: [
           {
-            name: this.translationManager.t('headersFooters.modes.none'),
+            name: this.translationManager.t('common.displayModes.none'),
             value: 'none',
           },
           {
-            name: this.translationManager.t('headersFooters.modes.custom'),
+            name: this.translationManager.t('common.displayModes.custom'),
             value: 'custom',
           },
         ],
@@ -1943,17 +1943,15 @@ export class CustomizationMode {
           ),
           choices: [
             {
-              name: this.translationManager.t('headersFooters.alignment.left'),
+              name: this.translationManager.t('common.alignment.left'),
               value: 'left',
             },
             {
-              name: this.translationManager.t(
-                'headersFooters.alignment.center',
-              ),
+              name: this.translationManager.t('common.alignment.center'),
               value: 'center',
             },
             {
-              name: this.translationManager.t('headersFooters.alignment.right'),
+              name: this.translationManager.t('common.alignment.right'),
               value: 'right',
             },
           ],
@@ -1994,11 +1992,11 @@ export class CustomizationMode {
         ),
         choices: [
           {
-            name: this.translationManager.t('headersFooters.modes.none'),
+            name: this.translationManager.t('common.displayModes.none'),
             value: 'none',
           },
           {
-            name: this.translationManager.t('headersFooters.modes.custom'),
+            name: this.translationManager.t('common.displayModes.custom'),
             value: 'custom',
           },
         ],
@@ -2027,17 +2025,15 @@ export class CustomizationMode {
           ),
           choices: [
             {
-              name: this.translationManager.t('headersFooters.alignment.left'),
+              name: this.translationManager.t('common.alignment.left'),
               value: 'left',
             },
             {
-              name: this.translationManager.t(
-                'headersFooters.alignment.center',
-              ),
+              name: this.translationManager.t('common.alignment.center'),
               value: 'center',
             },
             {
-              name: this.translationManager.t('headersFooters.alignment.right'),
+              name: this.translationManager.t('common.alignment.right'),
               value: 'right',
             },
           ],
@@ -2361,32 +2357,26 @@ export class CustomizationMode {
           field.config.alignment === 'left'
             ? chalk.yellow(this.translationManager.t('common.alignment.left'))
             : field.config.alignment === 'center'
-              ? chalk.blue(
-                  this.translationManager.t(
-                    'headersFooters.preview.alignCenter',
-                  ),
-                )
+              ? chalk.blue(this.translationManager.t('common.alignment.center'))
               : chalk.magenta(
-                  this.translationManager.t(
-                    'headersFooters.preview.alignRight',
-                  ),
+                  this.translationManager.t('common.alignment.right'),
                 );
 
         const modeText =
           field.config.mode === 'custom'
             ? chalk.gray(
-                `[${this.translationManager.t('headersFooters.modes.custom')}: ${field.config.customValue || this.translationManager.t('common.status.notSet')}]`,
+                `[${this.translationManager.t('common.displayModes.custom')}: ${field.config.customValue || this.translationManager.t('common.status.notSet')}]`,
               )
             : field.config.mode === 'metadata'
               ? chalk.green(
-                  `[${this.translationManager.t('headersFooters.modes.metadata')}]`,
+                  `[${this.translationManager.t('common.displayModes.metadata')}]`,
                 )
               : chalk.cyan(`[${field.config.mode}]`);
 
         console.log(`   📌 ${field.name}: ${alignmentColor} ${modeText}`);
         console.log(
           chalk.gray(
-            `      ${this.translationManager.t('common.preview')}: ${field.preview}`,
+            `      ${this.translationManager.t('common.actions.preview')}: ${field.preview}`,
           ),
         );
       }
@@ -2411,32 +2401,24 @@ export class CustomizationMode {
         } else if (config.mode === 'metadata') {
           return this.translationManager.t('common.examples.title');
         }
-        return this.translationManager.t('headersFooters.preview.titleExample');
+        return this.translationManager.t('common.examples.title');
 
       case 'pageNumber':
-        return this.translationManager.t(
-          'headersFooters.preview.pageNumberExample',
-        );
+        return this.translationManager.t('common.examples.pageNumber');
 
       case 'dateTime':
-        return this.translationManager.t(
-          'headersFooters.preview.dateTimeExample',
-        );
+        return this.translationManager.t('common.examples.dateTime');
 
       case 'copyright':
         if (config.mode === 'custom') {
           return (
             config.customValue ||
-            this.translationManager.t('headersFooters.preview.copyrightExample')
+            this.translationManager.t('common.examples.copyright')
           );
         } else if (config.mode === 'metadata') {
-          return this.translationManager.t(
-            'headersFooters.preview.copyrightExample',
-          );
+          return this.translationManager.t('common.examples.copyright');
         }
-        return this.translationManager.t(
-          'headersFooters.preview.copyrightExample',
-        );
+        return this.translationManager.t('common.examples.copyright');
 
       case 'message':
         if (config.mode === 'custom') {
@@ -2453,48 +2435,34 @@ export class CustomizationMode {
         if (config.mode === 'custom') {
           return (
             config.customValue ||
-            this.translationManager.t('headersFooters.preview.authorExample')
+            this.translationManager.t('common.examples.author')
           );
         } else if (config.mode === 'metadata') {
-          return this.translationManager.t(
-            'headersFooters.preview.authorExample',
-          );
+          return this.translationManager.t('common.examples.author');
         }
-        return this.translationManager.t(
-          'headersFooters.preview.authorExample',
-        );
+        return this.translationManager.t('common.examples.author');
 
       case 'organization':
         if (config.mode === 'custom') {
           return (
             config.customValue ||
-            this.translationManager.t(
-              'headersFooters.preview.organizationExample',
-            )
+            this.translationManager.t('common.examples.organization')
           );
         } else if (config.mode === 'metadata') {
-          return this.translationManager.t(
-            'headersFooters.preview.organizationExample',
-          );
+          return this.translationManager.t('common.examples.organization');
         }
-        return this.translationManager.t(
-          'headersFooters.preview.organizationExample',
-        );
+        return this.translationManager.t('common.examples.organization');
 
       case 'version':
         if (config.mode === 'custom') {
           return (
             config.customValue ||
-            this.translationManager.t('headersFooters.preview.versionExample')
+            this.translationManager.t('common.examples.version')
           );
         } else if (config.mode === 'metadata') {
-          return this.translationManager.t(
-            'headersFooters.preview.versionExample',
-          );
+          return this.translationManager.t('common.examples.version');
         }
-        return this.translationManager.t(
-          'headersFooters.preview.versionExample',
-        );
+        return this.translationManager.t('common.examples.version');
 
       default:
         return this.translationManager.t('common.status.notSet');
@@ -2622,13 +2590,13 @@ export class CustomizationMode {
 
     if (config.pageNumber.enabled && config.pageNumber.mode !== 'none') {
       content.push(
-        `🔢 ${this.translationManager.t('headersFooters.preview.pageNumberExample')} (${config.pageNumber.alignment})`,
+        `🔢 ${this.translationManager.t('common.examples.pageNumber')} (${config.pageNumber.alignment})`,
       );
     }
 
     if (config.dateTime.enabled && config.dateTime.mode !== 'none') {
       content.push(
-        `📅 ${this.translationManager.t('headersFooters.preview.dateTimeExample')} (${config.dateTime.alignment})`,
+        `📅 ${this.translationManager.t('common.examples.dateTime')} (${config.dateTime.alignment})`,
       );
     }
 
@@ -2637,15 +2605,11 @@ export class CustomizationMode {
       if (config.copyright.mode === 'custom') {
         copyrightText =
           config.copyright.customValue ||
-          this.translationManager.t('headersFooters.preview.copyrightInfo');
+          this.translationManager.t('common.fields.copyright');
       } else if (config.copyright.mode === 'metadata') {
-        copyrightText = this.translationManager.t(
-          'headersFooters.preview.copyrightExample',
-        ); // Use example for preview
+        copyrightText = this.translationManager.t('common.examples.copyright'); // Use example for preview
       } else {
-        copyrightText = this.translationManager.t(
-          'headersFooters.preview.copyrightExample',
-        );
+        copyrightText = this.translationManager.t('common.examples.copyright');
       }
       content.push(`🏛️  ${copyrightText} (${config.copyright.alignment})`);
     }
@@ -2662,21 +2626,17 @@ export class CustomizationMode {
       {
         field: (config as any).author,
         icon: '👤',
-        text: this.translationManager.t('headersFooters.preview.authorExample'),
+        text: this.translationManager.t('common.examples.author'),
       },
       {
         field: (config as any).organization,
         icon: '🏢',
-        text: this.translationManager.t(
-          'headersFooters.preview.organizationExample',
-        ),
+        text: this.translationManager.t('common.examples.organization'),
       },
       {
         field: (config as any).version,
         icon: '📇',
-        text: this.translationManager.t(
-          'headersFooters.preview.versionExample',
-        ),
+        text: this.translationManager.t('common.examples.version'),
       },
     ];
 
@@ -2690,7 +2650,7 @@ export class CustomizationMode {
 
     return content.length > 0
       ? content
-      : [this.translationManager.t('headersFooters.preview.noContent')];
+      : [this.translationManager.t('common.status.notSet')];
   }
 
   /**
@@ -2753,15 +2713,15 @@ export class CustomizationMode {
         ),
         choices: [
           {
-            name: this.translationManager.t('headersFooters.modes.none'),
+            name: this.translationManager.t('common.displayModes.none'),
             value: 'none',
           },
           {
-            name: this.translationManager.t('headersFooters.modes.metadata'),
+            name: this.translationManager.t('common.displayModes.metadata'),
             value: 'metadata',
           },
           {
-            name: this.translationManager.t('headersFooters.modes.custom'),
+            name: this.translationManager.t('common.displayModes.custom'),
             value: 'custom',
           },
         ],
@@ -2792,15 +2752,15 @@ export class CustomizationMode {
         ),
         choices: [
           {
-            name: this.translationManager.t('headersFooters.alignment.left'),
+            name: this.translationManager.t('common.alignment.left'),
             value: 'left',
           },
           {
-            name: this.translationManager.t('headersFooters.alignment.center'),
+            name: this.translationManager.t('common.alignment.center'),
             value: 'center',
           },
           {
-            name: this.translationManager.t('headersFooters.alignment.right'),
+            name: this.translationManager.t('common.alignment.right'),
             value: 'right',
           },
         ],

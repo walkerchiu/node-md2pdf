@@ -16,7 +16,8 @@ export const enTranslations: TranslationKey = {
   cli: {
     mainMenu: {
       title: 'MD2PDF Main Menu',
-      subtitle: 'Convert Markdown files to professional PDF documents with table of contents',
+      subtitle:
+        'Convert Markdown files to professional PDF documents with table of contents',
       processPrompt: 'How would you like to process your files?',
       smartConversion: '🤖 Smart Conversion',
       smartConversionDesc: 'AI-powered settings with 3-step workflow',
@@ -48,13 +49,12 @@ export const enTranslations: TranslationKey = {
       title: '📄 Document Metadata',
       subtitle: 'Configure PDF document properties and metadata',
       selectOption: 'Select document metadata option',
-      returnToCustomization: '0. Return to Customization Menu',
-      previewSettings: '1. Preview Settings',
-      configureExtractedInfo: '2. Configure Auto-Extraction Settings',
-      configureBasicInfo: '3. Configure Basic Information',
-      configureFrontmatterMapping: '4. Configure Frontmatter Field Mapping',
-      configureValidation: '5. Configure Validation Rules',
-      resetToDefaults: '6. Reset to Defaults',
+      previewSettings: 'Preview Settings',
+      configureExtractedInfo: 'Configure Auto-Extraction Settings',
+      configureBasicInfo: 'Configure Basic Information',
+      configureFrontmatterMapping: 'Configure Frontmatter Field Mapping',
+      configureValidation: 'Configure Validation Rules',
+      resetToDefaults: 'Reset to Defaults',
       basicTitle: 'Basic Document Information Setup',
       basicDescription:
         'Set standard PDF metadata that appears in document properties',
@@ -110,27 +110,11 @@ export const enTranslations: TranslationKey = {
         extractionSettings: '📋 Extraction Settings',
         defaultValues: '📝 Default Values',
         validationRules: '✅ Validation Rules',
-        enabled: 'Enabled',
-        disabled: 'Disabled',
-        yes: 'Yes',
-        no: 'No',
         fromFrontmatter: 'From Frontmatter',
         fromContent: 'From Content',
         fromFilename: 'From Filename',
         computeStats: 'Compute Stats',
-        title: 'Title',
-        author: 'Author',
-        subject: 'Subject',
-        keywords: 'Keywords',
-        language: 'Language',
-        organization: 'Organization',
-        copyright: 'Copyright',
-        requireTitle: 'Require Title',
-        requireAuthor: 'Require Author',
-        maxKeywordsLength: 'Max Keywords Length',
-        maxSubjectLength: 'Max Subject Length',
         autoDetect: 'Auto-detect',
-        notSet: 'Not set',
         currentStatus: 'Current Status',
         mainExtraction: 'Main extraction',
         frontmatter: 'Frontmatter',
@@ -168,8 +152,6 @@ export const enTranslations: TranslationKey = {
         fromFilename: 'Extract from filename patterns',
         computeStats: 'Compute document statistics',
         currentSettings: 'Current Settings',
-        enabled: 'Enabled',
-        disabled: 'Disabled',
         noChanges: 'No changes were made',
         updated: 'Extraction settings saved successfully',
       },
@@ -217,19 +199,16 @@ export const enTranslations: TranslationKey = {
     customizationMenu: {
       title: '🎨 Customization',
       subtitle: 'Advanced styling, template and security management options',
-      returnToMain: '0. Return to Main Menu',
-      coverDesign: '1. Cover Design',
-      headersFooters: '2. Headers & Footers',
-      documentMetadata: '3. Document Metadata',
-      securitySettings: '4. Security & Watermarks',
-      templateManagement: '5. Template Management',
+      coverDesign: 'Cover Design',
+      headersFooters: 'Headers & Footers',
+      documentMetadata: 'Document Metadata',
+      securitySettings: 'Security & Watermarks',
+      templateManagement: 'Template Management',
     },
     settingsMenu: {
       title: '🔧 Settings',
-      returnToMain: '0. Return to Main Menu',
-      returnToSettings: '0. Return to Settings Menu',
-      languageSettings: '1. Language & Localization',
-      loggingSettings: '2. Logging Settings',
+      languageSettings: 'Language & Localization',
+      loggingSettings: 'Logging Settings',
       loggingComingSoon: '📝 Logging Settings features coming soon...',
       pressEnterToContinue: 'Press Enter to continue...',
     },
@@ -244,14 +223,6 @@ export const enTranslations: TranslationKey = {
       'zh-TW': 'Traditional Chinese (正體中文)',
     },
     options: {
-      yes: 'Yes',
-      no: 'No',
-      back: 'Back',
-      continue: 'Continue',
-      cancel: 'Cancel',
-      browse: 'Browse...',
-      manual: 'Manual Input',
-      recent: 'Recent Files',
       goodbye: 'Goodbye!',
     },
   },
@@ -263,16 +234,17 @@ export const enTranslations: TranslationKey = {
     step1: 'Step 1: File Selection',
     step2: 'Step 2: Content Analysis & Recommendations',
     step3: 'Step 3: Configuration & Conversion',
-    navigationHint: '💡 Navigation: ↑/↓ arrows, Enter to select, Ctrl+C to Return to Main Menu',
+    navigationHint:
+      '💡 Navigation: ↑/↓ arrows, Enter to select, Ctrl+C to Return to Main Menu',
     fileSelectionPrompt: '📁 How would you like to select a file?',
-    returnToMainMenu: '0. Return to Main Menu',
-    browseFiles: '1. Browse files interactively',
-    enterManually: '2. Enter file path manually',
-    chooseRecent: '3. Choose from recent files',
+    browseFiles: 'Browse files interactively',
+    enterManually: 'Enter file path manually',
+    chooseRecent: 'Choose from recent files',
     selected: '📄 Selected',
     analyzingContent: '🔍 Analyzing content...',
     openingFileBrowser: '🔍 Opening file browser...',
-    fileBrowserUnavailable: '⚠️  File browser unavailable, falling back to manual entry',
+    fileBrowserUnavailable:
+      '⚠️  File browser unavailable, falling back to manual entry',
     enterFilePath: '✏️  Enter the full path to your Markdown file:',
     pleaseEnterFilePath: 'Please enter a file path',
     recentFilesNotFound: '📋 No recent files found',
@@ -310,14 +282,6 @@ export const enTranslations: TranslationKey = {
     outputFilePath: '📤 Output file path:',
     includeTOC: '📚 Include table of contents?',
     selectTocDepth: '📋 Select table of contents depth:',
-    tocLevels: {
-      1: '1 level (# only)',
-      2: '2 levels (# and ##)',
-      3: '3 levels (# through ###)',
-      4: '4 levels (# through ####)',
-      5: '5 levels (# through #####)',
-      6: '6 levels (# through ######)',
-    },
     startConversion: '🚀 Start conversion?',
     conversionCancelled: '❌ Conversion cancelled',
     startingConversion: '🚀 Starting conversion...',
@@ -360,31 +324,18 @@ export const enTranslations: TranslationKey = {
   // Single File Conversion Mode (Interactive Mode)
   interactive: {
     title: '📋 Interactive Markdown to PDF Configuration',
-    subtitle: 'Please answer the following questions to complete the conversion setup:',
+    subtitle:
+      'Please answer the following questions to complete the conversion setup:',
     starting: 'Starting interactive conversion process',
     enterFilePath: 'Please enter Markdown file path or glob pattern:',
     pleaseEnterFilePath: 'Please enter a file path',
-    invalidMarkdownFile: 'Please enter a valid Markdown file (.md or .markdown)',
-    enterOutputPath: 'Please enter output PDF file path (press Enter for default):',
+    invalidMarkdownFile:
+      'Please enter a valid Markdown file (.md or .markdown)',
+    enterOutputPath:
+      'Please enter output PDF file path (press Enter for default):',
     includeTOC: 'Include table of contents?',
     selectTocDepth: 'Please select table of contents depth:',
-    tocLevels: {
-      1: '1 level (# only)',
-      2: '2 levels (# and ##)',
-      3: '3 levels (# through ###)',
-      4: '4 levels (# through ####)',
-      5: '5 levels (# through #####)',
-      6: '6 levels (# through ######)',
-    },
     tocReturnLinksLevel: 'Select section range for return-to-TOC anchor links:',
-    tocReturnLinksLevels: {
-      0: '0. None',
-      1: '1. H2 sections',
-      2: '2. H2-H3 sections',
-      3: '3. H2-H4 sections',
-      4: '4. H2-H5 sections',
-      5: '5. H2-H6 sections',
-    },
     includePageNumbers: 'Include page numbers?',
     // PDF Bookmarks
     enablePdfBookmarks: '🔖 Enable PDF navigation bookmarks?',
@@ -420,11 +371,10 @@ export const enTranslations: TranslationKey = {
     tocDepth: 'TOC depth:',
     levels: 'levels',
     pageNumbers: 'Page numbers:',
-    yes: 'Yes',
-    no: 'No',
     confirmAndStart: 'Confirm and start conversion?',
     cancelled: '❌ Conversion cancelled',
-    fileSystemNotAvailable: 'File system manager not available, skipping file search',
+    fileSystemNotAvailable:
+      'File system manager not available, skipping file search',
     foundFiles: 'Found {{count}} file(s)',
     selectFileToConvert: 'Select a file to convert:',
     invalidFileError: '❌ Invalid Markdown file path. Please check:',
@@ -432,7 +382,6 @@ export const enTranslations: TranslationKey = {
     validExtension: '• File has .md, .markdown, .mdown, or .mkd extension',
     whatToDo: 'What would you like to do?',
     tryDifferentPath: '✏️  Try entering a different file path',
-    returnToMainMenu: '↩️  Return to Main Menu',
     userCancelled: 'User chose to Return to Main Menu',
     errorSearchingFiles: 'Error while searching for files',
     startingConversion: '🚀 Starting conversion process...',
@@ -445,10 +394,6 @@ export const enTranslations: TranslationKey = {
     headingsFound: 'Headings found:',
     conversionFailed: '❌ Conversion failed!',
     interactiveModeError: '❌ Interactive mode error:',
-    bytes: 'Bytes',
-    kb: 'KB',
-    mb: 'MB',
-    gb: 'GB',
   },
 
   // Customization mode messages
@@ -488,50 +433,13 @@ export const enTranslations: TranslationKey = {
       disable: 'Disable',
     },
 
-    // Field types and labels
-    fields: {
-      title: 'Title',
-      pageNumber: 'Page Number',
-      dateTime: 'Date Time',
-      copyright: 'Copyright',
-      message: 'Custom Message',
-      author: 'Author',
-      organization: 'Organization',
-      version: 'Version',
-      category: 'Category',
-    },
-
-    // Display modes (unified configuration)
-    modes: {
-      none: "Don't show",
-      custom: 'Custom',
-      show: 'Show',
-      metadata: 'From metadata',
-      'metadata-creation': 'Creation date from metadata',
-      'metadata-modification': 'Modification date from metadata',
-      'date-short': 'Date short (2024/01/01)',
-      'date-long': 'Date long (January 1, 2024)',
-      'date-iso': 'Date ISO (2024-01-01)',
-      'datetime-short': 'DateTime short (2024/01/01 12:00)',
-      'datetime-long': 'DateTime long (January 1, 2024 12:00:00 PM)',
-    },
-
-    // Alignment options
-    alignment: {
-      left: 'Left',
-      center: 'Center',
-      right: 'Right',
-    },
-
     // Menu and configuration options
     menu: {
-      returnToCustomization: 'Return to Customization Menu',
       previewSettings: 'Preview Settings',
       configureHeader: 'Configure Header',
       configureFooter: 'Configure Footer',
       resetToDefaults: 'Reset to Defaults',
       selectConfigOption: 'Select configuration option:',
-      returnToPrevious: 'Return to previous menu',
     },
 
     // Field configuration options
@@ -573,8 +481,6 @@ export const enTranslations: TranslationKey = {
 
     // Status and state messages
     status: {
-      enabled: 'Enabled',
-      disabled: 'Disabled',
       headerEnabled: 'Header enabled',
       headerDisabled: 'Header disabled',
       footerEnabled: 'Footer enabled',
@@ -612,14 +518,6 @@ export const enTranslations: TranslationKey = {
       dateIso: '2024-01-01',
       datetimeShort: '2024/01/01 12:00',
       datetimeLong: 'January 1, 2024 12:00:00 PM',
-      title: 'My Document Title',
-      pageNumber: 'Page 1 of 10',
-      dateTime: '2024/01/15 14:30',
-      copyright: '© 2024 Company Name',
-      message: 'Confidential Document',
-      author: 'John Doe',
-      organization: 'Tech Company',
-      version: '1.0.0',
     },
 
     // Preview-specific translations (that cannot be shared)
@@ -638,22 +536,7 @@ export const enTranslations: TranslationKey = {
       footerFields: 'Footer fields',
 
       // Example values for different field types
-      titleExample: 'My Document Title',
-      pageNumberExample: 'Page number',
-      dateTimeExample: 'Date time',
-      copyrightExample: '© 2024 My Company',
       messageExample: 'Confidential Document',
-      authorExample: 'John Doe',
-      organizationExample: 'My Company',
-      versionExample: '1.0.0',
-
-      // Alignment options
-      alignCenter: 'Center aligned',
-      alignRight: 'Right aligned',
-
-      // Legacy fields (kept for backward compatibility)
-      copyrightInfo: 'Copyright information',
-      noContent: 'No content',
 
       // Recommendations subsection
       recommendations: {
@@ -690,41 +573,26 @@ export const enTranslations: TranslationKey = {
     pleaseEnterOutputDirectory: 'Please enter an output directory',
     selectFilenameFormat: 'Select output filename format:',
     filenameFormats: {
-      original: '1. Original filename (example.pdf)',
-      withTimestamp: '2. With timestamp (example_1234567890.pdf)',
-      withDate: '3. With date (example_2024-01-15.pdf)',
-      custom: '4. Custom pattern',
+      original: 'Original filename (example.pdf)',
+      withTimestamp: 'With timestamp (example_1234567890.pdf)',
+      withDate: 'With date (example_2024-01-15.pdf)',
+      custom: 'Custom pattern',
     },
-    enterCustomPattern: 'Enter custom filename pattern (use {name}, {timestamp}, {date}):',
+    enterCustomPattern:
+      'Enter custom filename pattern (use {name}, {timestamp}, {date}):',
     customPatternPlaceholder: '{name}_{date}.pdf',
     patternMustIncludeName: 'Pattern must include {name} placeholder',
     includeTOCPrompt: 'Include table of contents?',
     selectTocDepth: 'Select table of contents depth:',
-    tocLevels: {
-      1: '1 level (# only)',
-      2: '2 levels (# and ##)',
-      3: '3 levels (# through ###)',
-      4: '4 levels (# through ####)',
-      5: '5 levels (# through #####)',
-      6: '6 levels (# through ######)',
-    },
     tocReturnLinksLevel: 'Select section range for return-to-TOC anchor links:',
-    tocReturnLinksLevels: {
-      0: '0. None',
-      1: '1. H2 sections',
-      2: '2. H2-H3 sections',
-      3: '3. H2-H4 sections',
-      4: '4. H2-H5 sections',
-      5: '5. H2-H6 sections',
-    },
     includePageNumbers: 'Include page numbers?',
     selectMaxConcurrentProcesses: 'Select maximum concurrent processes:',
     concurrentOptions: {
-      1: '1. 1 (Sequential)',
-      2: '2. 2 (Recommended for most systems)',
-      3: '3. 3',
-      4: '4. 4',
-      5: '5. 5 (High-end systems only)',
+      1: '1 (Sequential)',
+      2: '2 (Recommended for most systems)',
+      3: '3',
+      4: '4',
+      5: '5 (High-end systems only)',
     },
     continueOnError: 'Continue processing other files if one fails?',
     configurationSummary: '📋 Configuration Summary',
@@ -744,27 +612,27 @@ export const enTranslations: TranslationKey = {
     continueOnErrorSummary: '🔄 Continue on error: {{continue}}',
     finalConfirmationWarning: '⚠️  Final Confirmation:',
     finalConfirmationNote: 'Batch processing will create multiple PDF files.',
-    processingTimeNote: 'This operation may take several minutes depending on file size and count.',
-    startBatchProcessing: 'Start batch processing with the above configuration?',
+    processingTimeNote:
+      'This operation may take several minutes depending on file size and count.',
+    startBatchProcessing:
+      'Start batch processing with the above configuration?',
     batchProcessingCancelled: '❌ Batch processing cancelled',
     startingBatchProcessing: '🚀 Starting batch processing...',
     cancellingBatchProcessing: '⚠️  Cancelling batch processing...',
     allFilesProcessedSuccessfully: '🎉 All files processed successfully!',
-    partiallyProcessed: '⚠️  Processed {{successful}} out of {{total}} files successfully.',
+    partiallyProcessed:
+      '⚠️  Processed {{successful}} out of {{total}} files successfully.',
     noFilesProcessed: '❌ No files were processed successfully.',
     checkErrorsAndRetry: 'Please check the errors above and try again.',
     batchProcessingCancelledByUser: '⚠️  Batch processing was cancelled.',
     batchProcessingFailed: '❌ Batch processing failed:',
-    retryFailedFiles: '{{count}} files failed but can be retried. Retry failed files?',
+    retryFailedFiles:
+      '{{count}} files failed but can be retried. Retry failed files?',
     retryingFailedFiles: '🔄 Retrying {{count}} failed files...',
     retryCompleted: '✅ Retry completed: {{count}} additional files processed.',
     retryFailed: '❌ Retry failed: No additional files were processed.',
     retryError: '❌ Retry failed:',
     batchModeError: '❌ Batch mode error:',
-    yes: 'Yes',
-    no: 'No',
-    enabled: 'Enabled',
-    disabled: 'Disabled',
     andMoreFiles: '... and {{count}} more files',
   },
 
@@ -774,7 +642,7 @@ export const enTranslations: TranslationKey = {
     currentDirectory: 'Current Directory',
     selectFile: 'Select File',
     upOneLevel: '⬆️  .. (Parent Directory)',
-    returnToMainMenu: '↩️  Return to Main Menu',
+    returnToMain: '↩️  Return to Main Menu',
     enterDirectoryManually: '⌨️  Enter directory path manually',
     refreshDirectory: '🔄 Refresh',
     cancelBrowsing: '❌ Cancel browsing',
@@ -782,7 +650,6 @@ export const enTranslations: TranslationKey = {
     file: 'File',
     markdown: 'Markdown',
     modified: 'Modified',
-    bytes: 'bytes',
     errorLoadingDirectory: 'Error loading directory',
     enterDirectoryPath: 'Enter directory path:',
     invalidDirectoryPath: 'Invalid directory path',
@@ -842,7 +709,8 @@ export const enTranslations: TranslationKey = {
     userSelectedExit: 'User selected exit',
     startingCustomizationMode: 'Starting customization mode',
     startingSettingsMode: 'Starting settings mode',
-    returningToMainMenuFromCustomization: 'Returning to main menu from customization',
+    returningToMainMenuFromCustomization:
+      'Returning to main menu from customization',
     returningToMainMenuFromSettings: 'Returning to main menu from settings',
     customizationModeError: 'Customization mode error',
     settingsModeError: 'Settings mode error',
@@ -854,13 +722,15 @@ export const enTranslations: TranslationKey = {
   // Environment Checks
   environment: {
     nodeVersionOk: '✅ Node.js version: {{version}} (meets requirements)',
-    nodeVersionTooOld: '❌ Node.js version too old: {{version}}, requires >= 18.0.0',
+    nodeVersionTooOld:
+      '❌ Node.js version too old: {{version}}, requires >= 18.0.0',
     puppeteerReady: '✅ Puppeteer is ready',
     puppeteerFailed: '❌ Puppeteer initialization failed:',
     memoryUsageOk: '✅ Memory usage: {{memory}} MB',
     highMemoryUsage: '⚠️ High memory usage: {{memory}} MB',
     cannotCheckResources: '⚠️ Unable to check system resources',
-    environmentCheckFailed: 'Environment check failed ({{count}} checks not passed)',
+    environmentCheckFailed:
+      'Environment check failed ({{count}} checks not passed)',
   },
 
   // Batch Progress UI
@@ -871,8 +741,10 @@ export const enTranslations: TranslationKey = {
     batchFailed: '❌ Batch conversion failed',
     batchPartialSuccess: '⚠️ Batch conversion completed with some failures',
     processingStarted: '🚀 Batch processing started ({{count}} files)',
-    processingComplete: '✅ Processing complete! All {{count}} files processed successfully!',
-    processingPartial: '⚠️ Processed {{successful}}/{{total}} files ({{rate}}% success rate)',
+    processingComplete:
+      '✅ Processing complete! All {{count}} files processed successfully!',
+    processingPartial:
+      '⚠️ Processed {{successful}}/{{total}} files ({{rate}}% success rate)',
     processingFailed: '❌ Failed to process any files',
     progressEta: 'ETA: {{eta}}',
     successfullyConverted: '✅ Successfully converted files:',
@@ -975,7 +847,6 @@ export const enTranslations: TranslationKey = {
     },
     menu: {
       selectOption: 'Select logging option',
-      returnToSettings: 'Return to Settings Menu',
       changeLogLevel: 'Change Log Level',
       toggleFileLogging: 'Toggle File Logging',
       changeLogFormat: 'Change Log Format',
@@ -986,11 +857,13 @@ export const enTranslations: TranslationKey = {
       title: 'Configure Log Level',
       description: 'Log levels determine which messages are displayed',
       selectPrompt: 'Select the minimum log level to display',
-      errorDesc: 'Only critical errors that prevent the application from functioning',
+      errorDesc:
+        'Only critical errors that prevent the application from functioning',
       errorShort: 'Critical errors only',
       warnDesc: 'Errors and warnings about potential issues',
       warnShort: 'Errors and warnings',
-      infoDesc: 'General information messages along with errors and warnings (Recommended)',
+      infoDesc:
+        'General information messages along with errors and warnings (Recommended)',
       infoShort: 'Information and above (Recommended)',
       debugDesc: 'Detailed debugging information for troubleshooting',
       debugShort: 'All messages including debug output',
@@ -1008,7 +881,8 @@ export const enTranslations: TranslationKey = {
       enablePrompt: 'Would you like to enable file logging',
       disablePrompt: 'Would you like to disable file logging',
       enabledSuccess: 'File logging has been enabled',
-      enabledNote: 'Log messages will now be written to files in addition to the console',
+      enabledNote:
+        'Log messages will now be written to files in addition to the console',
       disabledSuccess: 'File logging has been disabled',
       disabledNote: 'Log messages will only be displayed in the console',
       unchanged: 'File logging setting unchanged',
@@ -1030,17 +904,21 @@ export const enTranslations: TranslationKey = {
       title: 'View Log Directory',
       path: 'Log directory location',
       exists: 'Log directory exists',
-      notExists: 'Log directory does not exist yet (will be created when file logging is enabled)',
+      notExists:
+        'Log directory does not exist yet (will be created when file logging is enabled)',
       filesShowing: 'Log files found (showing first',
       noFiles: 'No log files found in the directory',
       readError: 'Unable to read directory contents',
     },
     test: {
       title: 'Test Logging Functions',
-      infoMessage: 'This is a test INFO message from the logging settings panel',
-      warnMessage: 'This is a test WARN message to demonstrate warning level logging',
+      infoMessage:
+        'This is a test INFO message from the logging settings panel',
+      warnMessage:
+        'This is a test WARN message to demonstrate warning level logging',
       errorMessage: 'This is a test ERROR message to show error level output',
-      debugMessage: 'This is a test DEBUG message with detailed information for troubleshooting',
+      debugMessage:
+        'This is a test DEBUG message with detailed information for troubleshooting',
       sending: 'Sending test messages at different log levels',
       sendingLevel: 'Sending',
       sent: 'Test messages sent successfully!',
@@ -1051,72 +929,172 @@ export const enTranslations: TranslationKey = {
 
   // Common messages
   common: {
-    back: 'Back',
-    cancel: 'Cancel',
-    confirm: 'Confirm',
-    continue: 'Continue',
-    exit: 'Exit',
-    save: 'Save',
-    skip: 'Skip',
-    retry: 'Retry',
-    ok: 'OK',
-    done: 'Done',
-    error: 'Error',
-    warning: 'Warning',
-    info: 'Information',
-    success: 'Success',
-    loading: 'Loading...',
-    processing: 'Processing...',
-    completed: 'Completed',
-    failed: 'Failed',
-    yes: 'Yes',
-    no: 'No',
-    current: 'Current',
-    enabled: 'Enabled',
-    disabled: 'Disabled',
-    notSet: 'Not set',
-    preview: 'Preview',
-    custom: 'Custom',
-    none: 'None',
-    fromMetadata: 'From metadata',
-    pressEnter: 'Press Enter to continue...',
+    // Basic actions (shared across all modules)
+    actions: {
+      back: 'Back',
+      cancel: 'Cancel',
+      confirm: 'Confirm',
+      continue: 'Continue',
+      exit: 'Exit',
+      save: 'Save',
+      skip: 'Skip',
+      retry: 'Retry',
+      ok: 'OK',
+      done: 'Done',
+      browse: 'Browse...',
+      manual: 'Manual Input',
+      recent: 'Recent Files',
+      refresh: 'Refresh',
+      preview: 'Preview',
+      edit: 'Edit',
+      remove: 'Remove',
+      pressEnterToContinue: 'Press Enter to continue...',
+      add: 'Add',
+      reset: 'Reset',
+      update: 'Update',
+    },
 
-    // Status messages
+    // Status indicators (shared across all modules)
     status: {
       enabled: 'Enabled',
       disabled: 'Disabled',
+      yes: 'Yes',
+      no: 'No',
+      current: 'Current',
       notSet: 'Not set',
+      loading: 'Loading...',
+      processing: 'Processing...',
+      completed: 'Completed',
+      failed: 'Failed',
+      success: 'Success',
+      error: 'Error',
+      warning: 'Warning',
+      info: 'Information',
+      pending: 'Pending',
+      active: 'Active',
+      inactive: 'Inactive',
     },
 
-    // Field names (shared across different modules)
+    // Document field names (shared across metadata, headers/footers, etc.)
     fields: {
       title: 'Title',
+      author: 'Author',
+      subject: 'Subject',
+      keywords: 'Keywords',
+      language: 'Language',
+      organization: 'Organization',
+      copyright: 'Copyright',
       pageNumber: 'Page Number',
       dateTime: 'Date Time',
-      copyright: 'Copyright',
       message: 'Message',
-      author: 'Author',
-      organization: 'Organization',
       version: 'Version',
+      category: 'Category',
+      creator: 'Creator',
+      producer: 'Producer',
     },
 
-    // Alignment (shared across different modules)
+    // Alignment options (shared across headers/footers, tables, etc.)
     alignment: {
-      left: 'Left aligned',
-      center: 'Center aligned',
-      right: 'Right aligned',
+      left: 'Left',
+      center: 'Center',
+      right: 'Right',
+      justify: 'Justify',
     },
 
-    // Examples for preview/demo purposes
+    // File size units (shared across file operations)
+    fileSize: {
+      bytes: 'Bytes',
+      kb: 'KB',
+      mb: 'MB',
+      gb: 'GB',
+      tb: 'TB',
+    },
+
+    // Time units (shared across progress, estimates, etc.)
+    time: {
+      seconds: 'seconds',
+      minutes: 'minutes',
+      hours: 'hours',
+      days: 'days',
+      weeks: 'weeks',
+      months: 'months',
+    },
+
+    // TOC levels (shared across all conversion modes)
+    tocLevels: {
+      1: '1 level (# only)',
+      2: '2 levels (# and ##)',
+      3: '3 levels (# through ###)',
+      4: '4 levels (# through ####)',
+      5: '5 levels (# through #####)',
+      6: '6 levels (# through ######)',
+    },
+
+    // TOC return links levels (shared across all modes)
+    tocReturnLinksLevels: {
+      0: 'None',
+      1: 'H2 sections',
+      2: 'H2-H3 sections',
+      3: 'H2-H4 sections',
+      4: 'H2-H5 sections',
+      5: 'H2-H6 sections',
+    },
+
+    // Display modes (shared across headers/footers, metadata, etc.)
+    displayModes: {
+      none: "Don't show",
+      custom: 'Custom',
+      show: 'Show',
+      auto: 'Auto',
+      metadata: 'From metadata',
+      'metadata-creation': 'Creation date from metadata',
+      'metadata-modification': 'Modification date from metadata',
+      'date-short': 'Date short (2024/01/01)',
+      'date-long': 'Date long (January 1, 2024)',
+      'date-iso': 'Date ISO (2024-01-01)',
+      'datetime-short': 'DateTime short (2024/01/01 12:00)',
+      'datetime-long': 'DateTime long (January 1, 2024 12:00:00 PM)',
+    },
+
+    // Menu navigation patterns (shared across all menus)
+    menu: {
+      returnToMain: 'Return to Main Menu',
+      returnToPrevious: 'Return to previous menu',
+      selectOption: 'Select option',
+      selectConfigOption: 'Select configuration option',
+      confirmReset: 'Are you sure you want to reset to defaults?',
+      pressEnterToContinue: 'Press Enter to continue...',
+      whatToDo: 'What would you like to do?',
+    },
+
+    // Common validation messages (shared across all forms)
+    validation: {
+      required: 'This field is required',
+      noChanges: 'No changes were made',
+      settingsUpdated: 'Settings updated successfully',
+      settingsSaved: 'Settings saved successfully',
+      updateSuccess: 'Update completed successfully',
+      updateFailed: 'Update failed',
+      resetSuccess: 'Reset to defaults completed',
+      resetCancelled: 'Reset cancelled',
+      resetWarning: 'This will reset all settings to default values',
+      invalidInput: 'Invalid input',
+      operationCancelled: 'Operation cancelled',
+    },
+
+    // Examples for preview/demo purposes (shared across all modules)
     examples: {
       title: 'My Document Title',
+      author: 'John Doe',
+      subject: 'Document Description',
+      keywords: 'keyword1, keyword2, keyword3',
+      organization: 'My Company',
       pageNumber: 'Page 1 of 10',
       dateTime: '2024/01/15 14:30',
       copyright: '© 2024 My Company',
       message: 'Confidential Document',
-      author: 'John Doe',
-      organization: 'My Company',
       version: '1.0.0',
+      category: 'Documentation',
     },
   },
 

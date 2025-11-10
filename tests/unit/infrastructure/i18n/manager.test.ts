@@ -211,13 +211,13 @@ describe('TranslationManager', () => {
     it('should check if translation exists in current locale', () => {
       manager.setLocale('en');
 
-      expect(manager.hasTranslation('common.error')).toBe(true);
+      expect(manager.hasTranslation('common.status.error')).toBe(true);
       expect(manager.hasTranslation('nonexistent.key')).toBe(false);
     });
 
     it('should check if translation exists in specified locale', () => {
-      expect(manager.hasTranslation('common.error', 'en')).toBe(true);
-      expect(manager.hasTranslation('common.error', 'zh-TW')).toBe(true);
+      expect(manager.hasTranslation('common.status.error', 'en')).toBe(true);
+      expect(manager.hasTranslation('common.status.error', 'zh-TW')).toBe(true);
       expect(manager.hasTranslation('nonexistent.key', 'en')).toBe(false);
     });
   });

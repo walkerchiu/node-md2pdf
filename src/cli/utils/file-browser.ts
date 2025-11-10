@@ -199,7 +199,7 @@ export class FileBrowser {
     // Utility options
     choices.push(
       {
-        name: `${this.translationManager.t('fileBrowser.returnToMainMenu')}`,
+        name: `${this.translationManager.t('fileBrowser.returnToMain')}`,
         value: '__back_to_main__',
         short: this.translationManager.t('cli.options.back'),
       },
