@@ -213,9 +213,7 @@ export class InteractiveMode {
                   value: 'retry',
                 },
                 {
-                  name: this.translationManager.t(
-                    'interactive.returnToMainMenu',
-                  ),
+                  name: this.translationManager.t('common.menu.returnToMain'),
                   value: 'exit',
                 },
               ],
@@ -275,27 +273,27 @@ export class InteractiveMode {
         message: this.translationManager.t('interactive.selectTocDepth'),
         choices: [
           {
-            name: this.translationManager.t('interactive.tocLevels.1'),
+            name: this.translationManager.t('common.tocLevels.1'),
             value: 1,
           },
           {
-            name: this.translationManager.t('interactive.tocLevels.2'),
+            name: this.translationManager.t('common.tocLevels.2'),
             value: 2,
           },
           {
-            name: this.translationManager.t('interactive.tocLevels.3'),
+            name: this.translationManager.t('common.tocLevels.3'),
             value: 3,
           },
           {
-            name: this.translationManager.t('interactive.tocLevels.4'),
+            name: this.translationManager.t('common.tocLevels.4'),
             value: 4,
           },
           {
-            name: this.translationManager.t('interactive.tocLevels.5'),
+            name: this.translationManager.t('common.tocLevels.5'),
             value: 5,
           },
           {
-            name: this.translationManager.t('interactive.tocLevels.6'),
+            name: this.translationManager.t('common.tocLevels.6'),
             value: 6,
           },
         ],
@@ -308,39 +306,27 @@ export class InteractiveMode {
         message: this.translationManager.t('interactive.tocReturnLinksLevel'),
         choices: [
           {
-            name: this.translationManager.t(
-              'interactive.tocReturnLinksLevels.0',
-            ),
+            name: this.translationManager.t('common.tocReturnLinksLevels.0'),
             value: 0,
           },
           {
-            name: this.translationManager.t(
-              'interactive.tocReturnLinksLevels.1',
-            ),
+            name: this.translationManager.t('common.tocReturnLinksLevels.1'),
             value: 1,
           },
           {
-            name: this.translationManager.t(
-              'interactive.tocReturnLinksLevels.2',
-            ),
+            name: this.translationManager.t('common.tocReturnLinksLevels.2'),
             value: 2,
           },
           {
-            name: this.translationManager.t(
-              'interactive.tocReturnLinksLevels.3',
-            ),
+            name: this.translationManager.t('common.tocReturnLinksLevels.3'),
             value: 3,
           },
           {
-            name: this.translationManager.t(
-              'interactive.tocReturnLinksLevels.4',
-            ),
+            name: this.translationManager.t('common.tocReturnLinksLevels.4'),
             value: 4,
           },
           {
-            name: this.translationManager.t(
-              'interactive.tocReturnLinksLevels.5',
-            ),
+            name: this.translationManager.t('common.tocReturnLinksLevels.5'),
             value: 5,
           },
         ],

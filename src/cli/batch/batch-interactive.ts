@@ -172,12 +172,22 @@ export class BatchInteractiveMode {
       // Step 3: Confirm file list
       const { confirmFiles } = (await inquirer.default.prompt([
         {
-          type: 'confirm',
+          type: 'list',
           name: 'confirmFiles',
           message: this.translationManager.t('batch.proceedWithFiles', {
             count: files.length,
           }),
-          default: true,
+          choices: [
+            {
+              name: this.translationManager.t('common.status.yes'),
+              value: true,
+            },
+            {
+              name: this.translationManager.t('common.status.no'),
+              value: false,
+            },
+          ],
+          default: 0,
         },
       ])) as { confirmFiles: boolean };
       if (!confirmFiles) {
@@ -290,22 +300,32 @@ export class BatchInteractiveMode {
         },
       },
       {
-        type: 'confirm',
+        type: 'list',
         name: 'includeTOC',
         message: this.translationManager.t('batch.includeTOCPrompt'),
-        default: true,
+        choices: [
+          {
+            name: this.translationManager.t('common.status.yes'),
+            value: true,
+          },
+          {
+            name: this.translationManager.t('common.status.no'),
+            value: false,
+          },
+        ],
+        default: 0,
       },
       {
         type: 'list',
         name: 'tocDepth',
         message: this.translationManager.t('batch.selectTocDepth'),
         choices: [
-          { name: this.translationManager.t('batch.tocLevels.1'), value: 1 },
-          { name: this.translationManager.t('batch.tocLevels.2'), value: 2 },
-          { name: this.translationManager.t('batch.tocLevels.3'), value: 3 },
-          { name: this.translationManager.t('batch.tocLevels.4'), value: 4 },
-          { name: this.translationManager.t('batch.tocLevels.5'), value: 5 },
-          { name: this.translationManager.t('batch.tocLevels.6'), value: 6 },
+          { name: this.translationManager.t('common.tocLevels.1'), value: 1 },
+          { name: this.translationManager.t('common.tocLevels.2'), value: 2 },
+          { name: this.translationManager.t('common.tocLevels.3'), value: 3 },
+          { name: this.translationManager.t('common.tocLevels.4'), value: 4 },
+          { name: this.translationManager.t('common.tocLevels.5'), value: 5 },
+          { name: this.translationManager.t('common.tocLevels.6'), value: 6 },
         ],
         default: 2,
         when: (answers: any) => answers.includeTOC,
@@ -316,27 +336,27 @@ export class BatchInteractiveMode {
         message: this.translationManager.t('batch.tocReturnLinksLevel'),
         choices: [
           {
-            name: this.translationManager.t('batch.tocReturnLinksLevels.0'),
+            name: this.translationManager.t('common.tocReturnLinksLevels.0'),
             value: 0,
           },
           {
-            name: this.translationManager.t('batch.tocReturnLinksLevels.1'),
+            name: this.translationManager.t('common.tocReturnLinksLevels.1'),
             value: 1,
           },
           {
-            name: this.translationManager.t('batch.tocReturnLinksLevels.2'),
+            name: this.translationManager.t('common.tocReturnLinksLevels.2'),
             value: 2,
           },
           {
-            name: this.translationManager.t('batch.tocReturnLinksLevels.3'),
+            name: this.translationManager.t('common.tocReturnLinksLevels.3'),
             value: 3,
           },
           {
-            name: this.translationManager.t('batch.tocReturnLinksLevels.4'),
+            name: this.translationManager.t('common.tocReturnLinksLevels.4'),
             value: 4,
           },
           {
-            name: this.translationManager.t('batch.tocReturnLinksLevels.5'),
+            name: this.translationManager.t('common.tocReturnLinksLevels.5'),
             value: 5,
           },
         ],

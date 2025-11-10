@@ -4,11 +4,11 @@
 
 import { I18nHelpers } from '../../../../src/cli/utils/i18n-helpers';
 import { TranslationManager } from '../../../../src/infrastructure/i18n/manager';
-import type { ITranslationManager } from '../../../../src/infrastructure/i18n/types';
+import { ITranslationManager } from '../../../../src/infrastructure/i18n/types';
 
 // Mock chalk to avoid issues in test environment
 jest.mock('chalk', () => ({
-  gray: jest.fn((text: string) => text),
+  gray: jest.fn((text) => text),
 }));
 
 describe('I18nHelpers', () => {
@@ -29,7 +29,7 @@ describe('I18nHelpers', () => {
       const choices = i18nHelpers.createChoices(items);
 
       expect(choices).toHaveLength(1);
-      expect(choices[0]).toHaveProperty('name', '1. Language & Localization');
+      expect(choices[0]).toHaveProperty('name', 'Language & Localization');
       expect(choices[0]).toHaveProperty('value', 'language');
       expect(choices[0]).toHaveProperty('short');
     });
@@ -43,7 +43,7 @@ describe('I18nHelpers', () => {
 
       const choices = i18nHelpers.createChoices(items);
 
-      expect(choices[0]).toHaveProperty('name', '1. 語言與本地化');
+      expect(choices[0]).toHaveProperty('name', '語言與本地化');
       expect(choices[0]).toHaveProperty('value', 'language');
     });
 
@@ -58,6 +58,50 @@ describe('I18nHelpers', () => {
       // Short names should not contain icons
       expect(choices[0].short).not.toContain('🔧');
       expect(choices[1].short).not.toContain('🚪');
+    });
+  });
+
+  describe('createNumberedChoices', () => {
+    it('should create numbered choices starting from 0', () => {
+      const items = [
+        { key: 'common.menu.returnToMain', value: 'back' },
+        { key: 'cli.settingsMenu.languageSettings', value: 'language' },
+      ];
+
+      const choices = i18nHelpers.createNumberedChoices(items, 0);
+
+      expect(choices).toHaveLength(2);
+      expect(choices[0]).toHaveProperty('name', '0. Return to Main Menu');
+      expect(choices[0]).toHaveProperty('value', 'back');
+      expect(choices[0]).toHaveProperty('short', 'Return to Main Menu');
+      expect(choices[1]).toHaveProperty('name', '1. Language & Localization');
+      expect(choices[1]).toHaveProperty('value', 'language');
+      expect(choices[1]).toHaveProperty('short', 'Language & Localization');
+    });
+
+    it('should create numbered choices starting from custom number', () => {
+      const items = [
+        { key: 'cli.settingsMenu.languageSettings', value: 'language' },
+      ];
+
+      const choices = i18nHelpers.createNumberedChoices(items, 1);
+
+      expect(choices).toHaveLength(1);
+      expect(choices[0]).toHaveProperty('name', '1. Language & Localization');
+      expect(choices[0]).toHaveProperty('value', 'language');
+    });
+
+    it('should work with Chinese translations', () => {
+      translationManager.setLocale('zh-TW');
+
+      const items = [
+        { key: 'cli.settingsMenu.languageSettings', value: 'language' },
+      ];
+
+      const choices = i18nHelpers.createNumberedChoices(items, 0);
+
+      expect(choices[0]).toHaveProperty('name', '0. 語言與本地化');
+      expect(choices[0]).toHaveProperty('short', '語言與本地化');
     });
   });
 

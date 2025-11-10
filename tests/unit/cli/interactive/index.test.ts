@@ -410,11 +410,11 @@ describe('InteractiveMode', () => {
 
       expect(tocDepthQuestion.choices).toHaveLength(6);
       expect(tocDepthQuestion.choices![0]).toEqual({
-        name: 'interactive.tocLevels.1',
+        name: 'common.tocLevels.1',
         value: 1,
       });
       expect(tocDepthQuestion.choices![5]).toEqual({
-        name: 'interactive.tocLevels.6',
+        name: 'common.tocLevels.6',
         value: 6,
       });
       expect(tocDepthQuestion.default).toBe(2);

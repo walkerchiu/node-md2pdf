@@ -39,6 +39,20 @@ export class I18nHelpers {
   }
 
   /**
+   * Create numbered menu choices dynamically
+   */
+  createNumberedChoices(
+    items: Array<{ key: string; value: string }>,
+    startNumber: number = 0,
+  ) {
+    return items.map((item, index) => ({
+      name: `${startNumber + index}. ${this.translator.t(item.key)}`,
+      value: item.value,
+      short: this.translator.t(item.key),
+    }));
+  }
+
+  /**
    * Create internationalized menu choice with description
    */
   createMenuChoice(nameKey: string, descKey: string, value: string) {
@@ -110,9 +124,9 @@ export class I18nHelpers {
   createLanguageChoices() {
     return [
       {
-        name: this.translator.translate('cli.settingsMenu.returnToMain', 'en'),
+        name: this.translator.translate('common.menu.returnToMain', 'en'),
         value: 'back',
-        short: this.translator.t('short.back'),
+        short: this.translator.t('common.actions.back'),
       },
       {
         name: 'English',

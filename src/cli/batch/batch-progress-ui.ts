@@ -137,10 +137,10 @@ export class BatchProgressUI {
     };
     const yesNo = {
       yes: this.translationManager
-        ? this.translationManager.t('common.yes')
+        ? this.translationManager.t('common.status.yes')
         : 'Yes',
       no: this.translationManager
-        ? this.translationManager.t('common.no')
+        ? this.translationManager.t('common.status.no')
         : 'No',
     };
 
@@ -317,7 +317,9 @@ export class BatchProgressUI {
         const pages = result.stats.pageCount;
         const time = this.formatDuration(result.processingTime);
         console.log(
-          chalk.gray(`     ${inputSize} → ${outputSize}, ${pages} ${pagesLabel}, ${time}`)
+          chalk.gray(
+            `     ${inputSize} → ${outputSize}, ${pages} ${pagesLabel}, ${time}`,
+          ),
         );
       }
     });
