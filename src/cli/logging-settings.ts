@@ -81,31 +81,19 @@ export class LoggingSettings {
     const logFormat =
       this.configManager.get<string>('logging.format', 'text') || 'text';
 
-    console.log(chalk.blue('┌─────────────────────────────────────────────┐'));
-    console.log(
-      chalk.blue(
-        `│              📝 ${this.translationManager.t('logging.header.title')}              │`,
-      ),
-    );
-    console.log(chalk.blue('├─────────────────────────────────────────────┤'));
-    console.log(
-      chalk.blue(
-        `│  ${this.translationManager.t('logging.header.currentLevel')}: ${chalk.white(currentLevel.toUpperCase().padEnd(15))}   │`,
-      ),
-    );
-    console.log(
-      chalk.blue(
-        `│  ${this.translationManager.t('logging.header.fileLogging')}: ${(fileEnabled ? chalk.green(this.translationManager.t('common.status.enabled')) : chalk.red(this.translationManager.t('common.status.disabled'))).padEnd(20)}   │`,
-      ),
-    );
-    console.log(
-      chalk.blue(
-        `│  ${this.translationManager.t('logging.header.logFormat')}: ${chalk.white(logFormat.padEnd(15))}   │`,
-      ),
-    );
-    console.log(
-      chalk.blue('└─────────────────────────────────────────────┘\n'),
-    );
+    const borderLine = '─'.repeat(79);
+    const title = `📝 ${this.translationManager.t('logging.header.title')}`;
+    const currentLevelText = `${this.translationManager.t('logging.header.currentLevel')}: ${chalk.white(currentLevel.toUpperCase())}`;
+    const fileLoggingText = `${this.translationManager.t('logging.header.fileLogging')}: ${fileEnabled ? chalk.green(this.translationManager.t('common.status.enabled')) : chalk.red(this.translationManager.t('common.status.disabled'))}`;
+    const logFormatText = `${this.translationManager.t('logging.header.logFormat')}: ${chalk.white(logFormat)}`;
+
+    console.log(chalk.blue(borderLine));
+    console.log(chalk.blue(title.padStart((79 + title.length) / 2).padEnd(79)));
+    console.log(chalk.blue(borderLine));
+    console.log(chalk.blue(`  ${currentLevelText}`));
+    console.log(chalk.blue(`  ${fileLoggingText}`));
+    console.log(chalk.blue(`  ${logFormatText}`));
+    console.log(chalk.blue(borderLine + '\n'));
   }
 
   private async selectLoggingOption(): Promise<string> {

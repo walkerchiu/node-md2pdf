@@ -39,22 +39,15 @@ export class CliUIManager {
    * Display a header with title and optional subtitle
    */
   showHeader(title: string, subtitle?: string): void {
-    const titleLine = this.centerText(title, 75);
-    const subtitleLine = subtitle ? this.centerText(subtitle, 75) : '';
+    const borderLine = '─'.repeat(79);
 
-    console.log(
-      '┌─────────────────────────────────────────────────────────────────────────────┐',
-    );
-    console.log(`│${titleLine}│`);
+    console.log(borderLine);
+    console.log(title.padStart((79 + title.length) / 2).padEnd(79));
     if (subtitle) {
-      console.log(
-        '├─────────────────────────────────────────────────────────────────────────────┤',
-      );
-      console.log(`│${subtitleLine}│`);
+      console.log(borderLine);
+      console.log(subtitle.padStart((79 + subtitle.length) / 2).padEnd(79));
     }
-    console.log(
-      '└─────────────────────────────────────────────────────────────────────────────┘',
-    );
+    console.log(borderLine);
     console.log();
   }
 
@@ -214,15 +207,6 @@ export class CliUIManager {
     if (data && this.logger) {
       this.logger.debug(message, data);
     }
-  }
-
-  /**
-   * Internal method to center text within a given width
-   */
-  private centerText(text: string, width: number): string {
-    const padding = Math.max(0, Math.floor((width - text.length) / 2));
-    const rightPadding = Math.max(0, width - text.length - padding);
-    return ' '.repeat(padding) + text + ' '.repeat(rightPadding);
   }
 
   /**

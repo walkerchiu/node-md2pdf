@@ -88,22 +88,22 @@ export class SettingsMode {
    * Show settings header
    */
   private showSettingsHeader(): void {
-    console.log(chalk.blue('┌───────────────────────────────────────────┐'));
+    const borderLine = '─'.repeat(79);
+    console.log(chalk.blue(borderLine));
     const currentLocale = this.translationManager.getCurrentLocale();
     const displayLanguage = this.getLanguageDisplayName(currentLocale);
 
+    const title = this.translationManager.t('cli.settingsMenu.title');
+    const currentLangText = `${this.translationManager.t('cli.languageMenu.currentLanguage')}: ${displayLanguage}`;
+
+    console.log(chalk.blue(title.padStart((79 + title.length) / 2).padEnd(79)));
+    console.log(chalk.blue(borderLine));
     console.log(
       chalk.blue(
-        `│           ${this.translationManager.t('cli.settingsMenu.title')}       │`,
+        currentLangText.padStart((79 + currentLangText.length) / 2).padEnd(79),
       ),
     );
-    console.log(chalk.blue('├───────────────────────────────────────────┤'));
-    console.log(
-      chalk.blue(
-        `│  ${this.translationManager.t('cli.languageMenu.currentLanguage')}: ${displayLanguage.padEnd(20)}   │`,
-      ),
-    );
-    console.log(chalk.blue('└───────────────────────────────────────────┘'));
+    console.log(chalk.blue(borderLine));
   }
 
   private getLanguageDisplayName(locale: SupportedLocale): string {
@@ -238,23 +238,15 @@ export class SettingsMode {
     const currentLocale = this.translationManager.getCurrentLocale();
     const displayLanguage = this.getLanguageDisplayName(currentLocale);
 
-    // Calculate width based on the longest text
-    const maxWidth = Math.max(title.length, subtitle.length) + 4;
-    const border = '─'.repeat(maxWidth - 2);
+    const borderLine = '─'.repeat(79);
 
-    console.log(chalk.blue(`┌${border}┐`));
+    console.log(chalk.blue(borderLine));
+    console.log(chalk.blue(title.padStart((79 + title.length) / 2).padEnd(79)));
+    console.log(chalk.blue(borderLine));
     console.log(
-      chalk.blue(
-        `│${title.padStart((maxWidth + title.length - 2) / 2).padEnd(maxWidth - 2)}│`,
-      ),
+      chalk.blue(subtitle.padStart((79 + subtitle.length) / 2).padEnd(79)),
     );
-    console.log(chalk.blue(`├${border}┤`));
-    console.log(
-      chalk.blue(
-        `│${subtitle.padStart((maxWidth + subtitle.length - 2) / 2).padEnd(maxWidth - 2)}│`,
-      ),
-    );
-    console.log(chalk.blue(`└${border}┘`));
+    console.log(chalk.blue(borderLine));
     console.log(
       chalk.blue(
         `${this.translationManager.t('cli.languageMenu.currentLanguage')}: ${displayLanguage}`,

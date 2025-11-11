@@ -68,27 +68,18 @@ export class SmartConversionMode {
     const step2 = this.translationManager.t('smartConversion.step2');
     const step3 = this.translationManager.t('smartConversion.step3');
 
-    // Calculate dynamic width
-    const maxWidth =
-      Math.max(
-        title.length,
-        subtitle.length,
-        step1.length,
-        step2.length,
-        step3.length,
-      ) + 4;
-    const border = '─'.repeat(maxWidth - 2);
+    const borderLine = '─'.repeat(79);
 
     this.renderer.header([
-      `┌${border}┐`,
-      `│${title.padStart((maxWidth + title.length - 2) / 2).padEnd(maxWidth - 2)}│`,
-      `├${border}┤`,
-      `│${subtitle.padStart((maxWidth + subtitle.length - 2) / 2).padEnd(maxWidth - 2)}│`,
-      `│${' '.repeat(maxWidth - 2)}│`,
-      `│  ${step1.padEnd(maxWidth - 4)}│`,
-      `│  ${step2.padEnd(maxWidth - 4)}│`,
-      `│  ${step3.padEnd(maxWidth - 4)}│`,
-      `└${border}┘`,
+      borderLine,
+      title.padStart((79 + title.length) / 2).padEnd(79),
+      borderLine,
+      subtitle.padStart((79 + subtitle.length) / 2).padEnd(79),
+      '',
+      `  ${step1}`,
+      `  ${step2}`,
+      `  ${step3}`,
+      borderLine,
     ]);
     this.renderer.newline();
 
@@ -309,16 +300,13 @@ export class SmartConversionMode {
     this.renderer.newline();
 
     const title = this.translationManager.t('smartConversion.analysisResults');
-    const titleWidth = title.length + 4;
-    const border = '─'.repeat(titleWidth - 2);
+    const borderLine = '─'.repeat(79);
 
-    this.renderer.info(chalk.green(`┌${border}┐`));
+    this.renderer.info(chalk.green(borderLine));
     this.renderer.info(
-      chalk.green(
-        `│${title.padStart((titleWidth + title.length - 2) / 2).padEnd(titleWidth - 2)}│`,
-      ),
+      chalk.green(title.padStart((79 + title.length) / 2).padEnd(79)),
     );
-    this.renderer.info(chalk.green(`└${border}┘`));
+    this.renderer.info(chalk.green(borderLine));
     this.renderer.info(
       chalk.cyan(
         `   ${this.translationManager.t('smartConversion.words')}: ${analysis.wordCount.toLocaleString()}`,

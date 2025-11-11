@@ -139,8 +139,8 @@ describe('I18nHelpers', () => {
 
       expect(header).toBeInstanceOf(Array);
       expect(header.length).toBeGreaterThan(2);
-      expect(header[0]).toMatch(/^┌/); // Starts with top-left corner
-      expect(header[header.length - 1]).toMatch(/^└/); // Ends with bottom-left corner
+      expect(header[0]).toMatch(/^─+$/); // Starts with horizontal line
+      expect(header[header.length - 1]).toMatch(/^─+$/); // Ends with horizontal line
     });
 
     it('should create header with title and subtitle', () => {
