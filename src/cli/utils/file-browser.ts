@@ -56,25 +56,23 @@ export class FileBrowser {
         const items = await this.scanDirectory(currentPath, options);
         const choices = this.buildChoices(items, currentPath);
 
+        const borderLine = '─'.repeat(79);
+        const title = `${this.translationManager.t('fileBrowser.title')} Mode`;
+        const currentDirText = `${this.translationManager.t('fileBrowser.currentDirectory')}: ${FileSearchUI.shortenPath(currentPath, 50)}`;
+
+        this.renderer.info(chalk.cyan(borderLine));
         this.renderer.info(
-          chalk.cyan('┌─────────────────────────────────────────┐'),
+          chalk.cyan(title.padStart((79 + title.length) / 2).padEnd(79)),
         );
-        this.renderer.info(
-          chalk.cyan(
-            `│           ${this.translationManager.t('fileBrowser.title')} Mode          │`,
-          ),
-        );
-        this.renderer.info(
-          chalk.cyan('├─────────────────────────────────────────┤'),
-        );
+        this.renderer.info(chalk.cyan(borderLine));
         this.renderer.info(
           chalk.cyan(
-            `│ ${this.translationManager.t('fileBrowser.currentDirectory')}: ${FileSearchUI.shortenPath(currentPath, 28).padEnd(28)} │`,
+            currentDirText
+              .padStart((79 + currentDirText.length) / 2)
+              .padEnd(79),
           ),
         );
-        this.renderer.info(
-          chalk.cyan('└─────────────────────────────────────────┘'),
-        );
+        this.renderer.info(chalk.cyan(borderLine));
 
         if (items.filter((item) => item.isMarkdown).length > 0) {
           this.renderer.info(

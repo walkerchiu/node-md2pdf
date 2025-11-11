@@ -78,21 +78,23 @@ export class I18nHelpers {
 
     // Fixed width for consistent display
     const headerWidth = 79; // Standard terminal width - 1
-    const border = '─'.repeat(headerWidth - 2);
+    const border = '─'.repeat(headerWidth);
 
     const header = [
-      `┌${border}┐`,
-      `│${title.padStart((headerWidth + title.length - 2) / 2).padEnd(headerWidth - 2)}│`,
+      border,
+      title.padStart((headerWidth + title.length) / 2).padEnd(headerWidth),
     ];
 
     if (subtitle) {
-      header.push(`├${border}┤`);
+      header.push(border);
       header.push(
-        `│${subtitle.padStart((headerWidth + subtitle.length - 2) / 2).padEnd(headerWidth - 2)}│`,
+        subtitle
+          .padStart((headerWidth + subtitle.length) / 2)
+          .padEnd(headerWidth),
       );
     }
 
-    header.push(`└${border}┘`);
+    header.push(border);
 
     return header;
   }

@@ -106,23 +106,15 @@ export class CustomizationMode {
       'cli.customizationMenu.subtitle',
     );
 
-    // Calculate width based on the longest text
-    const maxWidth = Math.max(title.length, subtitle.length) + 4;
-    const border = '─'.repeat(maxWidth - 2);
+    const borderLine = '─'.repeat(79);
 
-    console.log(chalk.blue(`┌${border}┐`));
+    console.log(chalk.blue(borderLine));
+    console.log(chalk.blue(title.padStart((79 + title.length) / 2).padEnd(79)));
+    console.log(chalk.blue(borderLine));
     console.log(
-      chalk.blue(
-        `│${title.padStart((maxWidth + title.length - 2) / 2).padEnd(maxWidth - 2)}│`,
-      ),
+      chalk.blue(subtitle.padStart((79 + subtitle.length) / 2).padEnd(79)),
     );
-    console.log(chalk.blue(`├${border}┤`));
-    console.log(
-      chalk.blue(
-        `│${subtitle.padStart((maxWidth + subtitle.length - 2) / 2).padEnd(maxWidth - 2)}│`,
-      ),
-    );
-    console.log(chalk.blue(`└${border}┘`));
+    console.log(chalk.blue(borderLine));
     console.log();
   }
 
@@ -364,24 +356,18 @@ export class CustomizationMode {
     const title = this.translationManager.t('cli.documentMetadata.title');
     const subtitle = this.translationManager.t('cli.documentMetadata.subtitle');
 
-    // Calculate width based on the longest text
-    const maxWidth = Math.max(title.length, subtitle.length) + 4;
-    const border = '─'.repeat(maxWidth - 2);
+    const borderLine = '─'.repeat(79);
 
     console.clear();
-    console.log(chalk.magenta(`┌${border}┐`));
+    console.log(chalk.magenta(borderLine));
     console.log(
-      chalk.magenta(
-        `│${title.padStart((maxWidth + title.length - 2) / 2).padEnd(maxWidth - 2)}│`,
-      ),
+      chalk.magenta(title.padStart((79 + title.length) / 2).padEnd(79)),
     );
-    console.log(chalk.magenta(`├${border}┤`));
+    console.log(chalk.magenta(borderLine));
     console.log(
-      chalk.magenta(
-        `│${subtitle.padStart((maxWidth + subtitle.length - 2) / 2).padEnd(maxWidth - 2)}│`,
-      ),
+      chalk.magenta(subtitle.padStart((79 + subtitle.length) / 2).padEnd(79)),
     );
-    console.log(chalk.magenta(`└${border}┘`));
+    console.log(chalk.magenta(borderLine));
 
     // Display priority order explanation for the entire module
     console.log();
@@ -1332,23 +1318,15 @@ export class CustomizationMode {
       'headersFooters.basicInfo.subtitle',
     );
 
-    // Calculate width based on the longest text
-    const maxWidth = Math.max(title.length, subtitle.length) + 4;
-    const border = '─'.repeat(maxWidth - 2);
+    const borderLine = '─'.repeat(79);
 
-    console.log(chalk.blue(`┌${border}┐`));
+    console.log(chalk.blue(borderLine));
+    console.log(chalk.blue(title.padStart((79 + title.length) / 2).padEnd(79)));
+    console.log(chalk.blue(borderLine));
     console.log(
-      chalk.blue(
-        `│${title.padStart((maxWidth + title.length - 2) / 2).padEnd(maxWidth - 2)}│`,
-      ),
+      chalk.blue(subtitle.padStart((79 + subtitle.length) / 2).padEnd(79)),
     );
-    console.log(chalk.blue(`├${border}┤`));
-    console.log(
-      chalk.blue(
-        `│${subtitle.padStart((maxWidth + subtitle.length - 2) / 2).padEnd(maxWidth - 2)}│`,
-      ),
-    );
-    console.log(chalk.blue(`└${border}┘`));
+    console.log(chalk.blue(borderLine));
     console.log();
   }
 
