@@ -66,6 +66,12 @@ export interface ProcessingContext {
 
   /** Document language for content localization */
   documentLanguage?: string;
+
+  /** Document title for header/footer display */
+  documentTitle?: string;
+
+  /** Headers and footers configuration */
+  headersFootersConfig?: any; // TODO: import proper type from headers-footers module
 }
 
 export interface ProcessedContent {

@@ -289,8 +289,8 @@ More content.
       const headings = (processor as any).extractHeadings(content);
       expect(headings).toEqual([
         { level: 1, text: 'Heading', id: 'heading' },
-        { level: 2, text: 'Heading', id: 'heading-2' },
-        { level: 3, text: 'Heading', id: 'heading-3' },
+        { level: 2, text: 'Heading', id: 'heading-1' }, // New implementation starts from -1
+        { level: 3, text: 'Heading', id: 'heading-2' }, // Then -2, etc.
       ]);
     });
 

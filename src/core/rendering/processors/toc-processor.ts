@@ -6,6 +6,13 @@
 import puppeteer from 'puppeteer';
 
 import { Heading } from '../../../types/index';
+import { getGlobalBrowserPool } from '../../../utils/browser-pool';
+import { HeadingIdGenerator } from '../../../utils/heading-id-generator';
+import {
+  calculateTotalPages,
+  getEffectiveMargins,
+  type MarginConfig,
+} from '../../../utils/margin-calculator';
 import { PDFTemplates } from '../../pdf/templates';
 import { TOCGenerator } from '../../toc/toc-generator';
 import {
@@ -294,6 +301,25 @@ export class TOCProcessor extends BaseProcessor {
         context.documentLanguage,
       );
 
+      // Log validation results
+      if (tocResult.validation) {
+        console.info(
+          `TOC: Page number mapping - ${tocResult.validation.matched} matched, ${tocResult.validation.unmatched.length} unmatched`,
+        );
+
+        if (tocResult.validation.warnings.length > 0) {
+          console.warn(
+            `TOC: Page number mapping warnings:\n${tocResult.validation.warnings.join('\n')}`,
+          );
+        }
+
+        if (tocResult.validation.unmatched.length > 0) {
+          console.error(
+            `TOC: Unmatched headings (no page numbers):\n${tocResult.validation.unmatched.join('\n')}`,
+          );
+        }
+      }
+
       console.info('TOC: 3-stage process completed successfully');
       return {
         html: tocResult.html,
@@ -323,6 +349,7 @@ export class TOCProcessor extends BaseProcessor {
     content: string,
     context: ProcessingContext,
   ): Promise<RealPageNumbers> {
+    const browserPool = getGlobalBrowserPool();
     let browser: import('puppeteer').Browser | null = null;
     const maxRetries = 3;
     let lastError: Error | null = null;
@@ -333,42 +360,8 @@ export class TOCProcessor extends BaseProcessor {
           `TOC: Page number calculation attempt ${attempt}/${maxRetries}`,
         );
 
-        // Launch browser with stable configuration for page number calculation
-        // Note: Using legacy headless mode for stability in page calculation
-        browser = await puppeteer.launch({
-          headless: true, // Use legacy headless mode for stability in page calculation
-          args: [
-            '--no-sandbox',
-            '--disable-setuid-sandbox',
-            '--disable-gpu',
-            '--disable-dev-shm-usage',
-            '--disable-web-security',
-            '--no-first-run',
-            '--no-default-browser-check',
-            '--disable-background-timer-throttling',
-            '--disable-backgrounding-occluded-windows',
-            '--disable-renderer-backgrounding',
-            '--disable-extensions',
-            '--disable-plugins',
-            '--disable-images',
-            '--disable-notifications',
-            '--disable-default-apps',
-            '--disable-sync',
-            '--metrics-recording-only',
-            '--no-crash-upload',
-            '--disable-crash-reporter',
-            // Additional args for new headless mode stability
-            '--disable-features=VizDisplayCompositor',
-            '--disable-ipc-flooding-protection',
-            '--disable-background-networking',
-            '--disable-client-side-phishing-detection',
-            '--disable-component-update',
-            '--disable-domain-reliability',
-            '--no-pings',
-          ],
-          timeout: 60000, // Increased timeout for browser launch
-          protocolTimeout: 60000, // Protocol timeout
-        });
+        // Acquire browser from pool instead of launching new one
+        browser = await browserPool.acquire();
 
         const page = await browser.newPage();
 
@@ -387,65 +380,155 @@ export class TOCProcessor extends BaseProcessor {
         // Wait for rendering to complete
         await page.waitForTimeout(1000);
 
+        // Get effective margins considering all configuration sources
+        const hasPageNumbers = context.pdfOptions?.includePageNumbers || false;
+        const hasHeaderFooter =
+          hasPageNumbers || !!context.headersFootersConfig;
+        const margins = getEffectiveMargins(
+          context.pdfOptions?.margins,
+          hasHeaderFooter,
+        );
+
         // Get real page positions for headings using PDF dimensions
-        const headingPositions = await page.evaluate((hasPageNumbers) => {
-          const headings = (globalThis as any).document.querySelectorAll(
-            'h1, h2, h3, h4, h5, h6',
-          );
+        const headingPositions = await page.evaluate(
+          (config) => {
+            const headings = (globalThis as any).document.querySelectorAll(
+              'h1, h2, h3, h4, h5, h6',
+            );
 
-          // Calculate page margins based on whether page numbers are enabled
-          // Base margins: 2cm top/bottom (as defined in CSS @page rules)
-          const baseMarginTopPx = Math.round((2 * 96) / 2.54); // 2cm top margin
-          const baseMarginBottomPx = Math.round((2 * 96) / 2.54); // 2cm bottom margin
-
-          // Additional space for header/footer when page numbers are enabled
-          // CSS @page header/footer typically add ~1cm each
-          const headerFooterSpace = hasPageNumbers
-            ? Math.round((1 * 96) / 2.54)
-            : 0; // 1cm if enabled
-
-          const effectiveMarginTop = baseMarginTopPx + headerFooterSpace;
-          const effectiveMarginBottom = baseMarginBottomPx + headerFooterSpace;
-          const pageHeight = 1123 - effectiveMarginTop - effectiveMarginBottom; // A4 height minus effective margins
-
-          return Array.from(headings).map((heading: any) => {
-            const rect = heading.getBoundingClientRect();
-            const absoluteTop =
-              rect.top + (globalThis as any).window.pageYOffset;
-
-            // Calculate page number more accurately
-            // Standard page calculation: which page does this element start on?
-            const relativeTop = Math.max(0, absoluteTop - effectiveMarginTop);
-            const pageNumber = Math.floor(relativeTop / pageHeight) + 1;
-
-            return {
-              id: heading.id || '', // Use the actual ID from the element
-              text: heading.textContent || '',
-              pageNumber: Math.max(1, pageNumber), // Ensure page number is at least 1
-              offsetTop: absoluteTop,
+            // Use the margin calculator logic (duplicated for browser context)
+            const parseMarginToPixels = (margin: string): number => {
+              const trimmed = margin.trim();
+              const match = trimmed.match(/^(\d+(?:\.\d+)?)\s*([a-z]+)$/i);
+              if (!match) {
+                const value = parseFloat(trimmed);
+                return isNaN(value) ? 0 : value;
+              }
+              const value = parseFloat(match[1]);
+              const unit = match[2].toLowerCase();
+              switch (unit) {
+                case 'cm':
+                  return Math.round((value * 96) / 2.54);
+                case 'mm':
+                  return Math.round((value * 96) / 25.4);
+                case 'in':
+                  return Math.round(value * 96);
+                case 'pt':
+                  return Math.round((value * 96) / 72);
+                case 'px':
+                  return Math.round(value);
+                default:
+                  return Math.round(value);
+              }
             };
-          });
-        }, context.pdfOptions?.includePageNumbers || false);
 
-        // Calculate total content page count
-        const contentPageCount = await page.evaluate((hasPageNumbers) => {
-          // Use same margin calculations as above
-          const baseMarginTopPx = Math.round((2 * 96) / 2.54); // 2cm
-          const baseMarginBottomPx = Math.round((2 * 96) / 2.54); // 2cm
-          const headerFooterSpace = hasPageNumbers
-            ? Math.round((1 * 96) / 2.54)
-            : 0;
+            const marginTop = parseMarginToPixels(config.margins.top);
+            const marginBottom = parseMarginToPixels(config.margins.bottom);
+            const headerHeight = config.hasPageNumbers
+              ? parseMarginToPixels('1cm')
+              : 0;
+            const footerHeight = config.hasPageNumbers
+              ? parseMarginToPixels('1cm')
+              : 0;
 
-          const effectiveMarginTop = baseMarginTopPx + headerFooterSpace;
-          const effectiveMarginBottom = baseMarginBottomPx + headerFooterSpace;
-          const pageHeight = 1123 - effectiveMarginTop - effectiveMarginBottom;
-          const totalHeight = (globalThis as any).document.body.scrollHeight;
+            const effectiveMarginTop = marginTop + headerHeight;
+            const pageHeight =
+              config.pageHeight -
+              marginTop -
+              marginBottom -
+              headerHeight -
+              footerHeight;
 
-          return Math.max(
-            1,
-            Math.ceil((totalHeight - effectiveMarginTop) / pageHeight),
-          );
-        }, context.pdfOptions?.includePageNumbers || false);
+            return Array.from(headings).map((heading: any) => {
+              const rect = heading.getBoundingClientRect();
+              const absoluteTop =
+                rect.top + (globalThis as any).window.pageYOffset;
+
+              const relativeTop = Math.max(0, absoluteTop - effectiveMarginTop);
+              const pageNumber = Math.floor(relativeTop / pageHeight) + 1;
+
+              return {
+                id: heading.id || '',
+                text: heading.textContent || '',
+                pageNumber: Math.max(1, pageNumber),
+                offsetTop: absoluteTop,
+              };
+            });
+          },
+          {
+            pageHeight: 1123, // A4 height at 96 DPI
+            margins: {
+              top: margins.top || '2cm',
+              right: margins.right || '2cm',
+              bottom: margins.bottom || '2cm',
+              left: margins.left || '2cm',
+            },
+            hasPageNumbers,
+          },
+        );
+
+        // Calculate total content page count using shared config
+        const contentPageCount = await page.evaluate(
+          (config) => {
+            const parseMarginToPixels = (margin: string): number => {
+              const trimmed = margin.trim();
+              const match = trimmed.match(/^(\d+(?:\.\d+)?)\s*([a-z]+)$/i);
+              if (!match) {
+                const value = parseFloat(trimmed);
+                return isNaN(value) ? 0 : value;
+              }
+              const value = parseFloat(match[1]);
+              const unit = match[2].toLowerCase();
+              switch (unit) {
+                case 'cm':
+                  return Math.round((value * 96) / 2.54);
+                case 'mm':
+                  return Math.round((value * 96) / 25.4);
+                case 'in':
+                  return Math.round(value * 96);
+                case 'pt':
+                  return Math.round((value * 96) / 72);
+                case 'px':
+                  return Math.round(value);
+                default:
+                  return Math.round(value);
+              }
+            };
+
+            const marginTop = parseMarginToPixels(config.margins.top);
+            const marginBottom = parseMarginToPixels(config.margins.bottom);
+            const headerHeight = config.hasPageNumbers
+              ? parseMarginToPixels('1cm')
+              : 0;
+            const footerHeight = config.hasPageNumbers
+              ? parseMarginToPixels('1cm')
+              : 0;
+
+            const effectiveMarginTop = marginTop + headerHeight;
+            const pageHeight =
+              config.pageHeight -
+              marginTop -
+              marginBottom -
+              headerHeight -
+              footerHeight;
+            const totalHeight = (globalThis as any).document.body.scrollHeight;
+
+            return Math.max(
+              1,
+              Math.ceil((totalHeight - effectiveMarginTop) / pageHeight),
+            );
+          },
+          {
+            pageHeight: 1123,
+            margins: {
+              top: margins.top || '2cm',
+              right: margins.right || '2cm',
+              bottom: margins.bottom || '2cm',
+              left: margins.left || '2cm',
+            },
+            hasPageNumbers,
+          },
+        );
 
         // Build page number mapping
         const headingPages: Record<string, number> = {};
@@ -468,6 +551,13 @@ export class TOCProcessor extends BaseProcessor {
         console.info(
           `TOC: Page number calculation successful - found ${Object.keys(headingPages).length} headings across ${contentPageCount} pages`,
         );
+
+        // Release browser back to pool
+        if (browser) {
+          await browserPool.release(browser);
+          browser = null;
+        }
+
         return {
           headingPages,
           contentPageCount,
@@ -478,12 +568,12 @@ export class TOCProcessor extends BaseProcessor {
         // Debug: Page number calculation failed on attempt, will retry
         // Error details are captured in lastError for final error handling
 
-        // Close browser before retry
+        // Release browser back to pool before retry
         if (browser) {
           try {
-            await browser.close();
-          } catch (closeError) {
-            // Silently handle browser close errors during retry
+            await browserPool.release(browser);
+          } catch (releaseError) {
+            // Silently handle browser release errors during retry
           }
           browser = null;
         }
@@ -498,12 +588,12 @@ export class TOCProcessor extends BaseProcessor {
         // Wait before retry
         await new Promise((resolve) => setTimeout(resolve, 1000 * attempt));
       } finally {
-        // Clean up browser if this is the last attempt or successful
-        if (browser && (attempt === maxRetries || !lastError)) {
+        // Ensure browser is released if still held
+        if (browser) {
           try {
-            await browser.close();
-          } catch (closeError) {
-            // Silently handle browser close errors
+            await browserPool.release(browser);
+          } catch (releaseError) {
+            // Silently handle browser release errors
           }
         }
       }
@@ -560,7 +650,7 @@ export class TOCProcessor extends BaseProcessor {
     // This is a simplified implementation
     // In real usage, you'd use the actual markdown parser from the system
     const lines = content.split('\n');
-    const usedIds = new Set<string>();
+    const idGenerator = new HeadingIdGenerator();
 
     return lines
       .map((line) => {
@@ -571,16 +661,7 @@ export class TOCProcessor extends BaseProcessor {
         if (headingMatch) {
           const level = headingMatch[1].length;
           const text = headingMatch[2];
-          const baseId = this.createHeadingId(text);
-
-          // Ensure unique ID
-          let id = baseId;
-          let counter = 1;
-          while (usedIds.has(id)) {
-            counter++;
-            id = `${baseId}-${counter}`;
-          }
-          usedIds.add(id);
+          const id = idGenerator.createHeadingId(text);
 
           return `<h${level} id="${id}">${text}</h${level}>`;
         }
@@ -598,19 +679,48 @@ export class TOCProcessor extends BaseProcessor {
 
   /**
    * Generate CSS for pages with header/footer
+   * Uses dynamic margins from context configuration
+   *
+   * Note: If headersFootersConfig is provided, it should be used by the main
+   * PDF generator. This method provides a fallback for simple page numbers.
    */
   private generatePageCSS(context: ProcessingContext): string {
     if (!context.pdfOptions?.includePageNumbers) {
       return '';
     }
 
+    // If HeaderFooterGenerator config exists, it will be handled by the main generator
+    // This is a simplified fallback for TOC page number calculation
+    if (context.headersFootersConfig) {
+      console.debug(
+        'TOC: HeaderFooter config detected, CSS will be generated by main PDF generator',
+      );
+      // Return empty - the actual CSS will come from HeaderFooterGenerator
+      // But we still need to account for the space in our calculations
+      return '';
+    }
+
+    // Fallback: Generate simple CSS for basic page numbers
+    const margins = {
+      top: context.pdfOptions?.margins?.top || '2cm',
+      bottom: context.pdfOptions?.margins?.bottom || '2cm',
+      left: context.pdfOptions?.margins?.left || '2cm',
+      right: context.pdfOptions?.margins?.right || '2cm',
+    };
+
+    // Calculate additional space for header/footer
+    // Default to 1cm for header/footer content
+    const headerFooterSpace = '1cm';
+
     return `
       @page {
-        margin-top: 2cm;
-        margin-bottom: 2cm;
+        margin-top: calc(${margins.top} + ${headerFooterSpace});
+        margin-bottom: calc(${margins.bottom} + ${headerFooterSpace});
+        margin-left: ${margins.left};
+        margin-right: ${margins.right};
 
         @top-center {
-          content: "Document Title";
+          content: "${context.documentTitle || 'Document'}";
           font-size: 10pt;
           color: #666;
         }
@@ -650,6 +760,7 @@ export class TOCProcessor extends BaseProcessor {
       `TOC: Starting accurate page count measurement for ${headings.length} headings`,
     );
 
+    const browserPool = getGlobalBrowserPool();
     let browser: import('puppeteer').Browser | null = null;
     try {
       // Generate actual TOC HTML
@@ -678,10 +789,8 @@ export class TOCProcessor extends BaseProcessor {
         finalCSS,
       );
 
-      browser = await puppeteer.launch({
-        headless: true,
-        args: ['--no-sandbox', '--disable-setuid-sandbox'],
-      });
+      // Acquire browser from pool
+      browser = await browserPool.acquire();
 
       const page = await browser.newPage();
       await page.setContent(fullTocHtml, { waitUntil: 'networkidle0' });
@@ -717,21 +826,39 @@ export class TOCProcessor extends BaseProcessor {
       const pageCount = await this.getActualPDFPageCount(pdfBuffer);
       console.debug(`TOC: PDF engine reported ${pageCount} pages`);
 
-      // Temporary fix: Based on observed pattern, large documents (>200 headings) need an extra page
-      // This is due to complex interactions of CSS @page headers/footers
-      const adjustedPageCount =
-        headings.length > 200 ? pageCount + 1 : pageCount;
+      // Validate page count by calculating expected pages from content height
+      const tocContentHeight = await page.evaluate(() => {
+        const tocContainer = (globalThis as any).document.getElementById('toc');
+        return tocContainer ? tocContainer.scrollHeight : 0;
+      });
 
-      if (adjustedPageCount !== pageCount) {
-        console.info(
-          `TOC: Applied large document adjustment: ${pageCount} → ${adjustedPageCount} pages`,
+      if (tocContentHeight > 0) {
+        const margins: MarginConfig = {
+          top: context.pdfOptions?.margins?.top || '2cm',
+          right: context.pdfOptions?.margins?.right || '2cm',
+          bottom: context.pdfOptions?.margins?.bottom || '2cm',
+          left: context.pdfOptions?.margins?.left || '2cm',
+        };
+
+        const expectedPages = calculateTotalPages(
+          tocContentHeight,
+          'A4',
+          margins,
+          context.pdfOptions?.includePageNumbers || false,
         );
+
+        // If there's a significant discrepancy (>1 page), use the higher value for safety
+        if (Math.abs(expectedPages - pageCount) > 1) {
+          const safePageCount = Math.max(expectedPages, pageCount);
+          console.warn(
+            `TOC: Page count discrepancy detected. PDF reported ${pageCount}, calculated ${expectedPages}. Using ${safePageCount} for safety.`,
+          );
+          return safePageCount;
+        }
       }
 
-      console.info(
-        `TOC: Final page count estimation: ${adjustedPageCount} pages`,
-      );
-      return adjustedPageCount;
+      console.info(`TOC: Final page count estimation: ${pageCount} pages`);
+      return pageCount;
     } catch (error) {
       console.error(
         'TOC: Page count measurement failed, using fallback',
@@ -742,9 +869,9 @@ export class TOCProcessor extends BaseProcessor {
     } finally {
       if (browser) {
         try {
-          await browser.close();
-        } catch (closeError) {
-          // Ignore close errors
+          await browserPool.release(browser);
+        } catch (releaseError) {
+          // Ignore release errors
         }
       }
     }
