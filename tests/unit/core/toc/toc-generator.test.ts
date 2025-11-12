@@ -4,20 +4,50 @@
 
 import { TOCGenerator } from '../../../../src/core/toc/toc-generator';
 import { Heading } from '../../../../src/types/index';
+import type {
+  ITranslationManager,
+  SupportedLocale,
+} from '../../../../src/infrastructure/i18n/types';
+
+// Mock translator
+const createMockTranslator = (): ITranslationManager => ({
+  t: (key: string) => {
+    if (key === 'pdfContent.tocTitle') return 'Table of Contents';
+    return key;
+  },
+  translate: (key: string, locale: SupportedLocale) => {
+    if (key === 'pdfContent.tocTitle') {
+      if (locale === 'zh-TW') return '目錄';
+      if (locale === 'en') return 'Table of Contents';
+    }
+    return key;
+  },
+  setLocale: jest.fn(),
+  getCurrentLocale: jest.fn(() => 'en' as SupportedLocale),
+  getSupportedLocales: jest.fn(() => ['en', 'zh-TW'] as SupportedLocale[]),
+  hasTranslation: jest.fn(() => true),
+  loadTranslations: jest.fn(),
+  getTranslations: jest.fn(() => ({})),
+});
 
 describe('TOCGenerator', () => {
   let tocGenerator: TOCGenerator;
+  let mockTranslator: ITranslationManager;
 
   beforeEach(() => {
-    tocGenerator = new TOCGenerator({
-      maxDepth: 3,
-      includePageNumbers: false,
-    });
+    mockTranslator = createMockTranslator();
+    tocGenerator = new TOCGenerator(
+      {
+        maxDepth: 3,
+        includePageNumbers: false,
+      },
+      mockTranslator,
+    );
   });
 
   describe('constructor', () => {
     it('should create TOCGenerator with default options', () => {
-      const generator = new TOCGenerator({ maxDepth: 2 });
+      const generator = new TOCGenerator({ maxDepth: 2 }, mockTranslator);
       const options = generator.getOptions();
 
       expect(options.maxDepth).toBe(2);
@@ -26,22 +56,25 @@ describe('TOCGenerator', () => {
     });
 
     it('should validate maxDepth range', () => {
-      expect(() => new TOCGenerator({ maxDepth: 0 })).toThrow(
+      expect(() => new TOCGenerator({ maxDepth: 0 }, mockTranslator)).toThrow(
         'TOC maxDepth must be between 1 and 6',
       );
-      expect(() => new TOCGenerator({ maxDepth: 7 })).toThrow(
+      expect(() => new TOCGenerator({ maxDepth: 7 }, mockTranslator)).toThrow(
         'TOC maxDepth must be between 1 and 6',
       );
     });
 
     it('should accept custom CSS classes', () => {
-      const generator = new TOCGenerator({
-        maxDepth: 3,
-        cssClasses: {
-          container: 'custom-toc',
-          title: 'custom-title',
+      const generator = new TOCGenerator(
+        {
+          maxDepth: 3,
+          cssClasses: {
+            container: 'custom-toc',
+            title: 'custom-title',
+          },
         },
-      });
+        mockTranslator,
+      );
 
       const options = generator.getOptions();
       expect(options.cssClasses?.container).toBe('custom-toc');
@@ -101,7 +134,7 @@ describe('TOCGenerator', () => {
     });
 
     it('should filter headings by maxDepth', () => {
-      const generator = new TOCGenerator({ maxDepth: 2 });
+      const generator = new TOCGenerator({ maxDepth: 2 }, mockTranslator);
       const result = generator.generateTOC(sampleHeadings);
 
       expect(result.items).toHaveLength(4); // Only H1 and H2
@@ -196,10 +229,13 @@ describe('TOCGenerator', () => {
     ];
 
     it('should handle page numbers when enabled', () => {
-      const generator = new TOCGenerator({
-        maxDepth: 3,
-        includePageNumbers: true,
-      });
+      const generator = new TOCGenerator(
+        {
+          maxDepth: 3,
+          includePageNumbers: true,
+        },
+        mockTranslator,
+      );
 
       const result = generator.generateTOC(headings);
       expect(result.html).toContain('toc-page-number');
@@ -339,6 +375,108 @@ describe('TOCGenerator', () => {
 
       expect(result.items[0].anchor).toBe('');
       expect(result.html).toContain('href=""');
+    });
+
+    it('should handle fallback page number matching with prefix', () => {
+      const headings: Heading[] = [
+        { level: 1, text: 'Chapter', id: 'chapter', anchor: '#chapter' },
+        { level: 2, text: 'Section', id: 'section', anchor: '#section' },
+      ];
+
+      const result = tocGenerator.generateTOC(headings);
+
+      // Simulate mismatched IDs where we need fallback matching
+      const pageNumbers = {
+        'chapter-1': 5, // Different from just 'chapter'
+        section: 8,
+      };
+
+      const updateResult = tocGenerator.updatePageNumbers(
+        result.items,
+        pageNumbers,
+      );
+
+      expect(updateResult.matched).toBe(2); // Both match (one exact, one fallback)
+      expect(updateResult.warnings.length).toBeGreaterThanOrEqual(1); // Fallback warning
+      expect(updateResult.unmatched.length).toBe(0); // All headings matched
+    });
+
+    it('should report unmatched headings when no fallback exists', () => {
+      const headings: Heading[] = [
+        { level: 1, text: 'Missing', id: 'missing', anchor: '#missing' },
+      ];
+
+      const result = tocGenerator.generateTOC(headings);
+      const pageNumbers = { 'different-id': 5 };
+
+      const updateResult = tocGenerator.updatePageNumbers(
+        result.items,
+        pageNumbers,
+      );
+
+      expect(updateResult.matched).toBe(0);
+      expect(updateResult.unmatched).toContain('Missing');
+    });
+  });
+
+  describe('localization and language support', () => {
+    it('should use document language for TOC title when supported (zh-TW)', () => {
+      const headings: Heading[] = [
+        { level: 1, text: 'Test', id: 'test', anchor: '#test' },
+      ];
+
+      const result = tocGenerator.generateTOC(headings, 'zh-TW');
+
+      // Should contain Chinese TOC title
+      expect(result.html).toContain('目錄');
+    });
+
+    it('should use document language for TOC title when supported (en)', () => {
+      const headings: Heading[] = [
+        { level: 1, text: 'Test', id: 'test', anchor: '#test' },
+      ];
+
+      const result = tocGenerator.generateTOC(headings, 'en');
+
+      // Should contain English TOC title
+      expect(result.html).toContain('Table of Contents');
+    });
+
+    it('should handle language code variations (zh, zh-hant)', () => {
+      const headings: Heading[] = [
+        { level: 1, text: 'Test', id: 'test', anchor: '#test' },
+      ];
+
+      const resultZh = tocGenerator.generateTOC(headings, 'zh');
+      const resultZhHant = tocGenerator.generateTOC(headings, 'zh-hant');
+
+      // Both should use zh-TW locale
+      expect(resultZh.html).toContain('目錄');
+      expect(resultZhHant.html).toContain('目錄');
+    });
+
+    it('should handle language code variations (en-us, en-gb)', () => {
+      const headings: Heading[] = [
+        { level: 1, text: 'Test', id: 'test', anchor: '#test' },
+      ];
+
+      const resultEnUs = tocGenerator.generateTOC(headings, 'en-us');
+      const resultEnGb = tocGenerator.generateTOC(headings, 'en-gb');
+
+      // Both should use en locale
+      expect(resultEnUs.html).toContain('Table of Contents');
+      expect(resultEnGb.html).toContain('Table of Contents');
+    });
+
+    it('should fallback to current UI language for unsupported language', () => {
+      const headings: Heading[] = [
+        { level: 1, text: 'Test', id: 'test', anchor: '#test' },
+      ];
+
+      const result = tocGenerator.generateTOC(headings, 'fr');
+
+      // Should still generate TOC with fallback language
+      expect(result.html).toContain('toc-container');
     });
   });
 });

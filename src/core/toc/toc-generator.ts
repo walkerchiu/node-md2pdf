@@ -288,12 +288,20 @@ export class TOCGenerator {
   }
 
   /**
-   * Update page numbers in generated TOC items
+   * Update page numbers in generated TOC items with validation
    */
   updatePageNumbers(
     items: TOCItemFlat[],
     pageNumbers: Record<string, number>,
-  ): void {
+  ): {
+    matched: number;
+    unmatched: string[];
+    warnings: string[];
+  } {
+    const unmatched: string[] = [];
+    const warnings: string[] = [];
+    let matched = 0;
+
     for (const item of items) {
       const anchor = item.anchor.startsWith('#')
         ? item.anchor.substring(1)
@@ -302,18 +310,31 @@ export class TOCGenerator {
       // Try exact match first
       if (pageNumbers[anchor] !== undefined) {
         item.pageNumber = pageNumbers[anchor];
+        matched++;
       } else {
         // If no exact match, the ID generation should be consistent
         // This fallback handles legacy cases
-        const fallbackPageNumber = Object.entries(pageNumbers).find(([key]) =>
+        const fallbackEntry = Object.entries(pageNumbers).find(([key]) =>
           key.startsWith(anchor),
-        )?.[1];
+        );
 
-        if (fallbackPageNumber !== undefined) {
-          item.pageNumber = fallbackPageNumber;
+        if (fallbackEntry) {
+          item.pageNumber = fallbackEntry[1];
+          matched++;
+          warnings.push(
+            `Heading "${item.title}" matched using fallback (prefix match: ${anchor} → ${fallbackEntry[0]})`,
+          );
+        } else {
+          unmatched.push(item.title);
         }
       }
     }
+
+    return {
+      matched,
+      unmatched,
+      warnings,
+    };
   }
 
   /**
@@ -323,11 +344,17 @@ export class TOCGenerator {
     headings: Heading[],
     pageNumbers: Record<string, number>,
     documentLanguage?: string,
-  ): TOCGenerationResult {
+  ): TOCGenerationResult & {
+    validation: {
+      matched: number;
+      unmatched: string[];
+      warnings: string[];
+    };
+  } {
     const result = this.generateTOC(headings, documentLanguage);
 
-    // Update flat items with page numbers
-    this.updatePageNumbers(result.items, pageNumbers);
+    // Update flat items with page numbers and get validation results
+    const validation = this.updatePageNumbers(result.items, pageNumbers);
 
     // Rebuild hierarchy with updated page numbers
     const tree = this.buildHierarchy(result.items);
@@ -339,6 +366,7 @@ export class TOCGenerator {
       ...result,
       html,
       tree,
+      validation,
     };
   }
 

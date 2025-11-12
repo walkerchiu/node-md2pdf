@@ -143,6 +143,76 @@ describe('Rendering Types', () => {
       expect(context.logger?.info).toBeDefined();
       expect(context.logger?.error).toBeDefined();
     });
+
+    it('should create processing context with document language', () => {
+      const context: ProcessingContext = {
+        filePath: '/test/document.md',
+        documentLanguage: 'zh-TW',
+      };
+
+      expect(context.documentLanguage).toBe('zh-TW');
+    });
+
+    it('should create processing context with document title', () => {
+      const context: ProcessingContext = {
+        filePath: '/test/document.md',
+        documentTitle: 'My Document Title',
+      };
+
+      expect(context.documentTitle).toBe('My Document Title');
+    });
+
+    it('should create processing context with headers/footers config', () => {
+      const headersFootersConfig = {
+        enabled: true,
+        header: { left: 'Title', center: '', right: 'Page {page}' },
+        footer: { left: 'Author', center: '', right: 'Date' },
+      };
+
+      const context: ProcessingContext = {
+        filePath: '/test/document.md',
+        headersFootersConfig,
+      };
+
+      expect(context.headersFootersConfig).toBe(headersFootersConfig);
+      expect(context.headersFootersConfig.enabled).toBe(true);
+    });
+
+    it('should create processing context with PlantUML config', () => {
+      const context: ProcessingContext = {
+        filePath: '/test/document.md',
+        plantUMLConfig: {
+          serverUrl: 'http://localhost:8080',
+          format: 'svg',
+          defaultWidth: 800,
+          defaultHeight: 600,
+          timeout: 5000,
+          enableCaching: true,
+        },
+      };
+
+      expect(context.plantUMLConfig?.serverUrl).toBe('http://localhost:8080');
+      expect(context.plantUMLConfig?.format).toBe('svg');
+      expect(context.plantUMLConfig?.enableCaching).toBe(true);
+    });
+
+    it('should create processing context with Mermaid config', () => {
+      const context: ProcessingContext = {
+        filePath: '/test/document.md',
+        mermaidConfig: {
+          theme: 'dark',
+          defaultWidth: 1024,
+          defaultHeight: 768,
+          timeout: 10000,
+          enableCaching: false,
+          backgroundColor: '#ffffff',
+        },
+      };
+
+      expect(context.mermaidConfig?.theme).toBe('dark');
+      expect(context.mermaidConfig?.defaultWidth).toBe(1024);
+      expect(context.mermaidConfig?.backgroundColor).toBe('#ffffff');
+    });
   });
 
   describe('ProcessedContent Interface', () => {

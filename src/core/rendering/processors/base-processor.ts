@@ -2,6 +2,7 @@
  * Base implementation for dynamic content processors
  */
 
+import { HeadingIdGenerator } from '../../../utils/heading-id-generator';
 import { IDynamicContentProcessor, IContentCache } from '../interfaces';
 import {
   DynamicContentType,
@@ -158,7 +159,7 @@ export abstract class BaseProcessor implements IDynamicContentProcessor {
   }> {
     const lines = content.split('\n');
     const headings: Array<{ level: number; text: string; id: string }> = [];
-    const usedIds = new Set<string>();
+    const idGenerator = new HeadingIdGenerator();
 
     for (const line of lines) {
       const trimmedLine = line.trim();
@@ -167,17 +168,8 @@ export abstract class BaseProcessor implements IDynamicContentProcessor {
       if (headingMatch) {
         const level = headingMatch[1].length;
         const text = headingMatch[2].trim();
-        const baseId = this.createHeadingId(text);
+        const id = idGenerator.createHeadingId(text);
 
-        // Ensure unique ID by adding suffix if needed
-        let id = baseId;
-        let counter = 1;
-        while (usedIds.has(id)) {
-          counter++;
-          id = `${baseId}-${counter}`;
-        }
-
-        usedIds.add(id);
         headings.push({ level, text, id });
       }
     }
@@ -186,15 +178,11 @@ export abstract class BaseProcessor implements IDynamicContentProcessor {
   }
 
   /**
-   * Create heading ID from text
+   * Create heading ID from text using shared utility
    */
   protected createHeadingId(text: string): string {
-    return text
-      .toLowerCase()
-      .replace(/[^\u4e00-\u9fff\w\s-]/g, '') // Keep Chinese characters, letters, numbers, spaces, hyphens
-      .replace(/[\s_]+/g, '-') // Replace spaces and underscores with hyphens
-      .replace(/^-+|-+$/g, '') // Remove leading/trailing hyphens
-      .replace(/-+/g, '-'); // Replace multiple hyphens with single hyphen
+    const idGenerator = new HeadingIdGenerator();
+    return idGenerator.createHeadingId(text);
   }
 
   /**
