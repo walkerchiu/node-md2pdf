@@ -299,35 +299,25 @@ export class SyntaxHighlighter {
       return `<pre class="language-${normalizedLanguage}"><code class="language-${normalizedLanguage}">${highlightedCode}</code></pre>`;
     }
 
-    // For line numbers, count actual lines more accurately
-    const lines = code.split('\n');
-    let lineCount = lines.length;
+    // Split highlighted code into lines and wrap each in table-row structure
+    const lines = highlightedCode.split('\n');
 
-    // Only reduce count if the last line is truly empty (not just whitespace)
+    // Remove last empty line if exists
     if (lines.length > 1 && lines[lines.length - 1].trim() === '') {
-      lineCount = lines.length - 1;
+      lines.pop();
     }
 
-    // Ensure minimum of 1 line
-    lineCount = Math.max(1, lineCount);
+    // Generate table-based line structure for proper page breaking
+    // Line numbers are displayed via CSS ::before pseudo-element (not copied)
+    const lineRows = lines
+      .map((lineContent) => {
+        return `<div class="code-line"><span class="line-content">${lineContent}</span></div>`;
+      })
+      .join('');
 
-    const lineNumberHTML = this.generateSimpleLineNumbers(lineCount);
-
-    return `<pre class="language-${normalizedLanguage} line-numbers"><code class="language-${normalizedLanguage}">${highlightedCode}</code>${lineNumberHTML}</pre>`;
-  }
-
-  private generateSimpleLineNumbers(lineCount: number): string {
-    const lineNumbers = [];
-    const startNum = this.config.lineNumberStart;
-
-    // Ensure we have a valid line count
-    const validLineCount = Math.max(1, Math.floor(lineCount));
-
-    for (let i = 0; i < validLineCount; i++) {
-      lineNumbers.push(`<span data-line="${startNum + i}"></span>`);
-    }
-
-    return `<span aria-hidden="true" class="line-numbers-rows">${lineNumbers.join('')}</span>`;
+    // Set counter-reset to start from lineNumberStart - 1
+    const counterStart = this.config.lineNumberStart - 1;
+    return `<pre class="language-${normalizedLanguage} line-numbers" style="counter-reset: linenumber ${counterStart};"><code class="language-${normalizedLanguage}">${lineRows}</code></pre>`;
   }
 
   private normalizeLanguage(language: string): string {
@@ -539,59 +529,66 @@ export class SyntaxHighlighter {
 
   private getLineNumbersCSS(): string {
     return `
-      /* PrismJS Line Numbers Plugin CSS */
+      /* PrismJS Line Numbers - Simple block layout for maximum compatibility */
       pre[class*="language-"].line-numbers {
-        position: relative;
-        padding-left: 3.8em;
+        padding: 1em !important;
+        padding-left: 0 !important;
+        overflow-x: auto;
+        /* counter-reset is now controlled by inline style in HTML */
       }
 
       pre[class*="language-"].line-numbers > code {
-        position: relative;
-        white-space: inherit;
-      }
-
-      .line-numbers .line-numbers-rows {
-        position: absolute;
-        pointer-events: none;
-        top: 0;
-        bottom: 0;
-        left: 0;
-        width: 3.3em;
-        border-right: 1px solid #e1e4e8;
-        user-select: none;
-        background-color: #f6f8fa;
-        box-sizing: border-box;
-      }
-
-
-      .line-numbers-rows > span {
         display: block;
-        line-height: ${DEFAULT_CSS_TEMPLATE.CODE.LINE_HEIGHT} !important;
+      }
+
+      /* Each line is a simple block element */
+      .line-numbers .code-line {
+        display: block;
+        position: relative;
+        padding-left: 4.5em;
+        page-break-inside: avoid;
+        -webkit-column-break-inside: avoid;
+        break-inside: avoid;
+        counter-increment: linenumber;
+        min-height: 1.45em;
+      }
+
+      /* Line number using before pseudo-element with absolute positioning */
+      .line-numbers .code-line:before {
+        content: counter(linenumber);
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 4em;
+        height: 100%;
         text-align: right;
         padding-right: 0.75em;
+        padding-top: 0;
+        user-select: none;
+        -webkit-user-select: none;
+        -moz-user-select: none;
+        -ms-user-select: none;
         color: #666;
-        font-family: ${DEFAULT_CSS_TEMPLATE.CODE.FONT_FAMILY} !important;
-        font-size: ${DEFAULT_CSS_TEMPLATE.CODE.FONT_SIZE} !important;
-        vertical-align: baseline;
+        background-color: #f6f8fa;
+        border-right: 1px solid #e1e4e8;
+        font-family: ${DEFAULT_CSS_TEMPLATE.CODE.FONT_FAMILY};
+        font-size: 14px;
+        line-height: 1.45;
         box-sizing: border-box;
       }
 
-      .line-numbers-rows > span:first-child {
-        margin-top: 1em;
-      }
-
-      .line-numbers-rows > span:last-child {
-        margin-bottom: 1em;
-      }
-
-      .line-numbers-rows > span:before {
-        content: attr(data-line);
+      /* Code content as simple inline element */
+      .line-numbers .line-content {
         display: inline-block;
-        width: 100%;
-        line-height: ${DEFAULT_CSS_TEMPLATE.CODE.LINE_HEIGHT} !important;
-        vertical-align: baseline;
-        font-size: ${DEFAULT_CSS_TEMPLATE.CODE.FONT_SIZE} !important;
-        font-family: ${DEFAULT_CSS_TEMPLATE.CODE.FONT_FAMILY} !important;
+        width: calc(100% - 4.5em);
+        padding-left: 0.75em;
+        font-family: ${DEFAULT_CSS_TEMPLATE.CODE.FONT_FAMILY};
+        font-size: 14px;
+        line-height: 1.45;
+        white-space: pre-wrap;
+        word-wrap: break-word;
+        vertical-align: top;
+        box-sizing: border-box;
       }
     `;
   }
