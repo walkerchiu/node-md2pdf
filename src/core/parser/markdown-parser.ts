@@ -161,7 +161,7 @@ export class MarkdownParser {
         .replace(/>/g, '&gt;')
         .replace(/"/g, '&quot;')
         .replace(/'/g, '&#39;');
-      return `<pre class="language-${lang}"><code class="language-${lang}">${escapedStr}</code></pre>`;
+      return `<pre class="language-${language}"><code class="language-${language}">${escapedStr}</code></pre>`;
     }
 
     // For all other languages, return plain HTML structure without highlighting
@@ -172,7 +172,15 @@ export class MarkdownParser {
       .replace(/>/g, '&gt;')
       .replace(/"/g, '&quot;')
       .replace(/'/g, '&#39;');
-    return `<pre><code class="language-${lang}">${escapedStr}</code></pre>`;
+
+    // If language is specified, add the language class
+    // If no language, omit the class attribute entirely - SyntaxHighlighter will still add line numbers
+    if (lang && lang.trim() !== '') {
+      return `<pre><code class="language-${lang}">${escapedStr}</code></pre>`;
+    } else {
+      // No language specified - plain code block without language class
+      return `<pre><code>${escapedStr}</code></pre>`;
+    }
   }
 
   /**

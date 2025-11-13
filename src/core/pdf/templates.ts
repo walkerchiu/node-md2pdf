@@ -394,58 +394,66 @@ export class PDFTemplates {
         border-radius: 0;
       }
 
-      /* PrismJS Line Numbers Plugin CSS - FIXED */
+      /* PrismJS Line Numbers - Simple block layout for maximum compatibility */
       pre[class*="language-"].line-numbers {
-        position: relative;
-        padding-left: 3.8em;
-        counter-reset: linenumber;
+        padding: 1em !important;
+        padding-left: 0 !important;
+        overflow-x: auto;
+        /* counter-reset is now controlled by inline style in HTML */
       }
 
       pre[class*="language-"].line-numbers > code {
-        position: relative;
-        white-space: inherit;
-      }
-
-      .line-numbers .line-numbers-rows {
-        position: absolute;
-        pointer-events: none;
-        top: 0;
-        bottom: 0;
-        left: 0;
-        width: 3.3em;
-        border-right: 1px solid #e1e4e8;
-        user-select: none;
-        background-color: #f6f8fa;
-        box-sizing: border-box;
-      }
-
-      .line-numbers-rows > span {
         display: block;
+      }
+
+      /* Each line is a simple block element */
+      .line-numbers .code-line {
+        display: block;
+        position: relative;
+        padding-left: 4.5em;
+        page-break-inside: avoid;
+        -webkit-column-break-inside: avoid;
+        break-inside: avoid;
         counter-increment: linenumber;
-        line-height: 1.45;
+        min-height: 1.45em;
+      }
+
+      /* Line number using before pseudo-element with absolute positioning */
+      .line-numbers .code-line:before {
+        content: counter(linenumber);
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 4em;
+        height: 100%;
         text-align: right;
         padding-right: 0.75em;
+        padding-top: 0;
+        user-select: none;
+        -webkit-user-select: none;
+        -moz-user-select: none;
+        -ms-user-select: none;
         color: #666;
+        background-color: #f6f8fa;
+        border-right: 1px solid #e1e4e8;
         font-family: ${codeFontFamily};
         font-size: 14px;
-        vertical-align: baseline;
+        line-height: 1.45;
         box-sizing: border-box;
       }
 
-      .line-numbers-rows > span:first-child {
-        margin-top: 1em;
-      }
-
-      .line-numbers-rows > span:last-child {
-        margin-bottom: 1em;
-      }
-
-      .line-numbers-rows > span:before {
-        content: counter(linenumber);
+      /* Code content as simple inline element */
+      .line-numbers .line-content {
         display: inline-block;
-        width: 100%;
-        line-height: inherit;
-        vertical-align: baseline;
+        width: calc(100% - 4.5em);
+        padding-left: 0.75em;
+        font-family: ${codeFontFamily};
+        font-size: 14px;
+        line-height: 1.45;
+        white-space: pre-wrap;
+        word-wrap: break-word;
+        vertical-align: top;
+        box-sizing: border-box;
       }
 
       /* Default Theme Syntax Colors */

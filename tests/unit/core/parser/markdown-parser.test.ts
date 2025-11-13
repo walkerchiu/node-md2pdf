@@ -215,8 +215,9 @@ class Example {}
       const result = parser.parse(markdown);
 
       expect(result.content).toContain(
-        '<pre class="language-javascript line-numbers">',
+        'class="language-javascript line-numbers"',
       );
+      expect(result.content).toContain('style="counter-reset: linenumber');
       expect(result.content).toContain('<code class="language-javascript">');
       expect(result.content).toContain(
         'console<span class="token punctuation">.</span><span class="token function">log</span>',
@@ -456,8 +457,9 @@ More content here.`;
 
       // Should work with proper highlighting
       expect(result.content).toContain(
-        '<pre class="language-javascript line-numbers">',
+        'class="language-javascript line-numbers"',
       );
+      expect(result.content).toContain('style="counter-reset: linenumber');
       expect(result.content).toContain('<code class="language-javascript">');
       expect(result.content).toBeDefined();
 
