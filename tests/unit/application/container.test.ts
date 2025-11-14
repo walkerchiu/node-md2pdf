@@ -90,7 +90,6 @@ describe('ApplicationServices', () => {
       expect(APPLICATION_SERVICE_NAMES.FILE_PROCESSOR).toBe('fileProcessor');
       expect(APPLICATION_SERVICE_NAMES.BATCH_PROCESSOR).toBe('batchProcessor');
       expect(APPLICATION_SERVICE_NAMES.SMART_DEFAULTS).toBe('smartDefaults');
-      expect(APPLICATION_SERVICE_NAMES.PAGE_STRUCTURE).toBe('pageStructure');
     });
   });
 
@@ -124,10 +123,6 @@ describe('ApplicationServices', () => {
 
       // Verify all services are registered
       expect(mockContainer.registerSingleton).toHaveBeenCalledWith(
-        APPLICATION_SERVICE_NAMES.PAGE_STRUCTURE,
-        expect.any(Function),
-      );
-      expect(mockContainer.registerSingleton).toHaveBeenCalledWith(
         APPLICATION_SERVICE_NAMES.PDF_GENERATOR,
         expect.any(Function),
       );
@@ -152,8 +147,8 @@ describe('ApplicationServices', () => {
         expect.any(Function),
       );
 
-      // Should have been called 7 times (one for each service)
-      expect(mockContainer.registerSingleton).toHaveBeenCalledTimes(7);
+      // Should have been called 6 times (one for each service)
+      expect(mockContainer.registerSingleton).toHaveBeenCalledTimes(6);
     });
 
     it('should register services with correct dependencies', () => {
@@ -366,27 +361,6 @@ describe('ApplicationServices', () => {
         expect(mockLogger.setLevel).toHaveBeenCalledWith('info');
         expect(mockContainer.resolve).toHaveBeenCalledWith(
           APPLICATION_SERVICE_NAMES.SMART_DEFAULTS,
-        );
-        expect(result).toBe(mockService);
-      });
-    });
-
-    describe('createPageStructureService', () => {
-      it('should create page structure service with default log level', () => {
-        const mockService = {};
-        mockContainer.resolve.mockImplementation((key: string) => {
-          return key === APPLICATION_SERVICE_NAMES.PAGE_STRUCTURE
-            ? mockService
-            : key === 'logger'
-              ? mockLogger
-              : {};
-        });
-
-        const result = ApplicationServices.createPageStructureService();
-
-        expect(mockLogger.setLevel).toHaveBeenCalledWith('info');
-        expect(mockContainer.resolve).toHaveBeenCalledWith(
-          APPLICATION_SERVICE_NAMES.PAGE_STRUCTURE,
         );
         expect(result).toBe(mockService);
       });
