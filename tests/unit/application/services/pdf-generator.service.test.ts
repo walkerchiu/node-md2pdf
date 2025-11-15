@@ -917,4 +917,158 @@ describe('PDFGeneratorService', () => {
       expect(typeof serviceLogger.error).toBe('function');
     });
   });
+
+  describe('removeDeepHeadingIds - Bookmark Depth Fix', () => {
+    beforeEach(async () => {
+      await service.initialize();
+    });
+
+    it('should convert headings exceeding maxDepth to div elements', () => {
+      const html = `
+        <h1 id="h1-title">H1 Title</h1>
+        <h2 id="h2-section">H2 Section</h2>
+        <h3 id="h3-subsection">H3 Subsection</h3>
+        <h4 id="h4-deep">H4 Deep</h4>
+        <h5 id="h5-deeper">H5 Deeper</h5>
+        <h6 id="h6-deepest">H6 Deepest</h6>
+      `;
+
+      const result = (service as any).removeDeepHeadingIds(html, 3);
+
+      // H1-H3 should remain as heading tags
+      expect(result).toMatch(/<h1[^>]*id="h1-title"[^>]*>H1 Title<\/h1>/);
+      expect(result).toMatch(/<h2[^>]*id="h2-section"[^>]*>H2 Section<\/h2>/);
+      expect(result).toMatch(
+        /<h3[^>]*id="h3-subsection"[^>]*>H3 Subsection<\/h3>/,
+      );
+
+      // H4-H6 should be converted to div elements
+      expect(result).toMatch(/<div[^>]*>H4 Deep<\/div>/);
+      expect(result).toMatch(/<div[^>]*>H5 Deeper<\/div>/);
+      expect(result).toMatch(/<div[^>]*>H6 Deepest<\/div>/);
+
+      // Deep headings should NOT have h4, h5, h6 tags
+      expect(result).not.toMatch(/<h4[^>]*>/);
+      expect(result).not.toMatch(/<h5[^>]*>/);
+      expect(result).not.toMatch(/<h6[^>]*>/);
+
+      // Deep headings should NOT have id attributes in their div tags
+      expect(result).not.toMatch(/<div[^>]*id="h4-deep"/);
+      expect(result).not.toMatch(/<div[^>]*id="h5-deeper"/);
+      expect(result).not.toMatch(/<div[^>]*id="h6-deepest"/);
+    });
+
+    it('should preserve all headings when maxDepth is 6', () => {
+      const html = `
+        <h1 id="h1">H1</h1>
+        <h2 id="h2">H2</h2>
+        <h3 id="h3">H3</h3>
+        <h4 id="h4">H4</h4>
+        <h5 id="h5">H5</h5>
+        <h6 id="h6">H6</h6>
+      `;
+
+      const result = (service as any).removeDeepHeadingIds(html, 6);
+
+      // All headings should remain unchanged
+      expect(result).toMatch(/<h1[^>]*id="h1"[^>]*>H1<\/h1>/);
+      expect(result).toMatch(/<h2[^>]*id="h2"[^>]*>H2<\/h2>/);
+      expect(result).toMatch(/<h3[^>]*id="h3"[^>]*>H3<\/h3>/);
+      expect(result).toMatch(/<h4[^>]*id="h4"[^>]*>H4<\/h4>/);
+      expect(result).toMatch(/<h5[^>]*id="h5"[^>]*>H5<\/h5>/);
+      expect(result).toMatch(/<h6[^>]*id="h6"[^>]*>H6<\/h6>/);
+
+      // No div elements should be created
+      expect(result).not.toMatch(/<div[^>]*>H4<\/div>/);
+      expect(result).not.toMatch(/<div[^>]*>H5<\/div>/);
+      expect(result).not.toMatch(/<div[^>]*>H6<\/div>/);
+    });
+
+    it('should convert only H2+ to div when maxDepth is 1', () => {
+      const html = `
+        <h1 id="h1">H1</h1>
+        <h2 id="h2">H2</h2>
+        <h3 id="h3">H3</h3>
+      `;
+
+      const result = (service as any).removeDeepHeadingIds(html, 1);
+
+      // Only H1 should remain as heading
+      expect(result).toMatch(/<h1[^>]*id="h1"[^>]*>H1<\/h1>/);
+
+      // H2 and H3 should be converted to divs
+      expect(result).toMatch(/<div[^>]*>H2<\/div>/);
+      expect(result).toMatch(/<div[^>]*>H3<\/div>/);
+      expect(result).not.toMatch(/<h2[^>]*>/);
+      expect(result).not.toMatch(/<h3[^>]*>/);
+    });
+
+    it('should handle headings without id attributes', () => {
+      const html = `
+        <h1>H1 No ID</h1>
+        <h2>H2 No ID</h2>
+        <h3>H3 No ID</h3>
+        <h4>H4 No ID</h4>
+      `;
+
+      const result = (service as any).removeDeepHeadingIds(html, 3);
+
+      // H1-H3 should remain
+      expect(result).toMatch(/<h1[^>]*>H1 No ID<\/h1>/);
+      expect(result).toMatch(/<h2[^>]*>H2 No ID<\/h2>/);
+      expect(result).toMatch(/<h3[^>]*>H3 No ID<\/h3>/);
+
+      // H4 should be converted
+      expect(result).toMatch(/<div[^>]*>H4 No ID<\/div>/);
+      expect(result).not.toMatch(/<h4[^>]*>/);
+    });
+
+    it('should preserve heading classes and convert them to div', () => {
+      const html = `
+        <h4 id="h4" class="custom-class another-class">H4 With Classes</h4>
+      `;
+
+      const result = (service as any).removeDeepHeadingIds(html, 3);
+
+      // Should be converted to div with preserved classes
+      expect(result).toMatch(
+        /<div[^>]*class="custom-class another-class"[^>]*>H4 With Classes<\/div>/,
+      );
+      expect(result).not.toMatch(/<h4[^>]*>/);
+      expect(result).not.toMatch(/id="h4"/);
+    });
+
+    it('should add styling to converted div elements', () => {
+      const html = `<h4 id="h4">H4</h4>`;
+
+      const result = (service as any).removeDeepHeadingIds(html, 3);
+
+      // Should have inline styles for visual consistency
+      expect(result).toMatch(/style="/);
+      expect(result).toMatch(/font-weight:\s*bold/);
+      expect(result).toMatch(/margin-top:/);
+      expect(result).toMatch(/margin-bottom:/);
+      expect(result).toMatch(/font-size:/);
+    });
+
+    it('should handle complex HTML with nested content', () => {
+      const html = `
+        <h1 id="main">Main <strong>Title</strong></h1>
+        <h2 id="sub">Sub <em>Section</em></h2>
+        <h4 id="deep">Deep <a href="#">Link</a> Section</h4>
+      `;
+
+      const result = (service as any).removeDeepHeadingIds(html, 2);
+
+      // H1 and H2 preserved with nested content
+      expect(result).toMatch(/<h1[^>]*>Main <strong>Title<\/strong><\/h1>/);
+      expect(result).toMatch(/<h2[^>]*>Sub <em>Section<\/em><\/h2>/);
+
+      // H4 converted but nested content preserved
+      expect(result).toMatch(
+        /<div[^>]*>Deep <a href="#">Link<\/a> Section<\/div>/,
+      );
+      expect(result).not.toMatch(/<h4[^>]*>/);
+    });
+  });
 });

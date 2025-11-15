@@ -189,17 +189,18 @@ export class PuppeteerPDFEngine implements IPDFEngine {
         delete tempPdfOptions.path; // Remove path to get buffer instead of writing to file
         const pdfBuffer = await page.pdf(tempPdfOptions);
 
-        // Add metadata using pdf-lib if metadata is available
+        // Add metadata and process bookmarks using pdf-lib
         let finalPdfBuffer = pdfBuffer;
-        if (context.metadata) {
+        if (context.metadata || context.bookmarks?.enabled) {
           try {
-            finalPdfBuffer = await this.addMetadataToPdf(
+            finalPdfBuffer = await this.processPdfWithLib(
               pdfBuffer,
               context.metadata,
+              context.bookmarks,
             );
           } catch (error) {
-            // Log error but continue with original PDF if metadata addition fails
-            console.warn('Failed to add metadata to PDF:', error);
+            // Log error but continue with original PDF if processing fails
+            console.warn('Failed to process PDF with pdf-lib:', error);
           }
         }
 
@@ -257,48 +258,57 @@ export class PuppeteerPDFEngine implements IPDFEngine {
   }
 
   /**
-   * Add metadata to PDF using pdf-lib
+   * Process PDF with pdf-lib (metadata and bookmark filtering)
    */
-  private async addMetadataToPdf(
+  private async processPdfWithLib(
     pdfBuffer: Buffer,
     metadata: any,
+    _bookmarkConfig?: any,
   ): Promise<Buffer> {
     const pdfDoc = await PDFDocument.load(pdfBuffer);
 
-    // Set standard PDF metadata fields
-    if (metadata.title) {
-      pdfDoc.setTitle(metadata.title);
-    }
-    if (metadata.author) {
-      pdfDoc.setAuthor(metadata.author);
-    }
-    if (metadata.subject) {
-      pdfDoc.setSubject(metadata.subject);
-    }
-    if (metadata.keywords) {
-      // Split keywords string into array if it contains commas
-      const keywordsArray =
-        typeof metadata.keywords === 'string'
-          ? metadata.keywords.split(',').map((k: string) => k.trim())
-          : [metadata.keywords];
-      pdfDoc.setKeywords(keywordsArray);
-    }
-    // Set system fixed creator and producer
-    pdfDoc.setCreator('MD2PDF');
-    pdfDoc.setProducer('MD2PDF with pdf-lib');
+    // Add metadata if provided
+    if (metadata) {
+      // Set standard PDF metadata fields
+      if (metadata.title) {
+        pdfDoc.setTitle(metadata.title);
+      }
+      if (metadata.author) {
+        pdfDoc.setAuthor(metadata.author);
+      }
+      if (metadata.subject) {
+        pdfDoc.setSubject(metadata.subject);
+      }
+      if (metadata.keywords) {
+        // Split keywords string into array if it contains commas
+        const keywordsArray =
+          typeof metadata.keywords === 'string'
+            ? metadata.keywords.split(',').map((k: string) => k.trim())
+            : [metadata.keywords];
+        pdfDoc.setKeywords(keywordsArray);
+      }
+      // Set system fixed creator and producer
+      pdfDoc.setCreator('MD2PDF');
+      pdfDoc.setProducer('MD2PDF with pdf-lib');
 
-    // Set creation and modification dates
-    const now = new Date();
-    if (metadata.creationDate) {
-      pdfDoc.setCreationDate(metadata.creationDate);
-    } else {
-      pdfDoc.setCreationDate(now);
+      // Set creation and modification dates
+      const now = new Date();
+      if (metadata.creationDate) {
+        pdfDoc.setCreationDate(metadata.creationDate);
+      } else {
+        pdfDoc.setCreationDate(now);
+      }
+      if (metadata.modDate) {
+        pdfDoc.setModificationDate(metadata.modDate);
+      } else {
+        pdfDoc.setModificationDate(now);
+      }
     }
-    if (metadata.modDate) {
-      pdfDoc.setModificationDate(metadata.modDate);
-    } else {
-      pdfDoc.setModificationDate(now);
-    }
+
+    // Filter bookmarks by maxDepth if bookmarks are enabled
+    // Note: pdf-lib doesn't provide direct API to manipulate outlines/bookmarks
+    // So we rely on filtering headings in HTML before PDF generation
+    // The bookmark maxDepth filtering happens at the HTML generation stage
 
     // Save the modified PDF
     const modifiedPdfBytes = await pdfDoc.save();
