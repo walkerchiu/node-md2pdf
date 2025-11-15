@@ -427,4 +427,188 @@ describe('BookmarkGenerator', () => {
       expect(result.outline[0].title).toBe('Chapter & Section "1"');
     });
   });
+
+  describe('effectiveMaxDepth - Config Fallback Logic', () => {
+    it('should use config.hierarchy.maxDepth when options.maxDepth is undefined', async () => {
+      const customConfig = {
+        hierarchy: {
+          maxDepth: 2,
+          minLevel: 1,
+          autoExpandLevels: 1,
+        },
+      };
+      const customGenerator = new BookmarkGenerator(undefined, customConfig);
+
+      const tocItems: TOCItemFlat[] = [
+        { title: 'H1', level: 1, anchor: '#h1', index: 0 },
+        { title: 'H2', level: 2, anchor: '#h2', index: 1 },
+        { title: 'H3', level: 3, anchor: '#h3', index: 2 },
+        { title: 'H4', level: 4, anchor: '#h4', index: 3 },
+      ];
+
+      const options: BookmarkOptions = {
+        enabled: true,
+        // maxDepth not specified, should use config.hierarchy.maxDepth (2)
+      };
+
+      const result = await customGenerator.generateFromTOC(
+        tocItems,
+        [],
+        options,
+      );
+
+      // Should only include H1 and H2 (maxDepth = 2 from config)
+      expect(result.bookmarks).toHaveLength(2);
+      expect(result.bookmarks.every((b) => b.level <= 2)).toBe(true);
+      expect(result.metadata.maxDepth).toBe(2);
+    });
+
+    it('should prioritize options.maxDepth over config.hierarchy.maxDepth', async () => {
+      const customConfig = {
+        hierarchy: {
+          maxDepth: 6, // Config default
+          minLevel: 1,
+          autoExpandLevels: 2,
+        },
+      };
+      const customGenerator = new BookmarkGenerator(undefined, customConfig);
+
+      const tocItems: TOCItemFlat[] = [
+        { title: 'H1', level: 1, anchor: '#h1', index: 0 },
+        { title: 'H2', level: 2, anchor: '#h2', index: 1 },
+        { title: 'H3', level: 3, anchor: '#h3', index: 2 },
+        { title: 'H4', level: 4, anchor: '#h4', index: 3 },
+      ];
+
+      const options: BookmarkOptions = {
+        enabled: true,
+        maxDepth: 2, // Explicit option should override config
+      };
+
+      const result = await customGenerator.generateFromTOC(
+        tocItems,
+        [],
+        options,
+      );
+
+      // Should use options.maxDepth (2) instead of config (6)
+      expect(result.bookmarks).toHaveLength(2);
+      expect(result.bookmarks.every((b) => b.level <= 2)).toBe(true);
+    });
+
+    it('should use default maxDepth of 3 from config when not specified', async () => {
+      const defaultGenerator = new BookmarkGenerator(); // Uses DEFAULT_BOOKMARK_CONFIG
+
+      const tocItems: TOCItemFlat[] = [
+        { title: 'H1', level: 1, anchor: '#h1', index: 0 },
+        { title: 'H2', level: 2, anchor: '#h2', index: 1 },
+        { title: 'H3', level: 3, anchor: '#h3', index: 2 },
+        { title: 'H4', level: 4, anchor: '#h4', index: 3 },
+        { title: 'H5', level: 5, anchor: '#h5', index: 4 },
+      ];
+
+      const options: BookmarkOptions = {
+        enabled: true,
+        // maxDepth not specified, should use DEFAULT_BOOKMARK_CONFIG.hierarchy.maxDepth (3)
+      };
+
+      const result = await defaultGenerator.generateFromTOC(
+        tocItems,
+        [],
+        options,
+      );
+
+      // Should use default maxDepth = 3
+      expect(result.bookmarks).toHaveLength(3);
+      expect(result.bookmarks.every((b) => b.level <= 3)).toBe(true);
+    });
+
+    it('should apply effectiveMaxDepth in generateFromHeadings', async () => {
+      const customConfig = {
+        hierarchy: {
+          maxDepth: 2,
+          minLevel: 1,
+          autoExpandLevels: 1,
+        },
+      };
+      const customGenerator = new BookmarkGenerator(undefined, customConfig);
+
+      const headings = [
+        { level: 1, text: 'H1', id: 'h1', anchor: '#h1' },
+        { level: 2, text: 'H2', id: 'h2', anchor: '#h2' },
+        { level: 3, text: 'H3', id: 'h3', anchor: '#h3' },
+        { level: 4, text: 'H4', id: 'h4', anchor: '#h4' },
+      ];
+
+      const options: BookmarkOptions = {
+        enabled: true,
+        // maxDepth not specified, should use config (2)
+      };
+
+      const result = await customGenerator.generateFromHeadings(
+        headings,
+        options,
+      );
+
+      // Should filter to maxDepth = 2 from config
+      expect(result.bookmarks).toHaveLength(2);
+      expect(result.bookmarks.every((b) => b.level <= 2)).toBe(true);
+    });
+
+    it('should handle maxDepth = 0 by using config fallback', async () => {
+      const tocItems: TOCItemFlat[] = [
+        { title: 'H1', level: 1, anchor: '#h1', index: 0 },
+        { title: 'H2', level: 2, anchor: '#h2', index: 1 },
+      ];
+
+      const options: BookmarkOptions = {
+        enabled: true,
+        maxDepth: 0 as any, // Invalid value, should use nullish coalescing
+      };
+
+      const result = await generator.generateFromTOC(tocItems, [], options);
+
+      // maxDepth: 0 is falsy, so should NOT be filtered (0 is valid in the code)
+      // The code uses `options.maxDepth ?? config`, so 0 would be used
+      expect(result.bookmarks).toHaveLength(0); // All filtered out as level > 0
+    });
+  });
+
+  describe('maxDepth consistency with TOC', () => {
+    it('should respect the same maxDepth as TOC for consistent bookmarks', async () => {
+      // This test ensures bookmark depth matches TOC depth
+      const allHeadings: TOCItemFlat[] = [
+        { title: 'H1', level: 1, anchor: '#h1', pageNumber: 1, index: 0 },
+        { title: 'H2', level: 2, anchor: '#h2', pageNumber: 2, index: 1 },
+        { title: 'H3', level: 3, anchor: '#h3', pageNumber: 3, index: 2 },
+        { title: 'H4', level: 4, anchor: '#h4', pageNumber: 4, index: 3 },
+        { title: 'H5', level: 5, anchor: '#h5', pageNumber: 5, index: 4 },
+      ];
+
+      // Simulate TOC with maxDepth = 3
+      const tocMaxDepth = 3;
+      const filteredForTOC = allHeadings.filter((h) => h.level <= tocMaxDepth);
+
+      // Bookmarks should use the same maxDepth
+      const options: BookmarkOptions = {
+        enabled: true,
+        maxDepth: tocMaxDepth,
+      };
+
+      const result = await generator.generateFromTOC(
+        filteredForTOC,
+        [],
+        options,
+      );
+
+      // Bookmarks should match filtered TOC
+      expect(result.bookmarks).toHaveLength(3);
+      expect(result.metadata.maxDepth).toBe(3);
+      expect(result.bookmarks.every((b) => b.level <= 3)).toBe(true);
+
+      // Verify no H4 or H5 in bookmarks
+      expect(result.bookmarks.find((b) => b.level === 4)).toBeUndefined();
+      expect(result.bookmarks.find((b) => b.level === 5)).toBeUndefined();
+    });
+  });
 });

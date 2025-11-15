@@ -594,10 +594,22 @@ export class PDFGeneratorService implements IPDFGeneratorService {
       false;
 
     // Inject CSS @page rules for header/footer
-    const enhancedHtmlContent = this.injectCSSPageRules(
+    let enhancedHtmlContent = this.injectCSSPageRules(
       enhancedContent.html,
       options,
       includePageNumbers,
+    );
+
+    // Remove IDs from headings that exceed TOC/bookmark maxDepth to prevent Puppeteer
+    // from generating bookmarks for them (Puppeteer auto-generates bookmarks for all headings with IDs)
+    const effectiveMaxDepth =
+      options.tocOptions?.maxDepth || options.bookmarkOptions?.maxDepth || 3;
+    this.logger.debug(
+      `Removing IDs from headings deeper than level ${effectiveMaxDepth}`,
+    );
+    enhancedHtmlContent = this.removeDeepHeadingIds(
+      enhancedHtmlContent,
+      effectiveMaxDepth,
     );
 
     // Generate bookmarks if enabled
@@ -610,15 +622,23 @@ export class PDFGeneratorService implements IPDFGeneratorService {
         const headingsToUse =
           options.headings || this.extractHeadingsFromHTML(enhancedHtmlContent);
 
+        // Ensure bookmark maxDepth matches TOC maxDepth for consistency
+        const tocMaxDepth = options.tocOptions?.maxDepth || 3;
+        const bookmarkMaxDepth =
+          options.bookmarkOptions.maxDepth ?? tocMaxDepth;
+
         // Generate bookmarks from headings
         const result = await bookmarkGenerator.generateFromHeadings(
           headingsToUse,
-          options.bookmarkOptions,
+          {
+            ...options.bookmarkOptions,
+            maxDepth: bookmarkMaxDepth,
+          },
         );
 
         bookmarkData = {
           enabled: true,
-          maxDepth: options.bookmarkOptions.maxDepth || 3,
+          maxDepth: bookmarkMaxDepth,
           includePageNumbers:
             options.bookmarkOptions.includePageNumbers || false,
           useExistingTOC: options.bookmarkOptions.useExistingTOC || false,
@@ -831,6 +851,13 @@ export class PDFGeneratorService implements IPDFGeneratorService {
       enhancedHtml = renderingResult.html;
       pageNumbers = renderingResult.pageNumbers?.headingPages || {};
 
+      // Remove IDs from headings deeper than maxDepth
+      const effectiveMaxDepth = options.tocOptions?.maxDepth || 3;
+      this.logger.debug(
+        `Two-stage: Removing IDs from headings deeper than level ${effectiveMaxDepth}`,
+      );
+      enhancedHtml = this.removeDeepHeadingIds(enhancedHtml, effectiveMaxDepth);
+
       // Add TOC feature if generated
       if (
         context.tocOptions?.enabled &&
@@ -868,6 +895,32 @@ export class PDFGeneratorService implements IPDFGeneratorService {
       pageNumbers,
       features,
     };
+  }
+
+  /**
+   * Convert deep headings to div elements to prevent Puppeteer from generating bookmarks
+   * Puppeteer's outline:true generates bookmarks for ALL h1-h6 tags regardless of ID
+   */
+  private removeDeepHeadingIds(html: string, maxDepth: number): string {
+    // Match ALL heading tags (with or without id) and convert deep ones to divs
+    return html.replace(
+      /<h([1-6])([^>]*?)>(.*?)<\/h\1>/gi,
+      (match, level, attributes, content) => {
+        const headingLevel = parseInt(level, 10);
+        // If heading level exceeds maxDepth, convert to styled div
+        if (headingLevel > maxDepth) {
+          // Preserve styling but remove id to prevent bookmark generation
+          const cleanAttributes = attributes.replace(/\s*id="[^"]*"/gi, '');
+          // Add heading class for styling
+          const styleClass = cleanAttributes.includes('class=')
+            ? cleanAttributes
+            : cleanAttributes + ` class="heading-level-${level}"`;
+          return `<div${styleClass} style="font-weight: bold; margin-top: 1em; margin-bottom: 0.5em; font-size: ${1.5 - level * 0.1}em;">${content}</div>`;
+        }
+        // Keep headings within maxDepth as-is
+        return match;
+      },
+    );
   }
 
   /**

@@ -30,7 +30,7 @@ const DEFAULT_BOOKMARK_CONFIG: BookmarkGeneratorConfig = {
     retryAttempts: 3,
   },
   hierarchy: {
-    maxDepth: 6,
+    maxDepth: 3,
     minLevel: 1,
     autoExpandLevels: 2,
   },
@@ -105,7 +105,9 @@ export class BookmarkGenerator {
       const bookmarks = this.convertTOCItemsToBookmarks(tocItems, options);
 
       // Build hierarchical structure
-      const tree = this.buildBookmarkTree(bookmarks, options.maxDepth || 6);
+      const effectiveMaxDepth =
+        options.maxDepth ?? this.config.hierarchy.maxDepth;
+      const tree = this.buildBookmarkTree(bookmarks, effectiveMaxDepth);
 
       // Generate PDF outline
       const outline = this.generatePDFOutline(tree, options);
@@ -162,15 +164,19 @@ export class BookmarkGenerator {
     });
 
     try {
+      // Use configured maxDepth or fallback to hierarchy config default
+      const effectiveMaxDepth =
+        options.maxDepth ?? this.config.hierarchy.maxDepth;
+
       // Convert headings to bookmark items
       const bookmarks = headings
-        .filter((h) => h.level <= (options.maxDepth || 6))
+        .filter((h) => h.level <= effectiveMaxDepth)
         .map((heading, index) =>
           this.createBookmarkFromHeading(heading, index),
         );
 
       // Build hierarchical structure
-      const tree = this.buildBookmarkTree(bookmarks, options.maxDepth || 6);
+      const tree = this.buildBookmarkTree(bookmarks, effectiveMaxDepth);
 
       // Generate PDF outline
       const outline = this.generatePDFOutline(tree, options);
@@ -214,8 +220,11 @@ export class BookmarkGenerator {
     tocItems: TOCItemFlat[],
     options: BookmarkOptions,
   ): BookmarkItem[] {
+    const effectiveMaxDepth =
+      options.maxDepth ?? this.config.hierarchy.maxDepth;
+
     return tocItems
-      .filter((item) => item.level <= (options.maxDepth || 6))
+      .filter((item) => item.level <= effectiveMaxDepth)
       .map((item, index) => ({
         title: item.title,
         level: item.level,

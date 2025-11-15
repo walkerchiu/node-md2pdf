@@ -59,6 +59,8 @@ export class MarkdownParser {
 
   /**
    * Configure markdown-it plugins
+   * Note: Anchors are added for all heading levels here.
+   * The actual depth limiting for TOC and bookmarks happens during rendering.
    */
   private configurePlugins(): void {
     // Add anchor plugin for heading anchors
