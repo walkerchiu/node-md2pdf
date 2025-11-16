@@ -337,34 +337,6 @@ export const enTranslations: TranslationKey = {
     selectTocDepth: 'Please select table of contents depth:',
     tocReturnLinksLevel: 'Select section range for return-to-TOC anchor links:',
     includePageNumbers: 'Include page numbers?',
-    // PDF Bookmarks
-    enablePdfBookmarks: '🔖 Enable PDF navigation bookmarks?',
-    bookmarkMaxDepth: 'Select maximum bookmark depth:',
-    bookmarkDepthOptions: {
-      1: 'H1 headings only',
-      2: 'H1-H2 headings',
-      3: 'H1-H3 headings (Recommended)',
-      4: 'H1-H4 headings',
-      5: 'H1-H5 headings',
-      6: 'All heading levels (H1-H6)',
-    },
-    bookmarkIncludePageNumbers: 'Include page numbers in bookmarks?',
-    bookmarkUseExistingTOC:
-      'Use existing table of contents data for bookmarks?',
-    bookmarkSummaryEnabled: 'PDF bookmarks enabled',
-    bookmarkSummaryDepth: 'depth H{{depth}}',
-    bookmarkSummaryWithPageNumbers: 'with page numbers',
-    bookmarkSummaryUseTOC: 'using TOC data',
-    bookmarkDisabled: 'Disabled',
-    bookmarkDepthShort: 'H{{depth}}',
-    withPageNumbers: 'with page numbers',
-    withoutPageNumbers: 'without page numbers',
-    bookmarkWarningNoTOC:
-      'Warning: TOC data not available, bookmarks will be generated from document headings',
-    bookmarkWarningPageNumbers:
-      'Warning: Page numbers may not be accurate without TOC data',
-    bookmarkWarningDeepHierarchy:
-      'Note: Deep bookmark hierarchy may affect PDF reader performance',
     conversionSummary: '📄 Conversion Configuration Summary:',
     inputFile: 'Input file:',
     outputFile: 'Output file:',
