@@ -22,6 +22,8 @@ jest.mock('chalk', () => ({
     yellow: jest.fn((text: string) => text),
     green: jest.fn((text: string) => text),
     gray: jest.fn((text: string) => text),
+    blue: jest.fn((text: string) => text),
+    magenta: jest.fn((text: string) => text),
     bold: jest.fn((text: string) => text),
   },
   cyan: jest.fn((text: string) => text),
@@ -29,6 +31,8 @@ jest.mock('chalk', () => ({
   yellow: jest.fn((text: string) => text),
   green: jest.fn((text: string) => text),
   gray: jest.fn((text: string) => text),
+  blue: jest.fn((text: string) => text),
+  magenta: jest.fn((text: string) => text),
   bold: jest.fn((text: string) => text),
 }));
 
@@ -173,6 +177,27 @@ describe('InteractiveMode', () => {
       getConfig: jest.fn(() => ({ ...defaultConfig })),
       updateConfig: jest.fn(),
     });
+
+    const mockMarkdownParserService = {
+      parseMarkdown: jest.fn(),
+      parseMarkdownFile: jest.fn(),
+      extractHeadings: jest.fn(),
+      validateMarkdown: jest.fn(),
+      resetParser: jest.fn(),
+    };
+
+    container.registerInstance('markdownParser', mockMarkdownParserService);
+
+    const mockTemplateStorage = {
+      getAllTemplates: jest.fn(() =>
+        Promise.resolve({ system: [], custom: [] }),
+      ),
+      read: jest.fn(() => Promise.resolve(null)),
+      list: jest.fn(() => Promise.resolve([])),
+      count: jest.fn(() => Promise.resolve(0)),
+    };
+
+    container.registerInstance('templateStorage', mockTemplateStorage as any);
 
     interactiveMode = new InteractiveMode(container);
   });
@@ -989,10 +1014,10 @@ describe('InteractiveMode', () => {
         expect.objectContaining({
           pdfOptions: expect.objectContaining({
             margin: {
-              top: '0.75in',
-              right: '0.75in',
-              bottom: '0.75in',
-              left: '0.75in',
+              top: '2cm',
+              right: '2cm',
+              bottom: '2cm',
+              left: '2cm',
             },
             printBackground: true,
           }),
@@ -1047,6 +1072,51 @@ describe('InteractiveMode', () => {
       // Verify cancellation flow - debug messages are not shown in non-verbose mode
       expect(consoleWarnSpy).toHaveBeenCalledWith('⚠️ interactive.cancelled');
       expect(mockFileProcessorService.processFile).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('Utility Methods', () => {
+    describe('formatBytes', () => {
+      it('should format zero bytes', () => {
+        const result = (interactiveMode as any).formatBytes(0);
+        expect(result).toBe('0 interactive.bytes');
+      });
+
+      it('should format bytes', () => {
+        const result = (interactiveMode as any).formatBytes(500);
+        expect(result).toContain('500');
+        expect(result).toContain('interactive.bytes');
+      });
+
+      it('should format kilobytes', () => {
+        const result = (interactiveMode as any).formatBytes(1024);
+        expect(result).toContain('1');
+        expect(result).toContain('interactive.kb');
+      });
+
+      it('should format megabytes', () => {
+        const result = (interactiveMode as any).formatBytes(1048576);
+        expect(result).toContain('1');
+        expect(result).toContain('interactive.mb');
+      });
+
+      it('should format gigabytes', () => {
+        const result = (interactiveMode as any).formatBytes(1073741824);
+        expect(result).toContain('1');
+        expect(result).toContain('interactive.gb');
+      });
+
+      it('should round to 2 decimal places', () => {
+        const result = (interactiveMode as any).formatBytes(1536); // 1.5 KB
+        expect(result).toContain('1.5');
+        expect(result).toContain('interactive.kb');
+      });
+
+      it('should handle large decimal values', () => {
+        const result = (interactiveMode as any).formatBytes(1536000); // ~1.46 MB
+        expect(result).toMatch(/1\.4[0-9]/); // Should be around 1.46
+        expect(result).toContain('interactive.mb');
+      });
     });
   });
 });

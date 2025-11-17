@@ -351,10 +351,15 @@ export class PDFGeneratorService implements IPDFGeneratorService {
           // customMessage: undefined, // Can be extended later
         } as HeaderFooterContext;
 
-        // Generate CSS using the new HeaderFooterGenerator
+        // Get current margins from ConfigManager
+        const pdfConfig = this.configManager.get('pdf', {}) as any;
+        const margins = pdfConfig.margin;
+
+        // Generate CSS using the new HeaderFooterGenerator with current margins
         cssPageRules = this.headerFooterGenerator.generateCSSPageRules(
           headersFootersConfig,
           context,
+          margins,
         );
       } else if (includePageNumbers) {
         this.logger.debug('Falling back to legacy includePageNumbers mode');
@@ -372,10 +377,15 @@ export class PDFGeneratorService implements IPDFGeneratorService {
           currentDate: new Date(),
         } as HeaderFooterContext;
 
+        // Get current margins from ConfigManager
+        const pdfConfig = this.configManager.get('pdf', {}) as any;
+        const margins = pdfConfig.margin;
+
         cssPageRules = this.headerFooterGenerator.generateBackwardCompatibleCSS(
           includePageNumbers,
           documentTitle,
           context,
+          margins,
         );
       } else {
         this.logger.debug(
@@ -666,6 +676,13 @@ export class PDFGeneratorService implements IPDFGeneratorService {
       }
     }
 
+    // Get syntax highlighting theme from config
+    const syntaxHighlightingTheme =
+      (this.configManager.get('syntaxHighlighting.theme') as string) ||
+      'default';
+
+    this.logger.info(`Syntax highlighting theme: ${syntaxHighlightingTheme}`);
+
     // Build generation context
     const context: PDFGenerationContext = {
       htmlContent: enhancedHtmlContent,
@@ -673,6 +690,7 @@ export class PDFGeneratorService implements IPDFGeneratorService {
       title: options.title || '',
       customCSS: options.customCSS || '',
       enableChineseSupport: options.enableChineseSupport || false,
+      syntaxHighlightingTheme,
       ...(options.metadata && { metadata: options.metadata }),
       toc: options.tocOptions || {
         enabled: false,
@@ -818,6 +836,15 @@ export class PDFGeneratorService implements IPDFGeneratorService {
         this.configManager,
       );
 
+      // Get syntax highlighting theme from config
+      const syntaxTheme =
+        (this.configManager.get('syntaxHighlighting.theme') as string) ||
+        'default';
+
+      // Get current margins from ConfigManager for TOC page number calculation
+      const pdfConfig = this.configManager.get('pdf', {}) as any;
+      const currentMargins = pdfConfig.margin;
+
       // Prepare processing context
       const context: ProcessingContext = {
         headings: options.headings || [],
@@ -828,7 +855,9 @@ export class PDFGeneratorService implements IPDFGeneratorService {
         },
         pdfOptions: {
           includePageNumbers: options.tocOptions?.includePageNumbers || false,
+          margins: currentMargins, // Pass margins for TOC page number calculation
         },
+        syntaxHighlightingTheme: syntaxTheme,
         isPreRendering: false,
         logger: this.logger,
         ...(options.documentLanguage && {
@@ -840,6 +869,7 @@ export class PDFGeneratorService implements IPDFGeneratorService {
         headingsCount: context.headings?.length || 0,
         tocEnabled: context.tocOptions?.enabled,
         includePageNumbers: context.tocOptions?.includePageNumbers,
+        margins: currentMargins,
       });
 
       // Perform actual two-stage rendering

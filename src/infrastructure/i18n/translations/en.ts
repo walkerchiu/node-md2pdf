@@ -253,24 +253,26 @@ export const enTranslations: TranslationKey = {
     browseOtherFiles: '🔍 Browse for other files...',
     recentFilesError: '⚠️  Error loading recent files, using file browser',
     analysisResults: '📊 Content Analysis Results',
-    words: '📄 Words',
-    readingTime: '⏱️  Reading time',
+    words: 'Words',
+    readingTime: 'Reading time',
     minutes: 'minutes',
-    headings: '📝 Headings',
+    headings: 'Headings',
     maxDepth: 'max depth',
-    language: '🌐 Language',
-    codeBlocks: '💻 Code blocks',
-    tables: '📊 Tables',
-    images: '🖼️  Images',
-    documentType: '🤖 Document type',
-    complexity: '📈 Complexity',
-    contentCharacteristics: '📊 Content characteristics',
+    language: 'Language',
+    codeBlocks: 'Code blocks',
+    tables: 'Tables',
+    images: 'Images',
+    documentType: 'Document type',
+    complexity: 'Complexity',
+    contentCharacteristics: 'Content characteristics',
     conversionOptions: '🎛️  Available Conversion Options:',
     quickConversion: 'Quick Conversion',
     smartRecommendations: 'Smart Recommendations (Recommended)',
-    chooseFromPresets: 'Choose from Presets',
+    chooseFromPresets: 'Choose from System Presets',
+    useSavedTemplate: 'Use Custom Template',
+    chooseFromTemplates: 'Choose from {{count}} custom template(s)',
     customConfiguration: 'Custom configuration',
-    predefinedConfigurations: 'Select from predefined configurations',
+    predefinedConfigurations: 'System preset templates',
     confidence: 'confidence',
     estimatedTime: 'Estimated time',
     seconds: 'seconds',
@@ -301,10 +303,16 @@ export const enTranslations: TranslationKey = {
     whatToDo: 'What would you like to do?',
     tryDifferentPath: '✏️  Try entering a different file path',
     returnToPrevious: '↩️  Return to previous menu',
+    wordsLabel: 'words',
+    headingsLabel: 'headings',
+    pageNumbersLabel: 'Page Numbers',
+    smartConfigApplied: 'Smart Configuration Applied:',
+    tableOfContents: 'Table of Contents',
+    levels: 'levels',
     // Language display
     languageDisplay: {
-      en: '🇺🇸 English',
-      'zh-TW': '🇹🇼 Traditional Chinese',
+      en: '🇺🇸  English',
+      'zh-TW': '🇹🇼  Traditional Chinese',
     },
     // Document type display
     documentTypeDisplay: {
@@ -337,6 +345,8 @@ export const enTranslations: TranslationKey = {
     selectTocDepth: 'Please select table of contents depth:',
     tocReturnLinksLevel: 'Select section range for return-to-TOC anchor links:',
     includePageNumbers: 'Include page numbers?',
+    yes: 'Yes',
+    no: 'No',
     conversionSummary: '📄 Conversion Configuration Summary:',
     inputFile: 'Input file:',
     outputFile: 'Output file:',
@@ -366,6 +376,14 @@ export const enTranslations: TranslationKey = {
     headingsFound: 'Headings found:',
     conversionFailed: '❌ Conversion failed!',
     interactiveModeError: '❌ Interactive mode error:',
+    usingTemplate: 'Using Template',
+    templateConfig: 'Template Configuration',
+    usingDefaultConfig: 'Using Default Configuration',
+    defaultConfigNote: 'No template selected (Using system defaults).',
+    margins: 'Margins',
+    fonts: 'Fonts',
+    pageFormat: 'Page Format',
+    codeBlockTheme: 'Code Block Theme',
   },
 
   // Customization mode messages
@@ -521,6 +539,130 @@ export const enTranslations: TranslationKey = {
     },
   },
 
+  // Template Management
+  templates: {
+    // Basic information
+    basicInfo: {
+      title: 'Template Management',
+      subtitle: 'Manage conversion templates and presets',
+      description:
+        'Templates are snapshots of your current configuration including page format (A4, Letter, etc.), margins, headers/footers, table of contents settings, and document properties.\nTo modify a template, adjust your system settings and create a new template to preserve your preferred configuration for future use.',
+      createTitle: '📝 Create New Template',
+    },
+
+    // Menu options
+    menu: {
+      viewAll: 'View All Templates',
+      create: 'Create New Template',
+      edit: 'Edit Template',
+      delete: 'Delete Custom Template',
+      import: 'Import Custom Template',
+      export: 'Export Custom Template',
+      apply: 'Apply Template',
+    },
+
+    // Prompts
+    prompts: {
+      selectOption: 'Select template option',
+      selectTemplate: 'Select a template:',
+      selectTemplateForConversion: 'Select a template for conversion:',
+      skipTemplate: 'Skip (Use custom settings)',
+      adjustSettings: 'Adjust template settings?',
+      selectTocDepth: 'Select TOC depth:',
+      includePageNumbers: 'Include page numbers?',
+      templateName: 'Template name:',
+      description: 'Description:',
+      category: 'Category:',
+      tags: 'Tags (comma-separated):',
+      selectTemplateToEdit: 'Select template to edit:',
+      selectTemplateToDelete: 'Select template to delete:',
+      selectTemplateToExport: 'Select template to export:',
+      selectTemplateToApply: 'Select template to apply:',
+      confirmDelete: 'Are you sure you want to delete this template?',
+      updateConfigFromCurrent: 'Update template config from current settings?',
+      enterJsonPath: 'Enter path to JSON file:',
+      outputFilePath: 'Output file path:',
+    },
+
+    // Messages
+    messages: {
+      noTemplatesFound: 'No templates found',
+      noTemplates: 'No templates available',
+      noCustomTemplates: 'No custom templates to {{action}}',
+      templateCreated: 'Template created successfully',
+      templateUpdated: 'Template updated successfully',
+      templateDeleted: 'Template deleted successfully',
+      templateImported: 'Template imported successfully',
+      templateExported: 'Template exported successfully',
+      templateApplied: 'Template applied successfully',
+      usingTemplate: 'Using template',
+      cannotDeleteSystem: 'System templates cannot be deleted',
+      cannotEditSystem: 'System templates cannot be edited',
+      templateNotFound: 'Template not found',
+      invalidTemplateData: 'Invalid template data',
+      exportCancelled: 'Export cancelled',
+      deleteCancelled: 'Deletion cancelled',
+      validationFailed: 'Template validation failed:',
+      error: 'Error {{action}} template:',
+      errorCreating: 'Error creating template:',
+      errorLoadingTemplates: 'Error loading templates',
+    },
+
+    // Validation messages
+    validation: {
+      nameRequired: 'Name is required',
+      nameExists: 'A template with this name already exists',
+      descriptionRequired: 'Description is required',
+      fileNotExist: 'File does not exist',
+      mustBeJsonFile: 'File must be a JSON file',
+      failed: 'Template validation failed:',
+      errors: {
+        idRequired: 'Template ID is required and must be a string',
+        nameRequiredString: 'Template name is required and must be a string',
+        descriptionRequiredString:
+          'Template description is required and must be a string',
+        typeInvalid: 'Template type must be either "system" or "custom"',
+      },
+    },
+
+    // Template types
+    types: {
+      system: 'System',
+      custom: 'Custom',
+    },
+
+    // View templates
+    view: {
+      systemTemplates: 'System Templates:',
+      customTemplates: 'Custom Templates:',
+      noSystemTemplates: 'No system templates found',
+      noCustomTemplates: 'No custom templates found',
+      config: {
+        pageFormat: 'Page Format',
+        margins: 'Margins',
+        top: 'Top',
+        right: 'Right',
+        bottom: 'Bottom',
+        left: 'Left',
+        header: 'Header',
+        footer: 'Footer',
+        toc: 'Table of Contents',
+        tocDepth: 'TOC Depth',
+        anchorLinks: 'Anchor Links',
+        anchorDepth: 'Anchor Depth',
+        depth: 'Depth',
+        pageNumbers: 'Page Numbers',
+        fonts: 'Fonts',
+        bodyFont: 'Body Font',
+        headingFont: 'Heading Font',
+        codeFont: 'Code Font',
+        codeBlockTheme: 'Code Block Theme',
+        colors: 'Colors',
+        documentMetadata: 'Document Metadata',
+      },
+    },
+  },
+
   // Batch Processing Mode
   batch: {
     title: '📚 Batch Processing',
@@ -606,6 +748,9 @@ export const enTranslations: TranslationKey = {
     retryError: '❌ Retry failed:',
     batchModeError: '❌ Batch mode error:',
     andMoreFiles: '... and {{count}} more files',
+    yes: 'Yes',
+    no: 'No',
+    preserveStructure: 'Preserve directory structure: {{preserve}}',
   },
 
   // File Browser
@@ -769,6 +914,18 @@ export const enTranslations: TranslationKey = {
   pdfContent: {
     tocTitle: 'Table of Contents',
     pageNumber: 'Page {{page}} of {{totalPages}}',
+  },
+
+  // Content analysis
+  analysis: {
+    complexity: {
+      codeHeavy: 'Contains {{lines}} lines of code across {{blocks}} blocks',
+      tableHeavy: 'Contains {{count}} complex tables',
+      mediaRich: 'Contains {{count}} images',
+      mediaRichWithDiagrams: 'Contains {{count}} images and diagrams',
+      deepHeadingStructure:
+        'Deep heading structure ({{depth}} levels, {{count}} headings)',
+    },
   },
 
   // Error messages
@@ -949,6 +1106,7 @@ export const enTranslations: TranslationKey = {
 
     // Document field names (shared across metadata, headers/footers, etc.)
     fields: {
+      name: 'Name',
       title: 'Title',
       author: 'Author',
       subject: 'Subject',
@@ -1002,6 +1160,15 @@ export const enTranslations: TranslationKey = {
       6: '6 levels (# through ######)',
     },
 
+    // TOC depths for template adjustment
+    tocDepths: {
+      2: '2 levels (# through ##)',
+      3: '3 levels (# through ###)',
+      4: '4 levels (# through ####)',
+      5: '5 levels (# through #####)',
+      6: '6 levels (# through ######)',
+    },
+
     // TOC return links levels (shared across all modes)
     tocReturnLinksLevels: {
       0: 'None',
@@ -1031,6 +1198,7 @@ export const enTranslations: TranslationKey = {
     // Menu navigation patterns (shared across all menus)
     menu: {
       returnToMain: 'Return to Main Menu',
+      returnToCustomization: 'Return to Customization Menu',
       returnToPrevious: 'Return to previous menu',
       selectOption: 'Select option',
       selectConfigOption: 'Select configuration option',
@@ -1087,5 +1255,38 @@ export const enTranslations: TranslationKey = {
   // Anchor links
   anchorLinks: {
     backToToc: '↑ Back to TOC',
+  },
+
+  // Preset configurations
+  presets: {
+    quickSimple: {
+      name: 'Quick & Simple',
+      description:
+        'Ideal for drafts requiring quick output without complex formatting',
+      useCase: 'Simple documents, quick conversion',
+    },
+    business: {
+      name: 'Business Report',
+      description:
+        'Suitable for formal business contexts requiring professional appearance',
+      useCase: 'Business reports, proposals, meeting documents',
+    },
+    technical: {
+      name: 'Technical Documentation',
+      description:
+        'Designed for documents with extensive code and detailed table of contents',
+      useCase: 'API documentation, technical manuals, developer docs',
+    },
+    academic: {
+      name: 'Academic Paper',
+      description:
+        'Formatted for formal papers meeting academic standards with wider margins',
+      useCase: 'Academic papers, research reports, thesis',
+    },
+    custom: {
+      name: 'Custom',
+      description: 'Custom template category',
+      useCase: 'Custom use case',
+    },
   },
 };

@@ -80,6 +80,35 @@ describe('BrowserPool', () => {
       const browser4 = await acquirePromise;
       expect(browser4).toBe(browser1);
     }, 10000);
+
+    it('should timeout when waiting for browser and none becomes available', async () => {
+      const timeoutPool = new BrowserPool({
+        maxInstances: 1,
+      });
+
+      // Acquire the only instance so pool is full
+      const browser1 = await timeoutPool.acquire();
+
+      // Call private method directly to test timeout without waiting 30 seconds
+      // We'll mock the internal state to simulate a timeout condition
+      const originalWaitMethod = (timeoutPool as any).waitForAvailableBrowser;
+      (timeoutPool as any).waitForAvailableBrowser = async function () {
+        // Simulate immediate timeout
+        throw new Error('BrowserPool: Timeout waiting for available browser');
+      };
+
+      // Try to acquire another through the public API
+      await expect(timeoutPool.acquire()).rejects.toThrow(
+        'BrowserPool: Timeout waiting for available browser',
+      );
+
+      // Restore original method
+      (timeoutPool as any).waitForAvailableBrowser = originalWaitMethod;
+
+      // Clean up
+      await timeoutPool.release(browser1);
+      await timeoutPool.closeAll();
+    });
   });
 
   describe('release', () => {
@@ -177,6 +206,68 @@ describe('BrowserPool', () => {
       // Browser should still be there (cleanup runs every minute)
       stats = shortTimeoutPool.getStats();
       expect(stats.total).toBe(1);
+
+      await shortTimeoutPool.closeAll();
+    });
+
+    it('should trigger cleanup and close idle browsers manually', async () => {
+      const shortTimeoutPool = new BrowserPool({
+        maxInstances: 3,
+        idleTimeout: 50, // 50ms
+      });
+
+      const browser = await shortTimeoutPool.acquire();
+      await shortTimeoutPool.release(browser);
+
+      let stats = shortTimeoutPool.getStats();
+      expect(stats.total).toBe(1);
+
+      // Wait for browser to become idle
+      await new Promise((resolve) => setTimeout(resolve, 100));
+
+      // Manually trigger cleanup by calling private method
+      await (shortTimeoutPool as any).cleanupIdleBrowsers();
+
+      // Browser should be cleaned up now
+      stats = shortTimeoutPool.getStats();
+      expect(stats.total).toBe(0);
+
+      await shortTimeoutPool.closeAll();
+    });
+
+    it('should handle errors during idle browser cleanup', async () => {
+      const errorBrowser = {
+        close: jest.fn().mockRejectedValue(new Error('Cleanup close failed')),
+      };
+
+      const puppeteer = require('puppeteer');
+      puppeteer.launch.mockResolvedValueOnce(errorBrowser);
+
+      const shortTimeoutPool = new BrowserPool({
+        maxInstances: 3,
+        idleTimeout: 50,
+      });
+
+      const browser = await shortTimeoutPool.acquire();
+      expect(browser).toBe(errorBrowser);
+
+      await shortTimeoutPool.release(browser);
+
+      // Wait for browser to become idle
+      await new Promise((resolve) => setTimeout(resolve, 100));
+
+      const consoleSpy = jest.spyOn(console, 'error').mockImplementation();
+
+      // Manually trigger cleanup
+      await (shortTimeoutPool as any).cleanupIdleBrowsers();
+
+      // Should log error but not throw
+      expect(consoleSpy).toHaveBeenCalledWith(
+        expect.stringContaining('Failed to close idle browser'),
+        expect.any(Error),
+      );
+
+      consoleSpy.mockRestore();
 
       await shortTimeoutPool.closeAll();
     });

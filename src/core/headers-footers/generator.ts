@@ -26,6 +26,7 @@ export class HeaderFooterGenerator {
   generateCSSPageRules(
     config: HeadersFootersConfig,
     context: HeaderFooterContext,
+    margins?: { top: string; right: string; bottom: string; left: string },
   ): string {
     this.logger.debug('Generating CSS @page rules from headers/footers config');
 
@@ -54,8 +55,13 @@ export class HeaderFooterGenerator {
       ? this.generateFooterCSS(config.footer, context)
       : '';
 
-    // Get appropriate margins
-    const marginsWithHeaderFooter = DEFAULT_MARGINS.WITH_HEADER_FOOTER;
+    // Get appropriate margins - use provided margins or default
+    const marginsWithHeaderFooter =
+      margins || DEFAULT_MARGINS.WITH_HEADER_FOOTER;
+
+    this.logger.info(
+      `Using margins for @page rules: T:${marginsWithHeaderFooter.top} R:${marginsWithHeaderFooter.right} B:${marginsWithHeaderFooter.bottom} L:${marginsWithHeaderFooter.left}`,
+    );
 
     const cssPageRules = `
       <style>
@@ -701,6 +707,7 @@ export class HeaderFooterGenerator {
     includePageNumbers: boolean,
     _documentTitle: string,
     context: HeaderFooterContext,
+    margins?: { top: string; right: string; bottom: string; left: string },
   ): string {
     if (!includePageNumbers) {
       return '';
@@ -758,6 +765,6 @@ export class HeaderFooterGenerator {
       },
     };
 
-    return this.generateCSSPageRules(config, context);
+    return this.generateCSSPageRules(config, context, margins);
   }
 }

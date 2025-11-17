@@ -6,10 +6,10 @@
 // Default margin values
 export const DEFAULT_MARGINS = {
   NORMAL: {
-    top: '0.75in',
-    right: '0.75in',
-    bottom: '0.75in',
-    left: '0.75in',
+    top: '2cm',
+    right: '2cm',
+    bottom: '2cm',
+    left: '2cm',
   },
   WITH_HEADER_FOOTER: {
     top: '1.25in',

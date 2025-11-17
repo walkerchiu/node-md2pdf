@@ -55,6 +55,9 @@ export interface ProcessingContext {
     backgroundColor?: string;
   };
 
+  /** Syntax highlighting theme */
+  syntaxHighlightingTheme?: string;
+
   /** Headings extracted from content */
   headings?: Heading[];
 

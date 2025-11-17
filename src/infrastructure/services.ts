@@ -5,6 +5,7 @@
 import { existsSync, mkdirSync } from 'fs';
 import { join, dirname, resolve } from 'path';
 
+import { TemplateStorageService } from '../core/templates/storage.service';
 import { ServiceContainer } from '../shared/container';
 
 import { ConfigManager } from './config';
@@ -313,6 +314,11 @@ export class InfrastructureServices {
       setupGracefulShutdown(service, logger);
 
       return service as ILogManagementService;
+    });
+
+    // Register Template Storage Service
+    container.registerSingleton('templateStorage', () => {
+      return new TemplateStorageService();
     });
   }
 

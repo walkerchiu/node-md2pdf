@@ -15,10 +15,10 @@ describe('Configuration Constants', () => {
   describe('DEFAULT_MARGINS', () => {
     it('should define NORMAL margins', () => {
       expect(DEFAULT_MARGINS.NORMAL).toBeDefined();
-      expect(DEFAULT_MARGINS.NORMAL.top).toBe('0.75in');
-      expect(DEFAULT_MARGINS.NORMAL.right).toBe('0.75in');
-      expect(DEFAULT_MARGINS.NORMAL.bottom).toBe('0.75in');
-      expect(DEFAULT_MARGINS.NORMAL.left).toBe('0.75in');
+      expect(DEFAULT_MARGINS.NORMAL.top).toBe('2cm');
+      expect(DEFAULT_MARGINS.NORMAL.right).toBe('2cm');
+      expect(DEFAULT_MARGINS.NORMAL.bottom).toBe('2cm');
+      expect(DEFAULT_MARGINS.NORMAL.left).toBe('2cm');
     });
 
     it('should define WITH_HEADER_FOOTER margins', () => {
@@ -30,9 +30,14 @@ describe('Configuration Constants', () => {
     });
 
     it('should have larger top/bottom margins for header/footer layout', () => {
-      // Parse margin values for comparison
-      const parseMargin = (margin: string) =>
-        parseFloat(margin.replace(/[^0-9.]/g, ''));
+      // Parse margin values for comparison (convert all to cm)
+      const parseMargin = (margin: string) => {
+        const value = parseFloat(margin);
+        if (margin.includes('in')) {
+          return value * 2.54; // Convert inches to cm
+        }
+        return value; // Already in cm
+      };
 
       expect(
         parseMargin(DEFAULT_MARGINS.WITH_HEADER_FOOTER.top),

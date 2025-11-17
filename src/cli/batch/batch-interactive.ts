@@ -17,6 +17,9 @@ import FileSearchUI from '../ui/file-search-ui';
 import { BatchProgressUI } from './batch-progress-ui';
 
 import type { IBatchProcessorService } from '../../application/services/batch-processor.service';
+import type { IMarkdownParserService } from '../../application/services/markdown-parser.service';
+import type { TemplateStorageService } from '../../core/templates/storage.service';
+import type { Template } from '../../core/templates/types';
 import type { IConfigManager } from '../../infrastructure/config/types';
 import type { IErrorHandler } from '../../infrastructure/error/types';
 import type { ITranslationManager } from '../../infrastructure/i18n/types';
@@ -33,9 +36,11 @@ export class BatchInteractiveMode {
   private errorHandler: IErrorHandler;
   private translationManager: ITranslationManager;
   private batchProcessorService: IBatchProcessorService;
+  private markdownParserService: IMarkdownParserService;
   private progressUI: BatchProgressUI;
   private uiManager: CliUIManager;
   private configManager: IConfigManager;
+  private templateStorage: TemplateStorageService;
 
   constructor(container: ServiceContainer) {
     this.logger = container.resolve<ILogger>('logger');
@@ -45,8 +50,13 @@ export class BatchInteractiveMode {
     this.batchProcessorService = container.resolve<IBatchProcessorService>(
       APPLICATION_SERVICE_NAMES.BATCH_PROCESSOR,
     );
+    this.markdownParserService = container.resolve<IMarkdownParserService>(
+      APPLICATION_SERVICE_NAMES.MARKDOWN_PARSER,
+    );
     this.progressUI = new BatchProgressUI(this.translationManager);
     this.configManager = container.resolve<IConfigManager>('config');
+    this.templateStorage =
+      container.resolve<TemplateStorageService>('templateStorage');
     this.uiManager = new CliUIManager(
       this.translationManager,
       this.logger,
@@ -236,6 +246,20 @@ export class BatchInteractiveMode {
     const inquirer = (await import('inquirer')) as InquirerModule;
 
     this.uiManager.showNewline();
+
+    // Select template for batch conversion
+    const selectedTemplate = await this.selectTemplate();
+
+    // If template is selected, use template config with minimal prompts
+    if (selectedTemplate) {
+      return this.getBatchConfigFromTemplate(
+        inputPattern,
+        selectedTemplate,
+        inquirer,
+      );
+    }
+
+    // Otherwise, ask all configuration options
     this.uiManager.showInfo(
       this.translationManager.t('batch.configurationOptions'),
     );
@@ -447,37 +471,192 @@ export class BatchInteractiveMode {
   ): Promise<boolean> {
     const inquirer = (await import('inquirer')) as InquirerModule;
 
-    // Display configuration summary
+    // Display PDF configuration (template or default)
     this.uiManager.showNewline();
-    this.uiManager.showInfo(
-      this.translationManager.t('batch.configurationSummary'),
-    );
-    this.uiManager.showSeparator();
 
-    this.uiManager.showMessage(
-      this.translationManager.t('batch.filesToProcess', {
-        count: files.length,
-      }),
+    // Show template configuration if template is used
+    if (config.template) {
+      // Console display with colors (matching Template Management style)
+      console.log(
+        chalk.cyan(
+          `📋 ${this.translationManager.t('interactive.usingTemplate')}: ${this.translationManager.t(config.template.name)}`,
+        ),
+      );
+      console.log();
+
+      // Page format and margins (5-space indent, matching template view)
+      const templateConfig = config.template.config;
+      console.log(
+        `     ${this.translationManager.t('templates.view.config.pageFormat')}: ${chalk.green(templateConfig.pdf.format)} ${chalk.gray(`(${templateConfig.pdf.orientation})`)}`,
+      );
+      console.log(
+        `     ${this.translationManager.t('templates.view.config.margins')}: ${this.translationManager.t('templates.view.config.top')} ${chalk.yellow(templateConfig.pdf.margin.top)}, ${this.translationManager.t('templates.view.config.right')} ${chalk.yellow(templateConfig.pdf.margin.right)}, ${this.translationManager.t('templates.view.config.bottom')} ${chalk.yellow(templateConfig.pdf.margin.bottom)}, ${this.translationManager.t('templates.view.config.left')} ${chalk.yellow(templateConfig.pdf.margin.left)}`,
+      );
+
+      // Fonts configuration
+      console.log(
+        `     ${this.translationManager.t('templates.view.config.fonts')}:`,
+      );
+      const bodyFont =
+        templateConfig.styles.fonts.body ||
+        this.translationManager.t('common.status.notSet');
+      const headingFont =
+        templateConfig.styles.fonts.heading ||
+        this.translationManager.t('common.status.notSet');
+      const codeFont =
+        templateConfig.styles.fonts.code ||
+        this.translationManager.t('common.status.notSet');
+
+      console.log(
+        `       • ${this.translationManager.t('templates.view.config.bodyFont')}: ${templateConfig.styles.fonts.body ? chalk.cyan(bodyFont) : chalk.gray(bodyFont)}`,
+      );
+      console.log(
+        `       • ${this.translationManager.t('templates.view.config.headingFont')}: ${templateConfig.styles.fonts.heading ? chalk.cyan(headingFont) : chalk.gray(headingFont)}`,
+      );
+      console.log(
+        `       • ${this.translationManager.t('templates.view.config.codeFont')}: ${templateConfig.styles.fonts.code ? chalk.cyan(codeFont) : chalk.gray(codeFont)}`,
+      );
+
+      // Code block theme
+      const codeBlockTheme =
+        templateConfig.styles.codeBlock.theme ||
+        this.translationManager.t('common.status.notSet');
+      console.log(
+        `     ${this.translationManager.t('templates.view.config.codeBlockTheme')}: ${templateConfig.styles.codeBlock.theme ? chalk.magenta(codeBlockTheme) : chalk.gray(codeBlockTheme)}`,
+      );
+      console.log();
+
+      // Clean log without colors
+      this.logger.info(
+        `Template: ${this.translationManager.t(config.template.name)} | ` +
+          `Page: ${templateConfig.pdf.format} (${templateConfig.pdf.orientation}) | ` +
+          `Margins: T:${templateConfig.pdf.margin.top} R:${templateConfig.pdf.margin.right} B:${templateConfig.pdf.margin.bottom} L:${templateConfig.pdf.margin.left} | ` +
+          `Fonts: Body="${templateConfig.styles.fonts.body}", Heading="${templateConfig.styles.fonts.heading}", Code="${templateConfig.styles.fonts.code}" | ` +
+          `Code Theme: ${templateConfig.styles.codeBlock.theme} | ` +
+          `Style: ${templateConfig.styles.theme}`,
+      );
+    } else {
+      // Show default configuration when not using template
+      const userConfig = this.configManager.getConfig();
+
+      // Console display with colors (matching Template Management style)
+      console.log(
+        chalk.yellow(
+          `⚙️  ${this.translationManager.t('interactive.usingDefaultConfig')}`,
+        ),
+      );
+      console.log();
+      console.log(
+        chalk.gray(
+          `     ${this.translationManager.t('interactive.defaultConfigNote')}`,
+        ),
+      );
+      console.log();
+
+      // Page format and margins (5-space indent)
+      console.log(
+        `     ${this.translationManager.t('templates.view.config.pageFormat')}: ${chalk.green('A4')} ${chalk.gray('(portrait)')}`,
+      );
+
+      // Default margins are now in cm (2cm)
+      console.log(
+        `     ${this.translationManager.t('templates.view.config.margins')}: ${this.translationManager.t('templates.view.config.top')} ${chalk.yellow(DEFAULT_MARGINS.NORMAL.top)}, ${this.translationManager.t('templates.view.config.right')} ${chalk.yellow(DEFAULT_MARGINS.NORMAL.right)}, ${this.translationManager.t('templates.view.config.bottom')} ${chalk.yellow(DEFAULT_MARGINS.NORMAL.bottom)}, ${this.translationManager.t('templates.view.config.left')} ${chalk.yellow(DEFAULT_MARGINS.NORMAL.left)}`,
+      );
+
+      // Headers and footers
+      console.log(
+        `     ${this.translationManager.t('templates.view.config.header')}: ${chalk.red(this.translationManager.t('common.status.disabled'))}, ${this.translationManager.t('templates.view.config.footer')}: ${chalk.red(this.translationManager.t('common.status.disabled'))}`,
+      );
+
+      // Table of contents
+      const tocStatus = config.includeTOC
+        ? `${chalk.green(this.translationManager.t('common.status.enabled'))} ${chalk.gray(`(${this.translationManager.t('templates.view.config.tocDepth')}: ${config.tocDepth})`)}`
+        : chalk.red(this.translationManager.t('common.status.disabled'));
+      console.log(
+        `     ${this.translationManager.t('templates.view.config.toc')}: ${tocStatus}`,
+      );
+
+      // Anchor links (bookmarks)
+      const anchorLinksStatus = config.tocReturnLinksLevel
+        ? `${chalk.green(this.translationManager.t('common.status.enabled'))} ${chalk.gray(`(${this.translationManager.t('templates.view.config.anchorDepth')}: ${config.tocReturnLinksLevel})`)}`
+        : chalk.red(this.translationManager.t('common.status.disabled'));
+      console.log(
+        `     ${this.translationManager.t('templates.view.config.anchorLinks')}: ${anchorLinksStatus}`,
+      );
+
+      // Page numbers
+      const pageNumbersStatus = config.includePageNumbers
+        ? chalk.green(this.translationManager.t('common.status.enabled'))
+        : chalk.red(this.translationManager.t('common.status.disabled'));
+      console.log(
+        `     ${this.translationManager.t('templates.view.config.pageNumbers')}: ${pageNumbersStatus}`,
+      );
+
+      // Fonts configuration
+      console.log(
+        `     ${this.translationManager.t('templates.view.config.fonts')}:`,
+      );
+      const notSet = this.translationManager.t('common.status.notSet');
+
+      console.log(
+        `       • ${this.translationManager.t('templates.view.config.bodyFont')}: ${chalk.gray(notSet)}`,
+      );
+      console.log(
+        `       • ${this.translationManager.t('templates.view.config.headingFont')}: ${chalk.gray(notSet)}`,
+      );
+      console.log(
+        `       • ${this.translationManager.t('templates.view.config.codeFont')}: ${chalk.gray(notSet)}`,
+      );
+
+      // Code block theme
+      const codeTheme =
+        userConfig.syntaxHighlighting?.theme ||
+        this.translationManager.t('common.defaultTheme');
+      console.log(
+        `     ${this.translationManager.t('templates.view.config.codeBlockTheme')}: ${chalk.magenta(codeTheme)}`,
+      );
+      console.log();
+
+      // Clean log without colors
+      this.logger.info(
+        `Using default configuration | ` +
+          `Page: A4 (portrait) | ` +
+          `Margins: T:${DEFAULT_MARGINS.NORMAL.top} R:${DEFAULT_MARGINS.NORMAL.right} B:${DEFAULT_MARGINS.NORMAL.bottom} L:${DEFAULT_MARGINS.NORMAL.left} | ` +
+          `Code Theme: ${codeTheme}`,
+      );
+    }
+
+    // Display batch-specific configuration summary
+    console.log(
+      chalk.cyan(
+        `\n📦 ${this.translationManager.t('batch.configurationSummary')}`,
+      ),
+    );
+    console.log();
+
+    // Files to process (5-space indent)
+    console.log(
+      `     ${this.translationManager.t('batch.filesToProcess', { count: files.length })}`,
     );
 
     const shortFileList = files.slice(0, 3).map((f: { inputPath: string }) => {
       const relativePath = f.inputPath.replace(process.cwd() + '/', './');
-      return `• ${relativePath}`;
+      return `       • ${chalk.gray(relativePath)}`;
     });
 
     if (files.length <= 3) {
-      shortFileList.forEach((file) => this.uiManager.showMessage(`   ${file}`));
+      shortFileList.forEach((file) => console.log(file));
     } else {
-      shortFileList.forEach((file) => this.uiManager.showMessage(`   ${file}`));
-      this.uiManager.showMessage(
-        `   ${this.translationManager.t('batch.andMoreFiles', { count: files.length - 3 })}`,
+      shortFileList.forEach((file) => console.log(file));
+      console.log(
+        `       ${chalk.gray(`... ${this.translationManager.t('batch.andMoreFiles', { count: files.length - 3 })}`)}`,
       );
     }
+    console.log();
 
-    this.uiManager.showMessage(
-      this.translationManager.t('batch.outputDirectory', {
-        directory: config.outputDirectory,
-      }),
+    // Output configuration
+    console.log(
+      `     ${this.translationManager.t('batch.outputDirectory', { directory: '' })}: ${chalk.cyan(config.outputDirectory)}`,
     );
 
     const formatDisplay =
@@ -492,64 +671,32 @@ export class BatchInteractiveMode {
             : this.translationManager.t('batch.filenameFormatOptions.custom');
 
     console.log(
-      chalk.white(
-        this.translationManager.t('batch.filenameFormatSummary', {
-          format: formatDisplay,
-        }),
-      ),
+      `     ${this.translationManager.t('batch.filenameFormatSummary', { format: '' })}: ${chalk.yellow(formatDisplay)}`,
     );
+
     console.log(
-      chalk.white(
-        this.translationManager.t('batch.preserveStructure', {
-          preserve: config.preserveDirectoryStructure
-            ? this.translationManager.t('batch.yes')
-            : this.translationManager.t('batch.no'),
-        }),
-      ),
+      `     ${this.translationManager.t('batch.preserveStructure', { preserve: '' })}: ${config.preserveDirectoryStructure ? chalk.green(this.translationManager.t('batch.yes')) : chalk.gray(this.translationManager.t('batch.no'))}`,
     );
+
+    // TOC configuration
     console.log(
-      chalk.white(
-        this.translationManager.t('batch.includeTOC', {
-          include: config.includeTOC
-            ? this.translationManager.t('batch.yes')
-            : this.translationManager.t('batch.no'),
-        }),
-      ),
+      `     ${this.translationManager.t('batch.includeTOC', { include: '' })}: ${config.includeTOC ? chalk.green(this.translationManager.t('batch.yes')) : chalk.gray(this.translationManager.t('batch.no'))}`,
     );
     if (config.includeTOC) {
       console.log(
-        chalk.white(
-          this.translationManager.t('batch.tableOfContents', {
-            depth: config.tocDepth,
-          }),
-        ),
+        `       • ${this.translationManager.t('batch.tableOfContents', { depth: '' })}: ${chalk.cyan(config.tocDepth)} ${chalk.gray(this.translationManager.t('common.tocLevels.' + config.tocDepth))}`,
       );
       console.log(
-        chalk.white(
-          this.translationManager.t('batch.pageNumbers', {
-            include: config.includePageNumbers
-              ? this.translationManager.t('batch.yes')
-              : this.translationManager.t('batch.no'),
-          }),
-        ),
+        `       • ${this.translationManager.t('batch.pageNumbers', { include: '' })}: ${config.includePageNumbers ? chalk.green(this.translationManager.t('batch.yes')) : chalk.gray(this.translationManager.t('batch.no'))}`,
       );
     }
-    // Chinese font support is now automatically determined by document language
+
+    // Processing options
     console.log(
-      chalk.white(
-        this.translationManager.t('batch.concurrentProcesses', {
-          count: config.maxConcurrentProcesses,
-        }),
-      ),
+      `     ${this.translationManager.t('batch.concurrentProcesses', { count: '' })}: ${chalk.magenta(config.maxConcurrentProcesses)}`,
     );
     console.log(
-      chalk.white(
-        this.translationManager.t('batch.continueOnErrorSummary', {
-          continue: config.continueOnError
-            ? this.translationManager.t('batch.yes')
-            : this.translationManager.t('batch.no'),
-        }),
-      ),
+      `     ${this.translationManager.t('batch.continueOnErrorSummary', { continue: '' })}: ${config.continueOnError ? chalk.green(this.translationManager.t('batch.yes')) : chalk.gray(this.translationManager.t('batch.no'))}`,
     );
     console.log('────────────────────────────────────────────────────────────');
     console.log(
@@ -586,6 +733,40 @@ export class BatchInteractiveMode {
         '\n' + this.translationManager.t('batch.startingBatchProcessing'),
       ),
     );
+
+    // Log configuration details
+    if (config.template) {
+      const templateConfig = config.template.config;
+      this.logger.info(
+        `Batch processing starting with template configuration | ` +
+          `Template: ${this.translationManager.t(config.template.name)} | ` +
+          `Files: ${config.inputFiles?.length || 0} | ` +
+          `Page: ${templateConfig.pdf.format} (${templateConfig.pdf.orientation}) | ` +
+          `Margins: T:${templateConfig.pdf.margin.top} R:${templateConfig.pdf.margin.right} B:${templateConfig.pdf.margin.bottom} L:${templateConfig.pdf.margin.left} | ` +
+          `Fonts: Body="${templateConfig.styles.fonts.body}", Heading="${templateConfig.styles.fonts.heading}", Code="${templateConfig.styles.fonts.code}" | ` +
+          `Code Theme: ${templateConfig.styles.codeBlock.theme} | ` +
+          `Style: ${templateConfig.styles.theme} | ` +
+          `TOC: ${config.includeTOC ? `Enabled (Depth: ${config.tocDepth})` : 'Disabled'} | ` +
+          `Page Numbers: ${config.includePageNumbers ? 'Yes' : 'No'} | ` +
+          `Max Concurrent: ${config.maxConcurrentProcesses}`,
+      );
+    } else {
+      const userConfig = this.configManager.getConfig();
+      const codeTheme =
+        userConfig.syntaxHighlighting?.theme ||
+        this.translationManager.t('common.defaultTheme');
+
+      this.logger.info(
+        `Batch processing starting with default configuration | ` +
+          `Files: ${config.inputFiles?.length || 0} | ` +
+          `Page: A4 (portrait) | ` +
+          `Margins: T:${DEFAULT_MARGINS.NORMAL.top} R:${DEFAULT_MARGINS.NORMAL.right} B:${DEFAULT_MARGINS.NORMAL.bottom} L:${DEFAULT_MARGINS.NORMAL.left} | ` +
+          `Code Theme: ${codeTheme} | ` +
+          `TOC: ${config.includeTOC ? `Enabled (Depth: ${config.tocDepth})` : 'Disabled'} | ` +
+          `Page Numbers: ${config.includePageNumbers ? 'Yes' : 'No'} | ` +
+          `Max Concurrent: ${config.maxConcurrentProcesses}`,
+      );
+    }
 
     // Set up progress tracking
     const progressUI = this.progressUI;
@@ -638,6 +819,75 @@ export class BatchInteractiveMode {
         }
       }
 
+      // Apply template configuration to configManager if template is used
+      let customStyles: string | undefined;
+      if (config.template) {
+        const template = config.template;
+        this.logger.info(
+          `Applying template configuration for batch: ${this.translationManager.t(template.name)}`,
+        );
+
+        // Apply template's code block theme to configuration
+        if (template.config.styles.codeBlock.theme) {
+          this.configManager.set(
+            'syntaxHighlighting.theme',
+            template.config.styles.codeBlock.theme,
+          );
+          this.logger.info(
+            `Applied code block theme: ${template.config.styles.codeBlock.theme}`,
+          );
+        }
+
+        // Apply template's style theme to configuration
+        if (template.config.styles.theme) {
+          this.configManager.set('styles.theme', template.config.styles.theme);
+          this.logger.info(
+            `Applied style theme: ${template.config.styles.theme}`,
+          );
+        }
+
+        // Apply template's PDF margin configuration to ConfigManager
+        // This is critical because PDF generator reads margins from ConfigManager
+        this.configManager.set('pdf.margin', template.config.pdf.margin);
+        this.logger.info(
+          `Applied PDF margins from template: T:${template.config.pdf.margin.top} R:${template.config.pdf.margin.right} B:${template.config.pdf.margin.bottom} L:${template.config.pdf.margin.left}`,
+        );
+
+        // Reset markdown parser to pick up new syntax highlighting theme
+        this.markdownParserService.resetParser();
+        this.logger.info(
+          'Reset markdown parser to apply new template configuration',
+        );
+
+        // Build custom styles from template fonts
+        const stylesParts: string[] = [];
+
+        if (template.config.styles.fonts.body) {
+          stylesParts.push(
+            `body { font-family: "${template.config.styles.fonts.body}", sans-serif; }`,
+          );
+        }
+        if (template.config.styles.fonts.heading) {
+          stylesParts.push(
+            `h1, h2, h3, h4, h5, h6 { font-family: "${template.config.styles.fonts.heading}", sans-serif; }`,
+          );
+        }
+        if (template.config.styles.fonts.code) {
+          stylesParts.push(
+            `code, pre { font-family: "${template.config.styles.fonts.code}", monospace; }`,
+          );
+        }
+
+        if (stylesParts.length > 0) {
+          customStyles = stylesParts.join('\n');
+        }
+
+        this.logger.debug('Template fonts applied as custom styles:', {
+          fonts: template.config.styles.fonts,
+          customStyles,
+        });
+      }
+
       // Get user's headers/footers preferences
       const userConfig = this.configManager.getConfig();
       const headersFootersConfig = userConfig.headersFooters;
@@ -654,11 +904,14 @@ export class BatchInteractiveMode {
             }
           : {},
         pdfOptions: {
-          margin: DEFAULT_MARGINS.NORMAL,
+          margin: config.template
+            ? config.template.config.pdf.margin
+            : DEFAULT_MARGINS.NORMAL,
           displayHeaderFooter: false, // Force disable - using CSS @page instead
           footerTemplate: '', // Disable Puppeteer templates - using CSS @page instead
           printBackground: true,
         },
+        ...(customStyles && { customStyles }), // Apply template styles if defined
       };
 
       // Use headers/footers config if available, otherwise fallback to legacy page numbers
@@ -854,5 +1107,215 @@ export class BatchInteractiveMode {
       (headersFootersConfig.header.enabled ||
         headersFootersConfig.footer.enabled)
     );
+  }
+
+  /**
+   * Get batch config from template with minimal prompts
+   */
+  private async getBatchConfigFromTemplate(
+    inputPattern: string,
+    template: Template,
+    inquirer: InquirerModule,
+  ): Promise<BatchConversionConfig> {
+    // Show template info
+    console.log(
+      chalk.cyan(
+        `\n✨ ${this.translationManager.t('templates.messages.usingTemplate')}: ${this.translationManager.t(template.name)}`,
+      ),
+    );
+
+    this.uiManager.showInfo(
+      this.translationManager.t('batch.configurationOptions'),
+    );
+    this.uiManager.showNewline();
+
+    // Only ask essential batch-specific questions
+    const answers = await inquirer.default.prompt([
+      {
+        type: 'input',
+        name: 'outputDirectory',
+        message: this.translationManager.t('batch.enterOutputDirectory'),
+        default: './output',
+        validate: (input: string): boolean | string => {
+          if (!input.trim()) {
+            return this.translationManager.t(
+              'batch.pleaseEnterOutputDirectory',
+            );
+          }
+          return true;
+        },
+      },
+      {
+        type: 'list',
+        name: 'filenameFormat',
+        message: this.translationManager.t('batch.selectFilenameFormat'),
+        choices: [
+          {
+            name: this.translationManager.t('batch.filenameFormats.original'),
+            value: BatchFilenameFormat.ORIGINAL,
+          },
+          {
+            name: this.translationManager.t(
+              'batch.filenameFormats.withTimestamp',
+            ),
+            value: BatchFilenameFormat.WITH_TIMESTAMP,
+          },
+          {
+            name: this.translationManager.t('batch.filenameFormats.withDate'),
+            value: BatchFilenameFormat.WITH_DATE,
+          },
+          {
+            name: this.translationManager.t('batch.filenameFormats.custom'),
+            value: BatchFilenameFormat.CUSTOM,
+          },
+        ],
+        default: BatchFilenameFormat.ORIGINAL,
+      },
+      {
+        type: 'input',
+        name: 'customFilenamePattern',
+        message: this.translationManager.t('batch.enterCustomPattern'),
+        default: this.translationManager.t('batch.customPatternPlaceholder'),
+        when: (ans: any) => ans.filenameFormat === BatchFilenameFormat.CUSTOM,
+        validate: (input: string): boolean | string => {
+          if (!input.includes('{name}')) {
+            return this.translationManager.t('batch.patternMustIncludeName');
+          }
+          return true;
+        },
+      },
+      {
+        type: 'confirm',
+        name: 'adjustSettings',
+        message: this.translationManager.t('templates.prompts.adjustSettings'),
+        default: false,
+      },
+    ]);
+
+    // Build config from template
+    const config: BatchConversionConfig = {
+      inputPattern,
+      inputFiles: [], // Will be filled later
+      outputDirectory: PathCleaner.cleanPath(answers.outputDirectory),
+      filenameFormat: answers.filenameFormat || BatchFilenameFormat.ORIGINAL,
+      customFilenamePattern: answers.customFilenamePattern,
+      preserveDirectoryStructure: false, // Default value
+      includeTOC: template.config.features.toc,
+      tocDepth: template.config.features.tocDepth,
+      tocReturnLinksLevel: Math.min(
+        template.config.features.anchorDepth,
+        5,
+      ) as TOCReturnLinkLevel,
+      includePageNumbers: template.config.features.pageNumbers,
+      maxConcurrentProcesses: 3, // Default value
+      continueOnError: true, // Default value
+      template: template,
+    };
+
+    // If user wants to adjust settings, ask for TOC and page numbers
+    if (answers.adjustSettings) {
+      const adjustAnswers = await inquirer.default.prompt([
+        {
+          type: 'list',
+          name: 'includeTOC',
+          message: this.translationManager.t('batch.includeTOCPrompt'),
+          choices: [
+            {
+              name: this.translationManager.t('common.status.yes'),
+              value: true,
+            },
+            {
+              name: this.translationManager.t('common.status.no'),
+              value: false,
+            },
+          ],
+          default: template.config.features.toc ? 0 : 1,
+        },
+        {
+          type: 'list',
+          name: 'tocDepth',
+          message: this.translationManager.t('batch.selectTocDepth'),
+          choices: [
+            { name: this.translationManager.t('common.tocLevels.1'), value: 1 },
+            { name: this.translationManager.t('common.tocLevels.2'), value: 2 },
+            { name: this.translationManager.t('common.tocLevels.3'), value: 3 },
+            { name: this.translationManager.t('common.tocLevels.4'), value: 4 },
+            { name: this.translationManager.t('common.tocLevels.5'), value: 5 },
+            { name: this.translationManager.t('common.tocLevels.6'), value: 6 },
+          ],
+          default: template.config.features.tocDepth - 1,
+          when: (ans: any) => ans.includeTOC,
+        },
+        {
+          type: 'confirm',
+          name: 'includePageNumbers',
+          message: this.translationManager.t('batch.includePageNumbers'),
+          default: template.config.features.pageNumbers,
+        },
+      ]);
+
+      config.includeTOC = adjustAnswers.includeTOC ?? config.includeTOC;
+      config.tocDepth = adjustAnswers.tocDepth ?? config.tocDepth;
+      config.includePageNumbers =
+        adjustAnswers.includePageNumbers ?? config.includePageNumbers;
+    }
+
+    return config;
+  }
+
+  /**
+   * Select template for batch conversion
+   */
+  private async selectTemplate(): Promise<Template | null> {
+    const inquirer = (await import('inquirer')) as InquirerModule;
+
+    try {
+      // Get all templates (system + custom)
+      const allTemplates = await this.templateStorage.getAllTemplates();
+      const templates = [...allTemplates.system, ...allTemplates.custom];
+
+      if (templates.length === 0) {
+        this.uiManager.showWarning(
+          this.translationManager.t('templates.messages.noTemplates'),
+        );
+        return null;
+      }
+
+      // Create choices with template information
+      const choices = templates.map((t) => ({
+        name: `[${this.translationManager.t(`templates.types.${t.type}`)}] ${this.translationManager.t(t.name)} - ${this.translationManager.t(t.description)}`,
+        value: t.id,
+      }));
+
+      // Add option to skip template selection
+      choices.unshift({
+        name: this.translationManager.t('templates.prompts.skipTemplate'),
+        value: 'skip',
+      });
+
+      const { templateId } = await inquirer.default.prompt([
+        {
+          type: 'list',
+          name: 'templateId',
+          message: this.translationManager.t(
+            'templates.prompts.selectTemplateForConversion',
+          ),
+          choices,
+          pageSize: 10,
+        },
+      ]);
+
+      if (templateId === 'skip') {
+        return null;
+      }
+
+      const template = await this.templateStorage.read(templateId);
+      return template;
+    } catch (error) {
+      this.uiManager.showWarning(
+        this.translationManager.t('templates.messages.errorLoadingTemplates'),
+      );
+      return null;
+    }
   }
 }

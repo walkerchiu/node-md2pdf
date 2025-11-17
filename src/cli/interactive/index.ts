@@ -15,6 +15,9 @@ import type {
   IFileProcessorService,
   FileProcessingOptions,
 } from '../../application/services/file-processor.service';
+import type { IMarkdownParserService } from '../../application/services/markdown-parser.service';
+import type { TemplateStorageService } from '../../core/templates/storage.service';
+import type { Template } from '../../core/templates/types';
 import type { IConfigManager } from '../../infrastructure/config/types';
 import type { IErrorHandler } from '../../infrastructure/error/types';
 import type { IFileSystemManager } from '../../infrastructure/filesystem/types';
@@ -32,9 +35,11 @@ export class InteractiveMode {
   private configManager: IConfigManager;
   private errorHandler: IErrorHandler;
   private fileProcessorService: IFileProcessorService;
+  private markdownParserService: IMarkdownParserService;
   private fileSystemManager: IFileSystemManager | undefined;
   private logger: ILogger;
   private translationManager: ITranslationManager;
+  private templateStorage: TemplateStorageService;
   private uiManager: CliUIManager;
 
   constructor(container: ServiceContainer) {
@@ -45,10 +50,15 @@ export class InteractiveMode {
     this.fileProcessorService = container.resolve<IFileProcessorService>(
       APPLICATION_SERVICE_NAMES.FILE_PROCESSOR,
     );
+    this.markdownParserService = container.resolve<IMarkdownParserService>(
+      APPLICATION_SERVICE_NAMES.MARKDOWN_PARSER,
+    );
     // fileSystem is optional in some test setups, tryResolve will return undefined when not registered
     this.fileSystemManager =
       container.tryResolve<IFileSystemManager>('fileSystem');
     this.configManager = container.resolve<IConfigManager>('config');
+    this.templateStorage =
+      container.resolve<TemplateStorageService>('templateStorage');
     this.uiManager = new CliUIManager(
       this.translationManager,
       this.logger,
@@ -245,7 +255,19 @@ export class InteractiveMode {
       }
     }
 
-    // Then prompt remaining options, using the provided inputPath to compute defaults
+    // Select template for conversion
+    const selectedTemplate = await this.selectTemplate();
+
+    // If template is selected, use template config with optional adjustments
+    if (selectedTemplate) {
+      return this.getConfigFromTemplate(
+        selectedInputPath,
+        selectedTemplate,
+        inquirer,
+      );
+    }
+
+    // Otherwise, prompt for all options manually
     const remaining = await (
       inquirer as InquirerModule
     ).default.prompt<ConversionConfig>([
@@ -383,6 +405,159 @@ export class InteractiveMode {
       );
     }
 
+    // Show template configuration if template is used
+    if (config.template) {
+      this.uiManager.showNewline();
+
+      // Console display with colors (matching Template Management style)
+      console.log(
+        chalk.cyan(
+          `📋 ${this.translationManager.t('interactive.usingTemplate')}: ${this.translationManager.t(config.template.name)}`,
+        ),
+      );
+      console.log();
+
+      // Page format and margins (5-space indent, matching template view)
+      const templateConfig = config.template.config;
+      console.log(
+        `     ${this.translationManager.t('templates.view.config.pageFormat')}: ${chalk.green(templateConfig.pdf.format)} ${chalk.gray(`(${templateConfig.pdf.orientation})`)}`,
+      );
+      console.log(
+        `     ${this.translationManager.t('templates.view.config.margins')}: ${this.translationManager.t('templates.view.config.top')} ${chalk.yellow(templateConfig.pdf.margin.top)}, ${this.translationManager.t('templates.view.config.right')} ${chalk.yellow(templateConfig.pdf.margin.right)}, ${this.translationManager.t('templates.view.config.bottom')} ${chalk.yellow(templateConfig.pdf.margin.bottom)}, ${this.translationManager.t('templates.view.config.left')} ${chalk.yellow(templateConfig.pdf.margin.left)}`,
+      );
+
+      // Fonts configuration
+      console.log(
+        `     ${this.translationManager.t('templates.view.config.fonts')}:`,
+      );
+      const bodyFont =
+        templateConfig.styles.fonts.body ||
+        this.translationManager.t('common.status.notSet');
+      const headingFont =
+        templateConfig.styles.fonts.heading ||
+        this.translationManager.t('common.status.notSet');
+      const codeFont =
+        templateConfig.styles.fonts.code ||
+        this.translationManager.t('common.status.notSet');
+
+      console.log(
+        `       • ${this.translationManager.t('templates.view.config.bodyFont')}: ${templateConfig.styles.fonts.body ? chalk.cyan(bodyFont) : chalk.gray(bodyFont)}`,
+      );
+      console.log(
+        `       • ${this.translationManager.t('templates.view.config.headingFont')}: ${templateConfig.styles.fonts.heading ? chalk.cyan(headingFont) : chalk.gray(headingFont)}`,
+      );
+      console.log(
+        `       • ${this.translationManager.t('templates.view.config.codeFont')}: ${templateConfig.styles.fonts.code ? chalk.cyan(codeFont) : chalk.gray(codeFont)}`,
+      );
+
+      // Code block theme
+      const codeBlockTheme =
+        templateConfig.styles.codeBlock.theme ||
+        this.translationManager.t('common.status.notSet');
+      console.log(
+        `     ${this.translationManager.t('templates.view.config.codeBlockTheme')}: ${templateConfig.styles.codeBlock.theme ? chalk.magenta(codeBlockTheme) : chalk.gray(codeBlockTheme)}`,
+      );
+      console.log();
+
+      // Clean log without colors
+      this.logger.info(
+        `Template: ${this.translationManager.t(config.template.name)} | ` +
+          `Page: ${templateConfig.pdf.format} (${templateConfig.pdf.orientation}) | ` +
+          `Margins: T:${templateConfig.pdf.margin.top} R:${templateConfig.pdf.margin.right} B:${templateConfig.pdf.margin.bottom} L:${templateConfig.pdf.margin.left} | ` +
+          `Fonts: Body="${templateConfig.styles.fonts.body}", Heading="${templateConfig.styles.fonts.heading}", Code="${templateConfig.styles.fonts.code}" | ` +
+          `Code Theme: ${templateConfig.styles.codeBlock.theme} | ` +
+          `Style: ${templateConfig.styles.theme}`,
+      );
+    } else {
+      // Show default configuration when not using template
+      const userConfig = this.configManager.getConfig();
+      this.uiManager.showNewline();
+
+      // Console display with colors (matching Template Management style)
+      console.log(
+        chalk.yellow(
+          `⚙️  ${this.translationManager.t('interactive.usingDefaultConfig')}`,
+        ),
+      );
+      console.log();
+      console.log(
+        chalk.gray(
+          `     ${this.translationManager.t('interactive.defaultConfigNote')}`,
+        ),
+      );
+      console.log();
+
+      // Page format and margins (5-space indent)
+      console.log(
+        `     ${this.translationManager.t('templates.view.config.pageFormat')}: ${chalk.green('A4')} ${chalk.gray('(portrait)')}`,
+      );
+
+      // Default margins are now in cm (2cm)
+      console.log(
+        `     ${this.translationManager.t('templates.view.config.margins')}: ${this.translationManager.t('templates.view.config.top')} ${chalk.yellow(DEFAULT_MARGINS.NORMAL.top)}, ${this.translationManager.t('templates.view.config.right')} ${chalk.yellow(DEFAULT_MARGINS.NORMAL.right)}, ${this.translationManager.t('templates.view.config.bottom')} ${chalk.yellow(DEFAULT_MARGINS.NORMAL.bottom)}, ${this.translationManager.t('templates.view.config.left')} ${chalk.yellow(DEFAULT_MARGINS.NORMAL.left)}`,
+      );
+
+      // Headers and footers
+      console.log(
+        `     ${this.translationManager.t('templates.view.config.header')}: ${chalk.red(this.translationManager.t('common.status.disabled'))}, ${this.translationManager.t('templates.view.config.footer')}: ${chalk.red(this.translationManager.t('common.status.disabled'))}`,
+      );
+
+      // Table of contents
+      const tocStatus = config.includeTOC
+        ? `${chalk.green(this.translationManager.t('common.status.enabled'))} ${chalk.gray(`(${this.translationManager.t('templates.view.config.tocDepth')}: ${config.tocDepth})`)}`
+        : chalk.red(this.translationManager.t('common.status.disabled'));
+      console.log(
+        `     ${this.translationManager.t('templates.view.config.toc')}: ${tocStatus}`,
+      );
+
+      // Anchor links (bookmarks)
+      const anchorLinksStatus = config.tocReturnLinksLevel
+        ? `${chalk.green(this.translationManager.t('common.status.enabled'))} ${chalk.gray(`(${this.translationManager.t('templates.view.config.anchorDepth')}: ${config.tocReturnLinksLevel})`)}`
+        : chalk.red(this.translationManager.t('common.status.disabled'));
+      console.log(
+        `     ${this.translationManager.t('templates.view.config.anchorLinks')}: ${anchorLinksStatus}`,
+      );
+
+      // Page numbers
+      const pageNumbersStatus = config.includePageNumbers
+        ? chalk.green(this.translationManager.t('common.status.enabled'))
+        : chalk.red(this.translationManager.t('common.status.disabled'));
+      console.log(
+        `     ${this.translationManager.t('templates.view.config.pageNumbers')}: ${pageNumbersStatus}`,
+      );
+
+      // Fonts configuration
+      console.log(
+        `     ${this.translationManager.t('templates.view.config.fonts')}:`,
+      );
+      const notSet = this.translationManager.t('common.status.notSet');
+
+      console.log(
+        `       • ${this.translationManager.t('templates.view.config.bodyFont')}: ${chalk.gray(notSet)}`,
+      );
+      console.log(
+        `       • ${this.translationManager.t('templates.view.config.headingFont')}: ${chalk.gray(notSet)}`,
+      );
+      console.log(
+        `       • ${this.translationManager.t('templates.view.config.codeFont')}: ${chalk.gray(notSet)}`,
+      );
+
+      // Code block theme
+      const codeTheme = userConfig.syntaxHighlighting?.theme || 'default';
+      console.log(
+        `     ${this.translationManager.t('templates.view.config.codeBlockTheme')}: ${chalk.magenta(codeTheme)}`,
+      );
+      console.log();
+
+      // Clean log without colors
+      this.logger.info(
+        `Using default configuration | ` +
+          `Page: A4 (portrait) | ` +
+          `Margins: T:${DEFAULT_MARGINS.NORMAL.top} R:${DEFAULT_MARGINS.NORMAL.right} B:${DEFAULT_MARGINS.NORMAL.bottom} L:${DEFAULT_MARGINS.NORMAL.left} | ` +
+          `Code Theme: ${codeTheme}`,
+      );
+    }
+
     this.uiManager.showSeparator();
     this.uiManager.showNewline();
 
@@ -456,21 +631,278 @@ export class InteractiveMode {
         config.outputPath ||
         config.inputPath.replace(/\.(md|markdown)$/, '.pdf');
 
-      // Get user's headers/footers preferences
+      // Get user's headers/footers preferences (fallback if no template)
       const userConfig = this.configManager.getConfig();
-      const headersFootersConfig = userConfig.headersFooters;
+      let headersFootersConfig = userConfig.headersFooters;
+
+      // If template is provided, use template's configuration
+      let pdfMargin: {
+        top: string;
+        right: string;
+        bottom: string;
+        left: string;
+      } = DEFAULT_MARGINS.NORMAL;
+      let displayHeaderFooter = false;
+      let customStyles: string | undefined;
+
+      if (config.template) {
+        const template = config.template;
+        this.logger.info(
+          `Applying template configuration: ${this.translationManager.t(template.name)}`,
+        );
+
+        // Apply template's code block theme to configuration
+        if (template.config.styles.codeBlock.theme) {
+          this.configManager.set(
+            'syntaxHighlighting.theme',
+            template.config.styles.codeBlock.theme,
+          );
+          this.logger.info(
+            `Applied code block theme: ${template.config.styles.codeBlock.theme}`,
+          );
+        }
+
+        // Apply template's style theme to configuration
+        if (template.config.styles.theme) {
+          this.configManager.set('styles.theme', template.config.styles.theme);
+          this.logger.info(
+            `Applied style theme: ${template.config.styles.theme}`,
+          );
+        }
+
+        // Apply template's PDF margin configuration to ConfigManager
+        // This is critical because PDF generator reads margins from ConfigManager
+        this.configManager.set('pdf.margin', template.config.pdf.margin);
+        this.logger.info(
+          `Applied PDF margins from template: T:${template.config.pdf.margin.top} R:${template.config.pdf.margin.right} B:${template.config.pdf.margin.bottom} L:${template.config.pdf.margin.left}`,
+        );
+
+        // Reset markdown parser to pick up new syntax highlighting theme
+        this.markdownParserService.resetParser();
+        this.logger.info(
+          'Reset markdown parser to apply new template configuration',
+        );
+
+        // Use template's PDF margin configuration
+        pdfMargin = {
+          top: template.config.pdf.margin.top,
+          right: template.config.pdf.margin.right,
+          bottom: template.config.pdf.margin.bottom,
+          left: template.config.pdf.margin.left,
+        };
+        displayHeaderFooter = template.config.pdf.displayHeaderFooter;
+
+        // Build template-specific headers/footers config
+        // Convert simple template header/footer config to complex system config
+        if (
+          template.config.headerFooter.header.enabled ||
+          template.config.headerFooter.footer.enabled
+        ) {
+          const headerContent =
+            template.config.headerFooter.header.content || '';
+          const footerContent =
+            template.config.headerFooter.footer.content || '';
+
+          headersFootersConfig = {
+            header: {
+              enabled: template.config.headerFooter.header.enabled,
+              title: {
+                enabled: headerContent.includes('{{title}}'),
+                mode: headerContent.includes('{{title}}')
+                  ? ('metadata' as const)
+                  : ('none' as const),
+                alignment: 'center' as const,
+              },
+              pageNumber: {
+                enabled: false,
+                mode: 'none' as const,
+                alignment: 'center' as const,
+              },
+              dateTime: {
+                enabled: false,
+                mode: 'none' as const,
+                alignment: 'center' as const,
+              },
+              copyright: {
+                enabled: false,
+                mode: 'none' as const,
+                alignment: 'center' as const,
+              },
+              message: {
+                enabled: Boolean(
+                  headerContent && !headerContent.includes('{{'),
+                ),
+                mode: 'custom' as const,
+                customValue: headerContent,
+                alignment: 'center' as const,
+              },
+              author: {
+                enabled: false,
+                mode: 'none' as const,
+                alignment: 'center' as const,
+              },
+              organization: {
+                enabled: false,
+                mode: 'none' as const,
+                alignment: 'center' as const,
+              },
+              version: {
+                enabled: false,
+                mode: 'none' as const,
+                alignment: 'center' as const,
+              },
+              category: {
+                enabled: false,
+                mode: 'none' as const,
+                alignment: 'center' as const,
+              },
+              layout: {},
+            },
+            footer: {
+              enabled: template.config.headerFooter.footer.enabled,
+              title: {
+                enabled: false,
+                mode: 'none' as const,
+                alignment: 'center' as const,
+              },
+              pageNumber: {
+                enabled: template.config.features.pageNumbers,
+                mode: template.config.features.pageNumbers
+                  ? ('show' as const)
+                  : ('none' as const),
+                alignment: 'center' as const,
+              },
+              dateTime: {
+                enabled: false,
+                mode: 'none' as const,
+                alignment: 'center' as const,
+              },
+              copyright: {
+                enabled: false,
+                mode: 'none' as const,
+                alignment: 'center' as const,
+              },
+              message: {
+                enabled: Boolean(
+                  footerContent && !footerContent.includes('{{'),
+                ),
+                mode: 'custom' as const,
+                customValue: footerContent,
+                alignment: 'center' as const,
+              },
+              author: {
+                enabled: false,
+                mode: 'none' as const,
+                alignment: 'center' as const,
+              },
+              organization: {
+                enabled: false,
+                mode: 'none' as const,
+                alignment: 'center' as const,
+              },
+              version: {
+                enabled: false,
+                mode: 'none' as const,
+                alignment: 'center' as const,
+              },
+              category: {
+                enabled: false,
+                mode: 'none' as const,
+                alignment: 'center' as const,
+              },
+              layout: {},
+            },
+          };
+        }
+
+        // Build custom styles from template
+        const stylesParts: string[] = [];
+
+        // Font configuration
+        if (template.config.styles.fonts.body) {
+          stylesParts.push(
+            `body { font-family: "${template.config.styles.fonts.body}", sans-serif; }`,
+          );
+        }
+        if (template.config.styles.fonts.heading) {
+          stylesParts.push(
+            `h1, h2, h3, h4, h5, h6 { font-family: "${template.config.styles.fonts.heading}", sans-serif; }`,
+          );
+        }
+        if (template.config.styles.fonts.code) {
+          stylesParts.push(
+            `code, pre { font-family: "${template.config.styles.fonts.code}", monospace; }`,
+          );
+        }
+
+        // Note: Line numbers are automatically enabled for all code blocks with language
+        // (except 'text' or no language). No template configuration needed.
+
+        if (stylesParts.length > 0) {
+          customStyles = stylesParts.join('\n');
+        }
+
+        this.logger.debug('Template configuration applied:', {
+          margin: pdfMargin,
+          displayHeaderFooter,
+          fonts: template.config.styles.fonts,
+          codeBlockTheme: template.config.styles.codeBlock.theme,
+        });
+      }
 
       const processingOptions: FileProcessingOptions = {
         outputPath,
         includeTOC: config.includeTOC,
         tocReturnLinksLevel: config.tocReturnLinksLevel ?? 0, // Add TOC return links level with default
         pdfOptions: {
-          margin: DEFAULT_MARGINS.NORMAL,
+          margin: pdfMargin,
           displayHeaderFooter: false, // Force disable - using CSS @page instead
           footerTemplate: '', // Disable Puppeteer templates - using CSS @page instead
           printBackground: true,
         },
+        ...(customStyles && { customStyles }), // Apply template styles if defined
       };
+
+      // Log detailed configuration for transparency
+      this.logger.info('=== Conversion Configuration ===');
+      this.logger.info(`Input: ${config.inputPath}`);
+      this.logger.info(`Output: ${outputPath}`);
+
+      if (config.template) {
+        this.logger.info(
+          `Template: ${this.translationManager.t(config.template.name)}`,
+        );
+        this.logger.info(
+          `  - Page Format: ${config.template.config.pdf.format} (${config.template.config.pdf.orientation})`,
+        );
+        this.logger.info(
+          `  - Margins: T:${pdfMargin.top} R:${pdfMargin.right} B:${pdfMargin.bottom} L:${pdfMargin.left}`,
+        );
+        this.logger.info(
+          `  - Fonts: Body="${config.template.config.styles.fonts.body}", Heading="${config.template.config.styles.fonts.heading}", Code="${config.template.config.styles.fonts.code}"`,
+        );
+        this.logger.info(
+          `  - Code Block Theme: ${config.template.config.styles.codeBlock.theme}`,
+        );
+      } else {
+        this.logger.info('Template: None (using default configuration)');
+        this.logger.info(`  - Page Format: A4 (portrait)`);
+        this.logger.info(
+          `  - Margins: T:${pdfMargin.top} R:${pdfMargin.right} B:${pdfMargin.bottom} L:${pdfMargin.left}`,
+        );
+        const userConfig = this.configManager.getConfig();
+        this.logger.info(
+          `  - Code Block Theme: ${userConfig.syntaxHighlighting?.theme || 'default'}`,
+        );
+      }
+
+      this.logger.info(
+        `TOC: ${config.includeTOC ? 'Enabled' : 'Disabled'}${config.includeTOC ? ` (Depth: ${config.tocDepth}, Return Links: ${config.tocReturnLinksLevel})` : ''}`,
+      );
+      this.logger.info(
+        `Page Numbers: ${config.includePageNumbers ? 'Enabled' : 'Disabled'}`,
+      );
+      this.logger.info('================================');
 
       // Use headers/footers config if available, otherwise fallback to legacy page numbers
       if (
@@ -612,6 +1044,220 @@ export class InteractiveMode {
   /**
    * Format bytes to human readable string
    */
+  /**
+   * Get conversion config from template with optional adjustments
+   */
+  private async getConfigFromTemplate(
+    inputPath: string,
+    template: Template,
+    inquirer: any,
+  ): Promise<ConversionConfig> {
+    // Show template info
+    console.log(
+      chalk.cyan(
+        `\n✨ ${this.translationManager.t('templates.messages.usingTemplate')}: ${this.translationManager.t(template.name)}`,
+      ),
+    );
+
+    // Ask if user wants to adjust settings
+    const { adjustSettings } = await inquirer.default.prompt([
+      {
+        type: 'confirm',
+        name: 'adjustSettings',
+        message: this.translationManager.t('templates.prompts.adjustSettings'),
+        default: false,
+      },
+    ]);
+
+    // Prompt for output path and optional adjustments
+    const answers = await inquirer.default.prompt([
+      {
+        type: 'input',
+        name: 'outputPath',
+        message: this.translationManager.t('interactive.enterOutputPath'),
+        default: inputPath.replace(/\.(md|markdown)$/, '.pdf'),
+      },
+      ...(adjustSettings
+        ? [
+            {
+              type: 'confirm' as const,
+              name: 'includeTOC',
+              message: this.translationManager.t('interactive.includeTOC'),
+              default: template.config.features.toc,
+            },
+            {
+              type: 'list' as const,
+              name: 'tocDepth',
+              message: this.translationManager.t('interactive.selectTocDepth'),
+              choices: [
+                {
+                  name: this.translationManager.t('common.tocLevels.1'),
+                  value: 1,
+                },
+                {
+                  name: this.translationManager.t('common.tocLevels.2'),
+                  value: 2,
+                },
+                {
+                  name: this.translationManager.t('common.tocLevels.3'),
+                  value: 3,
+                },
+                {
+                  name: this.translationManager.t('common.tocLevels.4'),
+                  value: 4,
+                },
+                {
+                  name: this.translationManager.t('common.tocLevels.5'),
+                  value: 5,
+                },
+                {
+                  name: this.translationManager.t('common.tocLevels.6'),
+                  value: 6,
+                },
+              ],
+              default: template.config.features.tocDepth,
+              when: (ans: any) => ans.includeTOC,
+            },
+            {
+              type: 'confirm' as const,
+              name: 'includePageNumbers',
+              message: this.translationManager.t(
+                'interactive.includePageNumbers',
+              ),
+              default: template.config.features.pageNumbers,
+            },
+            {
+              type: 'list' as const,
+              name: 'tocReturnLinksLevel',
+              message: this.translationManager.t(
+                'interactive.tocReturnLinksLevel',
+              ),
+              choices: [
+                {
+                  name: this.translationManager.t(
+                    'common.tocReturnLinksLevels.0',
+                  ),
+                  value: 0,
+                },
+                {
+                  name: this.translationManager.t(
+                    'common.tocReturnLinksLevels.1',
+                  ),
+                  value: 1,
+                },
+                {
+                  name: this.translationManager.t(
+                    'common.tocReturnLinksLevels.2',
+                  ),
+                  value: 2,
+                },
+                {
+                  name: this.translationManager.t(
+                    'common.tocReturnLinksLevels.3',
+                  ),
+                  value: 3,
+                },
+                {
+                  name: this.translationManager.t(
+                    'common.tocReturnLinksLevels.4',
+                  ),
+                  value: 4,
+                },
+                {
+                  name: this.translationManager.t(
+                    'common.tocReturnLinksLevels.5',
+                  ),
+                  value: 5,
+                },
+              ],
+              default: Math.min(template.config.features.anchorDepth, 5),
+              when: (ans: any) => ans.includeTOC,
+            },
+          ]
+        : []),
+    ]);
+
+    // Build config from template
+    const config: ConversionConfig = {
+      inputPath,
+      outputPath: answers.outputPath,
+      includeTOC: adjustSettings
+        ? (answers.includeTOC ?? template.config.features.toc)
+        : template.config.features.toc,
+      tocDepth: adjustSettings
+        ? (answers.tocDepth ?? template.config.features.tocDepth)
+        : template.config.features.tocDepth,
+      includePageNumbers: adjustSettings
+        ? (answers.includePageNumbers ?? template.config.features.pageNumbers)
+        : template.config.features.pageNumbers,
+      tocReturnLinksLevel: adjustSettings
+        ? (answers.tocReturnLinksLevel ??
+          Math.min(template.config.features.anchorDepth, 5))
+        : Math.min(template.config.features.anchorDepth, 5),
+      template, // Include template reference for complete configuration
+    };
+
+    return config;
+  }
+
+  /**
+   * Select template for conversion
+   */
+  private async selectTemplate(): Promise<Template | null> {
+    const inquirer = await import('inquirer');
+
+    try {
+      // Get all templates (system + custom)
+      const allTemplates = await this.templateStorage.getAllTemplates();
+      const templates = [...allTemplates.system, ...allTemplates.custom];
+
+      if (templates.length === 0) {
+        this.uiManager.showWarning(
+          this.translationManager.t('templates.messages.noTemplates'),
+        );
+        return null;
+      }
+
+      // Create choices with template information
+      const choices = templates.map((t) => ({
+        name: `[${this.translationManager.t(`templates.types.${t.type}`)}] ${this.translationManager.t(t.name)} - ${this.translationManager.t(t.description)}`,
+        value: t.id,
+      }));
+
+      // Add option to skip template selection
+      choices.unshift({
+        name: this.translationManager.t('templates.prompts.skipTemplate'),
+        value: 'skip',
+      });
+
+      const { templateId } = await (inquirer as InquirerModule).default.prompt<{
+        templateId: string;
+      }>([
+        {
+          type: 'list',
+          name: 'templateId',
+          message: this.translationManager.t(
+            'templates.prompts.selectTemplateForConversion',
+          ),
+          choices,
+          pageSize: 10,
+        },
+      ]);
+
+      if (templateId === 'skip') {
+        return null;
+      }
+
+      const template = await this.templateStorage.read(templateId);
+      return template;
+    } catch (error) {
+      this.uiManager.showWarning(
+        this.translationManager.t('templates.messages.errorLoadingTemplates'),
+      );
+      return null;
+    }
+  }
+
   private formatBytes(bytes: number): string {
     const sizes = [
       this.translationManager.t('interactive.bytes'),

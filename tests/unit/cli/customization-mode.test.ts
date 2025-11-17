@@ -5,6 +5,8 @@
  */
 
 import { jest } from '@jest/globals';
+import { CustomizationMode } from '../../../src/cli/customization-mode';
+import { DEFAULT_HEADERS_FOOTERS_CONFIG } from '../../../src/core/headers-footers';
 
 // Mock external ES modules
 jest.mock('inquirer');
@@ -27,244 +29,291 @@ jest.mock('chalk', () => ({
 }));
 
 describe('customization-mode', () => {
-  // Dynamic import to avoid ES module issues
-  let moduleExports: any;
+  let mockContainer: any;
+  let mockLogger: any;
+  let mockTranslator: any;
+  let mockConfig: any;
+  let inquirerMock: any;
+  let instance: CustomizationMode;
 
-  beforeAll(async () => {
-    try {
-      moduleExports = await import('../../../src/cli/customization-mode');
-    } catch (error) {
-      console.warn('Unable to import module:', error);
-      moduleExports = {};
-    }
+  beforeEach(() => {
+    // Clear all mocks first
+    jest.clearAllMocks();
+
+    mockLogger = {
+      info: jest.fn(),
+      error: jest.fn(),
+      warn: jest.fn(),
+      debug: jest.fn(),
+      getLevel: jest.fn().mockReturnValue('info'),
+      setLevel: jest.fn(),
+    };
+
+    mockTranslator = {
+      t: jest.fn((key: string) => key) as any,
+      getCurrentLocale: jest.fn().mockReturnValue('en'),
+      getSupportedLocales: jest.fn().mockReturnValue(['en', 'zh-TW']),
+      setLocale: jest.fn(),
+    };
+
+    mockConfig = {
+      get: jest.fn().mockReturnValue(undefined),
+      set: jest.fn(),
+      save: jest.fn(() => Promise.resolve()) as any,
+      has: jest.fn().mockReturnValue(false),
+      getAll: jest.fn().mockReturnValue({}),
+      onConfigChanged: jest.fn(),
+      onConfigCreated: jest.fn(),
+      setAndSave: jest.fn(() => Promise.resolve()) as any,
+      getConfigPath: jest.fn().mockReturnValue('/mock/path'),
+      getConfig: jest.fn().mockReturnValue({
+        headersFooters: DEFAULT_HEADERS_FOOTERS_CONFIG,
+      }),
+    };
+
+    mockContainer = {
+      resolve: jest.fn((key: string) => {
+        const mocks: Record<string, any> = {
+          logger: mockLogger,
+          translator: mockTranslator,
+          config: mockConfig,
+        };
+        return mocks[key] || {};
+      }),
+    };
+
+    // Mock inquirer
+    inquirerMock = {
+      prompt: jest.fn(),
+    };
+
+    // Mock the dynamic import of inquirer
+    const inquirer = require('inquirer');
+    inquirer.default = inquirerMock;
+    Object.assign(inquirer, inquirerMock);
+
+    // Spy on console methods
+    jest.spyOn(console, 'log').mockImplementation(() => {});
+    jest.spyOn(console, 'error').mockImplementation(() => {});
+    jest.spyOn(console, 'clear').mockImplementation(() => {});
+
+    instance = new CustomizationMode(mockContainer);
+  });
+
+  afterEach(() => {
+    jest.restoreAllMocks();
   });
 
   describe('Module Structure', () => {
-    it('should successfully load module', () => {
-      expect(moduleExports).toBeDefined();
+    it('should successfully create instance', () => {
+      expect(instance).toBeDefined();
+      expect(instance).toBeInstanceOf(CustomizationMode);
     });
 
-    it('should export CustomizationMode class', () => {
-      expect(moduleExports.CustomizationMode).toBeDefined();
-      expect(typeof moduleExports.CustomizationMode).toBe('function');
+    it('should resolve all required services from container', () => {
+      expect(mockContainer.resolve).toHaveBeenCalledWith('logger');
+      expect(mockContainer.resolve).toHaveBeenCalledWith('translator');
+      expect(mockContainer.resolve).toHaveBeenCalledWith('config');
     });
   });
 
-  describe('CustomizationMode', () => {
-    let mockContainer: any;
-    let mockLogger: any;
-    let mockTranslator: any;
-    let mockConfig: any;
-    let inquirerMock: any;
+  describe('start', () => {
+    it('should start and exit with back option', async () => {
+      inquirerMock.prompt.mockResolvedValue({ option: 'back' });
 
-    beforeEach(() => {
-      // Clear all mocks first
-      jest.clearAllMocks();
+      await instance.start();
 
-      mockLogger = {
-        info: jest.fn(),
-        error: jest.fn(),
-        warn: jest.fn(),
-        debug: jest.fn(),
-        getLevel: jest.fn().mockReturnValue('info'),
-        setLevel: jest.fn(),
-      };
-
-      mockTranslator = {
-        t: jest.fn().mockReturnValue('Mocked Translation'),
-        getCurrentLocale: jest.fn().mockReturnValue('en'),
-        getSupportedLocales: jest.fn().mockReturnValue(['en']),
-        setLocale: jest.fn(),
-      };
-
-      mockConfig = {
-        get: jest.fn(),
-        set: jest.fn(),
-        save: jest.fn().mockImplementation(() => Promise.resolve()),
-        has: jest.fn(),
-        getAll: jest.fn().mockReturnValue({}),
-        onConfigChanged: jest.fn(),
-        onConfigCreated: jest.fn(),
-        setAndSave: jest.fn().mockImplementation(() => Promise.resolve()),
-        getConfigPath: jest.fn().mockReturnValue('/mock/path'),
-      };
-
-      mockContainer = {
-        resolve: jest.fn((key: string) => {
-          const mocks: Record<string, any> = {
-            logger: mockLogger,
-            translator: mockTranslator,
-            config: mockConfig,
-          };
-          return mocks[key] || {};
-        }),
-      };
-
-      // Mock inquirer
-      inquirerMock = {
-        prompt: jest.fn(),
-      };
-
-      // Mock the dynamic import of inquirer
-      jest.doMock('inquirer', () => ({
-        default: inquirerMock,
-        ...inquirerMock,
-      }));
+      expect(mockLogger.info).toHaveBeenCalledWith(
+        'startup.startingCustomizationMode',
+      );
+      expect(mockLogger.info).toHaveBeenCalledWith(
+        'startup.returningToMainMenuFromCustomization',
+      );
     });
 
-    it('should be able to create instance', () => {
-      if (moduleExports.CustomizationMode) {
-        expect(() => {
-          const instance = new moduleExports.CustomizationMode(mockContainer);
-          expect(instance).toBeDefined();
-        }).not.toThrow();
-      }
+    it('should handle cover design option', async () => {
+      inquirerMock.prompt
+        .mockResolvedValueOnce({ option: 'cover' })
+        .mockResolvedValueOnce({ key: 'continue' })
+        .mockResolvedValueOnce({ option: 'back' });
+
+      await instance.start();
+
+      expect(mockTranslator.t).toHaveBeenCalledWith(
+        'customization.coverDesignComingSoon',
+      );
     });
 
-    it('should handle start method with back option', async () => {
-      if (moduleExports.CustomizationMode) {
-        inquirerMock.prompt.mockResolvedValue({ option: 'back' });
+    it('should handle headers option entry', async () => {
+      inquirerMock.prompt
+        .mockResolvedValueOnce({ option: 'headers' })
+        .mockResolvedValueOnce({ option: 'back' })
+        .mockResolvedValueOnce({ option: 'back' });
 
-        const instance = new moduleExports.CustomizationMode(mockContainer);
-        await expect(instance.start()).resolves.not.toThrow();
+      await instance.start();
 
-        expect(mockLogger.info).toHaveBeenCalled();
-        expect(mockTranslator.t).toHaveBeenCalled();
-      }
+      // Verify headers option was accessed
+      expect(mockTranslator.t).toHaveBeenCalled();
     });
 
-    it('should handle start method with cover option', async () => {
-      if (moduleExports.CustomizationMode) {
-        inquirerMock.prompt
-          .mockResolvedValueOnce({ option: 'cover' })
-          .mockResolvedValueOnce({ option: 'back' });
+    it('should handle headers option and preview settings', async () => {
+      inquirerMock.prompt
+        .mockResolvedValueOnce({ option: 'headers' })
+        .mockResolvedValueOnce({ option: 'preview' })
+        .mockResolvedValueOnce({ key: 'continue' })
+        .mockResolvedValueOnce({ option: 'back' })
+        .mockResolvedValueOnce({ option: 'back' });
 
-        const instance = new moduleExports.CustomizationMode(mockContainer);
-        await expect(instance.start()).resolves.not.toThrow();
+      await instance.start();
 
-        expect(mockLogger.info).toHaveBeenCalled();
-        expect(mockTranslator.t).toHaveBeenCalled();
-      }
+      expect(console.log).toHaveBeenCalled();
     });
 
-    it('should handle start method with headers option', async () => {
-      if (moduleExports.CustomizationMode) {
-        inquirerMock.prompt
-          .mockResolvedValueOnce({ option: 'headers' })
-          .mockResolvedValueOnce({ option: 'back' });
+    // Note: Complex interactive header/footer configuration tests are covered by integration tests
+    // These unit tests focus on basic flow and service interactions
 
-        const instance = new moduleExports.CustomizationMode(mockContainer);
-        await expect(instance.start()).resolves.not.toThrow();
+    it('should handle metadata option', async () => {
+      // Mock metadata service
+      mockContainer.resolve = jest.fn((key: string) => {
+        const mocks: Record<string, any> = {
+          logger: mockLogger,
+          translator: mockTranslator,
+          config: mockConfig,
+          metadataService: {
+            getUserMetadata: jest.fn().mockReturnValue({}),
+          },
+        };
+        return mocks[key] || {};
+      });
 
-        expect(mockLogger.info).toHaveBeenCalled();
-      }
+      inquirerMock.prompt
+        .mockResolvedValueOnce({ option: 'metadata' })
+        .mockResolvedValueOnce({ action: 'back' })
+        .mockResolvedValueOnce({ option: 'back' });
+
+      await instance.start();
+
+      expect(mockTranslator.t).toHaveBeenCalled();
     });
 
-    it('should handle start method with security option', async () => {
-      if (moduleExports.CustomizationMode) {
-        inquirerMock.prompt
-          .mockResolvedValueOnce({ option: 'security' })
-          .mockResolvedValueOnce({ option: 'back' });
+    it('should handle security option', async () => {
+      inquirerMock.prompt
+        .mockResolvedValueOnce({ option: 'security' })
+        .mockResolvedValueOnce({ key: 'continue' })
+        .mockResolvedValueOnce({ option: 'back' });
 
-        const instance = new moduleExports.CustomizationMode(mockContainer);
-        await expect(instance.start()).resolves.not.toThrow();
+      await instance.start();
 
-        expect(mockLogger.info).toHaveBeenCalled();
-      }
+      expect(mockTranslator.t).toHaveBeenCalledWith(
+        'customization.securitySettingsComingSoon',
+      );
     });
 
-    it('should handle start method with templates option', async () => {
-      if (moduleExports.CustomizationMode) {
-        inquirerMock.prompt
-          .mockResolvedValueOnce({ option: 'templates' })
-          .mockResolvedValueOnce({ option: 'back' });
+    it('should handle templates option', async () => {
+      inquirerMock.prompt
+        .mockResolvedValueOnce({ option: 'templates' })
+        .mockResolvedValueOnce({ option: 'back' })
+        .mockResolvedValueOnce({ option: 'back' });
 
-        const instance = new moduleExports.CustomizationMode(mockContainer);
-        await expect(instance.start()).resolves.not.toThrow();
+      await instance.start();
 
-        expect(mockLogger.info).toHaveBeenCalled();
-      }
+      expect(mockLogger.info).toHaveBeenCalled();
     });
 
-    it('should handle metadata option with various sub-options', async () => {
-      if (moduleExports.CustomizationMode) {
-        inquirerMock.prompt
-          .mockResolvedValueOnce({ option: 'metadata' })
-          .mockResolvedValueOnce({ option: 'configure-basic' })
-          .mockResolvedValueOnce({ option: 'back' })
-          .mockResolvedValueOnce({ option: 'back' });
+    it('should handle errors gracefully', async () => {
+      const error = new Error('Test error');
+      inquirerMock.prompt.mockRejectedValue(error);
 
-        const instance = new moduleExports.CustomizationMode(mockContainer);
-        await expect(instance.start()).resolves.not.toThrow();
+      await expect(instance.start()).rejects.toThrow('Test error');
 
-        expect(mockLogger.info).toHaveBeenCalled();
-      }
+      expect(mockLogger.error).toHaveBeenCalled();
+      expect(console.error).toHaveBeenCalled();
     });
+  });
 
-    it('should handle errors and log them', async () => {
-      if (moduleExports.CustomizationMode) {
-        // Mock chalk to throw an error when called (to force an error scenario)
-        const originalConsoleError = console.error;
-        console.error = jest.fn();
+  describe('showCustomizationHeader', () => {
+    it('should display customization header', () => {
+      mockTranslator.t
+        .mockReturnValueOnce('Customization Menu')
+        .mockReturnValueOnce('Configure your PDF settings');
 
-        // Mock showCustomizationHeader to throw an error
-        const instance = new moduleExports.CustomizationMode(mockContainer);
-        const originalShowHeader = instance['showCustomizationHeader'];
-        instance['showCustomizationHeader'] = jest.fn(() => {
-          throw new Error('Test error');
-        });
+      (instance as any).showCustomizationHeader();
 
-        await expect(instance.start()).rejects.toThrow('Test error');
-
-        expect(mockLogger.error).toHaveBeenCalled();
-        expect(console.error).toHaveBeenCalled();
-
-        // Restore original functions
-        console.error = originalConsoleError;
-      }
+      expect(console.log).toHaveBeenCalled();
+      expect(mockTranslator.t).toHaveBeenCalledWith(
+        'cli.customizationMenu.title',
+      );
+      expect(mockTranslator.t).toHaveBeenCalledWith(
+        'cli.customizationMenu.subtitle',
+      );
     });
+  });
 
-    it('should call translator for various menu options', async () => {
-      if (moduleExports.CustomizationMode) {
-        inquirerMock.prompt.mockResolvedValue({ option: 'back' });
+  describe('selectCustomizationOption', () => {
+    it('should prompt for customization option', async () => {
+      inquirerMock.prompt.mockResolvedValue({ option: 'cover' });
 
-        const instance = new moduleExports.CustomizationMode(mockContainer);
-        await instance.start();
+      const result = await (instance as any).selectCustomizationOption();
 
-        expect(mockTranslator.t).toHaveBeenCalledWith(
-          'startup.startingCustomizationMode',
-        );
-        expect(mockTranslator.t).toHaveBeenCalledWith(
-          'startup.returningToMainMenuFromCustomization',
-        );
-      }
+      expect(result).toBe('cover');
+      expect(inquirerMock.prompt).toHaveBeenCalled();
     });
+  });
 
-    it('should handle show customization header', () => {
-      if (moduleExports.CustomizationMode) {
-        mockTranslator.t
-          .mockReturnValueOnce('Test Title')
-          .mockReturnValueOnce('Test Subtitle');
+  describe('coverDesign', () => {
+    it('should show coming soon message', async () => {
+      inquirerMock.prompt.mockResolvedValue({ key: 'continue' });
 
-        const instance = new moduleExports.CustomizationMode(mockContainer);
+      await (instance as any).coverDesign();
 
-        // Access private method via reflection for testing
-        const showHeader = instance['showCustomizationHeader'];
-        if (showHeader) {
-          expect(() => showHeader.call(instance)).not.toThrow();
-        }
-      }
+      expect(mockTranslator.t).toHaveBeenCalledWith(
+        'customization.coverDesignComingSoon',
+      );
     });
+  });
 
-    it('should have select customization option method', () => {
-      if (moduleExports.CustomizationMode) {
-        const instance = new moduleExports.CustomizationMode(mockContainer);
+  describe('documentMetadata', () => {
+    it('should handle metadata configuration', async () => {
+      // Mock metadata service
+      mockContainer.resolve = jest.fn((key: string) => {
+        const mocks: Record<string, any> = {
+          logger: mockLogger,
+          translator: mockTranslator,
+          config: mockConfig,
+          metadataService: {
+            getUserMetadata: jest.fn().mockReturnValue({}),
+          },
+        };
+        return mocks[key] || {};
+      });
 
-        // Verify private method exists for testing
-        const selectOption = instance['selectCustomizationOption'];
-        expect(selectOption).toBeDefined();
-        expect(typeof selectOption).toBe('function');
-      }
+      inquirerMock.prompt.mockResolvedValueOnce({ action: 'back' });
+
+      await (instance as any).documentMetadata();
+
+      expect(mockTranslator.t).toHaveBeenCalled();
+    });
+  });
+
+  describe('securitySettings', () => {
+    it('should show coming soon message', async () => {
+      inquirerMock.prompt.mockResolvedValue({ key: 'continue' });
+
+      await (instance as any).securitySettings();
+
+      expect(mockTranslator.t).toHaveBeenCalledWith(
+        'customization.securitySettingsComingSoon',
+      );
+    });
+  });
+
+  describe('pressAnyKey', () => {
+    it('should prompt user to press any key', async () => {
+      inquirerMock.prompt.mockResolvedValue({ key: 'continue' });
+
+      await (instance as any).pressAnyKey();
+
+      expect(inquirerMock.prompt).toHaveBeenCalled();
     });
   });
 });

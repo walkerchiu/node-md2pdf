@@ -1,5 +1,6 @@
 import { ConfigAccessor } from '../../infrastructure/config';
 import { DEFAULT_CSS_TEMPLATE } from '../../infrastructure/config/constants';
+import { SyntaxHighlighter } from '../rendering/processors/syntax-highlighter';
 
 import { StyleOptions } from './types';
 
@@ -363,12 +364,19 @@ export class PDFTemplates {
 
   static getSyntaxHighlightingCSS(
     enableChineseSupport: boolean = false,
+    theme: string = 'default',
   ): string {
     const codeFontFamily = enableChineseSupport
       ? DEFAULT_CSS_TEMPLATE.CODE.FONT_FAMILY_WITH_CHINESE
       : DEFAULT_CSS_TEMPLATE.CODE.FONT_FAMILY;
 
+    // Load the PrismJS theme CSS
+    const themeCSS = SyntaxHighlighter.loadThemeCSS(theme);
+
     return `
+      /* PrismJS Theme: ${theme} */
+      ${themeCSS}
+
       /* PrismJS Syntax Highlighting Styles */
       .code-block-container {
         margin: 20px 0;
@@ -383,8 +391,6 @@ export class PDFTemplates {
         overflow-x: auto;
         padding: 1em;
         margin: 0;
-        background: #f6f8fa;
-        border: 1px solid #e1e4e8;
       }
 
       .code-block-container code {
@@ -402,20 +408,32 @@ export class PDFTemplates {
         /* counter-reset is now controlled by inline style in HTML */
       }
 
+      /* Override PrismJS theme padding for code element */
       pre[class*="language-"].line-numbers > code {
         display: block;
+        padding-left: 0 !important;
       }
 
       /* Each line is a simple block element */
       .line-numbers .code-line {
         display: block;
         position: relative;
-        padding-left: 4.5em;
+        padding-left: 3em !important;
         page-break-inside: avoid;
         -webkit-column-break-inside: avoid;
         break-inside: avoid;
         counter-increment: linenumber;
         min-height: 1.45em;
+      }
+
+      /* Add top padding to first line */
+      .line-numbers .code-line:first-child {
+        padding-top: 0.5em;
+      }
+
+      /* Extend line number background for first line */
+      .line-numbers .code-line:first-child:before {
+        padding-top: 0.5em !important;
       }
 
       /* Line number using before pseudo-element with absolute positioning */
@@ -424,18 +442,16 @@ export class PDFTemplates {
         position: absolute;
         left: 0;
         top: 0;
-        width: 4em;
+        width: 2.5em !important;
         height: 100%;
         text-align: right;
-        padding-right: 0.75em;
+        padding-right: 0.5em;
         padding-top: 0;
         user-select: none;
         -webkit-user-select: none;
         -moz-user-select: none;
         -ms-user-select: none;
-        color: #666;
-        background-color: #f6f8fa;
-        border-right: 1px solid #e1e4e8;
+        opacity: 0.5;
         font-family: ${codeFontFamily};
         font-size: 14px;
         line-height: 1.45;
@@ -445,7 +461,7 @@ export class PDFTemplates {
       /* Code content as simple inline element */
       .line-numbers .line-content {
         display: inline-block;
-        width: calc(100% - 4.5em);
+        width: calc(100% - 3em) !important;
         padding-left: 0.75em;
         font-family: ${codeFontFamily};
         font-size: 14px;
@@ -456,83 +472,12 @@ export class PDFTemplates {
         box-sizing: border-box;
       }
 
-      /* Default Theme Syntax Colors */
-      .token.comment,
-      .token.prolog,
-      .token.doctype,
-      .token.cdata {
-        color: slategray;
-      }
-
-      .token.punctuation {
-        color: #999;
-      }
-
-      .token.property,
-      .token.tag,
-      .token.boolean,
-      .token.number,
-      .token.constant,
-      .token.symbol,
-      .token.deleted {
-        color: #905;
-      }
-
-      .token.selector,
-      .token.attr-name,
-      .token.string,
-      .token.char,
-      .token.builtin,
-      .token.inserted {
-        color: #690;
-      }
-
-      .token.operator,
-      .token.entity,
-      .token.url,
-      .language-css .token.string,
-      .style .token.string {
-        color: #9a6e3a;
-        background: hsla(0, 0%, 100%, .5);
-      }
-
-      .token.atrule,
-      .token.attr-value,
-      .token.keyword {
-        color: #07a;
-      }
-
-      .token.function,
-      .token.class-name {
-        color: #dd4a68;
-      }
-
-      .token.regex,
-      .token.important,
-      .token.variable {
-        color: #e90;
-      }
-
-      .token.important,
-      .token.bold {
-        font-weight: bold;
-      }
-
-      .token.italic {
-        font-style: italic;
-      }
-
-      .token.entity {
-        cursor: help;
-      }
-
       @media print {
         .code-block-container {
           break-inside: avoid;
         }
         .code-block-container pre {
           border: 1px solid #ddd;
-          background: #f9f9f9 !important;
         }
       }
     `;
@@ -749,13 +694,16 @@ export class PDFTemplates {
     customCSS?: string,
     enableChineseSupport: boolean = false,
     configAccessor?: ConfigAccessor,
+    theme: string = 'default',
   ): string {
     const baseCSS = this.getDefaultCSS({}, configAccessor);
     const chineseCSS = enableChineseSupport ? this.getChineseCSS() : '';
     const tocCSS = this.getTOCCSS();
     const plantUMLCSS = this.getPlantUMLCSS();
-    const syntaxHighlightingCSS =
-      this.getSyntaxHighlightingCSS(enableChineseSupport);
+    const syntaxHighlightingCSS = this.getSyntaxHighlightingCSS(
+      enableChineseSupport,
+      theme,
+    );
     const admonitionsCSS = this.getAdmonitionsCSS();
     const css = customCSS
       ? `${baseCSS}\n${chineseCSS}\n${tocCSS}\n${plantUMLCSS}\n${syntaxHighlightingCSS}\n${admonitionsCSS}\n${customCSS}`
@@ -786,13 +734,16 @@ export class PDFTemplates {
     customCSS?: string,
     enableChineseSupport: boolean = false,
     configAccessor?: ConfigAccessor,
+    theme: string = 'default',
   ): string {
     const baseCSS = this.getDefaultCSS({}, configAccessor);
     const chineseCSS = enableChineseSupport ? this.getChineseCSS() : '';
     const tocCSS = this.getTOCCSS();
     const plantUMLCSS = this.getPlantUMLCSS();
-    const syntaxHighlightingCSS =
-      this.getSyntaxHighlightingCSS(enableChineseSupport);
+    const syntaxHighlightingCSS = this.getSyntaxHighlightingCSS(
+      enableChineseSupport,
+      theme,
+    );
     const admonitionsCSS = this.getAdmonitionsCSS();
     const css = customCSS
       ? `${baseCSS}\n${chineseCSS}\n${tocCSS}\n${plantUMLCSS}\n${syntaxHighlightingCSS}\n${admonitionsCSS}\n${customCSS}`

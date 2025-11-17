@@ -14,6 +14,7 @@ export interface ConversionConfig {
   tocReturnLinksLevel?: TOCReturnLinkLevel;
   includePageNumbers: boolean;
   theme?: string;
+  template?: import('../core/templates/types').Template;
 }
 
 // Markdown parsing result

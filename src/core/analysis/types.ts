@@ -47,6 +47,8 @@ export interface ComplexityFactor {
     | 'business';
   weight: number;
   description: string;
+  // Parameters for i18n translation
+  params?: Record<string, string | number>;
 }
 
 export interface LanguageInfo {

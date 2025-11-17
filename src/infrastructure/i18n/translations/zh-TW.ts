@@ -241,24 +241,26 @@ export const zhTWTranslations: TranslationKey = {
     browseOtherFiles: '🔍 瀏覽其他檔案…',
     recentFilesError: '⚠️  載入最近使用檔案時發生錯誤，使用檔案瀏覽器',
     analysisResults: '📊 內容分析結果',
-    words: '📄 字數',
-    readingTime: '⏱️  閱讀時間',
+    words: '字數',
+    readingTime: '閱讀時間',
     minutes: '分鐘',
-    headings: '📝 標題',
+    headings: '標題',
     maxDepth: '最大深度',
-    language: '🌐 語言',
-    codeBlocks: '💻 程式碼區塊',
-    tables: '📊 表格',
-    images: '🖼️  圖片',
-    documentType: '🤖 文件類型',
-    complexity: '📈 複雜度',
-    contentCharacteristics: '📊 內容特徵',
+    language: '語言',
+    codeBlocks: '程式碼區塊',
+    tables: '表格',
+    images: '圖片',
+    documentType: '文件類型',
+    complexity: '複雜度',
+    contentCharacteristics: '內容特徵',
     conversionOptions: '🎛️  可用的轉換選項：',
     quickConversion: '快速轉換',
     smartRecommendations: '智能推薦（建議）',
-    chooseFromPresets: '從預設配置中選擇',
+    chooseFromPresets: '從系統預設範本中選擇',
+    useSavedTemplate: '使用自訂範本',
+    chooseFromTemplates: '從 {{count}} 個自訂範本中選擇',
     customConfiguration: '自定義配置',
-    predefinedConfigurations: '預設配置',
+    predefinedConfigurations: '系統預設範本',
     confidence: '信心度',
     estimatedTime: '預估時間',
     seconds: '秒',
@@ -289,10 +291,16 @@ export const zhTWTranslations: TranslationKey = {
     whatToDo: '您想要做什麼？',
     tryDifferentPath: '✏️  嘗試輸入不同的檔案路徑',
     returnToPrevious: '↩️  返回上一層選單',
+    wordsLabel: '字',
+    headingsLabel: '標題',
+    pageNumbersLabel: '頁碼',
+    smartConfigApplied: '智能配置已套用：',
+    tableOfContents: '目錄',
+    levels: '層',
     // Language display
     languageDisplay: {
-      en: '🇺🇸 英文',
-      'zh-TW': '🇹🇼 正體中文',
+      en: '🇺🇸  英文',
+      'zh-TW': '🇹🇼  正體中文',
     },
     // Document type display
     documentTypeDisplay: {
@@ -322,6 +330,8 @@ export const zhTWTranslations: TranslationKey = {
     selectTocDepth: '請選擇目錄深度：',
     tocReturnLinksLevel: '選擇返回目錄錨點連結的章節範圍：',
     includePageNumbers: '包含頁碼？',
+    yes: '是',
+    no: '否',
     conversionSummary: '📄 轉換設定摘要：',
     inputFile: '輸入檔案：',
     outputFile: '輸出檔案：',
@@ -350,6 +360,14 @@ export const zhTWTranslations: TranslationKey = {
     headingsFound: '找到的標題：',
     conversionFailed: '❌ 轉換失敗！',
     interactiveModeError: '❌ 互動模式錯誤：',
+    usingTemplate: '使用範本',
+    templateConfig: '範本配置',
+    usingDefaultConfig: '使用預設配置',
+    defaultConfigNote: '未選擇範本（使用系統預設值）。',
+    margins: '邊距',
+    fonts: '字型',
+    pageFormat: '頁面格式',
+    codeBlockTheme: '程式碼區塊主題',
   },
 
   // Customization settings messages
@@ -501,6 +519,129 @@ export const zhTWTranslations: TranslationKey = {
     },
   },
 
+  // Template Management
+  templates: {
+    // Basic information
+    basicInfo: {
+      title: '範本管理',
+      subtitle: '管理轉換範本與預設設定',
+      description:
+        '範本是當前配置的快照，包含頁面格式（A4、Letter 等）、邊距、頁首頁尾、目錄設定、文件屬性等。\n若要修改範本，請調整系統設定後建立新範本，以保存您偏好的配置供未來使用。',
+      createTitle: '📝 建立新範本',
+    },
+
+    // Menu options
+    menu: {
+      viewAll: '檢視所有範本',
+      create: '建立新範本',
+      edit: '編輯範本',
+      delete: '刪除自訂範本',
+      import: '匯入自訂範本',
+      export: '匯出自訂範本',
+      apply: '套用範本',
+    },
+
+    // Prompts
+    prompts: {
+      selectOption: '選擇範本選項',
+      selectTemplate: '選擇範本：',
+      selectTemplateForConversion: '選擇轉換範本：',
+      skipTemplate: '跳過（使用自訂設定）',
+      adjustSettings: '調整範本設定？',
+      selectTocDepth: '選擇目錄深度：',
+      includePageNumbers: '包含頁碼？',
+      templateName: '範本名稱：',
+      description: '描述：',
+      category: '類別：',
+      tags: '標籤（以逗號分隔）：',
+      selectTemplateToEdit: '選擇要編輯的範本：',
+      selectTemplateToDelete: '選擇要刪除的範本：',
+      selectTemplateToExport: '選擇要匯出的範本：',
+      selectTemplateToApply: '選擇要套用的範本：',
+      confirmDelete: '確定要刪除此範本嗎？',
+      updateConfigFromCurrent: '使用目前設定更新範本配置？',
+      enterJsonPath: '輸入 JSON 檔案路徑：',
+      outputFilePath: '輸出檔案路徑：',
+    },
+
+    // Messages
+    messages: {
+      noTemplatesFound: '找不到範本',
+      noTemplates: '沒有可用的範本',
+      noCustomTemplates: '沒有可{{action}}的自訂範本',
+      templateCreated: '範本建立成功',
+      templateUpdated: '範本更新成功',
+      templateDeleted: '範本刪除成功',
+      templateImported: '範本匯入成功',
+      templateExported: '範本匯出成功',
+      templateApplied: '範本套用成功',
+      usingTemplate: '使用範本',
+      cannotDeleteSystem: '無法刪除系統範本',
+      cannotEditSystem: '無法編輯系統範本',
+      templateNotFound: '找不到範本',
+      invalidTemplateData: '無效的範本資料',
+      exportCancelled: '匯出已取消',
+      deleteCancelled: '刪除已取消',
+      validationFailed: '範本驗證失敗：',
+      error: '{{action}}範本時發生錯誤：',
+      errorCreating: '建立範本時發生錯誤：',
+      errorLoadingTemplates: '載入範本時發生錯誤',
+    },
+
+    // Validation messages
+    validation: {
+      nameRequired: '名稱為必填',
+      nameExists: '已存在同名的範本',
+      descriptionRequired: '描述為必填',
+      fileNotExist: '檔案不存在',
+      mustBeJsonFile: '檔案必須是 JSON 格式',
+      failed: '範本驗證失敗：',
+      errors: {
+        idRequired: '範本 ID 為必填且必須是字串',
+        nameRequiredString: '範本名稱為必填且必須是字串',
+        descriptionRequiredString: '範本描述為必填且必須是字串',
+        typeInvalid: '範本類型必須是 "system" 或 "custom"',
+      },
+    },
+
+    // Template types
+    types: {
+      system: '系統',
+      custom: '自訂',
+    },
+
+    // View templates
+    view: {
+      systemTemplates: '系統範本：',
+      customTemplates: '自訂範本：',
+      noSystemTemplates: '找不到系統範本',
+      noCustomTemplates: '找不到自訂範本',
+      config: {
+        pageFormat: '頁面格式',
+        margins: '邊距',
+        top: '上',
+        right: '右',
+        bottom: '下',
+        left: '左',
+        header: '頁首',
+        footer: '頁尾',
+        toc: '目錄',
+        tocDepth: '目錄深度',
+        anchorLinks: '錨點連結',
+        anchorDepth: '錨點深度',
+        depth: '層級',
+        pageNumbers: '頁碼',
+        fonts: '字型',
+        bodyFont: '內文字型',
+        headingFont: '標題字型',
+        codeFont: '程式碼字型',
+        codeBlockTheme: '程式碼區塊主題',
+        colors: '色彩配置',
+        documentMetadata: '文件屬性',
+      },
+    },
+  },
+
   // Batch processing mode
   batch: {
     title: '📚 批次處理',
@@ -583,6 +724,9 @@ export const zhTWTranslations: TranslationKey = {
     retryError: '❌ 重試失敗：',
     batchModeError: '❌ 批次模式錯誤：',
     andMoreFiles: '… 還有 {{count}} 個檔案',
+    yes: '是',
+    no: '否',
+    preserveStructure: '檔名格式：{{preserve}}',
   },
 
   // File browser
@@ -742,6 +886,17 @@ export const zhTWTranslations: TranslationKey = {
   pdfContent: {
     tocTitle: '目錄',
     pageNumber: '第 {{page}} 頁／共 {{totalPages}} 頁',
+  },
+
+  // Content analysis
+  analysis: {
+    complexity: {
+      codeHeavy: '包含 {{lines}} 行程式碼，分佈於 {{blocks}} 個程式碼區塊',
+      tableHeavy: '包含 {{count}} 個複雜表格',
+      mediaRich: '包含 {{count}} 張圖片',
+      mediaRichWithDiagrams: '包含 {{count}} 張圖片和圖表',
+      deepHeadingStructure: '深層標題結構（{{depth}} 層，{{count}} 個標題）',
+    },
   },
 
   // Error messages
@@ -914,6 +1069,7 @@ export const zhTWTranslations: TranslationKey = {
 
     // Document field names (shared across metadata, headers/footers, etc.)
     fields: {
+      name: '名稱',
       title: '標題',
       author: '作者',
       subject: '主題',
@@ -967,6 +1123,15 @@ export const zhTWTranslations: TranslationKey = {
       6: '6 層（# 到 ######）',
     },
 
+    // TOC depths for template adjustment
+    tocDepths: {
+      2: '2 層（# 到 ##）',
+      3: '3 層（# 到 ###）',
+      4: '4 層（# 到 ####）',
+      5: '5 層（# 到 #####）',
+      6: '6 層（# 到 ######）',
+    },
+
     // TOC return links levels (shared across all modes)
     tocReturnLinksLevels: {
       0: '不需要',
@@ -996,6 +1161,7 @@ export const zhTWTranslations: TranslationKey = {
     // Menu navigation patterns (shared across all menus)
     menu: {
       returnToMain: '返回主選單',
+      returnToCustomization: '返回客製化選單',
       returnToPrevious: '返回上一層選單',
       selectOption: '選擇選項',
       selectConfigOption: '選擇配置選項',
@@ -1052,5 +1218,34 @@ export const zhTWTranslations: TranslationKey = {
   // Anchor links
   anchorLinks: {
     backToToc: '↑ 返回目錄',
+  },
+
+  // Preset configurations
+  presets: {
+    quickSimple: {
+      name: '快速簡易',
+      description: '適合需要快速產出、不需要複雜排版的文件草稿',
+      useCase: '簡單文件，快速轉換',
+    },
+    business: {
+      name: '商業報告',
+      description: '適合正式商業場合、需要專業外觀的報告與提案',
+      useCase: '商業報告，提案，會議文件',
+    },
+    technical: {
+      name: '技術文件',
+      description: '適合包含大量程式碼和詳細目錄結構的技術文檔',
+      useCase: 'API 文件，技術手冊，開發文檔',
+    },
+    academic: {
+      name: '學術論文',
+      description: '適合需要符合學術規範、較寬邊距的正式論文',
+      useCase: '學術論文，研究報告，畢業論文',
+    },
+    custom: {
+      name: '自訂',
+      description: '自訂範本類別',
+      useCase: '自訂使用情境',
+    },
   },
 };

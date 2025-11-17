@@ -174,6 +174,10 @@ describe('CLI Main Program Tests', () => {
       ),
     };
 
+    const mockTemplateStorage = {
+      initializeSystemTemplates: jest.fn(() => Promise.resolve()),
+    };
+
     mockContainer = {
       resolve: jest.fn((service: string) => {
         switch (service) {
@@ -183,6 +187,8 @@ describe('CLI Main Program Tests', () => {
             return mockTranslator;
           case 'fileProcessor':
             return mockFileProcessor;
+          case 'templateStorage':
+            return mockTemplateStorage;
           default:
             return {};
         }

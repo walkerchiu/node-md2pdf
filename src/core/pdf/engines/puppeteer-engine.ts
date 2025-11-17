@@ -249,11 +249,15 @@ export class PuppeteerPDFEngine implements IPDFEngine {
     // TOC generation is handled by TwoStageRenderingEngine
     // This method only handles basic HTML generation
     // PDF metadata is now handled by pdf-lib post-processing
+    const theme = context.syntaxHighlightingTheme || 'default';
+
     return PDFTemplates.getFullHTML(
       context.htmlContent,
       context.title,
       context.customCSS,
       context.enableChineseSupport || false,
+      undefined, // configAccessor
+      theme,
     );
   }
 

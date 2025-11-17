@@ -107,7 +107,8 @@ describe('SmartDefaultsService', () => {
             {
               type: 'code-heavy',
               weight: 0.3,
-              description: 'Contains multiple code blocks',
+              description: 'analysis.complexity.codeHeavy',
+              params: expect.any(Object),
             },
             {
               type: 'technical',
@@ -268,7 +269,8 @@ describe('SmartDefaultsService', () => {
             {
               type: 'table-heavy',
               weight: 0.2,
-              description: 'Contains complex tables',
+              description: 'analysis.complexity.tableHeavy',
+              params: expect.any(Object),
             },
           ],
         },
@@ -400,7 +402,8 @@ describe('SmartDefaultsService', () => {
             {
               type: 'code-heavy',
               weight: 0.3,
-              description: 'Contains multiple code blocks',
+              description: 'analysis.complexity.codeHeavy',
+              params: expect.any(Object),
             },
           ],
         },
@@ -443,7 +446,7 @@ describe('SmartDefaultsService', () => {
 
       const config = await service.getQuickConversionConfig(analysis);
 
-      expect(config.name).toBe('Technical Document');
+      expect(config.name).toBe('presets.technical.name');
       expect(config.config.theme).toBe('technical');
       expect(config.estimatedTime).toBeGreaterThan(0);
     });
@@ -512,10 +515,10 @@ describe('SmartDefaultsService', () => {
       const presets = service.getPresetConfigs();
 
       expect(presets).toHaveLength(4);
-      expect(presets.map((p) => p.name)).toContain('Quick & Simple');
-      expect(presets.map((p) => p.name)).toContain('Professional Document');
-      expect(presets.map((p) => p.name)).toContain('Technical Document');
-      expect(presets.map((p) => p.name)).toContain('Academic Paper');
+      expect(presets.map((p) => p.name)).toContain('presets.quickSimple.name');
+      expect(presets.map((p) => p.name)).toContain('presets.business.name');
+      expect(presets.map((p) => p.name)).toContain('presets.technical.name');
+      expect(presets.map((p) => p.name)).toContain('presets.academic.name');
 
       presets.forEach((preset) => {
         expect(preset.name).toBeDefined();
@@ -548,12 +551,16 @@ describe('SmartDefaultsService', () => {
             {
               type: 'code-heavy',
               weight: 0.3,
-              description: 'Contains many code blocks',
+              description: 'analysis.complexity.codeHeavy',
+              params: expect.any(Object),
             },
             {
               type: 'media-rich',
               weight: 0.2,
-              description: 'Contains many images',
+              description: expect.stringContaining(
+                'analysis.complexity.mediaRich',
+              ),
+              params: expect.any(Object),
             },
           ],
         },

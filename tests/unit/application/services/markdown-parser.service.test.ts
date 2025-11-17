@@ -182,7 +182,30 @@ More content.`;
     });
 
     it('should initialize parser on first use', async () => {
-      await service.parseMarkdown(sampleContent);
+      // Setup mock to return different values for different keys
+      mockConfigManager.get.mockImplementation((key: string) => {
+        if (key === 'markdown') {
+          return {
+            html: true,
+            breaks: true,
+            linkify: true,
+            typographer: true,
+            quotes: '""\'\'',
+          };
+        }
+        if (key === 'syntaxHighlighting') return undefined;
+        return undefined;
+      });
+
+      // Create fresh instance with proper mock
+      const freshService = new MarkdownParserService(
+        mockLogger,
+        mockErrorHandler,
+        mockConfigManager,
+        mockFileSystemManager,
+      );
+
+      await freshService.parseMarkdown(sampleContent);
 
       expect(MockMarkdownParser).toHaveBeenCalledWith({
         html: true,
@@ -190,11 +213,13 @@ More content.`;
         linkify: true,
         typographer: true,
         quotes: '""\'\'',
+        syntaxHighlighting: undefined,
       });
       expect(mockConfigManager.get).toHaveBeenCalledWith(
         'markdown',
         expect.any(Object),
       );
+      expect(mockConfigManager.get).toHaveBeenCalledWith('syntaxHighlighting');
       expect(mockLogger.info).toHaveBeenCalledWith(
         'Initializing Markdown parser service',
       );
@@ -435,7 +460,11 @@ More content.`;
         typographer: false,
         quotes: '«»""',
       };
-      mockConfigManager.get.mockReturnValue(customConfig);
+      mockConfigManager.get.mockImplementation((key: string) => {
+        if (key === 'markdown') return customConfig;
+        if (key === 'syntaxHighlighting') return undefined;
+        return undefined;
+      });
 
       const service = new MarkdownParserService(
         mockLogger,
@@ -446,11 +475,18 @@ More content.`;
 
       await service.parseMarkdown(sampleContent);
 
-      expect(MockMarkdownParser).toHaveBeenCalledWith(customConfig);
+      expect(MockMarkdownParser).toHaveBeenCalledWith({
+        ...customConfig,
+        syntaxHighlighting: undefined,
+      });
     });
 
     it('should use default configuration when none provided', async () => {
-      mockConfigManager.get.mockReturnValue({});
+      mockConfigManager.get.mockImplementation((key: string) => {
+        if (key === 'markdown') return {};
+        if (key === 'syntaxHighlighting') return undefined;
+        return undefined;
+      });
 
       const service = new MarkdownParserService(
         mockLogger,
@@ -461,7 +497,48 @@ More content.`;
 
       await service.parseMarkdown(sampleContent);
 
-      expect(MockMarkdownParser).toHaveBeenCalledWith({});
+      expect(MockMarkdownParser).toHaveBeenCalledWith({
+        syntaxHighlighting: undefined,
+      });
+    });
+
+    it('should pass syntax highlighting configuration when provided', async () => {
+      const syntaxConfig = {
+        theme: 'dracula',
+        enableLineNumbers: true,
+        lineNumberStart: 1,
+      };
+      mockConfigManager.get.mockImplementation((key: string) => {
+        if (key === 'markdown') {
+          return {
+            html: true,
+            breaks: true,
+            linkify: true,
+            typographer: true,
+            quotes: '""\'\'',
+          };
+        }
+        if (key === 'syntaxHighlighting') return syntaxConfig;
+        return undefined;
+      });
+
+      const service = new MarkdownParserService(
+        mockLogger,
+        mockErrorHandler,
+        mockConfigManager,
+        mockFileSystemManager,
+      );
+
+      await service.parseMarkdown(sampleContent);
+
+      expect(MockMarkdownParser).toHaveBeenCalledWith({
+        html: true,
+        breaks: true,
+        linkify: true,
+        typographer: true,
+        quotes: '""\'\'',
+        syntaxHighlighting: syntaxConfig,
+      });
     });
   });
 });

@@ -389,167 +389,90 @@ export class TOCProcessor extends BaseProcessor {
           hasHeaderFooter,
         );
 
-        // Get real page positions for headings using PDF dimensions
-        const headingPositions = await page.evaluate(
-          (config) => {
-            const headings = (globalThis as any).document.querySelectorAll(
-              'h1, h2, h3, h4, h5, h6',
-            );
-
-            // Use the margin calculator logic (duplicated for browser context)
-            const parseMarginToPixels = (margin: string): number => {
-              const trimmed = margin.trim();
-              const match = trimmed.match(/^(\d+(?:\.\d+)?)\s*([a-z]+)$/i);
-              if (!match) {
-                const value = parseFloat(trimmed);
-                return isNaN(value) ? 0 : value;
-              }
-              const value = parseFloat(match[1]);
-              const unit = match[2].toLowerCase();
-              switch (unit) {
-                case 'cm':
-                  return Math.round((value * 96) / 2.54);
-                case 'mm':
-                  return Math.round((value * 96) / 25.4);
-                case 'in':
-                  return Math.round(value * 96);
-                case 'pt':
-                  return Math.round((value * 96) / 72);
-                case 'px':
-                  return Math.round(value);
-                default:
-                  return Math.round(value);
-              }
-            };
-
-            const marginTop = parseMarginToPixels(config.margins.top);
-            const marginBottom = parseMarginToPixels(config.margins.bottom);
-            const headerHeight = config.hasPageNumbers
-              ? parseMarginToPixels('1cm')
-              : 0;
-            const footerHeight = config.hasPageNumbers
-              ? parseMarginToPixels('1cm')
-              : 0;
-
-            const effectiveMarginTop = marginTop + headerHeight;
-            const pageHeight =
-              config.pageHeight -
-              marginTop -
-              marginBottom -
-              headerHeight -
-              footerHeight;
-
-            return Array.from(headings).map((heading: any) => {
-              const rect = heading.getBoundingClientRect();
-              const absoluteTop =
-                rect.top + (globalThis as any).window.pageYOffset;
-
-              const relativeTop = Math.max(0, absoluteTop - effectiveMarginTop);
-              const pageNumber = Math.floor(relativeTop / pageHeight) + 1;
-
-              return {
-                id: heading.id || '',
-                text: heading.textContent || '',
-                pageNumber: Math.max(1, pageNumber),
-                offsetTop: absoluteTop,
-              };
-            });
-          },
-          {
-            pageHeight: 1123, // A4 height at 96 DPI
-            margins: {
-              top: margins.top || '2cm',
-              right: margins.right || '2cm',
-              bottom: margins.bottom || '2cm',
-              left: margins.left || '2cm',
-            },
-            hasPageNumbers,
-          },
+        console.debug(
+          `TOC: Using margins for page calculation - T:${margins.top} R:${margins.right} B:${margins.bottom} L:${margins.left}`,
         );
 
-        // Calculate total content page count using shared config
-        const contentPageCount = await page.evaluate(
-          (config) => {
-            const parseMarginToPixels = (margin: string): number => {
-              const trimmed = margin.trim();
-              const match = trimmed.match(/^(\d+(?:\.\d+)?)\s*([a-z]+)$/i);
-              if (!match) {
-                const value = parseFloat(trimmed);
-                return isNaN(value) ? 0 : value;
-              }
-              const value = parseFloat(match[1]);
-              const unit = match[2].toLowerCase();
-              switch (unit) {
-                case 'cm':
-                  return Math.round((value * 96) / 2.54);
-                case 'mm':
-                  return Math.round((value * 96) / 25.4);
-                case 'in':
-                  return Math.round(value * 96);
-                case 'pt':
-                  return Math.round((value * 96) / 72);
-                case 'px':
-                  return Math.round(value);
-                default:
-                  return Math.round(value);
-              }
+        // Generate actual PDF to get accurate page count
+        // Then use PDF page count to calculate page numbers
+        console.debug('TOC: Generating actual PDF to measure page count');
+
+        const pdfOptions = {
+          format: 'A4' as const,
+          // Important: Set margin to 0 because CSS @page already handles margins
+          margin: {
+            top: '0',
+            right: '0',
+            bottom: '0',
+            left: '0',
+          },
+          printBackground: true,
+          displayHeaderFooter: false,
+        };
+
+        const pdfBuffer = await page.pdf(pdfOptions);
+        const actualTotalPages = await this.getActualPDFPageCount(pdfBuffer);
+        console.debug(`TOC: Actual PDF has ${actualTotalPages} pages`);
+
+        // Get heading positions from the page
+        const headingInfo = await page.evaluate(() => {
+          const headings = (globalThis as any).document.querySelectorAll(
+            'h1, h2, h3, h4, h5, h6',
+          );
+          return Array.from(headings).map((heading: any, index: number) => {
+            const rect = heading.getBoundingClientRect();
+            return {
+              index: index,
+              id: heading.id || '',
+              text: (heading.textContent || '').trim(),
+              tagName: heading.tagName.toLowerCase(),
+              offsetTop: (heading as any).offsetTop || 0,
+              boundingTop: rect.top,
             };
+          });
+        });
 
-            const marginTop = parseMarginToPixels(config.margins.top);
-            const marginBottom = parseMarginToPixels(config.margins.bottom);
-            const headerHeight = config.hasPageNumbers
-              ? parseMarginToPixels('1cm')
-              : 0;
-            const footerHeight = config.hasPageNumbers
-              ? parseMarginToPixels('1cm')
-              : 0;
-
-            const effectiveMarginTop = marginTop + headerHeight;
-            const pageHeight =
-              config.pageHeight -
-              marginTop -
-              marginBottom -
-              headerHeight -
-              footerHeight;
-            const totalHeight = (globalThis as any).document.body.scrollHeight;
-
-            return Math.max(
-              1,
-              Math.ceil((totalHeight - effectiveMarginTop) / pageHeight),
-            );
-          },
-          {
-            pageHeight: 1123,
-            margins: {
-              top: margins.top || '2cm',
-              right: margins.right || '2cm',
-              bottom: margins.bottom || '2cm',
-              left: margins.left || '2cm',
-            },
-            hasPageNumbers,
-          },
-        );
-
-        // Build page number mapping
+        // Use distribution-based estimation for page numbers
+        const contentPageCount = actualTotalPages;
         const headingPages: Record<string, number> = {};
-        const positions = headingPositions.map((pos: any) => ({
-          ...pos,
-          elementType: 'heading' as const,
-        }));
+        const positions: Array<{
+          id: string;
+          text: string;
+          pageNumber: number;
+          offsetTop: number;
+          elementType: 'heading';
+        }> = [];
 
-        // Map by ID if available, otherwise try to generate consistent IDs
-        for (const pos of headingPositions) {
-          if (pos.id) {
-            headingPages[pos.id] = pos.pageNumber;
-          } else if (pos.text) {
-            // Generate ID if missing (fallback)
-            const generatedId = this.createHeadingId(pos.text);
-            headingPages[generatedId] = pos.pageNumber;
+        // Estimate page numbers based on heading distribution
+        for (let i = 0; i < headingInfo.length; i++) {
+          const heading = headingInfo[i];
+          const estimatedRatio = i / Math.max(1, headingInfo.length - 1);
+          const estimatedPage = Math.max(
+            1,
+            Math.min(
+              contentPageCount,
+              Math.ceil(estimatedRatio * contentPageCount),
+            ),
+          );
+
+          if (heading.id) {
+            headingPages[heading.id] = estimatedPage;
+          } else {
+            const generatedId = this.createHeadingId(heading.text);
+            headingPages[generatedId] = estimatedPage;
           }
+
+          positions.push({
+            id: heading.id || this.createHeadingId(heading.text),
+            text: heading.text,
+            pageNumber: estimatedPage,
+            offsetTop: heading.offsetTop,
+            elementType: 'heading' as const,
+          });
         }
 
         console.info(
-          `TOC: Page number calculation successful - found ${Object.keys(headingPages).length} headings across ${contentPageCount} pages`,
+          `TOC: Page number calculation successful - found ${headingInfo.length} headings across ${contentPageCount} pages`,
         );
 
         // Release browser back to pool
@@ -634,12 +557,15 @@ export class TOCProcessor extends BaseProcessor {
     const customCSS = context.pdfOptions?.includePageNumbers
       ? this.generatePageCSS(context)
       : '';
+    const theme = context.syntaxHighlightingTheme || 'default';
 
     return PDFTemplates.getFullHTML(
       htmlContent,
       'Content Pre-render',
       customCSS,
       enableChineseSupport,
+      undefined, // configAccessor
+      theme,
     );
   }
 
@@ -681,26 +607,19 @@ export class TOCProcessor extends BaseProcessor {
    * Generate CSS for pages with header/footer
    * Uses dynamic margins from context configuration
    *
-   * Note: If headersFootersConfig is provided, it should be used by the main
-   * PDF generator. This method provides a fallback for simple page numbers.
+   * Note: This method generates CSS @page rules with correct margins for TOC page calculation.
+   * The actual headers/footers content will be handled by HeaderFooterGenerator in main PDF generator,
+   * but we need the same margins here for accurate TOC page count estimation.
    */
   private generatePageCSS(context: ProcessingContext): string {
-    if (!context.pdfOptions?.includePageNumbers) {
+    if (
+      !context.pdfOptions?.includePageNumbers &&
+      !context.headersFootersConfig
+    ) {
       return '';
     }
 
-    // If HeaderFooterGenerator config exists, it will be handled by the main generator
-    // This is a simplified fallback for TOC page number calculation
-    if (context.headersFootersConfig) {
-      console.debug(
-        'TOC: HeaderFooter config detected, CSS will be generated by main PDF generator',
-      );
-      // Return empty - the actual CSS will come from HeaderFooterGenerator
-      // But we still need to account for the space in our calculations
-      return '';
-    }
-
-    // Fallback: Generate simple CSS for basic page numbers
+    // Use margins from context (set by template configuration)
     const margins = {
       top: context.pdfOptions?.margins?.top || '2cm',
       bottom: context.pdfOptions?.margins?.bottom || '2cm',
@@ -708,28 +627,15 @@ export class TOCProcessor extends BaseProcessor {
       right: context.pdfOptions?.margins?.right || '2cm',
     };
 
-    // Calculate additional space for header/footer
-    // Default to 1cm for header/footer content
-    const headerFooterSpace = '1cm';
-
+    // Important: Use the SAME margins as final PDF generation
+    // Don't add extra headerFooterSpace - the margins already account for this
+    // This ensures TOC page count matches final PDF pagination
     return `
       @page {
-        margin-top: calc(${margins.top} + ${headerFooterSpace});
-        margin-bottom: calc(${margins.bottom} + ${headerFooterSpace});
+        margin-top: ${margins.top};
+        margin-bottom: ${margins.bottom};
         margin-left: ${margins.left};
         margin-right: ${margins.right};
-
-        @top-center {
-          content: "${context.documentTitle || 'Document'}";
-          font-size: 10pt;
-          color: #666;
-        }
-
-        @bottom-center {
-          content: "Page " counter(page);
-          font-size: 10pt;
-          color: #666;
-        }
       }
     `;
   }
@@ -966,17 +872,21 @@ export class TOCProcessor extends BaseProcessor {
    */
   private createFullTOCHTML(
     tocHTML: string,
-    _context: ProcessingContext,
+    context: ProcessingContext,
     finalCSS: string,
   ): string {
     // Use the same template function as final PDF generation
     // This ensures headers, footers, title format, etc. are completely consistent
+    const theme = context.syntaxHighlightingTheme || 'default';
+
     return PDFTemplates.getFullHTMLWithTOC(
       tocHTML,
       '', // No main content, only TOC
       'TOC Page Count Calculation', // Document title
       finalCSS,
       true, // Enable Chinese support
+      undefined, // configAccessor
+      theme,
     );
   }
 

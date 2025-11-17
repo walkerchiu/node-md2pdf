@@ -20,6 +20,11 @@ export interface MarkdownParserOptions {
   typographer: boolean;
   quotes: string;
   highlight?: (str: string, lang: string) => string;
+  syntaxHighlighting?: {
+    theme?: string;
+    enableLineNumbers?: boolean;
+    lineNumberStart?: number;
+  };
 }
 
 export class MarkdownParser {
@@ -27,11 +32,18 @@ export class MarkdownParser {
   private syntaxHighlighter: SyntaxHighlighter;
 
   constructor(options?: Partial<MarkdownParserOptions>) {
-    // Initialize syntax highlighter
-    this.syntaxHighlighter = new SyntaxHighlighter({
-      enableLineNumbers: true,
-      lineNumberStart: 1,
-    });
+    // Initialize syntax highlighter with provided configuration
+    const syntaxConfig: any = {
+      enableLineNumbers: options?.syntaxHighlighting?.enableLineNumbers ?? true,
+      lineNumberStart: options?.syntaxHighlighting?.lineNumberStart ?? 1,
+    };
+
+    // Only add theme if it's defined
+    if (options?.syntaxHighlighting?.theme) {
+      syntaxConfig.theme = options.syntaxHighlighting.theme;
+    }
+
+    this.syntaxHighlighter = new SyntaxHighlighter(syntaxConfig);
     const defaultOptions: MarkdownParserOptions = {
       html: true,
       breaks: true,

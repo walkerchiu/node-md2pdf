@@ -3,6 +3,9 @@
  * Provides basic syntax highlighting functionality without complex dependencies
  */
 
+import { readFileSync } from 'fs';
+import { join } from 'path';
+
 import Prism from 'prismjs';
 
 import {
@@ -74,6 +77,9 @@ export class SyntaxHighlighter {
   private config: Required<SyntaxHighlightConfig>;
   private languageMap: Map<string, string> = new Map();
 
+  // Theme CSS cache to avoid reading files multiple times
+  private static themeCache: Map<string, string> = new Map();
+
   constructor(config: SyntaxHighlightConfig = {}) {
     this.config = {
       theme: config.theme || DEFAULT_SYNTAX_HIGHLIGHTING.DEFAULT_THEME,
@@ -91,6 +97,82 @@ export class SyntaxHighlighter {
 
     this.initializeLanguageMap();
     this.initializePrism();
+  }
+
+  /**
+   * Load PrismJS theme CSS from node_modules
+   */
+  static loadThemeCSS(theme: string = 'default'): string {
+    // Check cache first
+    if (this.themeCache.has(theme)) {
+      return this.themeCache.get(theme)!;
+    }
+
+    // Map theme aliases to actual file names
+    const themeMap: Record<string, string> = {
+      default: 'prism',
+      github: 'prism', // GitHub style uses default prism theme
+      monokai: 'prism-okaidia', // Monokai-like theme
+      okaidia: 'prism-okaidia',
+      tomorrow: 'prism-tomorrow',
+      twilight: 'prism-twilight',
+      coy: 'prism-coy',
+      dark: 'prism-dark',
+      funky: 'prism-funky',
+      solarizedlight: 'prism-solarizedlight',
+    };
+
+    const themeName = themeMap[theme.toLowerCase()] || 'prism';
+
+    try {
+      // Try to load theme from node_modules
+      const themePath = join(
+        __dirname,
+        '..',
+        '..',
+        '..',
+        '..',
+        'node_modules',
+        'prismjs',
+        'themes',
+        `${themeName}.css`,
+      );
+      const themeCSS = readFileSync(themePath, 'utf-8');
+
+      // Cache the result
+      this.themeCache.set(theme, themeCSS);
+
+      return themeCSS;
+    } catch (error) {
+      console.warn(
+        `Failed to load PrismJS theme '${theme}', falling back to default`,
+      );
+
+      // Fallback to default theme
+      try {
+        const defaultPath = join(
+          __dirname,
+          '..',
+          '..',
+          '..',
+          '..',
+          'node_modules',
+          'prismjs',
+          'themes',
+          'prism.css',
+        );
+        const defaultCSS = readFileSync(defaultPath, 'utf-8');
+
+        // Cache the default theme
+        this.themeCache.set(theme, defaultCSS);
+
+        return defaultCSS;
+      } catch (fallbackError) {
+        // In test environments or when file system is not available,
+        // return empty string and let the default CSS handle styling
+        return '';
+      }
+    }
   }
 
   private initializeLanguageMap(): void {
@@ -288,12 +370,15 @@ export class SyntaxHighlighter {
     const normalizedLanguage = this.normalizeLanguage(language);
     const highlightedCode = this.highlightCode(code, normalizedLanguage);
 
-    // Skip line numbers for text blocks or blocks without language
+    // Line numbers are enabled for all code blocks with a specified language
+    // Skip line numbers only for:
+    // 1. No language specified (empty or undefined)
+    // 2. Language is explicitly 'text' or 'plaintext'
     const shouldSkipLineNumbers =
-      !this.config.enableLineNumbers ||
       !language ||
       language.trim() === '' ||
-      normalizedLanguage === 'text';
+      normalizedLanguage === 'text' ||
+      normalizedLanguage === 'plaintext';
 
     if (shouldSkipLineNumbers) {
       return `<pre class="language-${normalizedLanguage}"><code class="language-${normalizedLanguage}">${highlightedCode}</code></pre>`;
@@ -406,9 +491,48 @@ export class SyntaxHighlighter {
 
   /**
    * Get CSS for syntax highlighting
+   * Note: This method is kept for backward compatibility but doesn't use theme
+   * Use getThemeBasedCSS() for theme support
    */
   getCSS(): string {
     return this.generateSyntaxHighlightingCSS();
+  }
+
+  /**
+   * Get CSS with theme support
+   */
+  getThemeBasedCSS(): string {
+    const themeCSS = SyntaxHighlighter.loadThemeCSS(this.config.theme);
+    const lineNumbersCSS = this.config.enableLineNumbers
+      ? this.getLineNumbersCSS()
+      : '';
+
+    // Additional styles to ensure proper layout and page breaking
+    const layoutCSS = `
+      /* Layout and page breaking styles */
+      pre[class*="language-"] {
+        margin: 20px 0;
+        page-break-inside: avoid;
+      }
+
+      @media print {
+        .code-block-container {
+          break-inside: avoid;
+        }
+        .code-block-container pre {
+          border: 1px solid #ddd;
+        }
+      }
+    `;
+
+    return `
+      /* PrismJS Theme: ${this.config.theme} */
+      ${themeCSS}
+
+      ${layoutCSS}
+
+      ${lineNumbersCSS}
+    `;
   }
 
   private generateSyntaxHighlightingCSS(): string {
@@ -545,12 +669,22 @@ export class SyntaxHighlighter {
       .line-numbers .code-line {
         display: block;
         position: relative;
-        padding-left: 4.5em;
+        padding-left: 3em !important;
         page-break-inside: avoid;
         -webkit-column-break-inside: avoid;
         break-inside: avoid;
         counter-increment: linenumber;
         min-height: 1.45em;
+      }
+
+      /* Add top padding to first line */
+      .line-numbers .code-line:first-child {
+        padding-top: 0.5em;
+      }
+
+      /* Extend line number background for first line */
+      .line-numbers .code-line:first-child:before {
+        padding-top: 0.5em !important;
       }
 
       /* Line number using before pseudo-element with absolute positioning */
@@ -559,18 +693,16 @@ export class SyntaxHighlighter {
         position: absolute;
         left: 0;
         top: 0;
-        width: 4em;
+        width: 2.5em !important;
         height: 100%;
         text-align: right;
-        padding-right: 0.75em;
+        padding-right: 0.5em;
         padding-top: 0;
         user-select: none;
         -webkit-user-select: none;
         -moz-user-select: none;
         -ms-user-select: none;
-        color: #666;
-        background-color: #f6f8fa;
-        border-right: 1px solid #e1e4e8;
+        opacity: 0.5;
         font-family: ${DEFAULT_CSS_TEMPLATE.CODE.FONT_FAMILY};
         font-size: 14px;
         line-height: 1.45;
@@ -580,7 +712,7 @@ export class SyntaxHighlighter {
       /* Code content as simple inline element */
       .line-numbers .line-content {
         display: inline-block;
-        width: calc(100% - 4.5em);
+        width: calc(100% - 3em) !important;
         padding-left: 0.75em;
         font-family: ${DEFAULT_CSS_TEMPLATE.CODE.FONT_FAMILY};
         font-size: 14px;

@@ -108,6 +108,14 @@ describe('BatchInteractiveMode', () => {
         if (service === 'translator') return createMockTranslator();
         if (service === 'errorHandler') return { handleError: jest.fn() };
         if (service === 'batchProcessor') return mockBatchProcessorService;
+        if (service === 'markdownParser')
+          return {
+            parseMarkdown: jest.fn(),
+            parseMarkdownFile: jest.fn(),
+            extractHeadings: jest.fn(),
+            validateMarkdown: jest.fn(),
+            resetParser: jest.fn(),
+          };
         if (service === 'config')
           return {
             get: jest.fn(),

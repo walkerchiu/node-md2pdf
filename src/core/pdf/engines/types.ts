@@ -26,6 +26,7 @@ export interface PDFGenerationContext {
   title?: string;
   customCSS?: string;
   enableChineseSupport?: boolean;
+  syntaxHighlightingTheme?: string;
   metadata?: {
     title?: string;
     author?: string;
@@ -58,6 +59,9 @@ export interface PDFGenerationContext {
         children?: unknown[];
       }>;
     }>;
+  };
+  pdfOptions?: {
+    includePageNumbers?: boolean;
   };
 }
 

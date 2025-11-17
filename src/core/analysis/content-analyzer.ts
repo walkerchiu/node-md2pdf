@@ -353,7 +353,11 @@ export class ContentAnalyzer {
       factors.push({
         type: 'code-heavy',
         weight: 0.3,
-        description: `Contains ${totalCodeLines} lines of code across ${codeBlocks.length} blocks`,
+        description: 'analysis.complexity.codeHeavy',
+        params: {
+          lines: totalCodeLines,
+          blocks: codeBlocks.length,
+        },
       });
       score += 2;
     }
@@ -366,7 +370,10 @@ export class ContentAnalyzer {
       factors.push({
         type: 'table-heavy',
         weight: 0.2,
-        description: `Contains ${complexTables} complex tables`,
+        description: 'analysis.complexity.tableHeavy',
+        params: {
+          count: complexTables,
+        },
       });
       score += 1;
     }
@@ -376,7 +383,12 @@ export class ContentAnalyzer {
       factors.push({
         type: 'media-rich',
         weight: 0.25,
-        description: `Contains ${media.images} images${media.hasDiagrams ? ' and diagrams' : ''}`,
+        description: media.hasDiagrams
+          ? 'analysis.complexity.mediaRichWithDiagrams'
+          : 'analysis.complexity.mediaRich',
+        params: {
+          count: media.images,
+        },
       });
       score += 1.5;
     }
@@ -386,7 +398,11 @@ export class ContentAnalyzer {
       factors.push({
         type: 'technical',
         weight: 0.2,
-        description: `Deep heading structure (${headings.maxDepth} levels, ${headings.totalHeadings} headings)`,
+        description: 'analysis.complexity.deepHeadingStructure',
+        params: {
+          depth: headings.maxDepth,
+          count: headings.totalHeadings,
+        },
       });
       score += 1;
     }

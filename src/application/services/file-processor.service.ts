@@ -263,7 +263,10 @@ export class FileProcessorService implements IFileProcessorService {
           ...(options.includeTOC && {
             bookmarkOptions: {
               enabled: true,
-              maxDepth: options.tocOptions?.maxDepth || 3,
+              maxDepth:
+                (options.tocReturnLinksLevel && options.tocReturnLinksLevel > 0
+                  ? options.tocReturnLinksLevel
+                  : options.tocOptions?.maxDepth) || 3,
               includePageNumbers:
                 options.tocOptions?.includePageNumbers !== false,
               useExistingTOC: false,

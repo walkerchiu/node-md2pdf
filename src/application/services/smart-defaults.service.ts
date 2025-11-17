@@ -164,15 +164,15 @@ export class SmartDefaultsService implements ISmartDefaultsService {
 
     if (documentType === 'technical-manual' || hasCode) {
       selectedPreset =
-        this.presetConfigs.find((p) => p.name === 'Technical Document') ||
+        this.presetConfigs.find((p) => p.name === 'presets.technical.name') ||
         selectedPreset;
     } else if (documentType === 'academic-paper') {
       selectedPreset =
-        this.presetConfigs.find((p) => p.name === 'Academic Paper') ||
+        this.presetConfigs.find((p) => p.name === 'presets.academic.name') ||
         selectedPreset;
     } else if (documentType === 'business-report') {
       selectedPreset =
-        this.presetConfigs.find((p) => p.name === 'Business Report') ||
+        this.presetConfigs.find((p) => p.name === 'presets.business.name') ||
         selectedPreset;
     }
 
@@ -657,8 +657,8 @@ export class SmartDefaultsService implements ISmartDefaultsService {
   private initializePresetConfigs(): QuickConfig[] {
     return [
       {
-        name: 'Quick & Simple',
-        description: '快速轉換，適合簡單文件',
+        name: 'presets.quickSimple.name',
+        description: 'presets.quickSimple.description',
         config: {
           format: 'A4',
           orientation: 'portrait',
@@ -688,13 +688,12 @@ export class SmartDefaultsService implements ISmartDefaultsService {
             reasoning: 'Optimized for speed',
           },
         },
-        useCase: '簡單文件，快速轉換',
+        useCase: 'presets.quickSimple.useCase',
         estimatedTime: 3,
       },
       {
-        name: 'Professional Document',
-        description:
-          'Professional document with table of contents and full formatting',
+        name: 'presets.business.name',
+        description: 'presets.business.description',
         config: {
           format: 'A4',
           orientation: 'portrait',
@@ -704,7 +703,7 @@ export class SmartDefaultsService implements ISmartDefaultsService {
             includePageNumbers: true,
             style: 'detailed',
             title: 'Table of Contents',
-            reasoning: 'Professional document with detailed TOC',
+            reasoning: 'Business report with detailed TOC',
           },
           theme: 'professional',
           pageStructure: {
@@ -716,12 +715,12 @@ export class SmartDefaultsService implements ISmartDefaultsService {
             reasoning: 'Full page structure for professional appearance',
           },
         },
-        useCase: '商業報告，正式文件',
+        useCase: 'presets.business.useCase',
         estimatedTime: 8,
       },
       {
-        name: 'Technical Document',
-        description: '技術文件，優化程式碼顯示',
+        name: 'presets.technical.name',
+        description: 'presets.technical.description',
         config: {
           format: 'A4',
           orientation: 'portrait',
@@ -743,12 +742,12 @@ export class SmartDefaultsService implements ISmartDefaultsService {
             reasoning: 'Deep TOC for technical documentation',
           },
         },
-        useCase: 'API 文件，技術手冊',
+        useCase: 'presets.technical.useCase',
         estimatedTime: 10,
       },
       {
-        name: 'Academic Paper',
-        description: '學術論文格式，寬邊距',
+        name: 'presets.academic.name',
+        description: 'presets.academic.description',
         config: {
           format: 'A4',
           orientation: 'portrait',
@@ -765,7 +764,7 @@ export class SmartDefaultsService implements ISmartDefaultsService {
             reasoning: 'Academic paper format',
           },
         },
-        useCase: '學術論文，研究報告',
+        useCase: 'presets.academic.useCase',
         estimatedTime: 12,
       },
     ];

@@ -25,6 +25,7 @@ export interface IMarkdownParserService {
   parseMarkdownFile(filePath: string): Promise<ParsedMarkdown>;
   extractHeadings(content: string): Promise<Heading[]>;
   validateMarkdown(content: string): Promise<boolean>;
+  resetParser(): void;
 }
 
 export class MarkdownParserService implements IMarkdownParserService {
@@ -54,7 +55,26 @@ export class MarkdownParserService implements IMarkdownParserService {
         quotes: '""\'\'',
       }) as Partial<MarkdownParserOptions>;
 
-      this.markdownParser = new MarkdownParser(parserConfig);
+      // Get syntax highlighting configuration
+      const syntaxHighlightingConfig = this.configManager.get<{
+        theme?: string;
+        enableLineNumbers?: boolean;
+        lineNumberStart?: number;
+      }>('syntaxHighlighting');
+
+      // Merge syntax highlighting config with parser config
+      const finalConfig: Partial<MarkdownParserOptions> = {
+        ...parserConfig,
+        syntaxHighlighting: syntaxHighlightingConfig || undefined,
+      };
+
+      this.logger.debug('Markdown parser config:', {
+        parserConfig,
+        syntaxHighlightingConfig,
+        finalConfig,
+      });
+
+      this.markdownParser = new MarkdownParser(finalConfig);
       this.isInitialized = true;
 
       this.logger.info('Markdown parser service initialized successfully');
@@ -214,5 +234,15 @@ export class MarkdownParserService implements IMarkdownParserService {
 
       return false;
     }
+  }
+
+  /**
+   * Reset the parser to allow re-initialization with new configuration
+   * This should be called when configuration changes (e.g., template selection)
+   */
+  resetParser(): void {
+    this.logger.debug('Resetting Markdown parser');
+    this.isInitialized = false;
+    this.markdownParser = null;
   }
 }

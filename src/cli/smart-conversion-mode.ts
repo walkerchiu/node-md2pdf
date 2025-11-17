@@ -11,6 +11,7 @@ import {
   RecommendedConfig,
   QuickConfig,
 } from '../core/analysis/types';
+import { TemplateStorageService, Template } from '../core/templates';
 import { DEFAULT_MARGINS } from '../infrastructure/config/constants';
 import { PathCleaner } from '../utils/path-cleaner';
 
@@ -26,10 +27,11 @@ import type { ILogger } from '../infrastructure/logging/types';
 import type { ServiceContainer } from '../shared/container';
 
 interface ConversionChoice {
-  type: 'quick' | 'smart' | 'custom';
+  type: 'quick' | 'smart' | 'custom' | 'template';
   name: string;
   description: string;
   config?: QuickConfig | RecommendedConfig;
+  template?: Template;
 }
 
 export class SmartConversionMode {
@@ -41,6 +43,7 @@ export class SmartConversionMode {
   private recentFilesManager: RecentFilesManager;
   private renderer: CliRenderer;
   private i18nHelpers: I18nHelpers;
+  private templateStorage: TemplateStorageService;
 
   constructor(private readonly container?: ServiceContainer) {
     if (!this.container) {
@@ -54,6 +57,7 @@ export class SmartConversionMode {
     this.recentFilesManager = new RecentFilesManager();
     this.renderer = new CliRenderer();
     this.i18nHelpers = new I18nHelpers(this.translationManager);
+    this.templateStorage = new TemplateStorageService();
   }
 
   /**
@@ -299,75 +303,66 @@ export class SmartConversionMode {
   private displayAnalysisResults(analysis: ContentAnalysis): void {
     this.renderer.newline();
 
-    const title = this.translationManager.t('smartConversion.analysisResults');
-    const borderLine = '─'.repeat(79);
+    // Title (emoji already in translation)
+    console.log(
+      chalk.cyan(this.translationManager.t('smartConversion.analysisResults')),
+    );
+    console.log();
 
-    this.renderer.info(chalk.green(borderLine));
-    this.renderer.info(
-      chalk.green(title.padStart((79 + title.length) / 2).padEnd(79)),
+    // Basic statistics (5-space indent, unified cyan color for all values)
+    console.log(
+      `     ${this.translationManager.t('smartConversion.words')}: ${chalk.cyan(analysis.wordCount.toLocaleString())}`,
     );
-    this.renderer.info(chalk.green(borderLine));
-    this.renderer.info(
-      chalk.cyan(
-        `   ${this.translationManager.t('smartConversion.words')}: ${analysis.wordCount.toLocaleString()}`,
-      ),
+    console.log(
+      `     ${this.translationManager.t('smartConversion.readingTime')}: ${chalk.cyan(analysis.readingTime)} ${chalk.gray(this.translationManager.t('smartConversion.minutes'))}`,
     );
-    this.renderer.info(
-      chalk.cyan(
-        `   ${this.translationManager.t('smartConversion.readingTime')}: ${analysis.readingTime} ${this.translationManager.t('smartConversion.minutes')}`,
-      ),
+    console.log(
+      `     ${this.translationManager.t('smartConversion.headings')}: ${chalk.cyan(analysis.headingStructure.totalHeadings)} ${chalk.gray(`(${this.translationManager.t('smartConversion.maxDepth')}: ${analysis.headingStructure.maxDepth})`)}`,
     );
-    this.renderer.info(
-      chalk.cyan(
-        `   ${this.translationManager.t('smartConversion.headings')}: ${analysis.headingStructure.totalHeadings} (${this.translationManager.t('smartConversion.maxDepth')}: ${
-          analysis.headingStructure.maxDepth
-        })`,
-      ),
-    );
-    this.renderer.info(
-      chalk.cyan(
-        `   ${this.translationManager.t('smartConversion.language')}: ${this.getLanguageDisplay(analysis.languageDetection.primary)}`,
-      ),
+    console.log(
+      `     ${this.translationManager.t('smartConversion.language')}: ${chalk.cyan(this.getLanguageDisplay(analysis.languageDetection.primary))}`,
     );
 
+    // Code blocks
     if (analysis.codeBlocks.length > 0) {
-      this.renderer.info(
-        chalk.cyan(
-          `   ${this.translationManager.t('smartConversion.codeBlocks')}: ${analysis.codeBlocks.length}`,
-        ),
+      console.log(
+        `     ${this.translationManager.t('smartConversion.codeBlocks')}: ${chalk.cyan(analysis.codeBlocks.length)}`,
       );
     }
 
+    // Tables
     if (analysis.tables.length > 0) {
-      this.renderer.info(
-        chalk.cyan(
-          `   ${this.translationManager.t('smartConversion.tables')}: ${analysis.tables.length}`,
-        ),
+      console.log(
+        `     ${this.translationManager.t('smartConversion.tables')}: ${chalk.cyan(analysis.tables.length)}`,
       );
     }
 
+    // Images
     if (analysis.mediaElements.images > 0) {
-      this.renderer.info(
-        `   ${this.translationManager.t('smartConversion.images')}: ${analysis.mediaElements.images}`,
+      console.log(
+        `     ${this.translationManager.t('smartConversion.images')}: ${chalk.cyan(analysis.mediaElements.images)}`,
       );
     }
 
-    this.renderer.info(
-      `   ${this.translationManager.t('smartConversion.documentType')}: ${this.getDocumentTypeDisplay(analysis.contentComplexity.documentType)}`,
+    // Document type and complexity
+    console.log(
+      `     ${this.translationManager.t('smartConversion.documentType')}: ${chalk.cyan(this.getDocumentTypeDisplay(analysis.contentComplexity.documentType))}`,
     );
-    this.renderer.info(
-      `   ${this.translationManager.t('smartConversion.complexity')}: ${analysis.contentComplexity.score}/10`,
+    console.log(
+      `     ${this.translationManager.t('smartConversion.complexity')}: ${chalk.cyan(analysis.contentComplexity.score)} / 10`,
     );
 
-    // Show additional insights
+    // Content characteristics (if any)
     if (analysis.contentComplexity.factors.length > 0) {
-      this.renderer.info(
-        chalk.cyan(
-          `   ${this.translationManager.t('smartConversion.contentCharacteristics')}:`,
-        ),
+      console.log(
+        `     ${this.translationManager.t('smartConversion.contentCharacteristics')}:`,
       );
       analysis.contentComplexity.factors.forEach((factor) => {
-        this.renderer.info(`      • ${factor.description}`);
+        const translatedDescription = this.translationManager.t(
+          factor.description,
+          factor.params,
+        );
+        console.log(`       • ${chalk.gray(translatedDescription)}`);
       });
     }
 
@@ -386,11 +381,14 @@ export class SmartConversionMode {
       await this.smartDefaultsService.recommendSettings(analysis);
     const presetConfigs = this.smartDefaultsService.getPresetConfigs();
 
+    // Check if custom templates are available
+    const templateCount = await this.templateStorage.count({ type: 'custom' });
+
     const choices: ConversionChoice[] = [
       {
         type: 'quick',
-        name: `${this.translationManager.t('smartConversion.quickConversion')} - "${quickConfig.name}"`,
-        description: quickConfig.description,
+        name: `${this.translationManager.t('smartConversion.quickConversion')} - "${this.translationManager.t(quickConfig.name)}"`,
+        description: this.translationManager.t(quickConfig.description),
         config: quickConfig,
       },
       {
@@ -407,6 +405,18 @@ export class SmartConversionMode {
         ),
       },
     ];
+
+    // Add template option if templates are available
+    if (templateCount > 0) {
+      choices.push({
+        type: 'template',
+        name: this.translationManager.t('smartConversion.useSavedTemplate'),
+        description: this.translationManager.t(
+          'smartConversion.chooseFromTemplates',
+          { count: templateCount },
+        ),
+      });
+    }
 
     this.renderer.info(
       chalk.cyan(
@@ -450,7 +460,7 @@ export class SmartConversionMode {
           'smartConversion.selectPresetConfiguration',
         ),
         choices: presetConfigs.map((preset) => ({
-          name: `${preset.name} - ${preset.description}`,
+          name: `${this.translationManager.t(preset.name)} - ${this.translationManager.t(preset.description)}`,
           value: preset.name,
         })),
       });
@@ -458,10 +468,52 @@ export class SmartConversionMode {
       const selectedPreset = presetConfigs.find((p) => p.name === presetName)!;
       selectedChoice = {
         type: 'custom',
-        name: selectedPreset.name,
-        description: selectedPreset.description,
+        name: this.translationManager.t(selectedPreset.name),
+        description: this.translationManager.t(selectedPreset.description),
         config: selectedPreset,
       };
+    }
+
+    // If template was selected, show template options
+    if (selectedChoice.type === 'template') {
+      const collection = await this.templateStorage.getAllTemplates();
+
+      const templateChoices = [
+        ...(collection.system.length > 0
+          ? [new inquirer.default.Separator('── System Templates ──')]
+          : []),
+        ...collection.system.map((t) => ({
+          name: `${this.translationManager.t(t.name)} - ${this.translationManager.t(t.description)}`,
+          value: t.id,
+        })),
+        ...(collection.custom.length > 0
+          ? [new inquirer.default.Separator('── Custom Templates ──')]
+          : []),
+        ...collection.custom.map((t) => ({
+          name: `${this.translationManager.t(t.name)} - ${this.translationManager.t(t.description)}`,
+          value: t.id,
+        })),
+      ];
+
+      const { templateId } = await inquirer.default.prompt({
+        type: 'list',
+        name: 'templateId',
+        message: this.translationManager.t(
+          'templates.prompts.selectTemplateForConversion',
+        ),
+        choices: templateChoices,
+        pageSize: 15,
+      });
+
+      const selectedTemplate = await this.templateStorage.read(templateId);
+      if (selectedTemplate) {
+        selectedChoice = {
+          type: 'template',
+          name: selectedTemplate.name,
+          description: selectedTemplate.description,
+          template: selectedTemplate,
+        };
+      }
     }
 
     return selectedChoice;
@@ -473,6 +525,42 @@ export class SmartConversionMode {
     analysis: ContentAnalysis,
   ): Promise<void> {
     const inquirer = await import('inquirer');
+
+    // Apply template configuration if template was selected
+    if (choice.type === 'template' && choice.template) {
+      const template = choice.template;
+      this.configManager.set('pdf.format', template.config.pdf.format);
+      this.configManager.set(
+        'pdf.orientation',
+        template.config.pdf.orientation,
+      );
+      this.configManager.set('pdf.margin', template.config.pdf.margin);
+      this.configManager.set(
+        'pdf.displayHeaderFooter',
+        template.config.pdf.displayHeaderFooter,
+      );
+      this.configManager.set('toc.enabled', template.config.features.toc);
+      this.configManager.set('toc.depth', template.config.features.tocDepth);
+
+      // Apply template's code block theme
+      if (template.config.styles.codeBlock.theme) {
+        this.configManager.set(
+          'syntaxHighlighting.theme',
+          template.config.styles.codeBlock.theme,
+        );
+        this.logger.info(
+          `Applied code block theme from template: ${template.config.styles.codeBlock.theme}`,
+        );
+      }
+
+      // Apply template's style theme
+      if (template.config.styles.theme) {
+        this.configManager.set('styles.theme', template.config.styles.theme);
+        this.logger.info(
+          `Applied style theme from template: ${template.config.styles.theme}`,
+        );
+      }
+    }
 
     this.renderer.info(
       chalk.cyan(
@@ -486,13 +574,17 @@ export class SmartConversionMode {
       `   ${this.translationManager.t('smartConversion.configuration')}: ${choice.name}`,
     );
     this.renderer.info(
-      `   📄 ${analysis.wordCount.toLocaleString()} words, ${analysis.headingStructure.totalHeadings} headings`,
+      `   📄 ${analysis.wordCount.toLocaleString()} ${this.translationManager.t('smartConversion.wordsLabel')}, ${analysis.headingStructure.totalHeadings} ${this.translationManager.t('smartConversion.headingsLabel')}`,
     );
 
     if (choice.config) {
       this.renderer.info(
         `   ⏱️  ${this.translationManager.t('smartConversion.estimatedTime')}: ~${this.getEstimatedTime(choice.config)} ${this.translationManager.t('smartConversion.seconds')}`,
       );
+    }
+
+    if (choice.type === 'template') {
+      this.renderer.info(chalk.gray(`   📋 Using template: ${choice.name}`));
     }
 
     // Generate output path suggestion
@@ -512,9 +604,13 @@ export class SmartConversionMode {
     const headersFootersConfig = userConfig.headersFooters;
 
     // Display smart decisions
-    this.renderer.info(chalk.cyan('\n📋 Smart Configuration Applied:'));
     this.renderer.info(
-      `   📚 Table of Contents: ${includeTOC ? 'Yes' : 'No'}${includeTOC ? ` (${tocDepth} levels)` : ''}`,
+      chalk.cyan(
+        `\n📋 ${this.translationManager.t('smartConversion.smartConfigApplied')}`,
+      ),
+    );
+    this.renderer.info(
+      `   📚 ${this.translationManager.t('smartConversion.tableOfContents')}: ${includeTOC ? this.translationManager.t('common.status.yes') : this.translationManager.t('common.status.no')}${includeTOC ? ` (${tocDepth} ${this.translationManager.t('smartConversion.levels')})` : ''}`,
     );
 
     // Display headers/footers information based on user preferences
@@ -568,7 +664,9 @@ export class SmartConversionMode {
       }
     } else if (includeTOC) {
       // Fallback to legacy page numbers display when no headers/footers configured
-      this.renderer.info(`   📄 Page Numbers: Yes`);
+      this.renderer.info(
+        `   📄 ${this.translationManager.t('smartConversion.pageNumbersLabel')}: ${this.translationManager.t('common.status.yes')}`,
+      );
     }
     this.renderer.info('');
 
@@ -612,16 +710,54 @@ export class SmartConversionMode {
         analysis,
         includeTOC,
         tocDepth,
+        undefined, // tocReturnLinksLevel - use default
+        undefined, // anchorLinksEnabled - use default
         headersFootersConfig,
       );
 
       // Start progress indication
       const progressInterval = this.showProgress();
 
+      // Build custom styles from template if available
+      let customStyles: string | undefined;
+      if (choice.type === 'template' && choice.template) {
+        const template = choice.template;
+        const stylesParts: string[] = [];
+
+        if (template.config.styles.fonts.body) {
+          stylesParts.push(
+            `body { font-family: "${template.config.styles.fonts.body}", sans-serif; }`,
+          );
+        }
+        if (template.config.styles.fonts.heading) {
+          stylesParts.push(
+            `h1, h2, h3, h4, h5, h6 { font-family: "${template.config.styles.fonts.heading}", sans-serif; }`,
+          );
+        }
+        if (template.config.styles.fonts.code) {
+          stylesParts.push(
+            `code, pre { font-family: "${template.config.styles.fonts.code}", monospace; }`,
+          );
+        }
+
+        if (stylesParts.length > 0) {
+          customStyles = stylesParts.join('\n');
+        }
+      }
+
+      // Override margins when using template
+      if (choice.type === 'template' && choice.template) {
+        processingConfig.pdfOptions = {
+          ...processingConfig.pdfOptions,
+          margin: choice.template.config.pdf.margin,
+        };
+      }
+
       // Debug logging for options being passed to file processor
       const finalOptions = {
         outputPath: finalOutputPath,
         ...processingConfig,
+        ...(customStyles && { customStyles }), // Apply template styles if defined
       };
       this.logger.debug(
         'Smart conversion mode passing options to file processor:',
@@ -630,6 +766,8 @@ export class SmartConversionMode {
           includeTOC,
           tocDepth,
           processingConfig,
+          customStyles,
+          templateMargin: choice.template?.config.pdf.margin,
         },
       );
 
@@ -760,6 +898,8 @@ export class SmartConversionMode {
     analysis: ContentAnalysis,
     includeTOC: boolean,
     tocDepth: number,
+    tocReturnLinksLevel?: number,
+    anchorLinksEnabled?: boolean,
     headersFootersConfig?: import('../core/headers-footers/types').HeadersFootersConfig,
   ): any {
     // Determine if two-stage rendering should be enabled
@@ -768,11 +908,17 @@ export class SmartConversionMode {
       includeTOC,
     );
 
+    // Calculate effective tocReturnLinksLevel
+    const effectiveTocReturnLinksLevel =
+      !includeTOC || anchorLinksEnabled === false
+        ? 0
+        : (tocReturnLinksLevel ?? 3); // Smart default: H2-H4 when TOC enabled
+
     if (!config) {
       // Return basic configuration matching single file and batch processing
       const baseConfig: any = {
         includeTOC: includeTOC,
-        tocReturnLinksLevel: includeTOC ? 3 : 0, // Smart default: H2-H4 when TOC enabled
+        tocReturnLinksLevel: effectiveTocReturnLinksLevel,
         tocOptions: includeTOC
           ? {
               maxDepth: tocDepth,
@@ -810,7 +956,7 @@ export class SmartConversionMode {
     // Follow the same pattern as single file and batch processing
     const baseConfig: any = {
       includeTOC: includeTOC,
-      tocReturnLinksLevel: includeTOC ? 3 : 0, // Smart default: H2-H4 when TOC enabled
+      tocReturnLinksLevel: effectiveTocReturnLinksLevel,
       tocOptions: includeTOC
         ? {
             maxDepth: tocDepth,

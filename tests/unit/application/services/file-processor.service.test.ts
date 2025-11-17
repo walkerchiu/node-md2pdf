@@ -123,6 +123,7 @@ describe('FileProcessorService', () => {
       parseMarkdownFile: jest.fn(),
       extractHeadings: jest.fn(),
       validateMarkdown: jest.fn(),
+      resetParser: jest.fn(),
     };
 
     mockPDFGeneratorService = {
@@ -609,6 +610,141 @@ describe('FileProcessorService', () => {
       });
     });
 
+    describe('metadata extraction and handling', () => {
+      it('should merge manual metadata with extracted metadata', async () => {
+        const mockMetadataService = {
+          extractMetadataSimple: jest.fn().mockResolvedValue({
+            metadata: {
+              title: 'Extracted Title',
+              author: 'Extracted Author',
+            },
+            warnings: [],
+          }),
+          mergeMetadata: jest.fn().mockReturnValue({
+            title: 'Manual Title',
+            author: 'Extracted Author',
+            subject: 'Manual Subject',
+          }),
+          generateSummary: jest.fn().mockReturnValue('Metadata summary'),
+        };
+
+        (service as any).metadataService = mockMetadataService;
+
+        mockFileSystemManager.exists.mockResolvedValue(true);
+        mockFileSystemManager.getStats.mockResolvedValue(mockFileStats);
+        mockFileSystemManager.readFile.mockResolvedValue(mockOriginalMarkdown);
+        mockMarkdownParserService.parseMarkdownFile.mockResolvedValue(
+          mockParsedContent,
+        );
+        mockPDFGeneratorService.generatePDF.mockResolvedValue(mockPDFResult);
+
+        await service.processFile('/test/input.md', {
+          outputPath: '/test/output.pdf',
+          metadata: {
+            title: 'Manual Title',
+            subject: 'Manual Subject',
+          },
+        });
+
+        expect(mockMetadataService.mergeMetadata).toHaveBeenCalledWith(
+          expect.objectContaining({
+            title: 'Extracted Title',
+            author: 'Extracted Author',
+          }),
+          expect.objectContaining({
+            title: 'Manual Title',
+            subject: 'Manual Subject',
+          }),
+        );
+      });
+
+      it('should log warnings from metadata extraction', async () => {
+        const mockMetadataService = {
+          extractMetadataSimple: jest.fn().mockResolvedValue({
+            metadata: { title: 'Test' },
+            warnings: ['Warning 1', 'Warning 2'],
+          }),
+          generateSummary: jest.fn().mockReturnValue('Metadata summary'),
+        };
+
+        (service as any).metadataService = mockMetadataService;
+
+        mockFileSystemManager.exists.mockResolvedValue(true);
+        mockFileSystemManager.getStats.mockResolvedValue(mockFileStats);
+        mockFileSystemManager.readFile.mockResolvedValue(mockOriginalMarkdown);
+        mockMarkdownParserService.parseMarkdownFile.mockResolvedValue(
+          mockParsedContent,
+        );
+        mockPDFGeneratorService.generatePDF.mockResolvedValue(mockPDFResult);
+
+        await service.processFile('/test/input.md', {
+          outputPath: '/test/output.pdf',
+        });
+
+        expect(mockLogger.warn).toHaveBeenCalledWith(
+          'Metadata warning: Warning 1',
+        );
+        expect(mockLogger.warn).toHaveBeenCalledWith(
+          'Metadata warning: Warning 2',
+        );
+      });
+
+      it('should handle metadata extraction failure gracefully', async () => {
+        const mockMetadataService = {
+          extractMetadataSimple: jest
+            .fn()
+            .mockRejectedValue(new Error('Extraction failed')),
+        };
+
+        (service as any).metadataService = mockMetadataService;
+
+        mockFileSystemManager.exists.mockResolvedValue(true);
+        mockFileSystemManager.getStats.mockResolvedValue(mockFileStats);
+        mockFileSystemManager.readFile.mockResolvedValue(mockOriginalMarkdown);
+        mockMarkdownParserService.parseMarkdownFile.mockResolvedValue(
+          mockParsedContent,
+        );
+        mockPDFGeneratorService.generatePDF.mockResolvedValue(mockPDFResult);
+
+        const result = await service.processFile('/test/input.md', {
+          outputPath: '/test/output.pdf',
+          metadata: { title: 'Fallback Title' },
+        });
+
+        expect(result.success).toBe(true);
+        expect(mockLogger.warn).toHaveBeenCalledWith(
+          expect.stringContaining('Metadata extraction failed'),
+          expect.any(Error),
+        );
+      });
+
+      it('should use only manual metadata when extraction is disabled', async () => {
+        const mockMetadataService = {
+          extractMetadataSimple: jest.fn(),
+        };
+
+        (service as any).metadataService = mockMetadataService;
+
+        mockFileSystemManager.exists.mockResolvedValue(true);
+        mockFileSystemManager.getStats.mockResolvedValue(mockFileStats);
+        mockFileSystemManager.readFile.mockResolvedValue(mockOriginalMarkdown);
+        mockMarkdownParserService.parseMarkdownFile.mockResolvedValue(
+          mockParsedContent,
+        );
+        mockPDFGeneratorService.generatePDF.mockResolvedValue(mockPDFResult);
+
+        await service.processFile('/test/input.md', {
+          outputPath: '/test/output.pdf',
+          extractMetadata: false,
+          metadata: { title: 'Manual Only' },
+        });
+
+        expect(
+          mockMetadataService.extractMetadataSimple,
+        ).not.toHaveBeenCalled();
+      });
+    });
+
     describe('anchor links functionality', () => {
       it('should add anchor links when tocReturnLinksLevel is enabled', async () => {
         // Mock a markdown with multiple headings
@@ -717,6 +853,115 @@ describe('FileProcessorService', () => {
         expect(convertMethod(6)).toBe('none');
         expect(convertMethod(999)).toBe('none');
       });
+    });
+  });
+
+  describe('Bookmark Depth Configuration', () => {
+    beforeEach(() => {
+      mockFileSystemManager.exists.mockResolvedValue(true);
+      mockFileSystemManager.readFile.mockResolvedValue(mockOriginalMarkdown);
+      mockFileSystemManager.getStats.mockResolvedValue(mockFileStats);
+      mockMarkdownParserService.parseMarkdownFile.mockResolvedValue(
+        mockParsedContent,
+      );
+      mockPDFGeneratorService.generatePDF.mockResolvedValue(mockPDFResult);
+    });
+
+    it('should use tocReturnLinksLevel (anchorDepth) for bookmark depth when provided', async () => {
+      const options: FileProcessingOptions = {
+        outputPath: '/test/output.pdf',
+        includeTOC: true,
+        tocReturnLinksLevel: 3, // anchorDepth from template
+        tocOptions: {
+          maxDepth: 4, // tocDepth from template (different from anchorDepth)
+          includePageNumbers: true,
+        },
+      };
+
+      await service.processFile('/test/input.md', options);
+
+      // Verify PDF generator was called with correct bookmarkOptions
+      expect(mockPDFGeneratorService.generatePDF).toHaveBeenCalledWith(
+        expect.any(String), // htmlContent
+        expect.any(String), // outputPath
+        expect.objectContaining({
+          bookmarkOptions: expect.objectContaining({
+            enabled: true,
+            maxDepth: 3, // Should use tocReturnLinksLevel (anchorDepth), not tocOptions.maxDepth
+            includePageNumbers: true,
+            useExistingTOC: false,
+          }),
+        }),
+      );
+    });
+
+    it('should fallback to tocOptions.maxDepth when tocReturnLinksLevel is not provided', async () => {
+      const options: FileProcessingOptions = {
+        outputPath: '/test/output.pdf',
+        includeTOC: true,
+        // tocReturnLinksLevel not provided
+        tocOptions: {
+          maxDepth: 4,
+          includePageNumbers: true,
+        },
+      };
+
+      await service.processFile('/test/input.md', options);
+
+      expect(mockPDFGeneratorService.generatePDF).toHaveBeenCalledWith(
+        expect.any(String),
+        expect.any(String),
+        expect.objectContaining({
+          bookmarkOptions: expect.objectContaining({
+            enabled: true,
+            maxDepth: 4, // Should fallback to tocOptions.maxDepth
+          }),
+        }),
+      );
+    });
+
+    it('should use default depth of 3 when neither tocReturnLinksLevel nor tocOptions.maxDepth provided', async () => {
+      const options: FileProcessingOptions = {
+        outputPath: '/test/output.pdf',
+        includeTOC: true,
+        // No depth settings provided
+      };
+
+      await service.processFile('/test/input.md', options);
+
+      expect(mockPDFGeneratorService.generatePDF).toHaveBeenCalledWith(
+        expect.any(String),
+        expect.any(String),
+        expect.objectContaining({
+          bookmarkOptions: expect.objectContaining({
+            enabled: true,
+            maxDepth: 3, // Should use default value
+          }),
+        }),
+      );
+    });
+
+    it('should prioritize tocReturnLinksLevel over tocOptions.maxDepth', async () => {
+      const options: FileProcessingOptions = {
+        outputPath: '/test/output.pdf',
+        includeTOC: true,
+        tocReturnLinksLevel: 2, // anchorDepth should take priority
+        tocOptions: {
+          maxDepth: 5, // This should be ignored for bookmark depth
+        },
+      };
+
+      await service.processFile('/test/input.md', options);
+
+      expect(mockPDFGeneratorService.generatePDF).toHaveBeenCalledWith(
+        expect.any(String),
+        expect.any(String),
+        expect.objectContaining({
+          bookmarkOptions: expect.objectContaining({
+            maxDepth: 2, // Should use tocReturnLinksLevel
+          }),
+        }),
+      );
     });
   });
 });
