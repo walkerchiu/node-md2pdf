@@ -7,7 +7,6 @@ import puppeteer from 'puppeteer';
 
 import { Heading } from '../../../types/index';
 import { getGlobalBrowserPool } from '../../../utils/browser-pool';
-import { HeadingIdGenerator } from '../../../utils/heading-id-generator';
 import {
   calculateTotalPages,
   getEffectiveMargins,
@@ -394,8 +393,11 @@ export class TOCProcessor extends BaseProcessor {
         );
 
         // Generate actual PDF to get accurate page count
-        // Then use PDF page count to calculate page numbers
+        // CRITICAL: Use the SAME PDF options as final PDF to ensure identical pagination
         console.debug('TOC: Generating actual PDF to measure page count');
+
+        // Check if final PDF will have header/footer
+        const willHaveHeaderFooter = hasHeaderFooter;
 
         const pdfOptions = {
           format: 'A4' as const,
@@ -407,32 +409,79 @@ export class TOCProcessor extends BaseProcessor {
             left: '0',
           },
           printBackground: true,
-          displayHeaderFooter: false,
-        };
+          // CRITICAL: Must match final PDF generation to get same pagination
+          displayHeaderFooter: willHaveHeaderFooter,
+          preferCSSPageSize: false,
+          tagged: true, // Generate tagged PDF for better accessibility and text extraction
+        } as any; // 'tagged' is not in the type definition but supported by Puppeteer
 
-        const pdfBuffer = await page.pdf(pdfOptions);
-        const actualTotalPages = await this.getActualPDFPageCount(pdfBuffer);
-        console.debug(`TOC: Actual PDF has ${actualTotalPages} pages`);
+        console.debug(
+          'TOC: Multi-stage observation - Step 1: Inject page markers',
+        );
 
-        // Get heading positions from the page
+        // Step 1: Inject unique numeric markers for each heading
         const headingInfo = await page.evaluate(() => {
           const headings = (globalThis as any).document.querySelectorAll(
             'h1, h2, h3, h4, h5, h6',
           );
+
           return Array.from(headings).map((heading: any, index: number) => {
-            const rect = heading.getBoundingClientRect();
+            // Generate unique marker using only ASCII characters
+            const markerId = `HDG${String(index).padStart(4, '0')}`;
+
+            // Insert nearly-invisible marker with explicit font
+            // Key: inline-block + explicit font for PDF text layer extraction
+            const markerSpan = (globalThis as any).document.createElement(
+              'span',
+            );
+            markerSpan.textContent = `${markerId}`;
+            markerSpan.className = 'toc-page-marker';
+            markerSpan.style.fontSize = '0.5pt'; // Extremely small
+            markerSpan.style.color = '#fefefe'; // Nearly white (not pure white)
+            markerSpan.style.fontFamily = 'Arial, sans-serif';
+            markerSpan.style.display = 'inline-block'; // CRITICAL for PDF extraction
+            markerSpan.style.opacity = '0.01'; // Nearly invisible
+            markerSpan.setAttribute('aria-hidden', 'true');
+
+            // Insert before heading content
+            heading.insertBefore(markerSpan, heading.firstChild);
+
             return {
               index: index,
               id: heading.id || '',
-              text: (heading.textContent || '').trim(),
+              text: (heading.textContent || '').replace(markerId, '').trim(),
+              marker: markerId,
               tagName: heading.tagName.toLowerCase(),
-              offsetTop: (heading as any).offsetTop || 0,
-              boundingTop: rect.top,
             };
           });
         });
 
-        // Use distribution-based estimation for page numbers
+        console.debug(
+          `TOC: Injected ${headingInfo.length} page markers into headings`,
+        );
+
+        // Step 2: Generate PDF with markers
+        console.debug(
+          'TOC: Multi-stage observation - Step 2: Generate PDF with markers',
+        );
+        const pdfBuffer = await page.pdf(pdfOptions);
+        const actualTotalPages = await this.getActualPDFPageCount(pdfBuffer);
+        console.debug(`TOC: Generated PDF has ${actualTotalPages} pages`);
+
+        // Step 3: Extract page numbers by searching for markers in PDF
+        console.debug(
+          'TOC: Multi-stage observation - Step 3: Extract page numbers from PDF',
+        );
+        const markerPages = await this.extractPageNumbersFromPDF(
+          pdfBuffer,
+          headingInfo.map((h) => h.marker),
+        );
+
+        console.debug(
+          `TOC: Found ${markerPages.size}/${headingInfo.length} markers in PDF`,
+        );
+
+        // Step 4: Build page number mapping
         const contentPageCount = actualTotalPages;
         const headingPages: Record<string, number> = {};
         const positions: Array<{
@@ -443,32 +492,36 @@ export class TOCProcessor extends BaseProcessor {
           elementType: 'heading';
         }> = [];
 
-        // Estimate page numbers based on heading distribution
-        for (let i = 0; i < headingInfo.length; i++) {
-          const heading = headingInfo[i];
-          const estimatedRatio = i / Math.max(1, headingInfo.length - 1);
-          const estimatedPage = Math.max(
-            1,
-            Math.min(
-              contentPageCount,
-              Math.ceil(estimatedRatio * contentPageCount),
-            ),
-          );
+        for (const heading of headingInfo) {
+          const pageNumber = markerPages.get(heading.marker) || 1;
+
+          if (!markerPages.has(heading.marker)) {
+            console.warn(
+              `TOC: Marker ${heading.marker} not found in PDF for "${heading.text.substring(0, 40)}...", defaulting to page 1`,
+            );
+          }
 
           if (heading.id) {
-            headingPages[heading.id] = estimatedPage;
+            headingPages[heading.id] = pageNumber;
           } else {
             const generatedId = this.createHeadingId(heading.text);
-            headingPages[generatedId] = estimatedPage;
+            headingPages[generatedId] = pageNumber;
           }
 
           positions.push({
             id: heading.id || this.createHeadingId(heading.text),
             text: heading.text,
-            pageNumber: estimatedPage,
-            offsetTop: heading.offsetTop,
+            pageNumber: pageNumber,
+            offsetTop: 0,
             elementType: 'heading' as const,
           });
+
+          // Debug: log first few and key headings
+          if (heading.index < 5 || heading.text.includes('測試實作')) {
+            console.debug(
+              `TOC: "${heading.text.substring(0, 40)}..." - marker: ${heading.marker}, observed page: ${pageNumber}`,
+            );
+          }
         }
 
         console.info(
@@ -530,38 +583,35 @@ export class TOCProcessor extends BaseProcessor {
 
   /**
    * Generate HTML content without TOC for pre-rendering
+   * CRITICAL: Must use processed content to match final PDF rendering
    */
   private generateContentOnlyHTML(
     content: string,
     context: ProcessingContext,
   ): string {
-    // The content parameter should already be HTML content, not Markdown
-    // Since this is called from the two-stage renderer, it receives the processed HTML
-    let htmlContent: string;
+    // Content is already processed HTML from two-stage renderer
+    // (includes PlantUML/Mermaid diagrams)
+    let htmlContent = content;
 
-    // Check if content is already HTML or if it's Markdown
-    if (
-      content.trim().startsWith('<') ||
-      content.includes('<h1') ||
-      content.includes('<h2')
-    ) {
-      // Content is already HTML
-      htmlContent = content;
-    } else {
-      // Content is Markdown, convert it
-      htmlContent = this.convertMarkdownToHTML(content);
-    }
+    // CRITICAL: Remove TOC section to get accurate content-only page numbers
+    // The content may include a pre-rendered TOC from earlier stage
+    // We need pure content to calculate correct page numbers
+    htmlContent = this.removeTOCSection(htmlContent);
 
-    // Apply correct margins if header/footer is enabled
-    const enableChineseSupport = true; // This should come from context
+    // Use same theme and CSS generation as final PDF
+    const theme = context.syntaxHighlightingTheme || 'default';
+
+    // Generate CSS with correct margins for header/footer
     const customCSS = context.pdfOptions?.includePageNumbers
       ? this.generatePageCSS(context)
       : '';
-    const theme = context.syntaxHighlightingTheme || 'default';
+
+    // Enable Chinese support based on document language
+    const enableChineseSupport = context.documentLanguage === 'zh-TW';
 
     return PDFTemplates.getFullHTML(
       htmlContent,
-      'Content Pre-render',
+      context.documentTitle || 'Content Pre-render',
       customCSS,
       enableChineseSupport,
       undefined, // configAccessor
@@ -570,37 +620,25 @@ export class TOCProcessor extends BaseProcessor {
   }
 
   /**
-   * Simple markdown to HTML conversion (placeholder)
+   * Remove TOC section from HTML content
    */
-  private convertMarkdownToHTML(content: string): string {
-    // This is a simplified implementation
-    // In real usage, you'd use the actual markdown parser from the system
-    const lines = content.split('\n');
-    const idGenerator = new HeadingIdGenerator();
-
-    return lines
-      .map((line) => {
-        const trimmed = line.trim();
-
-        // Handle headings
-        const headingMatch = trimmed.match(/^(#{1,6})\s+(.+)$/);
-        if (headingMatch) {
-          const level = headingMatch[1].length;
-          const text = headingMatch[2];
-          const id = idGenerator.createHeadingId(text);
-
-          return `<h${level} id="${id}">${text}</h${level}>`;
-        }
-
-        // Handle paragraphs
-        if (trimmed && !trimmed.startsWith('#')) {
-          return `<p>${trimmed}</p>`;
-        }
-
-        return '';
-      })
-      .filter(Boolean)
-      .join('\n');
+  private removeTOCSection(html: string): string {
+    // Remove the TOC div and its contents
+    // Our TOC generator creates: <div id="toc" class="...">
+    return html
+      .replace(/<div[^>]*id="toc"[^>]*>[\s\S]*?<\/div>/gi, '')
+      .replace(
+        /<div[^>]*class="[^"]*table-of-contents[^"]*"[^>]*>[\s\S]*?<\/div>/gi,
+        '',
+      )
+      .replace(
+        /<nav[^>]*class="[^"]*table-of-contents[^"]*"[^>]*>[\s\S]*?<\/nav>/gi,
+        '',
+      )
+      .replace(
+        /<section[^>]*class="[^"]*toc[^"]*"[^>]*>[\s\S]*?<\/section>/gi,
+        '',
+      );
   }
 
   /**
@@ -888,6 +926,85 @@ export class TOCProcessor extends BaseProcessor {
       undefined, // configAccessor
       theme,
     );
+  }
+
+  /**
+   * Extract page numbers by searching for markers in PDF
+   * Uses pdfjs-dist to parse PDF and find which page each marker appears on
+   */
+  private async extractPageNumbersFromPDF(
+    pdfBuffer: Buffer,
+    markers: string[],
+  ): Promise<Map<string, number>> {
+    const markerPages = new Map<string, number>();
+
+    try {
+      // Import pdfjs-dist
+      const { getDocument } = await import('pdfjs-dist/legacy/build/pdf.mjs');
+
+      // Convert Buffer to Uint8Array (required by pdfjs-dist)
+      const uint8Array = new Uint8Array(pdfBuffer);
+
+      // Load PDF
+      const loadingTask = getDocument({ data: uint8Array });
+      const pdfDoc = await loadingTask.promise;
+
+      console.debug(
+        `TOC: Parsing ${pdfDoc.numPages} pages to find ${markers.length} markers`,
+      );
+
+      // Search each page for markers
+      for (let pageNum = 1; pageNum <= pdfDoc.numPages; pageNum++) {
+        const page = await pdfDoc.getPage(pageNum);
+        const textContent = await page.getTextContent();
+
+        // Combine all text items on this page
+        const pageText = textContent.items
+          .map((item: any) => item.str)
+          .join(' ');
+
+        // Search for each marker
+        for (const marker of markers) {
+          if (!markerPages.has(marker) && pageText.includes(marker)) {
+            markerPages.set(marker, pageNum);
+            console.debug(`TOC: Found marker ${marker} on page ${pageNum}`);
+          }
+        }
+
+        // Early exit if all markers found
+        if (markerPages.size === markers.length) {
+          console.debug(
+            `TOC: All ${markers.length} markers found, stopping page scan at page ${pageNum}/${pdfDoc.numPages}`,
+          );
+          break;
+        }
+      }
+
+      const foundCount = markerPages.size;
+      const missingCount = markers.length - foundCount;
+
+      if (missingCount > 0) {
+        console.warn(
+          `TOC: ${missingCount} markers not found in PDF (found ${foundCount}/${markers.length})`,
+        );
+
+        // Log first few missing markers
+        const missingMarkers = markers
+          .filter((m) => !markerPages.has(m))
+          .slice(0, 5);
+        console.warn(`TOC: Missing markers: ${missingMarkers.join(', ')}...`);
+      } else {
+        console.info(
+          `TOC: Successfully found all ${markers.length} markers in PDF`,
+        );
+      }
+
+      return markerPages;
+    } catch (error) {
+      console.error('TOC: Failed to extract page numbers from PDF:', error);
+      console.error('TOC: Falling back to empty page mapping');
+      return markerPages;
+    }
   }
 
   /**

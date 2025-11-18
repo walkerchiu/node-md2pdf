@@ -229,11 +229,8 @@ export class TwoStageRenderingEngine implements ITwoStageRenderingEngine {
       cacheMisses += mermaidResult.metadata.cacheMisses || 0;
     }
 
-    // Process TOC based on user configuration (simplified for debugging)
+    // Process TOC based on user configuration
     if (context.tocOptions?.enabled && (context.headings?.length || 0) > 0) {
-      console.log(
-        'DEBUG: Processing TOC in single-stage - user enabled and headings available',
-      );
       const tocProcessor = this.processors.get(DynamicContentType.TOC);
 
       if (tocProcessor) {
@@ -330,8 +327,10 @@ export class TwoStageRenderingEngine implements ITwoStageRenderingEngine {
     if (context.tocOptions?.enabled && (context.headings?.length || 0) > 0) {
       const tocProcessor = this.processors.get(DynamicContentType.TOC);
       if (tocProcessor) {
-        // TOC processor will handle the two-stage process internally
-        const tocResult = await tocProcessor.process(content, {
+        // CRITICAL: Pass preRenderedContent instead of original content
+        // This ensures TOC page calculation uses the same processed content
+        // (with PlantUML/Mermaid diagrams) as the final PDF
+        const tocResult = await tocProcessor.process(preRenderedContent, {
           ...context,
           isPreRendering: false, // Let TOC processor handle its own two-stage logic
         });
