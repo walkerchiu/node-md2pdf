@@ -342,8 +342,9 @@ describe('TOCProcessor', () => {
 
       it('should create proper PDF marker patterns', () => {
         // Test marker generation logic
-        const markers = Array.from({ length: 10 }, (_, i) =>
-          `HDG${String(i).padStart(4, '0')}`,
+        const markers = Array.from(
+          { length: 10 },
+          (_, i) => `HDG${String(i).padStart(4, '0')}`,
         );
 
         expect(markers[0]).toBe('HDG0000');

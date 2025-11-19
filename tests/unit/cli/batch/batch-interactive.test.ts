@@ -88,6 +88,7 @@ describe('BatchInteractiveMode', () => {
       info: jest.fn(),
       warn: jest.fn(),
       error: jest.fn(),
+      debug: jest.fn(),
     };
 
     mockBatchProcessorService = {
@@ -124,11 +125,25 @@ describe('BatchInteractiveMode', () => {
             save: jest.fn(),
             getConfig: jest.fn().mockReturnValue({
               headersFooters: {
-                header: { enabled: false },
-                footer: { enabled: false },
+                header: {
+                  enabled: false,
+                  pageNumber: {
+                    enabled: false,
+                    mode: 'hide',
+                    alignment: 'center',
+                  },
+                },
+                footer: {
+                  enabled: false,
+                  pageNumber: {
+                    enabled: false,
+                    mode: 'hide',
+                    alignment: 'center',
+                  },
+                },
               },
             }),
-            updateConfig: jest.fn(),
+            updateConfig: jest.fn().mockResolvedValue(undefined),
           };
         return {};
       }),
@@ -953,6 +968,45 @@ describe('BatchInteractiveMode', () => {
   describe('Direct method invocation tests', () => {
     it('should test processBatch method with different result scenarios', async () => {
       const batchModePrivate = batchMode as any;
+
+      // Reset the mock before starting
+      mockBatchProcessorService.processBatch.mockClear();
+
+      // Ensure the batch processor service is properly connected
+      batchModePrivate.batchProcessorService = mockBatchProcessorService;
+
+      // Create a complete mock template
+      const mockTemplate = {
+        id: 'test-template',
+        name: 'Test Template',
+        type: 'system' as const,
+        config: {
+          pdf: {
+            format: 'A4',
+            orientation: 'portrait',
+            margin: { top: '1in', right: '1in', bottom: '1in', left: '1in' },
+            displayHeaderFooter: false,
+          },
+          headerFooter: {
+            header: { enabled: false },
+            footer: { enabled: false },
+          },
+          styles: {
+            theme: 'clean',
+            fonts: { body: 'Inter', heading: 'Inter', code: 'Monaco' },
+            colors: {},
+            codeBlock: { theme: 'coy' },
+          },
+          features: {
+            toc: true,
+            tocDepth: 2,
+            pageNumbers: true,
+            anchorLinks: false,
+            anchorDepth: 2,
+          },
+        },
+      };
+
       const mockConfig = {
         outputDirectory: './output',
         inputFiles: ['/test/file1.md'],
@@ -962,6 +1016,7 @@ describe('BatchInteractiveMode', () => {
         tocDepth: 2,
         includePageNumbers: true,
         chineseFontSupport: true,
+        template: mockTemplate,
       };
 
       // Mock console.log to avoid output during tests
@@ -969,6 +1024,7 @@ describe('BatchInteractiveMode', () => {
 
       // Mock process event handlers
       const mockProcessOn = jest.spyOn(process, 'on').mockImplementation();
+      const mockProcessOff = jest.spyOn(process, 'off').mockImplementation();
 
       // Mock the progress UI to avoid issues
       const mockProgressUI = {
@@ -979,7 +1035,7 @@ describe('BatchInteractiveMode', () => {
       };
       batchModePrivate.progressUI = mockProgressUI;
 
-      // Test successful batch processing
+      // Test successful batch processing - set mock to resolve
       mockBatchProcessorService.processBatch.mockResolvedValueOnce({
         success: true,
         totalFiles: 1,
@@ -992,7 +1048,12 @@ describe('BatchInteractiveMode', () => {
       await batchModePrivate.processBatch(mockConfig);
 
       expect(mockBatchProcessorService.processBatch).toHaveBeenCalledWith(
-        expect.objectContaining(mockConfig),
+        expect.objectContaining({
+          outputDirectory: './output',
+          inputFiles: ['/test/file1.md'],
+          maxConcurrentProcesses: 2,
+          continueOnError: true,
+        }),
         expect.objectContaining({
           outputPath: './output',
           includeTOC: true,
@@ -1007,10 +1068,50 @@ describe('BatchInteractiveMode', () => {
       // Cleanup
       mockConsoleLog.mockRestore();
       mockProcessOn.mockRestore();
+      mockProcessOff.mockRestore();
     });
 
     it('should test processBatch with partial failures and no retry', async () => {
       const batchModePrivate = batchMode as any;
+
+      // Reset the mock before starting
+      mockBatchProcessorService.processBatch.mockClear();
+
+      // Ensure the batch processor service is properly connected
+      batchModePrivate.batchProcessorService = mockBatchProcessorService;
+
+      // Create a complete mock template
+      const mockTemplate = {
+        id: 'test-template',
+        name: 'Test Template',
+        type: 'system' as const,
+        config: {
+          pdf: {
+            format: 'A4',
+            orientation: 'portrait',
+            margin: { top: '1in', right: '1in', bottom: '1in', left: '1in' },
+            displayHeaderFooter: false,
+          },
+          headerFooter: {
+            header: { enabled: false },
+            footer: { enabled: false },
+          },
+          styles: {
+            theme: 'clean',
+            fonts: { body: 'Inter', heading: 'Inter', code: 'Monaco' },
+            colors: {},
+            codeBlock: { theme: 'coy' },
+          },
+          features: {
+            toc: false,
+            tocDepth: 2,
+            pageNumbers: false,
+            anchorLinks: false,
+            anchorDepth: 2,
+          },
+        },
+      };
+
       const mockConfig = {
         outputDirectory: './output',
         inputFiles: ['/test/file1.md', '/test/file2.md'],
@@ -1020,6 +1121,7 @@ describe('BatchInteractiveMode', () => {
         tocDepth: 2,
         includePageNumbers: false,
         chineseFontSupport: false,
+        template: mockTemplate,
       };
 
       // Mock console.log to avoid output during tests
@@ -1027,6 +1129,7 @@ describe('BatchInteractiveMode', () => {
 
       // Mock process event handlers
       const mockProcessOn = jest.spyOn(process, 'on').mockImplementation();
+      const mockProcessOff = jest.spyOn(process, 'off').mockImplementation();
 
       // Mock the progress UI to avoid issues
       const mockProgressUI = {
@@ -1056,6 +1159,7 @@ describe('BatchInteractiveMode', () => {
       // Cleanup
       mockConsoleLog.mockRestore();
       mockProcessOn.mockRestore();
+      mockProcessOff.mockRestore();
     });
 
     it('should test retryFailedFiles method directly', async () => {
@@ -1614,6 +1718,45 @@ describe('BatchInteractiveMode', () => {
   describe('advanced coverage tests', () => {
     it('should test processBatch error handling and recovery scenarios', async () => {
       const batchModePrivate = batchMode as any;
+
+      // Reset the mock before starting
+      mockBatchProcessorService.processBatch.mockClear();
+
+      // Ensure the batch processor service is properly connected
+      batchModePrivate.batchProcessorService = mockBatchProcessorService;
+
+      // Create a complete mock template
+      const mockTemplate = {
+        id: 'test-template',
+        name: 'Test Template',
+        type: 'system' as const,
+        config: {
+          pdf: {
+            format: 'A4',
+            orientation: 'portrait',
+            margin: { top: '1in', right: '1in', bottom: '1in', left: '1in' },
+            displayHeaderFooter: false,
+          },
+          headerFooter: {
+            header: { enabled: false },
+            footer: { enabled: false },
+          },
+          styles: {
+            theme: 'clean',
+            fonts: { body: 'Inter', heading: 'Inter', code: 'Monaco' },
+            colors: {},
+            codeBlock: { theme: 'coy' },
+          },
+          features: {
+            toc: true,
+            tocDepth: 3,
+            pageNumbers: false,
+            anchorLinks: false,
+            anchorDepth: 2,
+          },
+        },
+      };
+
       const mockConfig = {
         outputDirectory: './output',
         inputFiles: ['/test/file1.md', '/test/file2.md'],
@@ -1623,6 +1766,7 @@ describe('BatchInteractiveMode', () => {
         includeTOC: true,
         includePageNumbers: false,
         tocDepth: 3,
+        template: mockTemplate,
       };
 
       // Mock console.log to avoid output during tests
@@ -1630,6 +1774,7 @@ describe('BatchInteractiveMode', () => {
 
       // Mock process event handlers
       const mockProcessOn = jest.spyOn(process, 'on').mockImplementation();
+      const mockProcessOff = jest.spyOn(process, 'off').mockImplementation();
 
       // Mock the progress UI to avoid issues
       const mockProgressUI = {
@@ -1663,7 +1808,12 @@ describe('BatchInteractiveMode', () => {
       await batchModePrivate.processBatch(mockConfig);
 
       expect(mockBatchProcessorService.processBatch).toHaveBeenCalledWith(
-        mockConfig,
+        expect.objectContaining({
+          outputDirectory: './output',
+          inputFiles: ['/test/file1.md', '/test/file2.md'],
+          maxConcurrentProcesses: 2,
+          continueOnError: true,
+        }),
         expect.objectContaining({
           outputPath: './output',
           includeTOC: true,
@@ -1678,6 +1828,7 @@ describe('BatchInteractiveMode', () => {
       // Cleanup
       mockConsoleLog.mockRestore();
       mockProcessOn.mockRestore();
+      mockProcessOff.mockRestore();
     });
 
     it('should test processBatch with AbortController cancellation', async () => {

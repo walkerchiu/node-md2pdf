@@ -378,8 +378,6 @@ export const enTranslations: TranslationKey = {
     interactiveModeError: '❌ Interactive mode error:',
     usingTemplate: 'Using Template',
     templateConfig: 'Template Configuration',
-    usingDefaultConfig: 'Using Default Configuration',
-    defaultConfigNote: 'No template selected (Using system defaults).',
     margins: 'Margins',
     fonts: 'Fonts',
     pageFormat: 'Page Format',
@@ -565,8 +563,8 @@ export const enTranslations: TranslationKey = {
     prompts: {
       selectOption: 'Select template option',
       selectTemplate: 'Select a template:',
-      selectTemplateForConversion: 'Select a template for conversion:',
-      skipTemplate: 'Skip (Use custom settings)',
+      selectTemplateForConversion:
+        'Select a template for conversion (settings can be adjusted after selection):',
       adjustSettings: 'Adjust template settings?',
       selectTocDepth: 'Select TOC depth:',
       includePageNumbers: 'Include page numbers?',

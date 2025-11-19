@@ -362,8 +362,6 @@ export const zhTWTranslations: TranslationKey = {
     interactiveModeError: '❌ 互動模式錯誤：',
     usingTemplate: '使用範本',
     templateConfig: '範本配置',
-    usingDefaultConfig: '使用預設配置',
-    defaultConfigNote: '未選擇範本（使用系統預設值）。',
     margins: '邊距',
     fonts: '字型',
     pageFormat: '頁面格式',
@@ -545,8 +543,7 @@ export const zhTWTranslations: TranslationKey = {
     prompts: {
       selectOption: '選擇範本選項',
       selectTemplate: '選擇範本：',
-      selectTemplateForConversion: '選擇轉換範本：',
-      skipTemplate: '跳過（使用自訂設定）',
+      selectTemplateForConversion: '選擇轉換範本（選擇後可調整設定）：',
       adjustSettings: '調整範本設定？',
       selectTocDepth: '選擇目錄深度：',
       includePageNumbers: '包含頁碼？',
