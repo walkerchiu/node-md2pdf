@@ -212,8 +212,6 @@ export class SmartDefaultsService implements ISmartDefaultsService {
       };
     }
 
-    customized.estimatedTime = this.estimateProcessingTime(analysis);
-
     return customized;
   }
 
@@ -529,7 +527,6 @@ export class SmartDefaultsService implements ISmartDefaultsService {
       enableCompression: isLarge,
       imageOptimization: hasImages,
       fontSubsetting: analysis.languageDetection.needsChineseSupport,
-      estimatedProcessingTime: this.estimateProcessingTime(analysis),
       memoryUsage,
       reasoning: `Optimization settings based on document size and complexity`,
     };
@@ -547,23 +544,6 @@ export class SmartDefaultsService implements ISmartDefaultsService {
     if (analysis.contentComplexity.factors.length > 0) confidence += 0.05;
 
     return Math.min(confidence, 1.0);
-  }
-
-  private estimateProcessingTime(analysis: ContentAnalysis): number {
-    let baseTime = 3; // Base time for two-stage rendering
-
-    // Time estimation based on content complexity, not estimated pages
-    baseTime += Math.ceil(analysis.wordCount / 1000) * 0.5; // 0.5s per 1000 words
-    baseTime += analysis.mediaElements.images * 0.3; // 0.3s per image
-    baseTime += analysis.codeBlocks.length * 0.1; // 0.1s per code block
-    baseTime += analysis.tables.length * 0.2; // 0.2s per table
-    baseTime += analysis.headingStructure.totalHeadings * 0.05; // TOC processing time
-
-    if (analysis.languageDetection.needsChineseSupport) {
-      baseTime += 1; // Extra time for font loading
-    }
-
-    return Math.ceil(baseTime);
   }
 
   private calculateDocumentTypeConfidence(analysis: ContentAnalysis): number {
@@ -683,13 +663,11 @@ export class SmartDefaultsService implements ISmartDefaultsService {
             enableCompression: false,
             imageOptimization: false,
             fontSubsetting: false,
-            estimatedProcessingTime: 3,
             memoryUsage: 'low',
             reasoning: 'Optimized for speed',
           },
         },
         useCase: 'presets.quickSimple.useCase',
-        estimatedTime: 3,
       },
       {
         name: 'presets.business.name',
@@ -716,7 +694,6 @@ export class SmartDefaultsService implements ISmartDefaultsService {
           },
         },
         useCase: 'presets.business.useCase',
-        estimatedTime: 8,
       },
       {
         name: 'presets.technical.name',
@@ -743,7 +720,6 @@ export class SmartDefaultsService implements ISmartDefaultsService {
           },
         },
         useCase: 'presets.technical.useCase',
-        estimatedTime: 10,
       },
       {
         name: 'presets.academic.name',
@@ -765,7 +741,6 @@ export class SmartDefaultsService implements ISmartDefaultsService {
           },
         },
         useCase: 'presets.academic.useCase',
-        estimatedTime: 12,
       },
     ];
   }

@@ -157,7 +157,6 @@ export interface OptimizationConfig {
   enableCompression: boolean;
   imageOptimization: boolean;
   fontSubsetting: boolean;
-  estimatedProcessingTime: number; // in seconds
   memoryUsage: 'low' | 'medium' | 'high';
   reasoning: string;
 }
@@ -173,7 +172,6 @@ export interface QuickConfig {
   description: string;
   config: Partial<RecommendedConfig>;
   useCase: string;
-  estimatedTime: number; // in seconds
 }
 
 export interface SmartDefaultsOptions {

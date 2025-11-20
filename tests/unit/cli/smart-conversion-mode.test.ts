@@ -273,42 +273,6 @@ describe('smart-conversion-mode', () => {
       });
     });
 
-    describe('getEstimatedTime', () => {
-      it('should return estimatedTime from QuickConfig', () => {
-        if (!instance) return;
-
-        const config: any = {
-          estimatedTime: 10,
-          config: {},
-        };
-
-        const time = instance.getEstimatedTime(config);
-        expect(time).toBe(10);
-      });
-
-      it('should return estimatedProcessingTime from RecommendedConfig', () => {
-        if (!instance) return;
-
-        const config: any = {
-          optimization: {
-            estimatedProcessingTime: 15,
-          },
-        };
-
-        const time = instance.getEstimatedTime(config);
-        expect(time).toBe(15);
-      });
-
-      it('should return default time if not specified', () => {
-        if (!instance) return;
-
-        const config: any = {};
-
-        const time = instance.getEstimatedTime(config);
-        expect(time).toBe(5);
-      });
-    });
-
     describe('getRecommendedTOCValue', () => {
       const mockAnalysis = {
         headingStructure: {

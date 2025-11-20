@@ -156,7 +156,6 @@ describe('Core Analysis Types', () => {
           enableCompression: true,
           imageOptimization: true,
           fontSubsetting: false,
-          estimatedProcessingTime: 30,
           memoryUsage: 'medium',
           reasoning: 'Balanced optimization for performance',
         },

@@ -11,7 +11,6 @@ import {
   RecommendedConfig,
   QuickConfig,
 } from '../core/analysis/types';
-import { TemplateStorageService, Template } from '../core/templates';
 import { DEFAULT_MARGINS } from '../infrastructure/config/constants';
 import { PathCleaner } from '../utils/path-cleaner';
 
@@ -27,11 +26,10 @@ import type { ILogger } from '../infrastructure/logging/types';
 import type { ServiceContainer } from '../shared/container';
 
 interface ConversionChoice {
-  type: 'quick' | 'smart' | 'custom' | 'template';
+  type: 'back' | 'quick' | 'smart';
   name: string;
   description: string;
   config?: QuickConfig | RecommendedConfig;
-  template?: Template;
 }
 
 export class SmartConversionMode {
@@ -43,7 +41,6 @@ export class SmartConversionMode {
   private recentFilesManager: RecentFilesManager;
   private renderer: CliRenderer;
   private i18nHelpers: I18nHelpers;
-  private templateStorage: TemplateStorageService;
 
   constructor(private readonly container?: ServiceContainer) {
     if (!this.container) {
@@ -57,7 +54,6 @@ export class SmartConversionMode {
     this.recentFilesManager = new RecentFilesManager();
     this.renderer = new CliRenderer();
     this.i18nHelpers = new I18nHelpers(this.translationManager);
-    this.templateStorage = new TemplateStorageService();
   }
 
   /**
@@ -374,22 +370,19 @@ export class SmartConversionMode {
   ): Promise<ConversionChoice> {
     const inquirer = await import('inquirer');
 
-    // Get available conversion options
+    // Get quick conversion config (auto-select best template)
     const quickConfig =
       await this.smartDefaultsService.getQuickConversionConfig(analysis);
+
+    // Get smart recommendation (full custom analysis)
     const smartConfig =
       await this.smartDefaultsService.recommendSettings(analysis);
-    const presetConfigs = this.smartDefaultsService.getPresetConfigs();
-
-    // Check if custom templates are available
-    const templateCount = await this.templateStorage.count({ type: 'custom' });
 
     const choices: ConversionChoice[] = [
       {
-        type: 'quick',
-        name: `${this.translationManager.t('smartConversion.quickConversion')} - "${this.translationManager.t(quickConfig.name)}"`,
-        description: this.translationManager.t(quickConfig.description),
-        config: quickConfig,
+        type: 'back',
+        name: this.translationManager.t('common.menu.returnToPrevious'),
+        description: '',
       },
       {
         type: 'smart',
@@ -398,122 +391,46 @@ export class SmartConversionMode {
         config: smartConfig,
       },
       {
-        type: 'custom',
-        name: this.translationManager.t('smartConversion.chooseFromPresets'),
+        type: 'quick',
+        name: this.translationManager.t('smartConversion.quickConversion'),
         description: this.translationManager.t(
-          'smartConversion.predefinedConfigurations',
+          'smartConversion.quickConversionDescription',
         ),
+        config: quickConfig,
       },
     ];
 
-    // Add template option if templates are available
-    if (templateCount > 0) {
-      choices.push({
-        type: 'template',
-        name: this.translationManager.t('smartConversion.useSavedTemplate'),
-        description: this.translationManager.t(
-          'smartConversion.chooseFromTemplates',
-          { count: templateCount },
-        ),
-      });
-    }
+    // Build inquirer choices with descriptions and numbering
+    const inquirerChoices = choices.map((choice, index) => {
+      // Add numbering: 0. for back, 1, 2, 3... for others
+      let displayName = `${index}. ${choice.name}`;
 
-    this.renderer.info(
-      chalk.cyan(
-        this.translationManager.t('smartConversion.conversionOptions') + '\n',
-      ),
-    );
-
-    for (let i = 0; i < choices.length; i++) {
-      const choice = choices[i];
-      this.renderer.info(`${i + 1}. ${choice.name}`);
-      this.renderer.info(`   ${chalk.gray(choice.description)}`);
-
-      if (choice.config && choice.type !== 'custom') {
-        this.renderer.info(
-          `   ${chalk.dim(`⏱️  ${this.translationManager.t('smartConversion.estimatedTime')}: ~` + this.getEstimatedTime(choice.config) + ` ${this.translationManager.t('smartConversion.seconds')}`)}`,
-        );
+      if (choice.description) {
+        displayName += `\n     ${chalk.gray(choice.description)}`;
       }
-      this.renderer.newline();
-    }
+
+      return {
+        name: displayName,
+        value: index,
+      };
+    });
 
     const { selectedIndex } = await inquirer.default.prompt({
       type: 'list',
       name: 'selectedIndex',
       message: this.translationManager.t(
-        'smartConversion.whichConversionMethod',
+        'smartConversion.enterConversionOptions',
       ),
-      choices: choices.map((choice, index) => ({
-        name: choice.name,
-        value: index,
-      })),
+      choices: inquirerChoices,
+      default: 1, // Default to Smart Custom Configuration (index 1)
+      pageSize: 10,
     });
 
     let selectedChoice = choices[selectedIndex];
 
-    // If custom was selected, show preset options
-    if (selectedChoice.type === 'custom') {
-      const { presetName } = await inquirer.default.prompt({
-        type: 'list',
-        name: 'presetName',
-        message: this.translationManager.t(
-          'smartConversion.selectPresetConfiguration',
-        ),
-        choices: presetConfigs.map((preset) => ({
-          name: `${this.translationManager.t(preset.name)} - ${this.translationManager.t(preset.description)}`,
-          value: preset.name,
-        })),
-      });
-
-      const selectedPreset = presetConfigs.find((p) => p.name === presetName)!;
-      selectedChoice = {
-        type: 'custom',
-        name: this.translationManager.t(selectedPreset.name),
-        description: this.translationManager.t(selectedPreset.description),
-        config: selectedPreset,
-      };
-    }
-
-    // If template was selected, show template options
-    if (selectedChoice.type === 'template') {
-      const collection = await this.templateStorage.getAllTemplates();
-
-      const templateChoices = [
-        ...(collection.system.length > 0
-          ? [new inquirer.default.Separator('── System Templates ──')]
-          : []),
-        ...collection.system.map((t) => ({
-          name: `${this.translationManager.t(t.name)} - ${this.translationManager.t(t.description)}`,
-          value: t.id,
-        })),
-        ...(collection.custom.length > 0
-          ? [new inquirer.default.Separator('── Custom Templates ──')]
-          : []),
-        ...collection.custom.map((t) => ({
-          name: `${this.translationManager.t(t.name)} - ${this.translationManager.t(t.description)}`,
-          value: t.id,
-        })),
-      ];
-
-      const { templateId } = await inquirer.default.prompt({
-        type: 'list',
-        name: 'templateId',
-        message: this.translationManager.t(
-          'templates.prompts.selectTemplateForConversion',
-        ),
-        choices: templateChoices,
-        pageSize: 15,
-      });
-
-      const selectedTemplate = await this.templateStorage.read(templateId);
-      if (selectedTemplate) {
-        selectedChoice = {
-          type: 'template',
-          name: selectedTemplate.name,
-          description: selectedTemplate.description,
-          template: selectedTemplate,
-        };
-      }
+    // Handle back navigation
+    if (selectedChoice.type === 'back') {
+      throw new Error('BACK_TO_MAIN_MENU');
     }
 
     return selectedChoice;
@@ -526,42 +443,6 @@ export class SmartConversionMode {
   ): Promise<void> {
     const inquirer = await import('inquirer');
 
-    // Apply template configuration if template was selected
-    if (choice.type === 'template' && choice.template) {
-      const template = choice.template;
-      this.configManager.set('pdf.format', template.config.pdf.format);
-      this.configManager.set(
-        'pdf.orientation',
-        template.config.pdf.orientation,
-      );
-      this.configManager.set('pdf.margin', template.config.pdf.margin);
-      this.configManager.set(
-        'pdf.displayHeaderFooter',
-        template.config.pdf.displayHeaderFooter,
-      );
-      this.configManager.set('toc.enabled', template.config.features.toc);
-      this.configManager.set('toc.depth', template.config.features.tocDepth);
-
-      // Apply template's code block theme
-      if (template.config.styles.codeBlock.theme) {
-        this.configManager.set(
-          'syntaxHighlighting.theme',
-          template.config.styles.codeBlock.theme,
-        );
-        this.logger.info(
-          `Applied code block theme from template: ${template.config.styles.codeBlock.theme}`,
-        );
-      }
-
-      // Apply template's style theme
-      if (template.config.styles.theme) {
-        this.configManager.set('styles.theme', template.config.styles.theme);
-        this.logger.info(
-          `Applied style theme from template: ${template.config.styles.theme}`,
-        );
-      }
-    }
-
     this.renderer.info(
       chalk.cyan(
         '\n' + this.translationManager.t('smartConversion.conversionSummary'),
@@ -570,22 +451,23 @@ export class SmartConversionMode {
     this.renderer.info(
       `   ${this.translationManager.t('smartConversion.input')}: ${filePath}`,
     );
+
+    // Show specific template name for quick conversion
+    let configDisplay = choice.name;
+    if (choice.type === 'quick' && choice.config && 'name' in choice.config) {
+      const templateName = this.translationManager.t(choice.config.name);
+      const autoSelected = this.translationManager.t(
+        'smartConversion.autoSelected',
+      );
+      configDisplay = `${templateName}（${autoSelected}）`;
+    }
+
     this.renderer.info(
-      `   ${this.translationManager.t('smartConversion.configuration')}: ${choice.name}`,
+      `   ${this.translationManager.t('smartConversion.configuration')}: ${configDisplay}`,
     );
     this.renderer.info(
       `   📄 ${analysis.wordCount.toLocaleString()} ${this.translationManager.t('smartConversion.wordsLabel')}, ${analysis.headingStructure.totalHeadings} ${this.translationManager.t('smartConversion.headingsLabel')}`,
     );
-
-    if (choice.config) {
-      this.renderer.info(
-        `   ⏱️  ${this.translationManager.t('smartConversion.estimatedTime')}: ~${this.getEstimatedTime(choice.config)} ${this.translationManager.t('smartConversion.seconds')}`,
-      );
-    }
-
-    if (choice.type === 'template') {
-      this.renderer.info(chalk.gray(`   📋 Using template: ${choice.name}`));
-    }
 
     // Generate output path suggestion
     const outputPath = filePath.replace(/\.(md|markdown)$/i, '.pdf');
@@ -718,46 +600,10 @@ export class SmartConversionMode {
       // Start progress indication
       const progressInterval = this.showProgress();
 
-      // Build custom styles from template if available
-      let customStyles: string | undefined;
-      if (choice.type === 'template' && choice.template) {
-        const template = choice.template;
-        const stylesParts: string[] = [];
-
-        if (template.config.styles.fonts.body) {
-          stylesParts.push(
-            `body { font-family: "${template.config.styles.fonts.body}", sans-serif; }`,
-          );
-        }
-        if (template.config.styles.fonts.heading) {
-          stylesParts.push(
-            `h1, h2, h3, h4, h5, h6 { font-family: "${template.config.styles.fonts.heading}", sans-serif; }`,
-          );
-        }
-        if (template.config.styles.fonts.code) {
-          stylesParts.push(
-            `code, pre { font-family: "${template.config.styles.fonts.code}", monospace; }`,
-          );
-        }
-
-        if (stylesParts.length > 0) {
-          customStyles = stylesParts.join('\n');
-        }
-      }
-
-      // Override margins when using template
-      if (choice.type === 'template' && choice.template) {
-        processingConfig.pdfOptions = {
-          ...processingConfig.pdfOptions,
-          margin: choice.template.config.pdf.margin,
-        };
-      }
-
       // Debug logging for options being passed to file processor
       const finalOptions = {
         outputPath: finalOutputPath,
         ...processingConfig,
-        ...(customStyles && { customStyles }), // Apply template styles if defined
       };
       this.logger.debug(
         'Smart conversion mode passing options to file processor:',
@@ -766,8 +612,6 @@ export class SmartConversionMode {
           includeTOC,
           tocDepth,
           processingConfig,
-          customStyles,
-          templateMargin: choice.template?.config.pdf.margin,
         },
       );
 
@@ -844,16 +688,6 @@ export class SmartConversionMode {
     const translationKey = `smartConversion.documentTypeDisplay.${type}`;
     const display = this.translationManager.t(translationKey);
     return display !== translationKey ? display : type;
-  }
-
-  private getEstimatedTime(config: QuickConfig | RecommendedConfig): number {
-    if ('estimatedTime' in config) {
-      return config.estimatedTime;
-    }
-    if ('optimization' in config && config.optimization) {
-      return config.optimization.estimatedProcessingTime;
-    }
-    return 5; // Default fallback
   }
 
   private getRecommendedTOCValue(

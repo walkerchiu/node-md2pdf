@@ -243,7 +243,6 @@ describe('SmartDefaultsService', () => {
       expect(config.fonts.enableChineseSupport).toBe(true);
       expect(config.fonts.primaryFont).toBe('Noto Sans CJK TC');
       expect(config.optimization.fontSubsetting).toBe(true);
-      expect(config.optimization.estimatedProcessingTime).toBeGreaterThan(2);
     });
 
     it('should recommend A3 format for wide tables', async () => {
@@ -448,7 +447,6 @@ describe('SmartDefaultsService', () => {
 
       expect(config.name).toBe('presets.technical.name');
       expect(config.config.theme).toBe('technical');
-      expect(config.estimatedTime).toBeGreaterThan(0);
     });
 
     it('should enable Chinese support when needed', async () => {
@@ -525,7 +523,6 @@ describe('SmartDefaultsService', () => {
         expect(preset.description).toBeDefined();
         expect(preset.config).toBeDefined();
         expect(preset.useCase).toBeDefined();
-        expect(preset.estimatedTime).toBeGreaterThan(0);
       });
     });
   });

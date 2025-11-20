@@ -355,8 +355,8 @@ export class ContentAnalyzer {
         weight: 0.3,
         description: 'analysis.complexity.codeHeavy',
         params: {
-          lines: totalCodeLines,
-          blocks: codeBlocks.length,
+          lines: totalCodeLines.toLocaleString(),
+          blocks: codeBlocks.length.toLocaleString(),
         },
       });
       score += 2;
@@ -372,7 +372,7 @@ export class ContentAnalyzer {
         weight: 0.2,
         description: 'analysis.complexity.tableHeavy',
         params: {
-          count: complexTables,
+          count: complexTables.toLocaleString(),
         },
       });
       score += 1;
@@ -387,7 +387,7 @@ export class ContentAnalyzer {
           ? 'analysis.complexity.mediaRichWithDiagrams'
           : 'analysis.complexity.mediaRich',
         params: {
-          count: media.images,
+          count: media.images.toLocaleString(),
         },
       });
       score += 1.5;
@@ -400,8 +400,8 @@ export class ContentAnalyzer {
         weight: 0.2,
         description: 'analysis.complexity.deepHeadingStructure',
         params: {
-          depth: headings.maxDepth,
-          count: headings.totalHeadings,
+          depth: headings.maxDepth.toLocaleString(),
+          count: headings.totalHeadings.toLocaleString(),
         },
       });
       score += 1;
