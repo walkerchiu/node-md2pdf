@@ -376,8 +376,8 @@ export class TOCProcessor extends BaseProcessor {
         // Set PDF viewport to get accurate page calculations
         await page.setViewport({ width: 794, height: 1123 }); // A4 size at 96 DPI
 
-        // Wait for rendering to complete
-        await page.waitForTimeout(1000);
+        // Wait for rendering to complete (Puppeteer 24.x compatibility)
+        await new Promise((resolve) => setTimeout(resolve, 1000));
 
         // Get effective margins considering all configuration sources
         const hasPageNumbers = context.pdfOptions?.includePageNumbers || false;
@@ -464,7 +464,8 @@ export class TOCProcessor extends BaseProcessor {
         console.debug(
           'TOC: Multi-stage observation - Step 2: Generate PDF with markers',
         );
-        const pdfBuffer = await page.pdf(pdfOptions);
+        const pdfUint8Array = await page.pdf(pdfOptions);
+        const pdfBuffer = Buffer.from(pdfUint8Array); // Convert Uint8Array to Buffer for Puppeteer 24.x compatibility
         const actualTotalPages = await this.getActualPDFPageCount(pdfBuffer);
         console.debug(`TOC: Generated PDF has ${actualTotalPages} pages`);
 
@@ -763,7 +764,8 @@ export class TOCProcessor extends BaseProcessor {
       };
 
       console.debug('TOC: Generating PDF to measure actual page count');
-      const pdfBuffer = await page.pdf(pdfOptions);
+      const pdfUint8Array = await page.pdf(pdfOptions);
+      const pdfBuffer = Buffer.from(pdfUint8Array); // Convert Uint8Array to Buffer for Puppeteer 24.x compatibility
 
       // Use Node.js to check actual generated PDF page count
       // This is the most direct method: let PDF engine generate PDF, then check the result

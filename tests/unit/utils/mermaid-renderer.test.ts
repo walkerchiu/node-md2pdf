@@ -87,7 +87,7 @@ describe('MermaidRenderer', () => {
       await renderer.render(testDiagram);
 
       expect(mockPuppeteer.launch).toHaveBeenCalledWith({
-        headless: 'new',
+        headless: true,
         timeout: DEFAULT_MERMAID.TIMEOUT,
         args: [
           '--no-sandbox',
@@ -119,7 +119,7 @@ describe('MermaidRenderer', () => {
       expect(mockPuppeteer.launch).toHaveBeenNthCalledWith(2, {
         executablePath:
           '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
-        headless: 'new',
+        headless: true,
         timeout: DEFAULT_MERMAID.TIMEOUT,
         args: ['--no-sandbox'],
       });

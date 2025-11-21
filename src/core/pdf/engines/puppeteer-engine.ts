@@ -79,30 +79,31 @@ export class PuppeteerPDFEngine implements IPDFEngine {
       '--disable-gpu',
       '--disable-web-security',
       '--disable-features=VizDisplayCompositor',
+      '--generate-pdf-document-outline', // Enable PDF document outline generation
     ];
 
     const configs = [
       {
-        headless: 'new' as const, // Use new headless mode with enhanced stability configuration
+        headless: true, // Use headless mode (Puppeteer 24.x compatibility)
         timeout: 10000,
         args: baseArgs,
       },
       {
         executablePath:
           '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
-        headless: 'new' as const, // Use new headless mode with enhanced stability configuration
+        headless: true, // Use headless mode (Puppeteer 24.x compatibility)
         timeout: 10000,
         args: ['--no-sandbox'],
       },
       {
         executablePath: '/usr/bin/google-chrome',
-        headless: 'new' as const, // Use new headless mode with enhanced stability configuration
+        headless: true, // Use headless mode (Puppeteer 24.x compatibility)
         timeout: 10000,
         args: ['--no-sandbox'],
       },
       {
         executablePath: '/usr/bin/chromium-browser',
-        headless: 'new' as const, // Use new headless mode with enhanced stability configuration
+        headless: true, // Use headless mode (Puppeteer 24.x compatibility)
         timeout: 10000,
         args: ['--no-sandbox'],
       },
@@ -184,20 +185,27 @@ export class PuppeteerPDFEngine implements IPDFEngine {
           context,
         );
 
+        // Clean up TOC page markers before bookmark generation
+        if (context.bookmarks?.enabled) {
+          await this.cleanupTOCPageMarkers(page);
+        }
+
         // Generate PDF with Puppeteer (without path to get buffer)
         const tempPdfOptions = { ...pdfOptions };
         delete tempPdfOptions.path; // Remove path to get buffer instead of writing to file
-        const pdfBuffer = await page.pdf(tempPdfOptions);
+        const pdfUint8Array = await page.pdf(tempPdfOptions);
+        const pdfBuffer = Buffer.from(pdfUint8Array); // Convert Uint8Array to Buffer for Puppeteer 24.x compatibility
 
         // Add metadata and process bookmarks using pdf-lib
         let finalPdfBuffer = pdfBuffer;
         if (context.metadata || context.bookmarks?.enabled) {
           try {
-            finalPdfBuffer = await this.processPdfWithLib(
+            const processedBuffer = await this.processPdfWithLib(
               pdfBuffer,
               context.metadata,
               context.bookmarks,
             );
+            finalPdfBuffer = Buffer.from(processedBuffer);
           } catch (error) {
             // Log error but continue with original PDF if processing fails
             console.warn('Failed to process PDF with pdf-lib:', error);
@@ -206,7 +214,7 @@ export class PuppeteerPDFEngine implements IPDFEngine {
 
         // Write the final PDF to file
         const fs = await import('fs/promises');
-        await fs.writeFile(resolvedOutputPath, finalPdfBuffer);
+        await fs.writeFile(resolvedOutputPath, finalPdfBuffer as Buffer);
 
         const generationTime = Date.now() - startTime;
         this.updateMetrics(true, generationTime);
@@ -316,7 +324,7 @@ export class PuppeteerPDFEngine implements IPDFEngine {
 
     // Save the modified PDF
     const modifiedPdfBytes = await pdfDoc.save();
-    return Buffer.from(modifiedPdfBytes);
+    return Buffer.from(modifiedPdfBytes) as Buffer;
   }
 
   private buildPDFOptions(
@@ -340,10 +348,10 @@ export class PuppeteerPDFEngine implements IPDFEngine {
     // Note: Puppeteer doesn't directly support PDF metadata in PDFOptions
     // Metadata is set via HTML meta tags in generateFullHTML method
 
-    // Add bookmark outline if bookmarks are enabled
+    // Enable Puppeteer's native outline generation for bookmarks
     if (context.bookmarks?.enabled) {
-      // Enable Puppeteer's experimental outline generation
       (pdfOptions as any).outline = true;
+      (pdfOptions as any).tagged = true; // Recommended for accessibility and better bookmark support
     }
 
     return pdfOptions;
@@ -517,5 +525,161 @@ export class PuppeteerPDFEngine implements IPDFEngine {
 
   getMetrics(): PDFEngineMetrics {
     return { ...this.metrics };
+  }
+
+  /**
+   * Clean up TOC page markers that were injected during two-stage rendering
+   * This prevents marker text from being included in Puppeteer's native bookmark generation
+   */
+  private async cleanupTOCPageMarkers(page: Page): Promise<void> {
+    try {
+      const cleanupResults = await page.evaluate(() => {
+        // Step 1: Find and remove all TOC page markers with the class
+        const markers = (globalThis as any).document.querySelectorAll(
+          '.toc-page-marker',
+        );
+        const markerCount = markers.length;
+
+        markers.forEach((marker: any) => {
+          marker.remove();
+        });
+
+        // Step 1.5: Clean up anchor-link elements that might interfere with bookmark generation
+        // These are inserted by AnchorLinksGenerator in Interactive Mode + Technical Documentation template
+        const anchorLinkContainers = (
+          globalThis as any
+        ).document.querySelectorAll('.anchor-link-container');
+        let anchorLinksRemoved = 0;
+
+        anchorLinkContainers.forEach((container: any) => {
+          // Move anchor links away from headings to prevent bookmark interference
+          // Instead of removing them, move them to the document body to preserve functionality
+          if (
+            container.parentNode &&
+            container.parentNode !== (globalThis as any).document.body
+          ) {
+            (globalThis as any).document.body.appendChild(container);
+            anchorLinksRemoved++;
+          }
+        });
+
+        // Step 2: More aggressive cleanup - search ALL elements for HDG patterns
+        // This catches cases where markers might not have the expected class
+        const allElements = (globalThis as any).document.querySelectorAll('*');
+        let elementsProcessed = 0;
+
+        allElements.forEach((element: any) => {
+          // Check if element contains HDG pattern in text content
+          if (element.textContent && /HDG\d{4}/.test(element.textContent)) {
+            // If this is a direct text node or span, clean it
+            if (
+              element.nodeType === 1 &&
+              (element.tagName === 'SPAN' || element.children.length === 0)
+            ) {
+              const cleaned = element.textContent.replace(/HDG\d{4}/g, '');
+              if (cleaned !== element.textContent) {
+                element.textContent = cleaned;
+                elementsProcessed++;
+              }
+            }
+          }
+        });
+
+        // Step 3: Walk through all text nodes to catch any remaining markers
+        const walker = (globalThis as any).document.createTreeWalker(
+          (globalThis as any).document.body,
+          (globalThis as any).NodeFilter.SHOW_TEXT,
+          null,
+          false,
+        );
+
+        const textNodesToClean: any[] = [];
+        let node;
+        while ((node = walker.nextNode())) {
+          if (node.textContent && /HDG\d{4}/.test(node.textContent)) {
+            textNodesToClean.push(node);
+          }
+        }
+
+        textNodesToClean.forEach((textNode: any) => {
+          const original = textNode.textContent;
+          textNode.textContent = textNode.textContent.replace(/HDG\d{4}/g, '');
+          if (original !== textNode.textContent) {
+            elementsProcessed++;
+          }
+        });
+
+        // Step 4: Special cleanup for heading elements - most aggressive approach
+        const headings = (globalThis as any).document.querySelectorAll(
+          'h1, h2, h3, h4, h5, h6',
+        );
+        const headingsWithMarkers: string[] = [];
+        let headingsCleaned = 0;
+
+        headings.forEach((heading: any) => {
+          if (heading.textContent && /HDG\d{4}/.test(heading.textContent)) {
+            const originalText = heading.textContent;
+
+            // Try multiple cleanup approaches
+            // Approach 1: Remove HDG pattern from innerHTML
+            if (heading.innerHTML && /HDG\d{4}/.test(heading.innerHTML)) {
+              heading.innerHTML = heading.innerHTML.replace(/HDG\d{4}/g, '');
+            }
+
+            // Approach 2: Clean textContent directly
+            heading.textContent = heading.textContent.replace(/HDG\d{4}/g, '');
+
+            // Approach 3: Remove any child elements that might contain markers
+            const childSpans = heading.querySelectorAll('span');
+            childSpans.forEach((span: any) => {
+              if (span.textContent && /HDG\d{4}/.test(span.textContent)) {
+                span.remove();
+              }
+            });
+
+            if (originalText !== heading.textContent) {
+              headingsCleaned++;
+            }
+
+            // Check if cleanup was successful
+            if (heading.textContent && /HDG\d{4}/.test(heading.textContent)) {
+              headingsWithMarkers.push(
+                `${heading.tagName}: "${heading.textContent.substring(0, 60)}..."`,
+              );
+            }
+          }
+        });
+
+        return {
+          markersRemoved: markerCount,
+          anchorLinksRemoved: anchorLinksRemoved,
+          elementsProcessed: elementsProcessed,
+          textNodesProcessed: textNodesToClean.length,
+          headingsCleaned: headingsCleaned,
+          remainingHeadingsWithMarkers: headingsWithMarkers,
+        };
+      });
+
+      if (cleanupResults.remainingHeadingsWithMarkers.length > 0) {
+        // Final attempt: Force cleanup of remaining headings
+        await page.evaluate(() => {
+          const problemHeadings = (globalThis as any).document.querySelectorAll(
+            'h1, h2, h3, h4, h5, h6',
+          );
+          problemHeadings.forEach((heading: any) => {
+            if (heading.textContent && /HDG\d{4}/.test(heading.textContent)) {
+              // Nuclear option: rebuild heading content without markers
+              const cleanText = heading.textContent
+                .replace(/HDG\d{4}/g, '')
+                .trim();
+              heading.innerHTML = cleanText;
+            }
+          });
+        });
+      }
+    } catch (error) {
+      console.warn('[Puppeteer] Failed to clean up TOC page markers:', error);
+      // Don't throw error - continue with PDF generation even if cleanup fails
+    }
   }
 }

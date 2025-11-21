@@ -95,8 +95,8 @@
     "pdfjs-dist": "^5.4.296",
     "plantuml-encoder": "^1.4.0",
     "prismjs": "^1.30.0",
-    "puppeteer": "^21.11.0",
-    "puppeteer-core": "^24.22.0"
+    "puppeteer": "^24.23.1",
+    "puppeteer-core": "^24.24.0"
   },
   "lint-staged": {
     "*.{ts,js}": [

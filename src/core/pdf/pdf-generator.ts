@@ -52,7 +52,7 @@ export class PDFGenerator {
     const configs = [
       // Try bundled Chromium first
       {
-        headless: 'new' as const, // Use new headless mode with enhanced stability configuration
+        headless: true, // Use headless mode (Puppeteer 24.x compatibility)
         timeout: 10000,
         args: baseArgs,
       },
@@ -60,21 +60,21 @@ export class PDFGenerator {
       {
         executablePath:
           '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
-        headless: 'new' as const, // Use new headless mode with enhanced stability configuration
+        headless: true, // Use headless mode (Puppeteer 24.x compatibility)
         timeout: 10000,
         args: ['--no-sandbox'],
       },
       // Fallback to system Chrome on Linux
       {
         executablePath: '/usr/bin/google-chrome',
-        headless: 'new' as const, // Use new headless mode with enhanced stability configuration
+        headless: true, // Use headless mode (Puppeteer 24.x compatibility)
         timeout: 10000,
         args: ['--no-sandbox'],
       },
       // Fallback to system Chromium on Linux
       {
         executablePath: '/usr/bin/chromium-browser',
-        headless: 'new' as const, // Use new headless mode with enhanced stability configuration
+        headless: true, // Use headless mode (Puppeteer 24.x compatibility)
         timeout: 10000,
         args: ['--no-sandbox'],
       },

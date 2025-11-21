@@ -132,6 +132,7 @@ describe('InteractiveMode', () => {
     // Setup default inquirer flow for most tests
     // Tests can override this by calling mockInquirerPrompt.mockReset() and setting up their own flow
     setupStandardInquirerFlow();
+
     consoleSpy = jest.spyOn(console, 'log').mockImplementation(() => {});
     consoleWarnSpy = jest.spyOn(console, 'warn').mockImplementation(() => {});
     consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
@@ -168,6 +169,40 @@ describe('InteractiveMode', () => {
     container.registerInstance('translator', createMockTranslator());
     container.registerInstance('errorHandler', mockErrorHandler);
     container.registerInstance('fileProcessor', mockFileProcessorService);
+
+    // Add file system manager for file search testing
+    const mockFileSystemManager = {
+      findFiles: jest
+        .fn()
+        .mockImplementation((pattern: any, searchPath: any) => {
+          // Return the pattern as a matching file for all test cases
+          // This ensures all tests have a file to work with
+          return Promise.resolve([pattern]);
+        }),
+      readFile: jest.fn(),
+      writeFile: jest.fn(),
+      exists: jest.fn(),
+      isFile: jest.fn(),
+      isDirectory: jest.fn(),
+      getStats: jest.fn(),
+      resolvePath: jest.fn(),
+      getAbsolutePath: jest.fn(),
+      getBaseName: jest.fn(),
+      getDirName: jest.fn(),
+      getExtension: jest.fn(),
+      createTempFile: jest.fn(),
+      createTempDirectory: jest.fn(),
+      getFileSize: jest.fn(),
+      getModificationTime: jest.fn(),
+      appendFile: jest.fn(),
+      copyFile: jest.fn(),
+      moveFile: jest.fn(),
+      deleteFile: jest.fn(),
+      createDirectory: jest.fn(),
+      deleteDirectory: jest.fn(),
+      listDirectory: jest.fn(),
+    };
+    container.registerInstance('fileSystem', mockFileSystemManager);
     const mockSmartDefaultsService = {
       analyzeContent: jest.fn().mockImplementation(() =>
         Promise.resolve({
@@ -274,7 +309,7 @@ describe('InteractiveMode', () => {
       count: jest.fn(() => Promise.resolve(1)),
     };
 
-    container.registerInstance('templateStorage', mockTemplateStorage as any);
+    container.registerInstance('templateStorage', mockTemplateStorage);
 
     interactiveMode = new InteractiveMode(container);
   });

@@ -15,7 +15,6 @@ import type {
   IFileProcessorService,
   FileProcessingOptions,
 } from '../../application/services/file-processor.service';
-import type { IMarkdownParserService } from '../../application/services/markdown-parser.service';
 import type { TemplateStorageService } from '../../core/templates/storage.service';
 import type { Template } from '../../core/templates/types';
 import type { IConfigManager } from '../../infrastructure/config/types';
@@ -35,7 +34,6 @@ export class InteractiveMode {
   private configManager: IConfigManager;
   private errorHandler: IErrorHandler;
   private fileProcessorService: IFileProcessorService;
-  private markdownParserService: IMarkdownParserService;
   private fileSystemManager: IFileSystemManager | undefined;
   private logger: ILogger;
   private translationManager: ITranslationManager;
@@ -49,9 +47,6 @@ export class InteractiveMode {
       container.resolve<ITranslationManager>('translator');
     this.fileProcessorService = container.resolve<IFileProcessorService>(
       APPLICATION_SERVICE_NAMES.FILE_PROCESSOR,
-    );
-    this.markdownParserService = container.resolve<IMarkdownParserService>(
-      APPLICATION_SERVICE_NAMES.MARKDOWN_PARSER,
     );
     // fileSystem is optional in some test setups, tryResolve will return undefined when not registered
     this.fileSystemManager =
@@ -450,36 +445,32 @@ export class InteractiveMode {
           `Applying template configuration: ${this.translationManager.t(template.name)}`,
         );
 
-        // Apply template's code block theme to configuration
-        if (template.config.styles.codeBlock.theme) {
-          this.configManager.set(
-            'syntaxHighlighting.theme',
-            template.config.styles.codeBlock.theme,
-          );
-          this.logger.info(
-            `Applied code block theme: ${template.config.styles.codeBlock.theme}`,
-          );
-        }
-
-        // Apply template's style theme to configuration
-        if (template.config.styles.theme) {
-          this.configManager.set('styles.theme', template.config.styles.theme);
-          this.logger.info(
-            `Applied style theme: ${template.config.styles.theme}`,
-          );
-        }
-
-        // Apply template's PDF margin configuration to ConfigManager
-        // This is critical because PDF generator reads margins from ConfigManager
-        this.configManager.set('pdf.margin', template.config.pdf.margin);
+        // IMPORTANT: DO NOT modify global configuration to avoid bookmark conflicts
+        // All template configurations will be applied locally without affecting global state
         this.logger.info(
-          `Applied PDF margins from template: T:${template.config.pdf.margin.top} R:${template.config.pdf.margin.right} B:${template.config.pdf.margin.bottom} L:${template.config.pdf.margin.left}`,
+          'Preserving global configuration state for consistent bookmark generation',
         );
 
-        // Reset markdown parser to pick up new syntax highlighting theme
-        this.markdownParserService.resetParser();
+        // Log what would have been applied without actually modifying global state
+        if (template.config.styles.codeBlock.theme) {
+          this.logger.info(
+            `Will use code block theme: ${template.config.styles.codeBlock.theme} (locally applied)`,
+          );
+        }
+
+        if (template.config.styles.theme) {
+          this.logger.info(
+            `Will use style theme: ${template.config.styles.theme} (locally applied)`,
+          );
+        }
+
         this.logger.info(
-          'Reset markdown parser to apply new template configuration',
+          `Will use PDF margins from template: T:${template.config.pdf.margin.top} R:${template.config.pdf.margin.right} B:${template.config.pdf.margin.bottom} L:${template.config.pdf.margin.left} (locally applied)`,
+        );
+
+        // DO NOT reset markdown parser to avoid interference with bookmark generation
+        this.logger.info(
+          'Preserving markdown parser state to avoid bookmark generation conflicts',
         );
 
         // Use template's PDF margin configuration

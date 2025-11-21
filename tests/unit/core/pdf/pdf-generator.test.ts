@@ -105,7 +105,7 @@ describe('PDFGenerator', () => {
       // Should try the first configuration (bundled Chromium)
       expect(puppeteer.launch).toHaveBeenCalledWith(
         expect.objectContaining({
-          headless: 'new',
+          headless: true,
           timeout: 10000,
           args: expect.arrayContaining([
             '--no-sandbox',
@@ -160,6 +160,76 @@ describe('PDFGenerator', () => {
       await generator.initialize();
 
       expect(puppeteer.launch).toHaveBeenCalledTimes(1);
+    });
+
+    it('should cleanup failed browser instance during initialization', async () => {
+      // Create a mock browser that fails page creation but succeeds close
+      const mockFailedBrowser = {
+        newPage: jest.fn().mockRejectedValue(new Error('Page creation failed')),
+        close: jest.fn().mockResolvedValue(undefined),
+      };
+
+      // Mock the first launch to return a browser that fails, then succeeds on second attempt
+      (puppeteer.launch as jest.Mock)
+        .mockResolvedValueOnce(mockFailedBrowser)
+        .mockResolvedValueOnce(mockBrowser);
+
+      await generator.initialize();
+
+      // Should have tried to close the failed browser
+      expect(mockFailedBrowser.close).toHaveBeenCalled();
+      // Should have launched twice
+      expect(puppeteer.launch).toHaveBeenCalledTimes(2);
+    });
+
+    it('should handle browser cleanup errors during initialization', async () => {
+      // Create a mock browser that fails both page creation and close
+      const mockFailedBrowser = {
+        newPage: jest.fn().mockRejectedValue(new Error('Page creation failed')),
+        close: jest.fn().mockRejectedValue(new Error('Close failed')),
+      };
+
+      // Mock the first launch to return a browser that fails, then succeeds on second attempt
+      (puppeteer.launch as jest.Mock)
+        .mockResolvedValueOnce(mockFailedBrowser)
+        .mockResolvedValueOnce(mockBrowser);
+
+      // Should not throw even if cleanup fails
+      await expect(generator.initialize()).resolves.not.toThrow();
+
+      // Should have tried to close the failed browser (even if it fails)
+      expect(mockFailedBrowser.close).toHaveBeenCalled();
+      // Should have launched twice
+      expect(puppeteer.launch).toHaveBeenCalledTimes(2);
+    });
+
+    it('should handle multiple configuration failures with cleanup', async () => {
+      // Create multiple failed browsers
+      const mockFailedBrowser1 = {
+        newPage: jest.fn().mockRejectedValue(new Error('First browser failed')),
+        close: jest.fn().mockResolvedValue(undefined),
+      };
+
+      const mockFailedBrowser2 = {
+        newPage: jest
+          .fn()
+          .mockRejectedValue(new Error('Second browser failed')),
+        close: jest.fn().mockRejectedValue(new Error('Second close failed')),
+      };
+
+      // Mock multiple launches: two failures, then success
+      (puppeteer.launch as jest.Mock)
+        .mockResolvedValueOnce(mockFailedBrowser1)
+        .mockResolvedValueOnce(mockFailedBrowser2)
+        .mockResolvedValueOnce(mockBrowser);
+
+      await generator.initialize();
+
+      // Both failed browsers should have attempted cleanup
+      expect(mockFailedBrowser1.close).toHaveBeenCalled();
+      expect(mockFailedBrowser2.close).toHaveBeenCalled();
+      // Should have launched three times
+      expect(puppeteer.launch).toHaveBeenCalledTimes(3);
     });
   });
 
@@ -337,6 +407,67 @@ describe('PDFGenerator', () => {
     it('should handle closing non-initialized browser', async () => {
       // Should not throw
       await expect(generator.close()).resolves.not.toThrow();
+    });
+
+    it('should handle browser close timeout and disconnect', async () => {
+      await generator.initialize();
+
+      // Create a mock browser with disconnect method
+      const mockBrowserWithDisconnect = {
+        ...mockBrowser,
+        disconnect: jest.fn().mockResolvedValue(undefined),
+        close: jest
+          .fn()
+          .mockImplementation(
+            () =>
+              new Promise((_, reject) =>
+                setTimeout(() => reject(new Error('Close timeout')), 4000),
+              ),
+          ),
+      };
+
+      // Replace the browser instance
+      (generator as any).browser = mockBrowserWithDisconnect;
+
+      await generator.close();
+
+      expect(mockBrowserWithDisconnect.disconnect).toHaveBeenCalled();
+    });
+
+    it('should handle disconnect errors after close timeout', async () => {
+      await generator.initialize();
+
+      // Create a mock browser that fails both close and disconnect
+      const mockBrowserWithFailures = {
+        ...mockBrowser,
+        disconnect: jest.fn().mockRejectedValue(new Error('Disconnect failed')),
+        close: jest
+          .fn()
+          .mockImplementation(
+            () =>
+              new Promise((_, reject) =>
+                setTimeout(() => reject(new Error('Close timeout')), 4000),
+              ),
+          ),
+      };
+
+      // Replace the browser instance
+      (generator as any).browser = mockBrowserWithFailures;
+
+      // Should not throw even if both close and disconnect fail
+      await expect(generator.close()).resolves.not.toThrow();
+    });
+
+    it('should clear timeout when browser closes successfully', async () => {
+      await generator.initialize();
+
+      // Mock clearTimeout to verify it's called
+      const clearTimeoutSpy = jest.spyOn(global, 'clearTimeout');
+
+      await generator.close();
+
+      expect(clearTimeoutSpy).toHaveBeenCalled();
+      clearTimeoutSpy.mockRestore();
     });
   });
 

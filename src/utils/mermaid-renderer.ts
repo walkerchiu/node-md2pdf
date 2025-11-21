@@ -59,26 +59,26 @@ export class MermaidRenderer {
 
     const configs = [
       {
-        headless: 'new' as const,
+        headless: true, // Use headless mode (Puppeteer 24.x compatibility)
         timeout: DEFAULT_MERMAID.TIMEOUT,
         args: baseArgs,
       },
       {
         executablePath:
           '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
-        headless: 'new' as const,
+        headless: true, // Use headless mode (Puppeteer 24.x compatibility)
         timeout: DEFAULT_MERMAID.TIMEOUT,
         args: ['--no-sandbox'],
       },
       {
         executablePath: '/usr/bin/google-chrome',
-        headless: 'new' as const,
+        headless: true, // Use headless mode (Puppeteer 24.x compatibility)
         timeout: DEFAULT_MERMAID.TIMEOUT,
         args: ['--no-sandbox'],
       },
       {
         executablePath: '/usr/bin/chromium-browser',
-        headless: 'new' as const,
+        headless: true, // Use headless mode (Puppeteer 24.x compatibility)
         timeout: DEFAULT_MERMAID.TIMEOUT,
         args: ['--no-sandbox'],
       },

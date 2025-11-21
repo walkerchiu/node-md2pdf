@@ -134,7 +134,7 @@ describe('PuppeteerPDFEngine', () => {
       const puppeteer = require('puppeteer');
       expect(puppeteer.launch).toHaveBeenCalledWith(
         expect.objectContaining({
-          headless: 'new',
+          headless: true,
           timeout: 10000,
           args: expect.arrayContaining([
             '--no-sandbox',
@@ -143,6 +143,7 @@ describe('PuppeteerPDFEngine', () => {
             '--disable-gpu',
             '--disable-web-security',
             '--disable-features=VizDisplayCompositor',
+            '--generate-pdf-document-outline',
           ]),
         }),
       );
