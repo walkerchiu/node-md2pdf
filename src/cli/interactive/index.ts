@@ -250,15 +250,19 @@ export class InteractiveMode {
       }
     }
 
-    // Select template for conversion (mandatory - will throw if no templates available)
+    // Select template for conversion (optional - user can choose no template)
     const selectedTemplate = await this.selectTemplate();
 
-    // Use template config with optional adjustments
-    return this.getConfigFromTemplate(
-      selectedInputPath,
-      selectedTemplate,
-      inquirer,
-    );
+    // Use template config with optional adjustments, or custom config if no template
+    if (selectedTemplate) {
+      return this.getConfigFromTemplate(
+        selectedInputPath,
+        selectedTemplate,
+        inquirer,
+      );
+    } else {
+      return this.getConfigWithoutTemplate(selectedInputPath, inquirer);
+    }
   }
 
   /**
@@ -289,68 +293,108 @@ export class InteractiveMode {
       );
     }
 
-    // Show template configuration (template is now mandatory)
+    // Show template configuration (template is now optional)
     this.uiManager.showNewline();
 
-    // Console display with colors (matching Template Management style)
-    console.log(
-      chalk.cyan(
-        `📋 ${this.translationManager.t('interactive.usingTemplate')}: ${this.translationManager.t(config.template!.name)}`,
-      ),
-    );
-    console.log();
+    if (config.template) {
+      // Console display with colors (matching Template Management style)
+      console.log(
+        chalk.cyan(
+          `📋 ${this.translationManager.t('interactive.usingTemplate')}: ${this.translationManager.t(config.template.name)}`,
+        ),
+      );
+      console.log();
 
-    // Page format and margins (5-space indent, matching template view)
-    const templateConfig = config.template!.config;
-    console.log(
-      `     ${this.translationManager.t('templates.view.config.pageFormat')}: ${chalk.green(templateConfig.pdf.format)} ${chalk.gray(`(${templateConfig.pdf.orientation})`)}`,
-    );
-    console.log(
-      `     ${this.translationManager.t('templates.view.config.margins')}: ${this.translationManager.t('templates.view.config.top')} ${chalk.yellow(templateConfig.pdf.margin.top)}, ${this.translationManager.t('templates.view.config.right')} ${chalk.yellow(templateConfig.pdf.margin.right)}, ${this.translationManager.t('templates.view.config.bottom')} ${chalk.yellow(templateConfig.pdf.margin.bottom)}, ${this.translationManager.t('templates.view.config.left')} ${chalk.yellow(templateConfig.pdf.margin.left)}`,
-    );
+      // Page format and margins (5-space indent, matching template view)
+      const templateConfig = config.template.config;
+      console.log(
+        `     ${this.translationManager.t('templates.view.config.pageFormat')}: ${chalk.green(templateConfig.pdf.format)} ${chalk.gray(`(${templateConfig.pdf.orientation})`)}`,
+      );
+      console.log(
+        `     ${this.translationManager.t('templates.view.config.margins')}: ${this.translationManager.t('templates.view.config.top')} ${chalk.yellow(templateConfig.pdf.margin.top)}, ${this.translationManager.t('templates.view.config.right')} ${chalk.yellow(templateConfig.pdf.margin.right)}, ${this.translationManager.t('templates.view.config.bottom')} ${chalk.yellow(templateConfig.pdf.margin.bottom)}, ${this.translationManager.t('templates.view.config.left')} ${chalk.yellow(templateConfig.pdf.margin.left)}`,
+      );
 
-    // Fonts configuration
-    console.log(
-      `     ${this.translationManager.t('templates.view.config.fonts')}:`,
-    );
-    const bodyFont =
-      templateConfig.styles.fonts.body ||
-      this.translationManager.t('common.status.notSet');
-    const headingFont =
-      templateConfig.styles.fonts.heading ||
-      this.translationManager.t('common.status.notSet');
-    const codeFont =
-      templateConfig.styles.fonts.code ||
-      this.translationManager.t('common.status.notSet');
+      // Fonts configuration
+      console.log(
+        `     ${this.translationManager.t('templates.view.config.fonts')}:`,
+      );
+      const bodyFont =
+        templateConfig.styles.fonts.body ||
+        this.translationManager.t('common.status.notSet');
+      const headingFont =
+        templateConfig.styles.fonts.heading ||
+        this.translationManager.t('common.status.notSet');
+      const codeFont =
+        templateConfig.styles.fonts.code ||
+        this.translationManager.t('common.status.notSet');
 
-    console.log(
-      `       • ${this.translationManager.t('templates.view.config.bodyFont')}: ${templateConfig.styles.fonts.body ? chalk.cyan(bodyFont) : chalk.gray(bodyFont)}`,
-    );
-    console.log(
-      `       • ${this.translationManager.t('templates.view.config.headingFont')}: ${templateConfig.styles.fonts.heading ? chalk.cyan(headingFont) : chalk.gray(headingFont)}`,
-    );
-    console.log(
-      `       • ${this.translationManager.t('templates.view.config.codeFont')}: ${templateConfig.styles.fonts.code ? chalk.cyan(codeFont) : chalk.gray(codeFont)}`,
-    );
+      console.log(
+        `       • ${this.translationManager.t('templates.view.config.bodyFont')}: ${templateConfig.styles.fonts.body ? chalk.cyan(bodyFont) : chalk.gray(bodyFont)}`,
+      );
+      console.log(
+        `       • ${this.translationManager.t('templates.view.config.headingFont')}: ${templateConfig.styles.fonts.heading ? chalk.cyan(headingFont) : chalk.gray(headingFont)}`,
+      );
+      console.log(
+        `       • ${this.translationManager.t('templates.view.config.codeFont')}: ${templateConfig.styles.fonts.code ? chalk.cyan(codeFont) : chalk.gray(codeFont)}`,
+      );
 
-    // Code block theme
-    const codeBlockTheme =
-      templateConfig.styles.codeBlock.theme ||
-      this.translationManager.t('common.status.notSet');
-    console.log(
-      `     ${this.translationManager.t('templates.view.config.codeBlockTheme')}: ${templateConfig.styles.codeBlock.theme ? chalk.magenta(codeBlockTheme) : chalk.gray(codeBlockTheme)}`,
-    );
-    console.log();
+      // Code block theme
+      const codeBlockTheme =
+        templateConfig.styles.codeBlock.theme ||
+        this.translationManager.t('common.status.notSet');
+      console.log(
+        `     ${this.translationManager.t('templates.view.config.codeBlockTheme')}: ${templateConfig.styles.codeBlock.theme ? chalk.magenta(codeBlockTheme) : chalk.gray(codeBlockTheme)}`,
+      );
+      console.log();
 
-    // Clean log without colors
-    this.logger.info(
-      `Template: ${this.translationManager.t(config.template!.name)} | ` +
-        `Page: ${templateConfig.pdf.format} (${templateConfig.pdf.orientation}) | ` +
-        `Margins: T:${templateConfig.pdf.margin.top} R:${templateConfig.pdf.margin.right} B:${templateConfig.pdf.margin.bottom} L:${templateConfig.pdf.margin.left} | ` +
-        `Fonts: Body="${templateConfig.styles.fonts.body}", Heading="${templateConfig.styles.fonts.heading}", Code="${templateConfig.styles.fonts.code}" | ` +
-        `Code Theme: ${templateConfig.styles.codeBlock.theme} | ` +
-        `Style: ${templateConfig.styles.theme}`,
-    );
+      // Clean log without colors
+      this.logger.info(
+        `Template: ${this.translationManager.t(config.template.name)} | ` +
+          `Page: ${templateConfig.pdf.format} (${templateConfig.pdf.orientation}) | ` +
+          `Margins: T:${templateConfig.pdf.margin.top} R:${templateConfig.pdf.margin.right} B:${templateConfig.pdf.margin.bottom} L:${templateConfig.pdf.margin.left} | ` +
+          `Fonts: Body="${templateConfig.styles.fonts.body}", Heading="${templateConfig.styles.fonts.heading}", Code="${templateConfig.styles.fonts.code}" | ` +
+          `Code Theme: ${templateConfig.styles.codeBlock.theme} | ` +
+          `Style: ${templateConfig.styles.theme}`,
+      );
+    } else {
+      // Show custom configuration when no template is used
+      console.log(
+        chalk.cyan(
+          `📋 ${this.translationManager.t('interactive.noTemplateUsed')}`,
+        ),
+      );
+      console.log(
+        chalk.gray(
+          `     ${this.translationManager.t('interactive.usingCustomSettings')}`,
+        ),
+      );
+
+      // Get current headers/footers configuration
+      const userConfig = this.configManager.getConfig();
+      const headersFootersConfig = userConfig.headersFooters;
+
+      // Show headers/footers status
+      console.log(
+        `     ${this.translationManager.t('interactive.headerStatus')}: ${headersFootersConfig.header.enabled ? chalk.green(this.translationManager.t('interactive.enabled')) : chalk.gray(this.translationManager.t('interactive.disabled'))}`,
+      );
+      console.log(
+        `     ${this.translationManager.t('interactive.footerStatus')}: ${headersFootersConfig.footer.enabled ? chalk.green(this.translationManager.t('interactive.enabled')) : chalk.gray(this.translationManager.t('interactive.disabled'))}`,
+      );
+
+      // Show syntax highlighting theme
+      console.log(
+        `     ${this.translationManager.t('templates.view.config.codeBlockTheme')}: ${chalk.magenta(userConfig.syntaxHighlighting?.theme || 'default')}`,
+      );
+      console.log();
+
+      // Clean log without colors
+      this.logger.info(
+        `Template: None (using custom settings) | ` +
+          `Headers: ${headersFootersConfig.header.enabled ? 'Enabled' : 'Disabled'} | ` +
+          `Footers: ${headersFootersConfig.footer.enabled ? 'Enabled' : 'Disabled'} | ` +
+          `Code Theme: ${userConfig.syntaxHighlighting?.theme || 'default'}`,
+      );
+    }
 
     this.uiManager.showSeparator();
     this.uiManager.showNewline();
@@ -385,7 +429,8 @@ export class InteractiveMode {
       });
 
       // Step 1: Update headers/footers configuration based on page numbers choice
-      if (config.includePageNumbers) {
+      // Only apply this for non-template conversions to avoid overriding template settings
+      if (config.includePageNumbers && !config.template) {
         try {
           const currentConfig = this.configManager.getConfig();
 
@@ -409,7 +454,7 @@ export class InteractiveMode {
 
           await this.configManager.updateConfig(updatedConfig);
           this.logger.debug(
-            'Updated headers/footers configuration to enable page numbers in footer',
+            'Updated headers/footers configuration to enable page numbers in footer (non-template mode)',
           );
         } catch (error) {
           this.logger.warn(
@@ -483,127 +528,116 @@ export class InteractiveMode {
         displayHeaderFooter = template.config.pdf.displayHeaderFooter;
 
         // Build template-specific headers/footers config
-        // Convert simple template header/footer config to complex system config
-        if (
-          template.config.headerFooter.header.enabled ||
-          template.config.headerFooter.footer.enabled
-        ) {
-          const headerContent =
-            template.config.headerFooter.header.content || '';
-          const footerContent =
-            template.config.headerFooter.footer.content || '';
+        // Always override user settings when using a template
+        const headerContent = template.config.headerFooter.header.content || '';
+        const footerContent = template.config.headerFooter.footer.content || '';
 
-          headersFootersConfig = {
-            header: {
-              enabled: template.config.headerFooter.header.enabled,
-              title: {
-                enabled: headerContent.includes('{{title}}'),
-                mode: headerContent.includes('{{title}}')
-                  ? ('metadata' as const)
-                  : ('none' as const),
-                alignment: 'center' as const,
-              },
-              pageNumber: {
-                enabled: false,
-                mode: 'none' as const,
-                alignment: 'center' as const,
-              },
-              dateTime: {
-                enabled: false,
-                mode: 'none' as const,
-                alignment: 'center' as const,
-              },
-              copyright: {
-                enabled: false,
-                mode: 'none' as const,
-                alignment: 'center' as const,
-              },
-              message: {
-                enabled: Boolean(
-                  headerContent && !headerContent.includes('{{'),
-                ),
-                mode: 'custom' as const,
-                customValue: headerContent,
-                alignment: 'center' as const,
-              },
-              author: {
-                enabled: false,
-                mode: 'none' as const,
-                alignment: 'center' as const,
-              },
-              organization: {
-                enabled: false,
-                mode: 'none' as const,
-                alignment: 'center' as const,
-              },
-              version: {
-                enabled: false,
-                mode: 'none' as const,
-                alignment: 'center' as const,
-              },
-              category: {
-                enabled: false,
-                mode: 'none' as const,
-                alignment: 'center' as const,
-              },
-              layout: {},
+        headersFootersConfig = {
+          header: {
+            enabled: template.config.headerFooter.header.enabled,
+            title: {
+              enabled: headerContent.includes('{{title}}'),
+              mode: headerContent.includes('{{title}}')
+                ? ('metadata' as const)
+                : ('none' as const),
+              alignment: 'left' as const,
             },
-            footer: {
-              enabled: template.config.headerFooter.footer.enabled,
-              title: {
-                enabled: false,
-                mode: 'none' as const,
-                alignment: 'center' as const,
-              },
-              pageNumber: {
-                enabled: template.config.features.pageNumbers,
-                mode: template.config.features.pageNumbers
-                  ? ('show' as const)
-                  : ('none' as const),
-                alignment: 'center' as const,
-              },
-              dateTime: {
-                enabled: false,
-                mode: 'none' as const,
-                alignment: 'center' as const,
-              },
-              copyright: {
-                enabled: false,
-                mode: 'none' as const,
-                alignment: 'center' as const,
-              },
-              message: {
-                enabled: Boolean(
-                  footerContent && !footerContent.includes('{{'),
-                ),
-                mode: 'custom' as const,
-                customValue: footerContent,
-                alignment: 'center' as const,
-              },
-              author: {
-                enabled: false,
-                mode: 'none' as const,
-                alignment: 'center' as const,
-              },
-              organization: {
-                enabled: false,
-                mode: 'none' as const,
-                alignment: 'center' as const,
-              },
-              version: {
-                enabled: false,
-                mode: 'none' as const,
-                alignment: 'center' as const,
-              },
-              category: {
-                enabled: false,
-                mode: 'none' as const,
-                alignment: 'center' as const,
-              },
-              layout: {},
+            pageNumber: {
+              enabled: false,
+              mode: 'none' as const,
+              alignment: 'left' as const,
             },
-          };
-        }
+            dateTime: {
+              enabled: false,
+              mode: 'none' as const,
+              alignment: 'left' as const,
+            },
+            copyright: {
+              enabled: false,
+              mode: 'none' as const,
+              alignment: 'left' as const,
+            },
+            message: {
+              enabled: Boolean(headerContent && !headerContent.includes('{{')),
+              mode: 'custom' as const,
+              customValue: headerContent,
+              alignment: 'left' as const,
+            },
+            author: {
+              enabled: false,
+              mode: 'none' as const,
+              alignment: 'left' as const,
+            },
+            organization: {
+              enabled: false,
+              mode: 'none' as const,
+              alignment: 'left' as const,
+            },
+            version: {
+              enabled: false,
+              mode: 'none' as const,
+              alignment: 'left' as const,
+            },
+            category: {
+              enabled: false,
+              mode: 'none' as const,
+              alignment: 'left' as const,
+            },
+            layout: {},
+          },
+          footer: {
+            enabled: template.config.headerFooter.footer.enabled,
+            title: {
+              enabled: false,
+              mode: 'none' as const,
+              alignment: 'right' as const,
+            },
+            pageNumber: {
+              enabled: template.config.features.pageNumbers,
+              mode: template.config.features.pageNumbers
+                ? ('show' as const)
+                : ('none' as const),
+              alignment: 'right' as const,
+            },
+            dateTime: {
+              enabled: false,
+              mode: 'none' as const,
+              alignment: 'right' as const,
+            },
+            copyright: {
+              enabled: false,
+              mode: 'none' as const,
+              alignment: 'right' as const,
+            },
+            message: {
+              enabled: Boolean(footerContent && !footerContent.includes('{{')),
+              mode: 'custom' as const,
+              customValue: footerContent,
+              alignment: 'right' as const,
+            },
+            author: {
+              enabled: false,
+              mode: 'none' as const,
+              alignment: 'right' as const,
+            },
+            organization: {
+              enabled: false,
+              mode: 'none' as const,
+              alignment: 'right' as const,
+            },
+            version: {
+              enabled: false,
+              mode: 'none' as const,
+              alignment: 'right' as const,
+            },
+            category: {
+              enabled: false,
+              mode: 'none' as const,
+              alignment: 'right' as const,
+            },
+            layout: {},
+          },
+        };
 
         // Build custom styles from template
         const stylesParts: string[] = [];
@@ -694,15 +728,29 @@ export class InteractiveMode {
       );
       this.logger.info('================================');
 
-      // Use headers/footers config if available, otherwise fallback to legacy page numbers
-      if (
+      // Always pass template headers/footers config when using a template
+      if (config.template) {
+        // Template mode: always use template's headers/footers configuration (even if disabled)
+        processingOptions.headersFootersConfig = headersFootersConfig;
+        this.logger.debug(
+          'Using template headers/footers configuration in processing options',
+        );
+      } else if (
         headersFootersConfig &&
         (headersFootersConfig.header.enabled ||
           headersFootersConfig.footer.enabled)
       ) {
+        // No template mode: use user's headers/footers config if enabled
         processingOptions.headersFootersConfig = headersFootersConfig;
+        this.logger.debug(
+          'Using user global headers/footers configuration in processing options',
+        );
       } else if (config.includePageNumbers) {
-        processingOptions.includePageNumbers = config.includePageNumbers; // Legacy fallback
+        // Fallback to legacy page numbers for no-template mode
+        processingOptions.includePageNumbers = config.includePageNumbers;
+        this.logger.debug(
+          'Using legacy page numbers mode in processing options',
+        );
       }
 
       // Add tocOptions conditionally to avoid undefined assignment
@@ -887,7 +935,7 @@ export class InteractiveMode {
                   value: 6,
                 },
               ],
-              default: template.config.features.tocDepth,
+              default: Math.max(0, template.config.features.tocDepth - 1),
               when: (ans: any) => ans.includeTOC,
             },
             {
@@ -973,27 +1021,147 @@ export class InteractiveMode {
   }
 
   /**
-   * Select template for conversion (mandatory)
+   * Get conversion config without template (using custom settings)
    */
-  private async selectTemplate(): Promise<Template> {
+  private async getConfigWithoutTemplate(
+    inputPath: string,
+    inquirer: any,
+  ): Promise<ConversionConfig> {
+    // Show info about no template mode
+    console.log(
+      chalk.cyan(
+        `\n🎛️  ${this.translationManager.t('interactive.noTemplateMode')}`,
+      ),
+    );
+    console.log(
+      chalk.gray(
+        `   ${this.translationManager.t('interactive.noTemplateModeDesc')}`,
+      ),
+    );
+
+    // Prompt for conversion settings without template constraints
+    const answers = await inquirer.default.prompt([
+      {
+        type: 'input',
+        name: 'outputPath',
+        message: this.translationManager.t('interactive.enterOutputPath'),
+        default: inputPath.replace(/\.(md|markdown)$/, '.pdf'),
+      },
+      {
+        type: 'confirm',
+        name: 'includeTOC',
+        message: this.translationManager.t('interactive.includeTOC'),
+        default: true,
+      },
+      {
+        type: 'list',
+        name: 'tocDepth',
+        message: this.translationManager.t('interactive.selectTocDepth'),
+        choices: [
+          {
+            name: this.translationManager.t('common.tocLevels.1'),
+            value: 1,
+          },
+          {
+            name: this.translationManager.t('common.tocLevels.2'),
+            value: 2,
+          },
+          {
+            name: this.translationManager.t('common.tocLevels.3'),
+            value: 3,
+          },
+          {
+            name: this.translationManager.t('common.tocLevels.4'),
+            value: 4,
+          },
+          {
+            name: this.translationManager.t('common.tocLevels.5'),
+            value: 5,
+          },
+          {
+            name: this.translationManager.t('common.tocLevels.6'),
+            value: 6,
+          },
+        ],
+        default: 2,
+        when: (ans: any) => ans.includeTOC,
+      },
+      {
+        type: 'confirm',
+        name: 'includePageNumbers',
+        message: this.translationManager.t('interactive.includePageNumbers'),
+        default: true,
+      },
+      {
+        type: 'list',
+        name: 'tocReturnLinksLevel',
+        message: this.translationManager.t('interactive.tocReturnLinksLevel'),
+        choices: [
+          {
+            name: this.translationManager.t('common.tocReturnLinksLevels.0'),
+            value: 0,
+          },
+          {
+            name: this.translationManager.t('common.tocReturnLinksLevels.1'),
+            value: 1,
+          },
+          {
+            name: this.translationManager.t('common.tocReturnLinksLevels.2'),
+            value: 2,
+          },
+          {
+            name: this.translationManager.t('common.tocReturnLinksLevels.3'),
+            value: 3,
+          },
+          {
+            name: this.translationManager.t('common.tocReturnLinksLevels.4'),
+            value: 4,
+          },
+          {
+            name: this.translationManager.t('common.tocReturnLinksLevels.5'),
+            value: 5,
+          },
+        ],
+        default: 2,
+        when: (ans: any) => ans.includeTOC,
+      },
+    ]);
+
+    // Build config without template (will use user's custom headers/footers settings)
+    const config: ConversionConfig = {
+      inputPath,
+      outputPath: answers.outputPath,
+      includeTOC: answers.includeTOC ?? true,
+      tocDepth: answers.tocDepth ?? 3,
+      includePageNumbers: answers.includePageNumbers ?? true,
+      tocReturnLinksLevel: answers.tocReturnLinksLevel ?? 2,
+      // Note: template property is omitted - will use custom headers/footers
+    };
+
+    return config;
+  }
+
+  /**
+   * Select template for conversion (optional - user can choose no template)
+   */
+  private async selectTemplate(): Promise<Template | null> {
     const inquirer = await import('inquirer');
 
     // Get all templates (system + custom)
     const allTemplates = await this.templateStorage.getAllTemplates();
     const templates = [...allTemplates.system, ...allTemplates.custom];
 
-    if (templates.length === 0) {
-      this.uiManager.showError(
-        this.translationManager.t('templates.messages.noTemplates'),
-      );
-      throw new Error('No templates available for conversion');
-    }
-
     // Create choices with template information
-    const choices = templates.map((t) => ({
-      name: `[${this.translationManager.t(`templates.types.${t.type}`)}] ${this.translationManager.t(t.name)} - ${this.translationManager.t(t.description)}`,
-      value: t.id,
-    }));
+    const choices = [
+      {
+        name: `${this.translationManager.t('interactive.noTemplate')} - ${this.translationManager.t('interactive.noTemplateDescription')}`,
+        value: 'no-template',
+      },
+      ...templates.map((t) => ({
+        name: `[${this.translationManager.t(`templates.types.${t.type}`)}] ${this.translationManager.t(t.name)} - ${this.translationManager.t(t.description)}`,
+        value: t.id,
+      })),
+    ];
 
     const { templateId } = await (inquirer as InquirerModule).default.prompt<{
       templateId: string;
@@ -1005,9 +1173,14 @@ export class InteractiveMode {
           'templates.prompts.selectTemplateForConversion',
         ),
         choices,
-        pageSize: 10,
+        pageSize: 12,
       },
     ]);
+
+    // If user chose no template, return null
+    if (templateId === 'no-template') {
+      return null;
+    }
 
     const template = await this.templateStorage.read(templateId);
     if (!template) {

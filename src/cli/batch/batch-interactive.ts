@@ -591,9 +591,11 @@ export class BatchInteractiveMode {
         customStyles,
       });
 
-      // Get user's headers/footers preferences
-      const userConfig = this.configManager.getConfig();
-      const headersFootersConfig = userConfig.headersFooters;
+      // Build template-specific headers/footers config
+      // Always override user settings when using a template (same logic as single file conversion)
+      const headersFootersConfig = this.buildTemplateHeadersFootersConfig(
+        config.template,
+      );
 
       const fileOptions: Record<string, unknown> = {
         outputPath: config.outputDirectory,
@@ -995,5 +997,168 @@ export class BatchInteractiveMode {
     }
 
     return template;
+  }
+
+  /**
+   * Build template-specific headers/footers configuration
+   * Uses the same logic and alignment settings as single file conversion mode
+   */
+  private buildTemplateHeadersFootersConfig(
+    template?: Template,
+  ): import('../../core/headers-footers/types').HeadersFootersConfig {
+    if (!template) {
+      // No template provided, use user's global settings as fallback
+      const userConfig = this.configManager.getConfig();
+      return userConfig.headersFooters;
+    }
+
+    // Extract header and footer content from template
+    const headerContent = template.config.headerFooter.header.content || '';
+    const footerContent = template.config.headerFooter.footer.content || '';
+
+    // Build template-specific headers/footers config
+    // Always use template settings (same alignment as single file conversion mode)
+    return {
+      header: {
+        enabled: template.config.headerFooter.header.enabled,
+        title: {
+          enabled: headerContent.includes('{{title}}'),
+          mode: headerContent.includes('{{title}}')
+            ? ('metadata' as const)
+            : ('none' as const),
+          alignment: 'left' as const, // Left-aligned headers (same as single file mode)
+        },
+        pageNumber: {
+          enabled: headerContent.includes('{{pageNumber}}'),
+          mode: headerContent.includes('{{pageNumber}}')
+            ? ('show' as const)
+            : ('none' as const),
+          alignment: 'left' as const,
+        },
+        dateTime: {
+          enabled:
+            headerContent.includes('{{date}}') ||
+            headerContent.includes('{{time}}'),
+          mode:
+            headerContent.includes('{{date}}') ||
+            headerContent.includes('{{time}}')
+              ? ('date-short' as const)
+              : ('none' as const),
+          alignment: 'left' as const,
+        },
+        copyright: {
+          enabled: headerContent.includes('{{copyright}}'),
+          mode: headerContent.includes('{{copyright}}')
+            ? ('metadata' as const)
+            : ('none' as const),
+          alignment: 'left' as const,
+        },
+        message: {
+          enabled: Boolean(headerContent && !headerContent.includes('{{')),
+          mode: 'custom' as const,
+          customValue: headerContent,
+          alignment: 'left' as const,
+        },
+        author: {
+          enabled: headerContent.includes('{{author}}'),
+          mode: headerContent.includes('{{author}}')
+            ? ('metadata' as const)
+            : ('none' as const),
+          alignment: 'left' as const,
+        },
+        organization: {
+          enabled: headerContent.includes('{{organization}}'),
+          mode: headerContent.includes('{{organization}}')
+            ? ('metadata' as const)
+            : ('none' as const),
+          alignment: 'left' as const,
+        },
+        version: {
+          enabled: headerContent.includes('{{version}}'),
+          mode: headerContent.includes('{{version}}')
+            ? ('metadata' as const)
+            : ('none' as const),
+          alignment: 'left' as const,
+        },
+        category: {
+          enabled: headerContent.includes('{{category}}'),
+          mode: headerContent.includes('{{category}}')
+            ? ('metadata' as const)
+            : ('none' as const),
+          alignment: 'left' as const,
+        },
+        layout: {},
+      },
+      footer: {
+        enabled: template.config.headerFooter.footer.enabled,
+        title: {
+          enabled: footerContent.includes('{{title}}'),
+          mode: footerContent.includes('{{title}}')
+            ? ('metadata' as const)
+            : ('none' as const),
+          alignment: 'right' as const, // Right-aligned footers (same as single file mode)
+        },
+        pageNumber: {
+          enabled: template.config.features.pageNumbers,
+          mode: template.config.features.pageNumbers
+            ? ('show' as const)
+            : ('none' as const),
+          alignment: 'right' as const,
+        },
+        dateTime: {
+          enabled:
+            footerContent.includes('{{date}}') ||
+            footerContent.includes('{{time}}'),
+          mode:
+            footerContent.includes('{{date}}') ||
+            footerContent.includes('{{time}}')
+              ? ('date-short' as const)
+              : ('none' as const),
+          alignment: 'right' as const,
+        },
+        copyright: {
+          enabled: footerContent.includes('{{copyright}}'),
+          mode: footerContent.includes('{{copyright}}')
+            ? ('metadata' as const)
+            : ('none' as const),
+          alignment: 'right' as const,
+        },
+        message: {
+          enabled: Boolean(footerContent && !footerContent.includes('{{')),
+          mode: 'custom' as const,
+          customValue: footerContent,
+          alignment: 'right' as const,
+        },
+        author: {
+          enabled: footerContent.includes('{{author}}'),
+          mode: footerContent.includes('{{author}}')
+            ? ('metadata' as const)
+            : ('none' as const),
+          alignment: 'right' as const,
+        },
+        organization: {
+          enabled: footerContent.includes('{{organization}}'),
+          mode: footerContent.includes('{{organization}}')
+            ? ('metadata' as const)
+            : ('none' as const),
+          alignment: 'right' as const,
+        },
+        version: {
+          enabled: footerContent.includes('{{version}}'),
+          mode: footerContent.includes('{{version}}')
+            ? ('metadata' as const)
+            : ('none' as const),
+          alignment: 'right' as const,
+        },
+        category: {
+          enabled: footerContent.includes('{{category}}'),
+          mode: footerContent.includes('{{category}}')
+            ? ('metadata' as const)
+            : ('none' as const),
+          alignment: 'right' as const,
+        },
+        layout: {},
+      },
+    };
   }
 }

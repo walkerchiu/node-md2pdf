@@ -272,6 +272,10 @@ export class FileProcessorService implements IFileProcessorService {
               useExistingTOC: false,
             },
           }),
+          // Pass headers/footers configuration if provided (for template-specific settings)
+          ...(options.headersFootersConfig && {
+            headersFootersConfig: options.headersFootersConfig,
+          }),
         },
       );
 

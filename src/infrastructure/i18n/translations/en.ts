@@ -107,7 +107,7 @@ export const enTranslations: TranslationKey = {
           'This will reset all metadata settings to default values.',
       },
       currentSettings: {
-        extractionSettings: '📋 Extraction Settings',
+        extractionSettings: '🔧 Extraction Settings',
         defaultValues: '📝 Default Values',
         validationRules: '✅ Validation Rules',
         fromFrontmatter: 'From Frontmatter',
@@ -247,9 +247,9 @@ export const enTranslations: TranslationKey = {
       '⚠️  File browser unavailable, falling back to manual entry',
     enterFilePath: '✏️  Enter the full path to your Markdown file:',
     pleaseEnterFilePath: 'Please enter a file path',
-    recentFilesNotFound: '📋 No recent files found',
-    recentFiles: '📋 Recent Files:',
-    selectRecentFile: '📋 Select a recent file:',
+    recentFilesNotFound: '📁 No recent files found',
+    recentFiles: '📁 Recent Files:',
+    selectRecentFile: '📁 Select a recent file:',
     browseOtherFiles: '🔍 Browse for other files...',
     recentFilesError: '⚠️  Error loading recent files, using file browser',
     analysisResults: '📊 Content Analysis Results',
@@ -275,12 +275,12 @@ export const enTranslations: TranslationKey = {
     confidence: 'confidence',
     whichConversionMethod: '🎛️  Which conversion method would you like to use?',
     selectPresetConfiguration: '🔧 Select a preset configuration:',
-    conversionSummary: '📋 Conversion Summary:',
+    conversionSummary: '📊 Conversion Summary:',
     input: '📁 Input',
     configuration: '🔧 Configuration',
     outputFilePath: '📤 Output file path:',
     includeTOC: '📚 Include table of contents?',
-    selectTocDepth: '📋 Select table of contents depth:',
+    selectTocDepth: '📖 Select table of contents depth:',
     startConversion: '🚀 Start conversion?',
     conversionCancelled: '❌ Conversion cancelled',
     startingConversion: '🚀 Starting conversion...',
@@ -324,11 +324,61 @@ export const enTranslations: TranslationKey = {
       presentation: '📊 Presentation',
       mixed: '🎭 Mixed Content',
     },
+    // Intelligent matching translations
+    intelligentMatching: {
+      analysisTitle: '🔍 Intelligent Matching Analysis:',
+      matchingDecisions: '🎯 Intelligent Matching Decisions:',
+      headerConfig: 'Header Configuration',
+      footerConfig: 'Footer Configuration',
+      headerConfiguration: 'Header Configuration:',
+      footerConfiguration: 'Footer Configuration:',
+      noFieldsEnabled: 'No enabled fields',
+      headerDisabled: 'Header not enabled',
+      footerDisabled: 'Footer not enabled',
+      headerNotEnabled: 'Header not enabled',
+      footerNotEnabled: 'Footer not enabled',
+      detailedAnalysis: 'Intelligent matching detailed analysis',
+      logPrefix: 'Intelligent matching detailed analysis:\n',
+      availability: {
+        documentTitle: 'Document Title: {{status}} {{reason}}',
+        authorInfo: 'Author Information: {{status}} {{reason}}',
+        organizationInfo: 'Organization Information: {{status}} {{reason}}',
+        versionInfo: 'Version Information: {{status}} {{reason}}',
+        categoryInfo: 'Category Information: {{status}} {{reason}}',
+        copyrightInfo: 'Copyright Information: {{status}} {{reason}}',
+      },
+      reasons: {
+        available: '✅ Available',
+        notAvailable: '❌ Not available',
+        titleStructureDetected: '(Title structure detected)',
+        configValueExists: '(Value exists in configuration)',
+      },
+      fieldDecisions: {
+        title:
+          'Title (User preference: {{userPreference}}, Document content: {{contentAvailable}})',
+        pageNumber:
+          'Page Number (User preference: {{userPreference}}, Always available: {{alwaysAvailable}})',
+        author:
+          'Author (User preference: {{userPreference}}, Config has value: {{configValue}})',
+        organization:
+          'Organization (User preference: {{userPreference}}, Config has value: {{configValue}})',
+        version:
+          'Version (User preference: {{userPreference}}, Config has value: {{configValue}})',
+        category:
+          'Category (User preference: {{userPreference}}, Config has value: {{configValue}})',
+      },
+      statusIcons: {
+        enabled: '✅',
+        disabled: '❌',
+        available: '✅',
+        notAvailable: '❌',
+      },
+    },
   },
 
   // Single File Conversion Mode (Interactive Mode)
   interactive: {
-    title: '📋 Interactive Markdown to PDF Configuration',
+    title: '🔧 Interactive Markdown to PDF Configuration',
     subtitle:
       'Please answer the following questions to complete the conversion setup:',
     starting: 'Starting interactive conversion process',
@@ -379,6 +429,18 @@ export const enTranslations: TranslationKey = {
     fonts: 'Fonts',
     pageFormat: 'Page Format',
     codeBlockTheme: 'Code Block Theme',
+    // No template mode
+    noTemplate: 'No Template',
+    noTemplateDescription:
+      'Use custom headers/footers settings instead of template-defined ones',
+    noTemplateMode: 'No Template Mode',
+    noTemplateModeDesc: 'Will use your custom headers/footers configuration',
+    noTemplateUsed: 'No Template Selected',
+    usingCustomSettings: 'Using your custom headers/footers configuration',
+    headerStatus: 'Header Status',
+    footerStatus: 'Footer Status',
+    enabled: 'Enabled',
+    disabled: 'Disabled',
   },
 
   // Customization mode messages
@@ -704,7 +766,7 @@ export const enTranslations: TranslationKey = {
       5: '5 (High-end systems only)',
     },
     continueOnError: 'Continue processing other files if one fails?',
-    configurationSummary: '📋 Configuration Summary',
+    configurationSummary: '📊 Configuration Summary',
     filesToProcess: '📁 Files to process: {{count}}',
     outputDirectory: '📂 Output directory: {{directory}}',
     filenameFormatSummary: '📝 Filename format: {{format}}',
@@ -783,7 +845,7 @@ export const enTranslations: TranslationKey = {
     selectAnAction: 'Select an action:',
     selectFile2: '📄 Select: {{filename}}',
     trySearchingAgain: '🔍 Try searching again',
-    noRecentFilesFound: '📋 No recent files found',
+    noRecentFilesFound: '📁 No recent files found',
     selectFileOrAction: 'Select a file or choose an action:',
     pleaseEnterFilePath: 'Please enter a file path',
     enterFullPath: '✏️  Enter the full path to your Markdown file:',

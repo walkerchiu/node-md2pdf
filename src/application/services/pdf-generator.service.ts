@@ -68,8 +68,10 @@ export interface IPDFGeneratorService {
         producer?: string;
         creationDate?: Date | string;
         modDate?: Date | string;
+        organization?: string;
         [key: string]: any;
       };
+      headersFootersConfig?: import('../../core/headers-footers/types').HeadersFootersConfig;
     },
   ): Promise<PDFGenerationResult>;
 
@@ -207,6 +209,20 @@ export class PDFGeneratorService implements IPDFGeneratorService {
         title?: string;
       };
       bookmarkOptions?: BookmarkOptions;
+      documentLanguage?: string;
+      metadata?: {
+        title?: string;
+        author?: string;
+        subject?: string;
+        keywords?: string;
+        creator?: string;
+        producer?: string;
+        creationDate?: Date | string;
+        modDate?: Date | string;
+        organization?: string;
+        [key: string]: any;
+      };
+      headersFootersConfig?: import('../../core/headers-footers/types').HeadersFootersConfig;
     } = {},
   ): Promise<PDFGenerationResult> {
     if (!this.isInitialized || !this.engineManager) {
@@ -317,6 +333,19 @@ export class PDFGeneratorService implements IPDFGeneratorService {
         includePageNumbers: boolean;
         title?: string;
       };
+      metadata?: {
+        title?: string;
+        author?: string;
+        subject?: string;
+        keywords?: string;
+        creator?: string;
+        producer?: string;
+        creationDate?: Date | string;
+        modDate?: Date | string;
+        organization?: string;
+        [key: string]: any;
+      };
+      headersFootersConfig?: import('../../core/headers-footers/types').HeadersFootersConfig;
     },
     includePageNumbers: boolean = false,
   ): string {
@@ -325,18 +354,26 @@ export class PDFGeneratorService implements IPDFGeneratorService {
         `Injecting CSS @page rules for header/footer - includePageNumbers: ${includePageNumbers}`,
       );
 
-      // Check if headers/footers are configured in user settings
-      const config = this.configManager.getConfig();
-      const headersFootersConfig = config.headersFooters;
+      // Use passed headers/footers config if available, otherwise fall back to user settings
+      const headersFootersConfig =
+        options.headersFootersConfig ||
+        this.configManager.getConfig().headersFooters;
+
+      if (options.headersFootersConfig) {
+        this.logger.debug(
+          'Using template-specific headers/footers configuration',
+        );
+      } else {
+        this.logger.debug('Using user global headers/footers configuration');
+      }
 
       let cssPageRules = '';
 
-      if (
-        headersFootersConfig &&
-        (headersFootersConfig.header.enabled ||
-          headersFootersConfig.footer.enabled)
-      ) {
-        this.logger.debug('Using configured headers/footers system');
+      if (options.headersFootersConfig) {
+        // When using template, always use template configuration (even if disabled)
+        this.logger.debug(
+          'Using template headers/footers configuration (respecting template settings)',
+        );
 
         // Prepare context for HeaderFooterGenerator
         const firstH1 = options.headings?.find((h) => h.level === 1);
@@ -347,8 +384,38 @@ export class PDFGeneratorService implements IPDFGeneratorService {
           pageNumber: 1, // CSS counters will handle actual page numbers
           totalPages: 1, // CSS counters will handle actual total pages
           currentDate: new Date(),
-          // author: undefined, // Can be extended later
-          // customMessage: undefined, // Can be extended later
+          // Include metadata for headers/footers generation (critical for organization, author, etc.)
+          metadata: options.metadata,
+        } as HeaderFooterContext;
+
+        // Get current margins from ConfigManager
+        const pdfConfig = this.configManager.get('pdf', {}) as any;
+        const margins = pdfConfig.margin;
+
+        // Generate CSS using template configuration (will generate empty CSS if disabled)
+        cssPageRules = this.headerFooterGenerator.generateCSSPageRules(
+          headersFootersConfig,
+          context,
+          margins,
+        );
+      } else if (
+        headersFootersConfig &&
+        (headersFootersConfig.header.enabled ||
+          headersFootersConfig.footer.enabled)
+      ) {
+        this.logger.debug('Using user global headers/footers system');
+
+        // Prepare context for HeaderFooterGenerator
+        const firstH1 = options.headings?.find((h) => h.level === 1);
+
+        const context = {
+          documentTitle: options.title,
+          firstH1Title: firstH1?.text,
+          pageNumber: 1, // CSS counters will handle actual page numbers
+          totalPages: 1, // CSS counters will handle actual total pages
+          currentDate: new Date(),
+          // Include metadata for headers/footers generation (critical for organization, author, etc.)
+          metadata: options.metadata,
         } as HeaderFooterContext;
 
         // Get current margins from ConfigManager
@@ -375,6 +442,8 @@ export class PDFGeneratorService implements IPDFGeneratorService {
           pageNumber: 1,
           totalPages: 1,
           currentDate: new Date(),
+          // Include metadata for headers/footers generation (critical for organization, author, etc.)
+          metadata: options.metadata,
         } as HeaderFooterContext;
 
         // Get current margins from ConfigManager

@@ -20,7 +20,6 @@ import { I18nHelpers } from './utils/i18n-helpers';
 
 import type { IFileProcessorService } from '../application/services/file-processor.service';
 import type { ISmartDefaultsService } from '../application/services/smart-defaults.service';
-import type { IConfigManager } from '../infrastructure/config/types';
 import type { ITranslationManager } from '../infrastructure/i18n/types';
 import type { ILogger } from '../infrastructure/logging/types';
 import type { ServiceContainer } from '../shared/container';
@@ -37,7 +36,6 @@ export class SmartConversionMode {
   private fileProcessorService: IFileProcessorService;
   private logger: ILogger;
   private translationManager: ITranslationManager;
-  private configManager: IConfigManager;
   private recentFilesManager: RecentFilesManager;
   private renderer: CliRenderer;
   private i18nHelpers: I18nHelpers;
@@ -50,7 +48,6 @@ export class SmartConversionMode {
     this.fileProcessorService = this.container.resolve('fileProcessor');
     this.logger = this.container.resolve('logger');
     this.translationManager = this.container.resolve('translator');
-    this.configManager = this.container.resolve('config');
     this.recentFilesManager = new RecentFilesManager();
     this.renderer = new CliRenderer();
     this.i18nHelpers = new I18nHelpers(this.translationManager);
@@ -454,7 +451,9 @@ export class SmartConversionMode {
 
     // Show specific template name for quick conversion
     let configDisplay = choice.name;
+    let selectedTemplateId: string | undefined;
     if (choice.type === 'quick' && choice.config && 'name' in choice.config) {
+      selectedTemplateId = choice.config.name;
       const templateName = this.translationManager.t(choice.config.name);
       const autoSelected = this.translationManager.t(
         'smartConversion.autoSelected',
@@ -481,9 +480,13 @@ export class SmartConversionMode {
       ? this.getRecommendedTOCDepth(choice.config, analysis)
       : Math.min(analysis.headingStructure.maxDepth, 3);
 
-    // Get user's headers/footers preferences
-    const userConfig = this.configManager.getConfig();
-    const headersFootersConfig = userConfig.headersFooters;
+    // Build configuration-specific headers/footers config
+    // When a template is selected, use template's headerFooter configuration
+    const headersFootersConfig = await this.buildHeadersFootersConfig(
+      choice.config,
+      selectedTemplateId,
+      analysis,
+    );
 
     // Display smart decisions
     this.renderer.info(
@@ -517,6 +520,16 @@ export class SmartConversionMode {
           );
         if (headersFootersConfig.header.message.enabled)
           headerItems.push(this.translationManager.t('common.fields.message'));
+        if (headersFootersConfig.header.author.enabled)
+          headerItems.push(this.translationManager.t('common.fields.author'));
+        if (headersFootersConfig.header.organization.enabled)
+          headerItems.push(
+            this.translationManager.t('common.fields.organization'),
+          );
+        if (headersFootersConfig.header.version.enabled)
+          headerItems.push(this.translationManager.t('common.fields.version'));
+        if (headersFootersConfig.header.category.enabled)
+          headerItems.push(this.translationManager.t('common.fields.category'));
 
         this.renderer.info(
           `   📄 ${this.translationManager.t('headersFooters.sections.header')}: ${headerItems.length > 0 ? headerItems.join('、') : this.translationManager.t('common.status.enabled')}`,
@@ -539,6 +552,16 @@ export class SmartConversionMode {
           );
         if (headersFootersConfig.footer.message.enabled)
           footerItems.push(this.translationManager.t('common.fields.message'));
+        if (headersFootersConfig.footer.author.enabled)
+          footerItems.push(this.translationManager.t('common.fields.author'));
+        if (headersFootersConfig.footer.organization.enabled)
+          footerItems.push(
+            this.translationManager.t('common.fields.organization'),
+          );
+        if (headersFootersConfig.footer.version.enabled)
+          footerItems.push(this.translationManager.t('common.fields.version'));
+        if (headersFootersConfig.footer.category.enabled)
+          footerItems.push(this.translationManager.t('common.fields.category'));
 
         this.renderer.info(
           `   📄 ${this.translationManager.t('headersFooters.sections.footer')}: ${footerItems.length > 0 ? footerItems.join('、') : this.translationManager.t('common.status.enabled')}`,
@@ -1041,5 +1064,1424 @@ export class SmartConversionMode {
     } catch {
       return false;
     }
+  }
+
+  /**
+   * Build headers/footers configuration based on smart conversion config
+   * Uses the same alignment settings as single file conversion mode
+   * When a template is selected, prioritize template's configuration
+   * Implements intelligent field matching for RecommendedConfig
+   */
+  private async buildHeadersFootersConfig(
+    config?: QuickConfig | RecommendedConfig,
+    templateId?: string,
+    analysis?: ContentAnalysis,
+  ): Promise<
+    import('../core/headers-footers/types').HeadersFootersConfig | undefined
+  > {
+    // If a template is selected, use template's headerFooter configuration directly
+    if (templateId) {
+      const templateStorage = this.container!.resolve('templateStorage') as any;
+      const template = await templateStorage.read(templateId);
+
+      if (template && template.config.headerFooter) {
+        return this.convertTemplateHeaderFooterToConfig(
+          template.config.headerFooter,
+        );
+      }
+    }
+
+    if (!config) {
+      // No configuration provided and no template selected
+      // Check if user has custom headers/footers configuration (same as single file conversion)
+      const configManager = this.container!.resolve('config') as any;
+      const userConfig = configManager.getConfig();
+      const userHeadersFootersConfig = userConfig.headersFooters;
+
+      // If user has enabled headers/footers in customization settings, use them
+      if (
+        userHeadersFootersConfig &&
+        (userHeadersFootersConfig.header.enabled ||
+          userHeadersFootersConfig.footer.enabled)
+      ) {
+        this.logger?.debug(
+          'Smart conversion: Using user global headers/footers configuration (same as single file mode)',
+        );
+        return userHeadersFootersConfig;
+      }
+
+      // If no user configuration, use disabled headers/footers as fallback
+      return {
+        header: {
+          enabled: false,
+          title: {
+            enabled: false,
+            mode: 'none' as const,
+            alignment: 'left' as const,
+          },
+          pageNumber: {
+            enabled: false,
+            mode: 'none' as const,
+            alignment: 'left' as const,
+          },
+          dateTime: {
+            enabled: false,
+            mode: 'none' as const,
+            alignment: 'left' as const,
+          },
+          copyright: {
+            enabled: false,
+            mode: 'none' as const,
+            alignment: 'left' as const,
+          },
+          message: {
+            enabled: false,
+            mode: 'none' as const,
+            alignment: 'left' as const,
+          },
+          author: {
+            enabled: false,
+            mode: 'none' as const,
+            alignment: 'left' as const,
+          },
+          organization: {
+            enabled: false,
+            mode: 'none' as const,
+            alignment: 'left' as const,
+          },
+          version: {
+            enabled: false,
+            mode: 'none' as const,
+            alignment: 'left' as const,
+          },
+          category: {
+            enabled: false,
+            mode: 'none' as const,
+            alignment: 'left' as const,
+          },
+          layout: {},
+        },
+        footer: {
+          enabled: false,
+          title: {
+            enabled: false,
+            mode: 'none' as const,
+            alignment: 'right' as const,
+          },
+          pageNumber: {
+            enabled: false,
+            mode: 'none' as const,
+            alignment: 'right' as const,
+          },
+          dateTime: {
+            enabled: false,
+            mode: 'none' as const,
+            alignment: 'right' as const,
+          },
+          copyright: {
+            enabled: false,
+            mode: 'none' as const,
+            alignment: 'right' as const,
+          },
+          message: {
+            enabled: false,
+            mode: 'none' as const,
+            alignment: 'right' as const,
+          },
+          author: {
+            enabled: false,
+            mode: 'none' as const,
+            alignment: 'right' as const,
+          },
+          organization: {
+            enabled: false,
+            mode: 'none' as const,
+            alignment: 'right' as const,
+          },
+          version: {
+            enabled: false,
+            mode: 'none' as const,
+            alignment: 'right' as const,
+          },
+          category: {
+            enabled: false,
+            mode: 'none' as const,
+            alignment: 'right' as const,
+          },
+          layout: {},
+        },
+      };
+    }
+
+    let pageStructure: any;
+
+    if ('config' in config) {
+      // QuickConfig
+      pageStructure = config.config.pageStructure;
+    } else {
+      // RecommendedConfig
+      pageStructure = config.pageStructure;
+    }
+
+    if (!pageStructure) {
+      // No page structure defined in smart config
+      // For RecommendedConfig with analysis, implement intelligent field matching first
+      if (!('config' in config) && analysis) {
+        // Only for RecommendedConfig (smart custom configuration)
+        const configManager = this.container!.resolve('config') as any;
+        const userConfig = configManager.getConfig();
+        const userHeadersFootersConfig = userConfig.headersFooters;
+
+        // Check if user has any headers/footers customization
+        if (
+          userHeadersFootersConfig &&
+          (userHeadersFootersConfig.header.enabled ||
+            userHeadersFootersConfig.footer.enabled)
+        ) {
+          // Implement intelligent matching: extract document metadata to see what's available
+          const intelligentConfig =
+            await this.createIntelligentHeadersFootersConfig(
+              userHeadersFootersConfig,
+              analysis,
+            );
+
+          if (intelligentConfig) {
+            this.logger?.debug(
+              'Smart conversion RecommendedConfig: Using intelligent field matching based on user preferences and document content',
+            );
+            return intelligentConfig;
+          } else {
+            // If intelligent matching returns null but user has config, fall back to user config
+            this.logger?.debug(
+              'Smart conversion RecommendedConfig: Intelligent matching returned null, falling back to user configuration',
+            );
+            return userHeadersFootersConfig;
+          }
+        }
+      }
+
+      // For QuickConfig or when no user configuration, check if user has custom headers/footers configuration (same as single file conversion)
+      const configManager = this.container!.resolve('config') as any;
+      const userConfig = configManager.getConfig();
+      const userHeadersFootersConfig = userConfig.headersFooters;
+
+      // If user has enabled headers/footers in customization settings and this is QuickConfig, use them
+      if (
+        'config' in config && // Only for QuickConfig
+        userHeadersFootersConfig &&
+        (userHeadersFootersConfig.header.enabled ||
+          userHeadersFootersConfig.footer.enabled)
+      ) {
+        this.logger?.debug(
+          'Smart conversion QuickConfig: Using user global headers/footers configuration (same as single file mode)',
+        );
+        return userHeadersFootersConfig;
+      }
+
+      // For QuickConfig or when no user configuration, provide default based on config type
+      let defaultHeaders: boolean = false;
+      let defaultFooters: boolean = false;
+      let headerContent = '';
+      let footerContent = '';
+
+      // Check if this is a known template by its name
+      if ('config' in config && config.name) {
+        const templateName = config.name;
+
+        // Technical template should have headers/footers like system templates
+        if (templateName === 'presets.technical.name') {
+          defaultHeaders = true;
+          defaultFooters = true;
+          headerContent = '{{title}}';
+          footerContent = 'Page {{pageNumber}} of {{totalPages}}';
+        }
+        // Business template fallback
+        else if (templateName === 'presets.business.name') {
+          defaultHeaders = true;
+          defaultFooters = true;
+          headerContent = '{{title}}';
+          footerContent = 'Page {{pageNumber}} of {{totalPages}}';
+        }
+        // Academic template fallback
+        else if (templateName === 'presets.academic.name') {
+          defaultHeaders = false;
+          defaultFooters = true;
+          footerContent = '{{pageNumber}}';
+        }
+      }
+
+      // Create default configuration based on template type
+      return {
+        header: {
+          enabled: defaultHeaders,
+          title: {
+            enabled: headerContent.includes('{{title}}'),
+            mode: headerContent.includes('{{title}}')
+              ? ('metadata' as const)
+              : ('none' as const),
+            alignment: 'left' as const,
+          },
+          pageNumber: {
+            enabled: headerContent.includes('{{pageNumber}}'),
+            mode: headerContent.includes('{{pageNumber}}')
+              ? ('show' as const)
+              : ('none' as const),
+            alignment: 'left' as const,
+          },
+          dateTime: {
+            enabled:
+              headerContent.includes('{{date}}') ||
+              headerContent.includes('{{time}}'),
+            mode:
+              headerContent.includes('{{date}}') ||
+              headerContent.includes('{{time}}')
+                ? ('date-short' as const)
+                : ('none' as const),
+            alignment: 'left' as const,
+          },
+          copyright: {
+            enabled: headerContent.includes('{{copyright}}'),
+            mode: headerContent.includes('{{copyright}}')
+              ? ('metadata' as const)
+              : ('none' as const),
+            alignment: 'left' as const,
+          },
+          message: {
+            enabled: Boolean(headerContent && !headerContent.includes('{{')),
+            mode: 'custom' as const,
+            customValue: headerContent,
+            alignment: 'left' as const,
+          },
+          author: {
+            enabled: headerContent.includes('{{author}}'),
+            mode: headerContent.includes('{{author}}')
+              ? ('metadata' as const)
+              : ('none' as const),
+            alignment: 'left' as const,
+          },
+          organization: {
+            enabled: headerContent.includes('{{organization}}'),
+            mode: headerContent.includes('{{organization}}')
+              ? ('metadata' as const)
+              : ('none' as const),
+            alignment: 'left' as const,
+          },
+          version: {
+            enabled: headerContent.includes('{{version}}'),
+            mode: headerContent.includes('{{version}}')
+              ? ('metadata' as const)
+              : ('none' as const),
+            alignment: 'left' as const,
+          },
+          category: {
+            enabled: headerContent.includes('{{category}}'),
+            mode: headerContent.includes('{{category}}')
+              ? ('metadata' as const)
+              : ('none' as const),
+            alignment: 'left' as const,
+          },
+          layout: {},
+        },
+        footer: {
+          enabled: defaultFooters,
+          title: {
+            enabled: footerContent.includes('{{title}}'),
+            mode: footerContent.includes('{{title}}')
+              ? ('metadata' as const)
+              : ('none' as const),
+            alignment: 'right' as const,
+          },
+          pageNumber: {
+            enabled:
+              footerContent.includes('{{pageNumber}}') ||
+              footerContent.includes('{{totalPages}}'),
+            mode:
+              footerContent.includes('{{pageNumber}}') ||
+              footerContent.includes('{{totalPages}}')
+                ? ('show' as const)
+                : ('none' as const),
+            alignment: 'right' as const,
+          },
+          dateTime: {
+            enabled:
+              footerContent.includes('{{date}}') ||
+              footerContent.includes('{{time}}'),
+            mode:
+              footerContent.includes('{{date}}') ||
+              footerContent.includes('{{time}}')
+                ? ('date-short' as const)
+                : ('none' as const),
+            alignment: 'right' as const,
+          },
+          copyright: {
+            enabled: footerContent.includes('{{copyright}}'),
+            mode: footerContent.includes('{{copyright}}')
+              ? ('metadata' as const)
+              : ('none' as const),
+            alignment: 'right' as const,
+          },
+          message: {
+            enabled: Boolean(footerContent && !footerContent.includes('{{')),
+            mode: 'custom' as const,
+            customValue: footerContent,
+            alignment: 'right' as const,
+          },
+          author: {
+            enabled: footerContent.includes('{{author}}'),
+            mode: footerContent.includes('{{author}}')
+              ? ('metadata' as const)
+              : ('none' as const),
+            alignment: 'right' as const,
+          },
+          organization: {
+            enabled: footerContent.includes('{{organization}}'),
+            mode: footerContent.includes('{{organization}}')
+              ? ('metadata' as const)
+              : ('none' as const),
+            alignment: 'right' as const,
+          },
+          version: {
+            enabled: footerContent.includes('{{version}}'),
+            mode: footerContent.includes('{{version}}')
+              ? ('metadata' as const)
+              : ('none' as const),
+            alignment: 'right' as const,
+          },
+          category: {
+            enabled: footerContent.includes('{{category}}'),
+            mode: footerContent.includes('{{category}}')
+              ? ('metadata' as const)
+              : ('none' as const),
+            alignment: 'right' as const,
+          },
+          layout: {},
+        },
+      };
+    }
+
+    // Extract header and footer content from page structure
+    const headerContent = pageStructure.headerContent || '';
+    const footerContent = pageStructure.footerContent || '';
+
+    // Check if smart defaults disabled headers/footers for simple documents
+    // but user has custom headers/footers configuration (same as single file conversion)
+    if (
+      !('config' in config) && // Only for RecommendedConfig (smart custom configuration)
+      !pageStructure.includeHeader &&
+      !pageStructure.includeFooter
+    ) {
+      const configManager = this.container!.resolve('config') as any;
+      const userConfig = configManager.getConfig();
+      const userHeadersFootersConfig = userConfig.headersFooters;
+
+      // If user has enabled headers/footers in customization settings, use them instead of disabled smart defaults
+      if (
+        userHeadersFootersConfig &&
+        (userHeadersFootersConfig.header.enabled ||
+          userHeadersFootersConfig.footer.enabled)
+      ) {
+        this.logger?.debug(
+          'Smart conversion RecommendedConfig: Overriding disabled smart defaults with user global headers/footers configuration (same as single file mode)',
+        );
+        return userHeadersFootersConfig;
+      }
+    }
+
+    // For RecommendedConfig, implement intelligent field matching
+    // Combine user preferences with document content analysis
+    if (!('config' in config) && analysis) {
+      // Only for RecommendedConfig (smart custom configuration)
+      const configManager = this.container!.resolve('config') as any;
+      const userConfig = configManager.getConfig();
+      const userHeadersFootersConfig = userConfig.headersFooters;
+
+      // Check if user has any headers/footers customization
+      if (
+        userHeadersFootersConfig &&
+        (userHeadersFootersConfig.header.enabled ||
+          userHeadersFootersConfig.footer.enabled)
+      ) {
+        // Implement intelligent matching: extract document metadata to see what's available
+        const intelligentConfig =
+          await this.createIntelligentHeadersFootersConfig(
+            userHeadersFootersConfig,
+            analysis,
+          );
+
+        if (intelligentConfig) {
+          this.logger?.debug(
+            'Smart conversion RecommendedConfig: Using intelligent field matching based on user preferences and document content',
+          );
+          return intelligentConfig;
+        }
+      }
+    }
+
+    // Build configuration-specific headers/footers config
+    // Always use template settings (same alignment as single file conversion mode)
+    return {
+      header: {
+        enabled: pageStructure.includeHeader === true,
+        title: {
+          enabled: headerContent.includes('{{title}}'),
+          mode: headerContent.includes('{{title}}')
+            ? ('metadata' as const)
+            : ('none' as const),
+          alignment: 'left' as const, // Left-aligned headers (same as single file mode)
+        },
+        pageNumber: {
+          enabled: headerContent.includes('{{pageNumber}}'),
+          mode: headerContent.includes('{{pageNumber}}')
+            ? ('show' as const)
+            : ('none' as const),
+          alignment: 'left' as const,
+        },
+        dateTime: {
+          enabled:
+            headerContent.includes('{{date}}') ||
+            headerContent.includes('{{time}}'),
+          mode:
+            headerContent.includes('{{date}}') ||
+            headerContent.includes('{{time}}')
+              ? ('date-short' as const)
+              : ('none' as const),
+          alignment: 'left' as const,
+        },
+        copyright: {
+          enabled: headerContent.includes('{{copyright}}'),
+          mode: headerContent.includes('{{copyright}}')
+            ? ('metadata' as const)
+            : ('none' as const),
+          alignment: 'left' as const,
+        },
+        message: {
+          enabled: Boolean(headerContent && !headerContent.includes('{{')),
+          mode: 'custom' as const,
+          customValue: headerContent,
+          alignment: 'left' as const,
+        },
+        author: {
+          enabled: headerContent.includes('{{author}}'),
+          mode: headerContent.includes('{{author}}')
+            ? ('metadata' as const)
+            : ('none' as const),
+          alignment: 'left' as const,
+        },
+        organization: {
+          enabled: headerContent.includes('{{organization}}'),
+          mode: headerContent.includes('{{organization}}')
+            ? ('metadata' as const)
+            : ('none' as const),
+          alignment: 'left' as const,
+        },
+        version: {
+          enabled: headerContent.includes('{{version}}'),
+          mode: headerContent.includes('{{version}}')
+            ? ('metadata' as const)
+            : ('none' as const),
+          alignment: 'left' as const,
+        },
+        category: {
+          enabled: headerContent.includes('{{category}}'),
+          mode: headerContent.includes('{{category}}')
+            ? ('metadata' as const)
+            : ('none' as const),
+          alignment: 'left' as const,
+        },
+        layout: {},
+      },
+      footer: {
+        enabled: pageStructure.includeFooter === true,
+        title: {
+          enabled: footerContent.includes('{{title}}'),
+          mode: footerContent.includes('{{title}}')
+            ? ('metadata' as const)
+            : ('none' as const),
+          alignment: 'right' as const, // Right-aligned footers (same as single file mode)
+        },
+        pageNumber: {
+          enabled: footerContent.includes('{{pageNumber}}'),
+          mode: footerContent.includes('{{pageNumber}}')
+            ? ('show' as const)
+            : ('none' as const),
+          alignment: 'right' as const,
+        },
+        dateTime: {
+          enabled:
+            footerContent.includes('{{date}}') ||
+            footerContent.includes('{{time}}'),
+          mode:
+            footerContent.includes('{{date}}') ||
+            footerContent.includes('{{time}}')
+              ? ('date-short' as const)
+              : ('none' as const),
+          alignment: 'right' as const,
+        },
+        copyright: {
+          enabled: footerContent.includes('{{copyright}}'),
+          mode: footerContent.includes('{{copyright}}')
+            ? ('metadata' as const)
+            : ('none' as const),
+          alignment: 'right' as const,
+        },
+        message: {
+          enabled: Boolean(footerContent && !footerContent.includes('{{')),
+          mode: 'custom' as const,
+          customValue: footerContent,
+          alignment: 'right' as const,
+        },
+        author: {
+          enabled: footerContent.includes('{{author}}'),
+          mode: footerContent.includes('{{author}}')
+            ? ('metadata' as const)
+            : ('none' as const),
+          alignment: 'right' as const,
+        },
+        organization: {
+          enabled: footerContent.includes('{{organization}}'),
+          mode: footerContent.includes('{{organization}}')
+            ? ('metadata' as const)
+            : ('none' as const),
+          alignment: 'right' as const,
+        },
+        version: {
+          enabled: footerContent.includes('{{version}}'),
+          mode: footerContent.includes('{{version}}')
+            ? ('metadata' as const)
+            : ('none' as const),
+          alignment: 'right' as const,
+        },
+        category: {
+          enabled: footerContent.includes('{{category}}'),
+          mode: footerContent.includes('{{category}}')
+            ? ('metadata' as const)
+            : ('none' as const),
+          alignment: 'right' as const,
+        },
+        layout: {},
+      },
+    };
+  }
+
+  /**
+   * Convert template's headerFooter configuration to HeadersFootersConfig format
+   * Ensures consistent alignment with other conversion modes (headers left, footers right)
+   */
+  private convertTemplateHeaderFooterToConfig(
+    templateHeaderFooter: any,
+  ): import('../core/headers-footers/types').HeadersFootersConfig {
+    const headerContent = templateHeaderFooter.header?.content || '';
+    const footerContent = templateHeaderFooter.footer?.content || '';
+
+    return {
+      header: {
+        enabled: templateHeaderFooter.header?.enabled === true,
+        title: {
+          enabled: headerContent.includes('{{title}}'),
+          mode: headerContent.includes('{{title}}')
+            ? ('metadata' as const)
+            : ('none' as const),
+          alignment: 'left' as const, // Left-aligned headers (consistent with single file mode)
+        },
+        pageNumber: {
+          enabled: headerContent.includes('{{pageNumber}}'),
+          mode: headerContent.includes('{{pageNumber}}')
+            ? ('show' as const)
+            : ('none' as const),
+          alignment: 'left' as const,
+        },
+        dateTime: {
+          enabled:
+            headerContent.includes('{{date}}') ||
+            headerContent.includes('{{time}}'),
+          mode:
+            headerContent.includes('{{date}}') ||
+            headerContent.includes('{{time}}')
+              ? ('date-short' as const)
+              : ('none' as const),
+          alignment: 'left' as const,
+        },
+        copyright: {
+          enabled: headerContent.includes('{{copyright}}'),
+          mode: headerContent.includes('{{copyright}}')
+            ? ('metadata' as const)
+            : ('none' as const),
+          alignment: 'left' as const,
+        },
+        message: {
+          enabled: Boolean(headerContent && !headerContent.includes('{{')),
+          mode: 'custom' as const,
+          customValue: headerContent,
+          alignment: 'left' as const,
+        },
+        author: {
+          enabled: headerContent.includes('{{author}}'),
+          mode: headerContent.includes('{{author}}')
+            ? ('metadata' as const)
+            : ('none' as const),
+          alignment: 'left' as const,
+        },
+        organization: {
+          enabled: headerContent.includes('{{organization}}'),
+          mode: headerContent.includes('{{organization}}')
+            ? ('metadata' as const)
+            : ('none' as const),
+          alignment: 'left' as const,
+        },
+        version: {
+          enabled: headerContent.includes('{{version}}'),
+          mode: headerContent.includes('{{version}}')
+            ? ('metadata' as const)
+            : ('none' as const),
+          alignment: 'left' as const,
+        },
+        category: {
+          enabled: headerContent.includes('{{category}}'),
+          mode: headerContent.includes('{{category}}')
+            ? ('metadata' as const)
+            : ('none' as const),
+          alignment: 'left' as const,
+        },
+        layout: {},
+      },
+      footer: {
+        enabled: templateHeaderFooter.footer?.enabled === true,
+        title: {
+          enabled: footerContent.includes('{{title}}'),
+          mode: footerContent.includes('{{title}}')
+            ? ('metadata' as const)
+            : ('none' as const),
+          alignment: 'right' as const, // Right-aligned footers (consistent with single file mode)
+        },
+        pageNumber: {
+          enabled:
+            footerContent.includes('{{pageNumber}}') ||
+            footerContent.includes('{{totalPages}}'),
+          mode:
+            footerContent.includes('{{pageNumber}}') ||
+            footerContent.includes('{{totalPages}}')
+              ? ('show' as const)
+              : ('none' as const),
+          alignment: 'right' as const,
+        },
+        dateTime: {
+          enabled:
+            footerContent.includes('{{date}}') ||
+            footerContent.includes('{{time}}'),
+          mode:
+            footerContent.includes('{{date}}') ||
+            footerContent.includes('{{time}}')
+              ? ('date-short' as const)
+              : ('none' as const),
+          alignment: 'right' as const,
+        },
+        copyright: {
+          enabled: footerContent.includes('{{copyright}}'),
+          mode: footerContent.includes('{{copyright}}')
+            ? ('metadata' as const)
+            : ('none' as const),
+          alignment: 'right' as const,
+        },
+        message: {
+          enabled: Boolean(footerContent && !footerContent.includes('{{')),
+          mode: 'custom' as const,
+          customValue: footerContent,
+          alignment: 'right' as const,
+        },
+        author: {
+          enabled: footerContent.includes('{{author}}'),
+          mode: footerContent.includes('{{author}}')
+            ? ('metadata' as const)
+            : ('none' as const),
+          alignment: 'right' as const,
+        },
+        organization: {
+          enabled: footerContent.includes('{{organization}}'),
+          mode: footerContent.includes('{{organization}}')
+            ? ('metadata' as const)
+            : ('none' as const),
+          alignment: 'right' as const,
+        },
+        version: {
+          enabled: footerContent.includes('{{version}}'),
+          mode: footerContent.includes('{{version}}')
+            ? ('metadata' as const)
+            : ('none' as const),
+          alignment: 'right' as const,
+        },
+        category: {
+          enabled: footerContent.includes('{{category}}'),
+          mode: footerContent.includes('{{category}}')
+            ? ('metadata' as const)
+            : ('none' as const),
+          alignment: 'right' as const,
+        },
+        layout: {},
+      },
+    };
+  }
+
+  /**
+   * Create intelligent headers/footers configuration by matching user preferences with document content
+   * Only enable fields that are both user-preferred AND available in the document
+   */
+  private async createIntelligentHeadersFootersConfig(
+    userConfig: import('../core/headers-footers/types').HeadersFootersConfig,
+    analysis: ContentAnalysis,
+  ): Promise<
+    import('../core/headers-footers/types').HeadersFootersConfig | null
+  > {
+    try {
+      // Collect intelligent matching decisions for logging
+      const matchingDecisions: string[] = [];
+
+      // Check document content availability
+      const hasTitle = this.hasTitle(analysis);
+      const hasAuthor = this.hasAuthor();
+      const hasOrganization = this.hasOrganization();
+      const hasVersion = this.hasVersion();
+      const hasCategory = this.hasCategory();
+      const hasCopyright = this.hasCopyright();
+
+      matchingDecisions.push(
+        this.translationManager.t(
+          'smartConversion.intelligentMatching.analysisTitle',
+        ),
+      );
+
+      const availableIcon = this.translationManager.t(
+        'smartConversion.intelligentMatching.statusIcons.available',
+      );
+      const notAvailableIcon = this.translationManager.t(
+        'smartConversion.intelligentMatching.statusIcons.notAvailable',
+      );
+      const titleStructureReason = this.translationManager.t(
+        'smartConversion.intelligentMatching.reasons.titleStructureDetected',
+      );
+      const configValueReason = this.translationManager.t(
+        'smartConversion.intelligentMatching.reasons.configValueExists',
+      );
+
+      matchingDecisions.push(
+        `   ${this.translationManager.t(
+          'smartConversion.intelligentMatching.availability.documentTitle',
+          {
+            status: hasTitle ? availableIcon : notAvailableIcon,
+            reason: hasTitle ? titleStructureReason : '',
+          },
+        )}`,
+      );
+      matchingDecisions.push(
+        `   ${this.translationManager.t(
+          'smartConversion.intelligentMatching.availability.authorInfo',
+          {
+            status: hasAuthor ? availableIcon : notAvailableIcon,
+            reason: hasAuthor ? configValueReason : '',
+          },
+        )}`,
+      );
+      matchingDecisions.push(
+        `   ${this.translationManager.t(
+          'smartConversion.intelligentMatching.availability.organizationInfo',
+          {
+            status: hasOrganization ? availableIcon : notAvailableIcon,
+            reason: hasOrganization ? configValueReason : '',
+          },
+        )}`,
+      );
+      matchingDecisions.push(
+        `   ${this.translationManager.t(
+          'smartConversion.intelligentMatching.availability.versionInfo',
+          {
+            status: hasVersion ? availableIcon : notAvailableIcon,
+            reason: hasVersion ? configValueReason : '',
+          },
+        )}`,
+      );
+      matchingDecisions.push(
+        `   ${this.translationManager.t(
+          'smartConversion.intelligentMatching.availability.categoryInfo',
+          {
+            status: hasCategory ? availableIcon : notAvailableIcon,
+            reason: hasCategory ? configValueReason : '',
+          },
+        )}`,
+      );
+      matchingDecisions.push(
+        `   ${this.translationManager.t(
+          'smartConversion.intelligentMatching.availability.copyrightInfo',
+          {
+            status: hasCopyright ? availableIcon : notAvailableIcon,
+            reason: hasCopyright ? configValueReason : '',
+          },
+        )}`,
+      );
+
+      // Create intelligent config based on user preferences and document content
+      const intelligentConfig: import('../core/headers-footers/types').HeadersFootersConfig =
+        {
+          header: {
+            enabled: userConfig.header.enabled,
+            title: {
+              enabled:
+                userConfig.header.title.enabled && this.hasTitle(analysis),
+              mode: userConfig.header.title.mode,
+              alignment: userConfig.header.title.alignment || 'left',
+            },
+            pageNumber: {
+              enabled: userConfig.header.pageNumber.enabled, // Page numbers are always available
+              mode: userConfig.header.pageNumber.mode,
+              alignment: userConfig.header.pageNumber.alignment || 'left',
+            },
+            dateTime: {
+              enabled: userConfig.header.dateTime.enabled, // Date/time is always available
+              mode: userConfig.header.dateTime.mode,
+              alignment: userConfig.header.dateTime.alignment || 'left',
+            },
+            copyright: {
+              enabled:
+                userConfig.header.copyright.enabled && this.hasCopyright(),
+              mode: userConfig.header.copyright.mode,
+              alignment: userConfig.header.copyright.alignment || 'left',
+            },
+            message: {
+              enabled: userConfig.header.message.enabled, // Custom messages are always available
+              mode: userConfig.header.message.mode,
+              customValue: userConfig.header.message.customValue || '',
+              alignment: userConfig.header.message.alignment || 'left',
+            },
+            author: {
+              enabled: userConfig.header.author.enabled && this.hasAuthor(),
+              mode: userConfig.header.author.mode,
+              alignment: userConfig.header.author.alignment || 'left',
+            },
+            organization: {
+              enabled:
+                userConfig.header.organization.enabled &&
+                this.hasOrganization(),
+              mode: userConfig.header.organization.mode,
+              alignment: userConfig.header.organization.alignment || 'left',
+            },
+            version: {
+              enabled: userConfig.header.version.enabled && this.hasVersion(),
+              mode: userConfig.header.version.mode,
+              alignment: userConfig.header.version.alignment || 'left',
+            },
+            category: {
+              enabled: userConfig.header.category.enabled && this.hasCategory(),
+              mode: userConfig.header.category.mode,
+              alignment: userConfig.header.category.alignment || 'left',
+            },
+            layout: userConfig.header.layout,
+          },
+          footer: {
+            enabled: userConfig.footer.enabled,
+            title: {
+              enabled:
+                userConfig.footer.title.enabled && this.hasTitle(analysis),
+              mode: userConfig.footer.title.mode,
+              alignment: userConfig.footer.title.alignment || 'right',
+            },
+            pageNumber: {
+              enabled: userConfig.footer.pageNumber.enabled, // Page numbers are always available
+              mode: userConfig.footer.pageNumber.mode,
+              alignment: userConfig.footer.pageNumber.alignment || 'right',
+            },
+            dateTime: {
+              enabled: userConfig.footer.dateTime.enabled, // Date/time is always available
+              mode: userConfig.footer.dateTime.mode,
+              alignment: userConfig.footer.dateTime.alignment || 'right',
+            },
+            copyright: {
+              enabled:
+                userConfig.footer.copyright.enabled && this.hasCopyright(),
+              mode: userConfig.footer.copyright.mode,
+              alignment: userConfig.footer.copyright.alignment || 'right',
+            },
+            message: {
+              enabled: userConfig.footer.message.enabled, // Custom messages are always available
+              mode: userConfig.footer.message.mode,
+              customValue: userConfig.footer.message.customValue || '',
+              alignment: userConfig.footer.message.alignment || 'right',
+            },
+            author: {
+              enabled: userConfig.footer.author.enabled && this.hasAuthor(),
+              mode: userConfig.footer.author.mode,
+              alignment: userConfig.footer.author.alignment || 'right',
+            },
+            organization: {
+              enabled:
+                userConfig.footer.organization.enabled &&
+                this.hasOrganization(),
+              mode: userConfig.footer.organization.mode,
+              alignment: userConfig.footer.organization.alignment || 'right',
+            },
+            version: {
+              enabled: userConfig.footer.version.enabled && this.hasVersion(),
+              mode: userConfig.footer.version.mode,
+              alignment: userConfig.footer.version.alignment || 'right',
+            },
+            category: {
+              enabled: userConfig.footer.category.enabled && this.hasCategory(),
+              mode: userConfig.footer.category.mode,
+              alignment: userConfig.footer.category.alignment || 'right',
+            },
+            layout: userConfig.footer.layout,
+          },
+        };
+
+      // Check if we have any enabled fields in the intelligent config
+      const hasEnabledHeaderFields = Object.values(
+        intelligentConfig.header,
+      ).some((field: any) => field?.enabled === true);
+      const hasEnabledFooterFields = Object.values(
+        intelligentConfig.footer,
+      ).some((field: any) => field?.enabled === true);
+
+      // Disable header/footer sections if no fields are enabled
+      if (!hasEnabledHeaderFields) {
+        intelligentConfig.header.enabled = false;
+      }
+      if (!hasEnabledFooterFields) {
+        intelligentConfig.footer.enabled = false;
+      }
+
+      // Add detailed matching decisions to log
+      matchingDecisions.push(
+        `\n${this.translationManager.t('smartConversion.intelligentMatching.matchingDecisions')}`,
+      );
+
+      // Header configuration decisions
+      matchingDecisions.push(
+        `   ${this.translationManager.t('smartConversion.intelligentMatching.headerConfig')}:`,
+      );
+      if (intelligentConfig.header.enabled) {
+        const headerFields = [];
+        if (intelligentConfig.header.title.enabled) {
+          headerFields.push(
+            this.translationManager.t(
+              'smartConversion.intelligentMatching.fieldDecisions.title',
+              {
+                userPreference: this.translationManager.t(
+                  'smartConversion.intelligentMatching.statusIcons.enabled',
+                ),
+                contentAvailable: this.translationManager.t(
+                  'smartConversion.intelligentMatching.statusIcons.enabled',
+                ),
+              },
+            ),
+          );
+        }
+        if (intelligentConfig.header.pageNumber.enabled) {
+          headerFields.push(
+            this.translationManager.t(
+              'smartConversion.intelligentMatching.fieldDecisions.pageNumber',
+              {
+                userPreference: userConfig.header.pageNumber.enabled
+                  ? this.translationManager.t(
+                      'smartConversion.intelligentMatching.statusIcons.enabled',
+                    )
+                  : this.translationManager.t(
+                      'smartConversion.intelligentMatching.statusIcons.disabled',
+                    ),
+                alwaysAvailable: this.translationManager.t(
+                  'smartConversion.intelligentMatching.statusIcons.enabled',
+                ),
+              },
+            ),
+          );
+        }
+        if (intelligentConfig.header.author.enabled) {
+          headerFields.push(
+            this.translationManager.t(
+              'smartConversion.intelligentMatching.fieldDecisions.author',
+              {
+                userPreference: userConfig.header.author.enabled
+                  ? this.translationManager.t(
+                      'smartConversion.intelligentMatching.statusIcons.enabled',
+                    )
+                  : this.translationManager.t(
+                      'smartConversion.intelligentMatching.statusIcons.disabled',
+                    ),
+                configValue: hasAuthor
+                  ? this.translationManager.t(
+                      'smartConversion.intelligentMatching.statusIcons.enabled',
+                    )
+                  : this.translationManager.t(
+                      'smartConversion.intelligentMatching.statusIcons.disabled',
+                    ),
+              },
+            ),
+          );
+        }
+        if (intelligentConfig.header.organization.enabled) {
+          headerFields.push(
+            this.translationManager.t(
+              'smartConversion.intelligentMatching.fieldDecisions.organization',
+              {
+                userPreference: userConfig.header.organization.enabled
+                  ? this.translationManager.t(
+                      'smartConversion.intelligentMatching.statusIcons.enabled',
+                    )
+                  : this.translationManager.t(
+                      'smartConversion.intelligentMatching.statusIcons.disabled',
+                    ),
+                configValue: hasOrganization
+                  ? this.translationManager.t(
+                      'smartConversion.intelligentMatching.statusIcons.enabled',
+                    )
+                  : this.translationManager.t(
+                      'smartConversion.intelligentMatching.statusIcons.disabled',
+                    ),
+              },
+            ),
+          );
+        }
+        if (intelligentConfig.header.version.enabled) {
+          headerFields.push(
+            this.translationManager.t(
+              'smartConversion.intelligentMatching.fieldDecisions.version',
+              {
+                userPreference: userConfig.header.version.enabled
+                  ? this.translationManager.t(
+                      'smartConversion.intelligentMatching.statusIcons.enabled',
+                    )
+                  : this.translationManager.t(
+                      'smartConversion.intelligentMatching.statusIcons.disabled',
+                    ),
+                configValue: hasVersion
+                  ? this.translationManager.t(
+                      'smartConversion.intelligentMatching.statusIcons.enabled',
+                    )
+                  : this.translationManager.t(
+                      'smartConversion.intelligentMatching.statusIcons.disabled',
+                    ),
+              },
+            ),
+          );
+        }
+        if (intelligentConfig.header.category.enabled) {
+          headerFields.push(
+            this.translationManager.t(
+              'smartConversion.intelligentMatching.fieldDecisions.category',
+              {
+                userPreference: userConfig.header.category.enabled
+                  ? this.translationManager.t(
+                      'smartConversion.intelligentMatching.statusIcons.enabled',
+                    )
+                  : this.translationManager.t(
+                      'smartConversion.intelligentMatching.statusIcons.disabled',
+                    ),
+                configValue: hasCategory
+                  ? this.translationManager.t(
+                      'smartConversion.intelligentMatching.statusIcons.enabled',
+                    )
+                  : this.translationManager.t(
+                      'smartConversion.intelligentMatching.statusIcons.disabled',
+                    ),
+              },
+            ),
+          );
+        }
+
+        if (headerFields.length > 0) {
+          headerFields.forEach((field) =>
+            matchingDecisions.push(`     - ${field}`),
+          );
+        } else {
+          matchingDecisions.push(
+            `     - ${this.translationManager.t('smartConversion.intelligentMatching.noFieldsEnabled')}`,
+          );
+        }
+      } else {
+        matchingDecisions.push(
+          `     - ${this.translationManager.t('smartConversion.intelligentMatching.headerDisabled')}`,
+        );
+      }
+
+      // Footer configuration decisions
+      matchingDecisions.push(
+        `   ${this.translationManager.t('smartConversion.intelligentMatching.footerConfig')}:`,
+      );
+      if (intelligentConfig.footer.enabled) {
+        const footerFields = [];
+        if (intelligentConfig.footer.title.enabled) {
+          footerFields.push(
+            this.translationManager.t(
+              'smartConversion.intelligentMatching.fieldDecisions.title',
+              {
+                userPreference: userConfig.footer.title.enabled
+                  ? this.translationManager.t(
+                      'smartConversion.intelligentMatching.statusIcons.enabled',
+                    )
+                  : this.translationManager.t(
+                      'smartConversion.intelligentMatching.statusIcons.disabled',
+                    ),
+                contentAvailable: this.translationManager.t(
+                  'smartConversion.intelligentMatching.statusIcons.enabled',
+                ),
+              },
+            ),
+          );
+        }
+        if (intelligentConfig.footer.pageNumber.enabled) {
+          footerFields.push(
+            this.translationManager.t(
+              'smartConversion.intelligentMatching.fieldDecisions.pageNumber',
+              {
+                userPreference: this.translationManager.t(
+                  'smartConversion.intelligentMatching.statusIcons.enabled',
+                ),
+                alwaysAvailable: this.translationManager.t(
+                  'smartConversion.intelligentMatching.statusIcons.enabled',
+                ),
+              },
+            ),
+          );
+        }
+        if (intelligentConfig.footer.author.enabled) {
+          footerFields.push(
+            this.translationManager.t(
+              'smartConversion.intelligentMatching.fieldDecisions.author',
+              {
+                userPreference: userConfig.footer.author.enabled
+                  ? this.translationManager.t(
+                      'smartConversion.intelligentMatching.statusIcons.enabled',
+                    )
+                  : this.translationManager.t(
+                      'smartConversion.intelligentMatching.statusIcons.disabled',
+                    ),
+                configValue: hasAuthor
+                  ? this.translationManager.t(
+                      'smartConversion.intelligentMatching.statusIcons.enabled',
+                    )
+                  : this.translationManager.t(
+                      'smartConversion.intelligentMatching.statusIcons.disabled',
+                    ),
+              },
+            ),
+          );
+        }
+        if (intelligentConfig.footer.organization.enabled) {
+          footerFields.push(
+            this.translationManager.t(
+              'smartConversion.intelligentMatching.fieldDecisions.organization',
+              {
+                userPreference: this.translationManager.t(
+                  'smartConversion.intelligentMatching.statusIcons.enabled',
+                ),
+                configValue: hasOrganization
+                  ? this.translationManager.t(
+                      'smartConversion.intelligentMatching.statusIcons.enabled',
+                    )
+                  : this.translationManager.t(
+                      'smartConversion.intelligentMatching.statusIcons.disabled',
+                    ),
+              },
+            ),
+          );
+        }
+        if (intelligentConfig.footer.version.enabled) {
+          footerFields.push(
+            this.translationManager.t(
+              'smartConversion.intelligentMatching.fieldDecisions.version',
+              {
+                userPreference: userConfig.footer.version.enabled
+                  ? this.translationManager.t(
+                      'smartConversion.intelligentMatching.statusIcons.enabled',
+                    )
+                  : this.translationManager.t(
+                      'smartConversion.intelligentMatching.statusIcons.disabled',
+                    ),
+                configValue: hasVersion
+                  ? this.translationManager.t(
+                      'smartConversion.intelligentMatching.statusIcons.enabled',
+                    )
+                  : this.translationManager.t(
+                      'smartConversion.intelligentMatching.statusIcons.disabled',
+                    ),
+              },
+            ),
+          );
+        }
+        if (intelligentConfig.footer.category.enabled) {
+          footerFields.push(
+            this.translationManager.t(
+              'smartConversion.intelligentMatching.fieldDecisions.category',
+              {
+                userPreference: userConfig.footer.category.enabled
+                  ? this.translationManager.t(
+                      'smartConversion.intelligentMatching.statusIcons.enabled',
+                    )
+                  : this.translationManager.t(
+                      'smartConversion.intelligentMatching.statusIcons.disabled',
+                    ),
+                configValue: hasCategory
+                  ? this.translationManager.t(
+                      'smartConversion.intelligentMatching.statusIcons.enabled',
+                    )
+                  : this.translationManager.t(
+                      'smartConversion.intelligentMatching.statusIcons.disabled',
+                    ),
+              },
+            ),
+          );
+        }
+
+        if (footerFields.length > 0) {
+          footerFields.forEach((field) =>
+            matchingDecisions.push(`     - ${field}`),
+          );
+        } else {
+          matchingDecisions.push(
+            `     - ${this.translationManager.t('smartConversion.intelligentMatching.noFieldsEnabled')}`,
+          );
+        }
+      } else {
+        matchingDecisions.push(
+          `     - ${this.translationManager.t('smartConversion.intelligentMatching.footerDisabled')}`,
+        );
+      }
+
+      // Log the detailed decisions
+      this.logger?.info(
+        `${this.translationManager.t('smartConversion.intelligentMatching.detailedAnalysis')}:\n` +
+          matchingDecisions.join('\n'),
+      );
+
+      // Only return the intelligent config if it has at least some enabled fields
+      if (
+        intelligentConfig.header.enabled ||
+        intelligentConfig.footer.enabled
+      ) {
+        return intelligentConfig;
+      }
+
+      // If no fields would be enabled, fall back to smart defaults
+      return null;
+    } catch (error) {
+      this.logger?.warn(
+        'Error in intelligent field matching, falling back to smart defaults:',
+        error,
+      );
+      return null;
+    }
+  }
+
+  /**
+   * Check if document has a title (from analysis or first H1)
+   */
+  private hasTitle(analysis: ContentAnalysis): boolean {
+    // Check if we have headings - assume first H1 would be the title
+    return analysis.headingStructure.totalHeadings > 0;
+  }
+
+  /**
+   * Check if document/config has author information
+   */
+  private hasAuthor(): boolean {
+    const configManager = this.container!.resolve('config') as any;
+    const userConfig = configManager.getConfig();
+
+    // Check multiple possible locations for author information
+    const authorValue =
+      userConfig.author ||
+      userConfig.metadata?.author ||
+      userConfig.metadata?.defaults?.author ||
+      userConfig.defaults?.author;
+
+    const hasValue = !!(
+      authorValue &&
+      authorValue.trim() &&
+      authorValue !== 'Author Name'
+    );
+    this.logger?.debug(
+      `hasAuthor() check: ${hasValue}, value: "${authorValue}"`,
+    );
+    return hasValue;
+  }
+
+  /**
+   * Check if document/config has organization information
+   */
+  private hasOrganization(): boolean {
+    const configManager = this.container!.resolve('config') as any;
+    const userConfig = configManager.getConfig();
+
+    // Check multiple possible locations for organization information
+    const organizationValue =
+      userConfig.organization ||
+      userConfig.metadata?.organization ||
+      userConfig.metadata?.defaults?.organization ||
+      userConfig.defaults?.organization;
+
+    const hasValue = !!(organizationValue && organizationValue.trim());
+    this.logger?.debug(
+      `hasOrganization() check: ${hasValue}, value: "${organizationValue}"`,
+    );
+    return hasValue;
+  }
+
+  /**
+   * Check if document/config has version information
+   */
+  private hasVersion(): boolean {
+    const configManager = this.container!.resolve('config') as any;
+    const userConfig = configManager.getConfig();
+
+    // Check multiple possible locations for version information
+    const versionValue =
+      userConfig.version ||
+      userConfig.metadata?.version ||
+      userConfig.metadata?.defaults?.version ||
+      userConfig.defaults?.version;
+
+    const hasValue = !!(versionValue && versionValue.trim());
+    this.logger?.debug(
+      `hasVersion() check: ${hasValue}, value: "${versionValue}"`,
+    );
+    return hasValue;
+  }
+
+  /**
+   * Check if document/config has category information
+   */
+  private hasCategory(): boolean {
+    const configManager = this.container!.resolve('config') as any;
+    const userConfig = configManager.getConfig();
+
+    // Check multiple possible locations for category information
+    const categoryValue =
+      userConfig.category ||
+      userConfig.metadata?.category ||
+      userConfig.metadata?.defaults?.category ||
+      userConfig.defaults?.category;
+
+    const hasValue = !!(categoryValue && categoryValue.trim());
+    this.logger?.debug(
+      `hasCategory() check: ${hasValue}, value: "${categoryValue}"`,
+    );
+    return hasValue;
+  }
+
+  /**
+   * Check if document/config has copyright information
+   */
+  private hasCopyright(): boolean {
+    const configManager = this.container!.resolve('config') as any;
+    const userConfig = configManager.getConfig();
+
+    // Check multiple possible locations for copyright information
+    const copyrightValue =
+      userConfig.copyright ||
+      userConfig.metadata?.copyright ||
+      userConfig.metadata?.defaults?.copyright ||
+      userConfig.defaults?.copyright;
+
+    const hasValue = !!(copyrightValue && copyrightValue.trim());
+    this.logger?.debug(
+      `hasCopyright() check: ${hasValue}, value: "${copyrightValue}"`,
+    );
+    return hasValue;
   }
 }

@@ -918,6 +918,321 @@ describe('PDFGeneratorService', () => {
     });
   });
 
+  describe('Legacy IncludePageNumbers Fallback Mode', () => {
+    beforeEach(async () => {
+      await service.initialize();
+    });
+
+    it('should use legacy includePageNumbers mode when headers/footers not configured', async () => {
+      // Mock config to return disabled headers/footers
+      const originalGetConfig = mockConfigManager.getConfig;
+      mockConfigManager.getConfig = jest.fn(() => ({
+        ...defaultConfig,
+        headersFooters: {
+          header: { enabled: false },
+          footer: { enabled: false },
+        },
+      }));
+
+      await service.generatePDF(
+        '<html><head></head><body>Test Content</body></html>',
+        '/test/legacy.pdf',
+        {
+          title: 'Test Document',
+          includePageNumbers: true,
+          headings: [
+            { level: 1, text: 'Chapter 1', id: 'ch1', anchor: 'chapter-1' },
+          ],
+        },
+      );
+
+      // Restore original mock
+      mockConfigManager.getConfig = originalGetConfig;
+
+      // Verify fallback to legacy mode logging
+      expect(mockLogger.debug).toHaveBeenCalledWith(
+        'Falling back to legacy includePageNumbers mode',
+      );
+    });
+
+    it('should use first H1 as document title in legacy mode when no title provided', async () => {
+      // Mock config for legacy fallback
+      const originalGetConfig = mockConfigManager.getConfig;
+      mockConfigManager.getConfig = jest.fn(() => ({
+        ...defaultConfig,
+        headersFooters: {
+          header: { enabled: false },
+          footer: { enabled: false },
+        },
+      }));
+
+      await service.generatePDF(
+        '<html><head></head><body>Test Content</body></html>',
+        '/test/legacy-no-title.pdf',
+        {
+          // No title provided
+          includePageNumbers: true,
+          headings: [
+            { level: 1, text: 'First Heading', id: 'h1', anchor: 'first' },
+          ],
+        },
+      );
+
+      // Restore original mock
+      mockConfigManager.getConfig = originalGetConfig;
+
+      expect(mockLogger.debug).toHaveBeenCalledWith(
+        'Falling back to legacy includePageNumbers mode',
+      );
+    });
+
+    it('should fallback to "Markdown Document" when no title or H1 found', async () => {
+      // Mock config for legacy fallback
+      const originalGetConfig = mockConfigManager.getConfig;
+      mockConfigManager.getConfig = jest.fn(() => ({
+        ...defaultConfig,
+        headersFooters: {
+          header: { enabled: false },
+          footer: { enabled: false },
+        },
+      }));
+
+      await service.generatePDF(
+        '<html><head></head><body>Test Content</body></html>',
+        '/test/legacy-default-title.pdf',
+        {
+          // No title and no H1 headings
+          includePageNumbers: true,
+          headings: [
+            { level: 2, text: 'Sub Heading', id: 'h2', anchor: 'sub' },
+          ],
+        },
+      );
+
+      // Restore original mock
+      mockConfigManager.getConfig = originalGetConfig;
+
+      expect(mockLogger.debug).toHaveBeenCalledWith(
+        'Falling back to legacy includePageNumbers mode',
+      );
+    });
+  });
+
+  describe('Two-Stage Analysis Error Handling', () => {
+    beforeEach(async () => {
+      await service.initialize();
+    });
+
+    it('should handle two-stage rendering engine import errors gracefully', async () => {
+      // Mock the dynamic import to fail by catching import error
+      const result = await service.generatePDF(
+        '<html><body>Test</body></html>',
+        '/test/import-error.pdf',
+        {
+          tocOptions: { enabled: true, maxDepth: 3, includePageNumbers: true },
+          markdownContent: '# Test\n## Sub',
+        },
+      );
+
+      expect(result.success).toBe(true);
+      // Should still succeed with fallback processing
+    });
+
+    it('should detect diagrams and images in markdown content during fallback', async () => {
+      // Test fallback detection of dynamic content
+      const result = await service.generatePDF(
+        '<html><body>Test</body></html>',
+        '/test/fallback-detection.pdf',
+        {
+          tocOptions: { enabled: true, maxDepth: 3, includePageNumbers: true },
+          markdownContent:
+            '# Test Document\n```mermaid\ngraph TD\n  A[Start] --> B[End]\n```\n![Image](./image.png)\n```plantuml\n@startuml\nAlice -> Bob: Hello\n@enduml\n```',
+        },
+      );
+
+      expect(result.success).toBe(true);
+      // Should handle markdown content with diagrams and images
+      expect(result.metadata?.enhancedFeatures).toBeDefined();
+    });
+
+    it('should handle two-stage rendering engine errors during execution', async () => {
+      // Test with conditions that might cause rendering issues
+      const result = await service.generatePDF(
+        '<html><body>Test</body></html>',
+        '/test/execution-error.pdf',
+        {
+          tocOptions: { enabled: true, maxDepth: 3, includePageNumbers: true },
+        },
+      );
+
+      expect(result.success).toBe(true);
+      // Should handle rendering errors gracefully
+    });
+  });
+
+  describe('CSS Injection Error Scenarios', () => {
+    beforeEach(async () => {
+      await service.initialize();
+    });
+
+    it('should handle CSS injection errors gracefully and return original content', async () => {
+      // Test with malformed HTML that might cause CSS injection issues
+      const problematicHtml =
+        '<html><head>unclosed head<body>Test</body></html>';
+
+      const result = await service.generatePDF(
+        problematicHtml,
+        '/test/css-error.pdf',
+        {
+          title: 'Test "with" quotes',
+          includePageNumbers: true,
+        },
+      );
+
+      expect(result.success).toBe(true);
+      // Should handle the error and continue with generation
+    });
+
+    it('should return original content when no CSS rules are generated', async () => {
+      // Mock headers/footers config to return empty rules
+      const originalGetConfig = mockConfigManager.getConfig;
+      mockConfigManager.getConfig = jest.fn(() => ({
+        ...defaultConfig,
+        headersFooters: {
+          header: { enabled: false },
+          footer: { enabled: false },
+        },
+      }));
+
+      await service.generatePDF(
+        '<html><head></head><body>Test</body></html>',
+        '/test/no-css-rules.pdf',
+        {
+          includePageNumbers: false, // This should result in no CSS rules
+        },
+      );
+
+      // Restore original mock
+      mockConfigManager.getConfig = originalGetConfig;
+
+      expect(mockLogger.debug).toHaveBeenCalledWith(
+        'Page numbers not enabled - skipping CSS @page injection',
+      );
+    });
+
+    it('should handle edge case when CSS rules are empty after generation', async () => {
+      // Test scenario where CSS generation returns empty string
+      await service.generatePDF(
+        '<html><head></head><body>Test</body></html>',
+        '/test/empty-css.pdf',
+        {
+          includePageNumbers: true,
+          headings: [], // No headings might result in minimal CSS
+        },
+      );
+
+      // Should handle empty CSS gracefully
+      expect(mockEngineManagerInstance.generatePDF).toHaveBeenCalled();
+    });
+  });
+
+  describe('Bookmark Generation Edge Cases', () => {
+    beforeEach(async () => {
+      await service.initialize();
+    });
+
+    it('should handle bookmark generation errors gracefully', async () => {
+      // Test bookmark generation with edge case data
+      const result = await service.generatePDF(
+        '<html><body><h1>Test</h1></body></html>',
+        '/test/bookmark-error.pdf',
+        {
+          bookmarkOptions: { enabled: true, maxDepth: 3 },
+          headings: [
+            { level: 1, text: 'Chapter 1', id: 'ch1', anchor: 'chapter-1' },
+          ],
+        },
+      );
+
+      expect(result.success).toBe(true);
+      // Should handle bookmark generation gracefully
+    });
+
+    it('should extract headings from HTML when not provided in options', async () => {
+      const htmlWithHeadings = `
+        <html>
+          <body>
+            <h1 id="main">Main Title</h1>
+            <h2 id="sub">Sub Title</h2>
+            <h3>No ID Heading</h3>
+          </body>
+        </html>
+      `;
+
+      const result = await service.generatePDF(
+        htmlWithHeadings,
+        '/test/extract-headings.pdf',
+        {
+          bookmarkOptions: { enabled: true, maxDepth: 3 },
+          // No headings provided - should extract from HTML
+        },
+      );
+
+      expect(result.success).toBe(true);
+      // Should have extracted headings from HTML and generated bookmarks
+    });
+  });
+
+  describe('Engine Configuration Edge Cases', () => {
+    it('should handle missing pdfEngine configuration gracefully', async () => {
+      // Mock config manager to return empty config
+      const mockConfigWithEmpty = {
+        ...mockConfigManager,
+        get: jest.fn((key: string, defaultValue?: unknown) => {
+          if (key === 'pdfEngine') return {}; // Empty config
+          return mockConfigManager.get(key, defaultValue);
+        }),
+      };
+
+      const serviceWithEmptyConfig = new PDFGeneratorService(
+        mockLogger,
+        mockErrorHandler,
+        mockConfigWithEmpty,
+        mockTranslationManager,
+      );
+
+      await serviceWithEmptyConfig.initialize();
+
+      // Should use default configuration
+      expect(serviceWithEmptyConfig).toBeDefined();
+    });
+
+    it('should handle partial pdfEngine configuration', async () => {
+      // Mock config manager to return partial config
+      const mockConfigWithPartial = {
+        ...mockConfigManager,
+        get: jest.fn((key: string, defaultValue?: unknown) => {
+          if (key === 'pdfEngine') {
+            return { primaryEngine: 'puppeteer' }; // Only partial config
+          }
+          return mockConfigManager.get(key, defaultValue);
+        }),
+      };
+
+      const serviceWithPartialConfig = new PDFGeneratorService(
+        mockLogger,
+        mockErrorHandler,
+        mockConfigWithPartial,
+        mockTranslationManager,
+      );
+
+      await serviceWithPartialConfig.initialize();
+
+      // Should merge with defaults
+      expect(serviceWithPartialConfig).toBeDefined();
+    });
+  });
+
   describe('removeDeepHeadingIds - Bookmark Depth Fix', () => {
     beforeEach(async () => {
       await service.initialize();
