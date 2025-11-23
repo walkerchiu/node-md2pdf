@@ -942,12 +942,47 @@ export class BatchInteractiveMode {
           message: this.translationManager.t('batch.includePageNumbers'),
           default: template.config.features.pageNumbers,
         },
+        {
+          type: 'list',
+          name: 'tocReturnLinksLevel',
+          message: this.translationManager.t('batch.tocReturnLinksLevel'),
+          choices: [
+            {
+              name: this.translationManager.t('common.tocReturnLinksLevels.0'),
+              value: 0,
+            },
+            {
+              name: this.translationManager.t('common.tocReturnLinksLevels.1'),
+              value: 1,
+            },
+            {
+              name: this.translationManager.t('common.tocReturnLinksLevels.2'),
+              value: 2,
+            },
+            {
+              name: this.translationManager.t('common.tocReturnLinksLevels.3'),
+              value: 3,
+            },
+            {
+              name: this.translationManager.t('common.tocReturnLinksLevels.4'),
+              value: 4,
+            },
+            {
+              name: this.translationManager.t('common.tocReturnLinksLevels.5'),
+              value: 5,
+            },
+          ],
+          default: Math.min(template.config.features.anchorDepth, 5),
+          when: (ans: any) => ans.includeTOC,
+        },
       ]);
 
       config.includeTOC = adjustAnswers.includeTOC ?? config.includeTOC;
       config.tocDepth = adjustAnswers.tocDepth ?? config.tocDepth;
       config.includePageNumbers =
         adjustAnswers.includePageNumbers ?? config.includePageNumbers;
+      config.tocReturnLinksLevel =
+        adjustAnswers.tocReturnLinksLevel ?? config.tocReturnLinksLevel;
     }
 
     return config;
