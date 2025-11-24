@@ -343,19 +343,6 @@ describe('Configuration Constants', () => {
         'mermaid.fallback.errorMessage',
       );
     });
-
-    it('should define feature flag keys', () => {
-      expect(CONFIG_KEYS.FEATURES.ENHANCED_SERVICES).toBe(
-        'features.enhancedServices',
-      );
-      expect(CONFIG_KEYS.FEATURES.ENHANCED_CLI).toBe('features.enhancedCli');
-      expect(CONFIG_KEYS.FEATURES.NEW_ORCHESTRATOR).toBe(
-        'features.newOrchestrator',
-      );
-      expect(CONFIG_KEYS.FEATURES.FORCE_LEGACY_MODE).toBe(
-        'features.forceLegacyMode',
-      );
-    });
   });
 
   describe('Constants validation', () => {

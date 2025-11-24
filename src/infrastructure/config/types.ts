@@ -196,14 +196,6 @@ export interface ConfigSchema {
     languageAliases: Record<string, string>;
   };
 
-  // Feature flags
-  features: {
-    enhancedServices: boolean;
-    enhancedCli: boolean;
-    newOrchestrator: boolean;
-    forceLegacyMode: boolean;
-  };
-
   // Document metadata settings
   metadata: {
     enabled: boolean;

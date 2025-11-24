@@ -132,12 +132,6 @@ export const defaultConfig: ConfigSchema = {
     supportedLanguages: [...DEFAULT_SYNTAX_HIGHLIGHTING.SUPPORTED_LANGUAGES],
     languageAliases: DEFAULT_SYNTAX_HIGHLIGHTING.LANGUAGE_ALIASES,
   },
-  features: {
-    enhancedServices: process.env.MD2PDF_USE_ENHANCED_SERVICES !== 'false',
-    enhancedCli: process.env.MD2PDF_USE_ENHANCED_CLI !== 'false',
-    newOrchestrator: process.env.MD2PDF_USE_NEW_ORCHESTRATOR !== 'false',
-    forceLegacyMode: process.env.MD2PDF_FORCE_LEGACY === 'true',
-  },
   metadata: {
     enabled: DEFAULT_METADATA.ENABLED,
     autoExtraction: {
@@ -195,10 +189,6 @@ export const environmentMappings: Record<string, string> = {
   MD2PDF_LOG_MAX_FILE_SIZE: 'logging.maxFileSize',
   MD2PDF_LOG_MAX_BACKUP_FILES: 'logging.maxBackupFiles',
   MD2PDF_LOG_ENABLE_ROTATION: 'logging.enableRotation',
-  MD2PDF_USE_ENHANCED_SERVICES: 'features.enhancedServices',
-  MD2PDF_USE_ENHANCED_CLI: 'features.enhancedCli',
-  MD2PDF_USE_NEW_ORCHESTRATOR: 'features.newOrchestrator',
-  MD2PDF_FORCE_LEGACY: 'features.forceLegacyMode',
   MD2PDF_PDF_USE_ENHANCED_ENGINE: 'pdf.useEnhancedEngine',
   MD2PDF_PDF_PRIMARY_ENGINE: 'pdf.engines.primary',
   MD2PDF_PDF_ENGINE_STRATEGY: 'pdf.engines.strategy',

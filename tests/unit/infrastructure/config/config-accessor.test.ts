@@ -469,43 +469,6 @@ describe('ConfigAccessor', () => {
     });
   });
 
-  describe('getFeatureFlags', () => {
-    it('should return default feature flags', () => {
-      const expectedFlags = {
-        enhancedServices: true,
-        enhancedCli: true,
-        newOrchestrator: true,
-        forceLegacyMode: false,
-      };
-
-      mockConfigManager.get
-        .mockReturnValueOnce(expectedFlags.enhancedServices)
-        .mockReturnValueOnce(expectedFlags.enhancedCli)
-        .mockReturnValueOnce(expectedFlags.newOrchestrator)
-        .mockReturnValueOnce(expectedFlags.forceLegacyMode);
-
-      const result = configAccessor.getFeatureFlags();
-
-      expect(result).toEqual(expectedFlags);
-      expect(mockConfigManager.get).toHaveBeenCalledWith(
-        CONFIG_KEYS.FEATURES.ENHANCED_SERVICES,
-        true,
-      );
-      expect(mockConfigManager.get).toHaveBeenCalledWith(
-        CONFIG_KEYS.FEATURES.ENHANCED_CLI,
-        true,
-      );
-      expect(mockConfigManager.get).toHaveBeenCalledWith(
-        CONFIG_KEYS.FEATURES.NEW_ORCHESTRATOR,
-        true,
-      );
-      expect(mockConfigManager.get).toHaveBeenCalledWith(
-        CONFIG_KEYS.FEATURES.FORCE_LEGACY_MODE,
-        false,
-      );
-    });
-  });
-
   describe('updatePDFMargin', () => {
     it('should update all margin properties when provided', async () => {
       const marginUpdates: PDFMarginConfig = {

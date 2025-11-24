@@ -230,30 +230,6 @@ export class ConfigAccessor {
   }
 
   /**
-   * Get feature flags
-   */
-  getFeatureFlags() {
-    return {
-      enhancedServices: this.configManager.get(
-        CONFIG_KEYS.FEATURES.ENHANCED_SERVICES,
-        true,
-      ),
-      enhancedCli: this.configManager.get(
-        CONFIG_KEYS.FEATURES.ENHANCED_CLI,
-        true,
-      ),
-      newOrchestrator: this.configManager.get(
-        CONFIG_KEYS.FEATURES.NEW_ORCHESTRATOR,
-        true,
-      ),
-      forceLegacyMode: this.configManager.get(
-        CONFIG_KEYS.FEATURES.FORCE_LEGACY_MODE,
-        false,
-      ),
-    };
-  }
-
-  /**
    * Update PDF margin configuration
    */
   async updatePDFMargin(margin: Partial<PDFMarginConfig>): Promise<void> {

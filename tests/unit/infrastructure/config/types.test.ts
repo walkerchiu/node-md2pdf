@@ -53,12 +53,6 @@ describe('ConfigSchema', () => {
           timeout: 30000,
           memoryLimit: '512MB',
         },
-        features: {
-          enhancedServices: false,
-          enhancedCli: false,
-          newOrchestrator: false,
-          forceLegacyMode: false,
-        },
       };
 
       // Validate required properties exist
@@ -66,7 +60,6 @@ describe('ConfigSchema', () => {
       expect(mockConfig.pdf).toBeDefined();
       expect(mockConfig.toc).toBeDefined();
       expect(mockConfig.performance).toBeDefined();
-      expect(mockConfig.features).toBeDefined();
     });
 
     it('should support optional logging configuration', () => {
@@ -202,22 +195,6 @@ describe('ConfigSchema', () => {
       expect(performanceConfig.performance?.maxWorkers).toBe(8);
       expect(performanceConfig.performance?.timeout).toBe(60000);
       expect(performanceConfig.performance?.memoryLimit).toBe('1GB');
-    });
-
-    it('should support feature flags configuration', () => {
-      const featuresConfig: Partial<ConfigSchema> = {
-        features: {
-          enhancedServices: true,
-          enhancedCli: true,
-          newOrchestrator: false,
-          forceLegacyMode: false,
-        },
-      };
-
-      expect(featuresConfig.features?.enhancedServices).toBe(true);
-      expect(featuresConfig.features?.enhancedCli).toBe(true);
-      expect(featuresConfig.features?.newOrchestrator).toBe(false);
-      expect(featuresConfig.features?.forceLegacyMode).toBe(false);
     });
   });
 });

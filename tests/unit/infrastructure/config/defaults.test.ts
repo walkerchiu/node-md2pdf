@@ -184,25 +184,6 @@ describe('Default Configuration Values', () => {
         'Mermaid diagram rendering failed',
       );
     });
-
-    describe('feature flags with environment variables', () => {
-      it('should enable enhanced services by default', () => {
-        expect(defaultConfig.features.enhancedServices).toBe(true);
-        expect(defaultConfig.features.enhancedCli).toBe(true);
-        expect(defaultConfig.features.newOrchestrator).toBe(true);
-        expect(defaultConfig.features.forceLegacyMode).toBe(false);
-      });
-
-      it('should disable enhanced services when MD2PDF_USE_ENHANCED_SERVICES is false', () => {
-        // This requires re-importing the module, so we test the logic indirectly
-        expect(typeof defaultConfig.features.enhancedServices).toBe('boolean');
-      });
-
-      it('should enable legacy mode when MD2PDF_FORCE_LEGACY is true', () => {
-        // This requires re-importing the module, so we test the logic indirectly
-        expect(typeof defaultConfig.features.forceLegacyMode).toBe('boolean');
-      });
-    });
   });
 
   describe('environmentMappings', () => {
@@ -231,21 +212,6 @@ describe('Default Configuration Values', () => {
       );
       expect(environmentMappings['MD2PDF_LOG_ENABLE_ROTATION']).toBe(
         'logging.enableRotation',
-      );
-    });
-
-    it('should define feature flag environment mappings', () => {
-      expect(environmentMappings['MD2PDF_USE_ENHANCED_SERVICES']).toBe(
-        'features.enhancedServices',
-      );
-      expect(environmentMappings['MD2PDF_USE_ENHANCED_CLI']).toBe(
-        'features.enhancedCli',
-      );
-      expect(environmentMappings['MD2PDF_USE_NEW_ORCHESTRATOR']).toBe(
-        'features.newOrchestrator',
-      );
-      expect(environmentMappings['MD2PDF_FORCE_LEGACY']).toBe(
-        'features.forceLegacyMode',
       );
     });
 

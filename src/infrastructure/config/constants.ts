@@ -366,12 +366,6 @@ export const CONFIG_KEYS = {
     SUPPORTED_LANGUAGES: 'syntaxHighlighting.supportedLanguages',
     LANGUAGE_ALIASES: 'syntaxHighlighting.languageAliases',
   },
-  FEATURES: {
-    ENHANCED_SERVICES: 'features.enhancedServices',
-    ENHANCED_CLI: 'features.enhancedCli',
-    NEW_ORCHESTRATOR: 'features.newOrchestrator',
-    FORCE_LEGACY_MODE: 'features.forceLegacyMode',
-  },
   METADATA: {
     ENABLED: 'metadata.enabled',
     AUTO_EXTRACTION: {
