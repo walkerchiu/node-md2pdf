@@ -199,7 +199,6 @@ export const zhTWTranslations: TranslationKey = {
       title: '🔧 偏好設定',
       languageSettings: '語言與本地化',
       loggingSettings: '日誌設定',
-      loggingComingSoon: '📝 日誌設定功能即將推出...',
       pressEnterToContinue: '按 Enter 鍵繼續...',
     },
     languageMenu: {
@@ -428,10 +427,7 @@ export const zhTWTranslations: TranslationKey = {
   // Customization settings messages
   customization: {
     coverDesignComingSoon: '封面設計功能即將推出…',
-    headersFootersComingSoon: '頁首和頁尾功能即將推出…',
-    documentMetadataComingSoon: '文件屬性功能即將推出…',
     securitySettingsComingSoon: '安全性與浮水印功能即將推出…',
-    templateManagementComingSoon: '範本管理功能即將推出…',
     customizationError: '客製化設定錯誤',
     selectCustomizationOption: '選擇自定義選項',
     pressEnterToContinue: '按 Enter 鍵繼續…',

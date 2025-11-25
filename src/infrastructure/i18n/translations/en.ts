@@ -209,7 +209,6 @@ export const enTranslations: TranslationKey = {
       title: '🔧 Settings',
       languageSettings: 'Language & Localization',
       loggingSettings: 'Logging Settings',
-      loggingComingSoon: '📝 Logging Settings features coming soon...',
       pressEnterToContinue: 'Press Enter to continue...',
     },
     languageMenu: {
@@ -446,10 +445,7 @@ export const enTranslations: TranslationKey = {
   // Customization mode messages
   customization: {
     coverDesignComingSoon: 'Cover Design features coming soon...',
-    headersFootersComingSoon: 'Headers & Footers features coming soon...',
-    documentMetadataComingSoon: 'Document Metadata features coming soon...',
     securitySettingsComingSoon: 'Security & Watermarks features coming soon...',
-    templateManagementComingSoon: 'Template Management features coming soon...',
     customizationError: 'Customization error',
     selectCustomizationOption: 'Select customization option',
     pressEnterToContinue: 'Press Enter to continue...',
