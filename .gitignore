@@ -39,11 +39,15 @@ pids
 temp/
 *.tmp
 
-# IDE
+# IDE and Development Tools
 .vscode/
 .idea/
 *.swp
 *.swo
+.cursor/
+.claude/
+.bmad-core/
+.github/
 
 # macOS
 .DS_Store
