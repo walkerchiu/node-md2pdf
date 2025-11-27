@@ -223,6 +223,22 @@ export interface ConfigSchema {
     };
   };
 
+  // Password protection settings
+  passwordProtection?: {
+    enabled: boolean;
+    userPassword?: string;
+    ownerPassword?: string;
+    permissions?: {
+      printing?: boolean;
+      modifying?: boolean;
+      copying?: boolean;
+      annotating?: boolean;
+      fillingForms?: boolean;
+      contentAccessibility?: boolean;
+      documentAssembly?: boolean;
+    };
+  };
+
   // Headers and footers settings
   headersFooters: HeadersFootersConfig;
 }

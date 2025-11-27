@@ -192,7 +192,8 @@ export const zhTWTranslations: TranslationKey = {
       coverDesign: '封面設計',
       headersFooters: '頁首和頁尾',
       documentMetadata: '文件屬性',
-      securitySettings: '安全性與浮水印',
+      passwordProtection: '密碼保護',
+      watermarks: '浮水印',
       templateManagement: '範本管理',
     },
     settingsMenu: {
@@ -427,7 +428,6 @@ export const zhTWTranslations: TranslationKey = {
   // Customization settings messages
   customization: {
     coverDesignComingSoon: '封面設計功能即將推出…',
-    securitySettingsComingSoon: '安全性與浮水印功能即將推出…',
     customizationError: '客製化設定錯誤',
     selectCustomizationOption: '選擇自定義選項',
     pressEnterToContinue: '按 Enter 鍵繼續…',
@@ -868,8 +868,8 @@ export const zhTWTranslations: TranslationKey = {
     puppeteerReady: '✅ Puppeteer 已就緒',
     puppeteerFailed: '❌ Puppeteer 初始化失敗：',
     memoryUsageOk: '✅ 記憶體使用量：{{memory}} MB',
-    highMemoryUsage: '⚠️ 記憶體使用量偏高：{{memory}} MB',
-    cannotCheckResources: '⚠️ 無法檢查系統資源',
+    highMemoryUsage: '⚠️  記憶體使用量偏高：{{memory}} MB',
+    cannotCheckResources: '⚠️  無法檢查系統資源',
     environmentCheckFailed: '環境檢查失敗（{{count}} 項檢查未通過）',
   },
 
@@ -879,11 +879,11 @@ export const zhTWTranslations: TranslationKey = {
     processing: '🔄 處理中… ({{current}}／{{total}})',
     batchComplete: '✅ 批次轉換完成！',
     batchFailed: '❌ 批次轉換失敗',
-    batchPartialSuccess: '⚠️ 批次轉換完成，但有部分失敗',
+    batchPartialSuccess: '⚠️  批次轉換完成，但有部分失敗',
     processingStarted: '🚀 批次處理已開始（{{count}} 個檔案）',
     processingComplete: '✅ 處理完成！所有 {{count}} 個檔案都處理成功！',
     processingPartial:
-      '⚠️ 已處理 {{successful}}／{{total}} 個檔案（{{rate}}% 成功率）',
+      '⚠️  已處理 {{successful}}／{{total}} 個檔案（{{rate}}% 成功率）',
     processingFailed: '❌ 無法處理任何檔案',
     progressEta: '預估剩餘時間：{{eta}}',
     successfullyConverted: '✅ 成功轉換的檔案：',
@@ -1263,6 +1263,132 @@ export const zhTWTranslations: TranslationKey = {
     documentMetadata: '文件屬性',
     securitySettings: '安全性',
     templateManagement: '範本',
+  },
+
+  // Security settings
+  security: {
+    // Page header information
+    header: {
+      title: '密碼保護',
+      subtitle: '配置 PDF 文件安全性和存取權限',
+    },
+    // Sub-feature headers
+    subHeaders: {
+      preview: {
+        title: '設定預覽',
+        subtitle: '檢視目前的密碼保護和權限配置',
+      },
+      userPassword: {
+        title: '使用者密碼',
+        subtitle: '設定開啟 PDF 文件所需的密碼',
+      },
+      ownerPassword: {
+        title: '擁有者密碼',
+        subtitle: '設定修改文件權限所需的密碼',
+      },
+      toggleProtection: {
+        title: '切換密碼保護',
+        subtitle: '啟用或停用 PDF 密碼保護功能',
+      },
+      configurePermissions: {
+        title: '配置 PDF 權限',
+        subtitle: '設定 PDF 文件的使用者權限和限制',
+      },
+      resetDefaults: {
+        title: '重設為預設值',
+        subtitle: '將所有密碼保護設定恢復為預設狀態',
+      },
+    },
+    prompts: {
+      selectOption: '選擇安全性選項',
+    },
+    menu: {
+      previewSettings: '預覽目前設定',
+      toggleProtection: '切換密碼保護',
+      setUserPassword: '設定使用者密碼',
+      setOwnerPassword: '設定擁有者密碼',
+      configurePermissions: '配置 PDF 權限',
+      resetDefaults: '重設為預設值',
+      permissionPresets: '套用權限預設',
+      customPermissions: '自訂權限配置',
+    },
+    status: {
+      enabled: '已啟用',
+      disabled: '已停用',
+      set: '已設定',
+      notSet: '未設定',
+      allowed: '允許',
+      denied: '禁止',
+    },
+    messages: {
+      settingsPreview: '目前的密碼保護設定',
+      protectionEnabled: '密碼保護已成功啟用',
+      protectionDisabled: '密碼保護已成功停用',
+      userPasswordSet: '使用者密碼已成功設定',
+      userPasswordRemoved: '使用者密碼已移除',
+      ownerPasswordSet: '擁有者密碼已成功設定',
+      ownerPasswordRemoved: '擁有者密碼已移除',
+      resetComplete: '密碼保護設定已重設為預設值',
+      confirmDisable: '確定要停用密碼保護嗎？',
+      confirmReset: '確定要重設所有密碼保護設定嗎？',
+      permissionsConfig: '配置 PDF 權限',
+      selectPermissions: '選擇允許的 PDF 操作（使用空格鍵切換）：',
+      permissionsUpdated: 'PDF 權限已成功更新',
+      passwordProtection: '密碼保護',
+      pdfPermissions: 'PDF 權限',
+      invalidChoice: '無效的選擇。請重試。',
+      userPasswordIcon: '🔑',
+      ownerPasswordIcon: '🛡️',
+      status: '狀態',
+      selectPreset: '選擇權限預設',
+      confirmPermissions: '確認權限變更',
+      togglePermission: '切換權限設定',
+      currentPermissions: '目前權限設定：',
+      savePermissions: '儲存變更並返回',
+      cancelPermissions: '取消並返回而不儲存',
+      enabled: '啟用',
+      disabled: '停用',
+    },
+    warnings: {
+      protectionEnabledNoPasswords:
+        '⚠️  警告：密碼保護已啟用但未設定密碼。PDF 將不會被加密。',
+      passwordsSetButDisabled: '⚠️  注意：已設定密碼但保護功能已停用。',
+    },
+    presets: {
+      strict: '嚴格（不允許任何修改）',
+      standard: '標準（允許基本操作）',
+      permissive: '寬鬆（允許所有操作）',
+    },
+    inputs: {
+      userPassword: '輸入使用者密碼（留空則移除）',
+      ownerPassword: '輸入擁有者密碼（留空則移除）',
+    },
+    descriptions: {
+      userPassword: '使用者密碼是開啟 PDF 文件所必需的',
+      ownerPassword: '擁有者密碼是修改文件權限所必需的',
+    },
+    permissions: {
+      printing: '允許列印',
+      modifying: '允許修改內容',
+      copying: '允許複製文字／圖形',
+      annotating: '允許添加註解／批註',
+      fillingForms: '允許填寫表單',
+      contentAccessibility: '允許輔助功能存取',
+      documentAssembly: '允許頁面組合（插入／旋轉／刪除）',
+    },
+  },
+
+  // Watermarks
+  watermarks: {
+    messages: {
+      comingSoon: '🚧 浮水印功能即將推出！',
+      featureDescription: '此功能將允許您在 PDF 文件中添加文字或圖像浮水印。',
+    },
+  },
+
+  // Errors
+  errors: {
+    metadataConfigurationError: '❌ 中繼資料配置錯誤：',
   },
 
   // Anchor links

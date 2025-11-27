@@ -288,7 +288,7 @@ export class MermaidProcessor extends BaseProcessor {
   ): string {
     return `
       <div class="mermaid-error" style="border: 2px solid #ff6b6b; padding: 15px; margin: 20px 0; background-color: #ffe6e6;">
-        <h4 style="color: #d63031; margin: 0 0 10px 0;">⚠️ Mermaid Diagram Error</h4>
+        <h4 style="color: #d63031; margin: 0 0 10px 0;">⚠️  Mermaid Diagram Error</h4>
         <p style="color: #2d3436; margin: 0 0 10px 0;"><strong>Error:</strong> ${errorMessage}</p>
         <details style="margin-top: 10px;">
           <summary style="cursor: pointer; color: #636e72;">Show original code</summary>

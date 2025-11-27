@@ -202,7 +202,8 @@ export const enTranslations: TranslationKey = {
       coverDesign: 'Cover Design',
       headersFooters: 'Headers & Footers',
       documentMetadata: 'Document Metadata',
-      securitySettings: 'Security & Watermarks',
+      passwordProtection: 'Password Protection',
+      watermarks: 'Watermarks',
       templateManagement: 'Template Management',
     },
     settingsMenu: {
@@ -445,7 +446,6 @@ export const enTranslations: TranslationKey = {
   // Customization mode messages
   customization: {
     coverDesignComingSoon: 'Cover Design features coming soon...',
-    securitySettingsComingSoon: 'Security & Watermarks features coming soon...',
     customizationError: 'Customization error',
     selectCustomizationOption: 'Select customization option',
     pressEnterToContinue: 'Press Enter to continue...',
@@ -897,8 +897,8 @@ export const enTranslations: TranslationKey = {
     puppeteerReady: '✅ Puppeteer is ready',
     puppeteerFailed: '❌ Puppeteer initialization failed:',
     memoryUsageOk: '✅ Memory usage: {{memory}} MB',
-    highMemoryUsage: '⚠️ High memory usage: {{memory}} MB',
-    cannotCheckResources: '⚠️ Unable to check system resources',
+    highMemoryUsage: '⚠️  High memory usage: {{memory}} MB',
+    cannotCheckResources: '⚠️  Unable to check system resources',
     environmentCheckFailed:
       'Environment check failed ({{count}} checks not passed)',
   },
@@ -909,12 +909,12 @@ export const enTranslations: TranslationKey = {
     processing: '🔄 Processing... ({{current}}/{{total}})',
     batchComplete: '✅ Batch conversion complete!',
     batchFailed: '❌ Batch conversion failed',
-    batchPartialSuccess: '⚠️ Batch conversion completed with some failures',
+    batchPartialSuccess: '⚠️  Batch conversion completed with some failures',
     processingStarted: '🚀 Batch processing started ({{count}} files)',
     processingComplete:
       '✅ Processing complete! All {{count}} files processed successfully!',
     processingPartial:
-      '⚠️ Processed {{successful}}/{{total}} files ({{rate}}% success rate)',
+      '⚠️  Processed {{successful}}/{{total}} files ({{rate}}% success rate)',
     processingFailed: '❌ Failed to process any files',
     progressEta: 'ETA: {{eta}}',
     successfullyConverted: '✅ Successfully converted files:',
@@ -1303,6 +1303,137 @@ export const enTranslations: TranslationKey = {
     documentMetadata: 'Document Metadata',
     securitySettings: 'Security Settings',
     templateManagement: 'Template Management',
+  },
+
+  // Security settings
+  security: {
+    // Page header information
+    header: {
+      title: 'Password Protection Settings',
+      subtitle: 'Configure PDF document security and access permissions',
+    },
+    // Sub-feature headers
+    subHeaders: {
+      preview: {
+        title: 'Preview Settings',
+        subtitle:
+          'View current password protection and permissions configuration',
+      },
+      userPassword: {
+        title: 'User Password',
+        subtitle: 'Set password required to open the PDF document',
+      },
+      ownerPassword: {
+        title: 'Owner Password',
+        subtitle: 'Set password required to modify document permissions',
+      },
+      toggleProtection: {
+        title: 'Toggle Password Protection',
+        subtitle: 'Enable or disable PDF password protection features',
+      },
+      configurePermissions: {
+        title: 'Configure PDF Permissions',
+        subtitle: 'Set user permissions and restrictions for PDF documents',
+      },
+      resetDefaults: {
+        title: 'Reset to Defaults',
+        subtitle: 'Restore all password protection settings to default state',
+      },
+    },
+    prompts: {
+      selectOption: 'Select security option',
+    },
+    menu: {
+      previewSettings: 'Preview Settings',
+      toggleProtection: 'Toggle Password Protection',
+      setUserPassword: 'Set User Password',
+      setOwnerPassword: 'Set Owner Password',
+      configurePermissions: 'Configure PDF Permissions',
+      resetDefaults: 'Reset to Defaults',
+      permissionPresets: 'Apply Permission Preset',
+      customPermissions: 'Custom Permission Configuration',
+    },
+    status: {
+      enabled: 'Enabled',
+      disabled: 'Disabled',
+      set: 'Set',
+      notSet: 'Not Set',
+      allowed: 'Allowed',
+      denied: 'Denied',
+    },
+    messages: {
+      settingsPreview: 'Current Password Protection Settings',
+      protectionEnabled: 'Password protection enabled successfully',
+      protectionDisabled: 'Password protection disabled successfully',
+      userPasswordSet: 'User password set successfully',
+      userPasswordRemoved: 'User password removed',
+      ownerPasswordSet: 'Owner password set successfully',
+      ownerPasswordRemoved: 'Owner password removed',
+      resetComplete: 'Password protection settings reset to defaults',
+      confirmDisable: 'Are you sure you want to disable password protection?',
+      confirmReset:
+        'Are you sure you want to reset all password protection settings?',
+      permissionsConfig: 'Configure PDF Permissions',
+      selectPermissions: 'Select allowed PDF operations (use space to toggle):',
+      permissionsUpdated: 'PDF permissions updated successfully',
+      passwordProtection: 'Password Protection',
+      pdfPermissions: 'PDF Permissions',
+      invalidChoice: 'Invalid choice. Please try again.',
+      userPasswordIcon: '🔑',
+      ownerPasswordIcon: '🛡️',
+      status: 'Status',
+      selectPreset: 'Select permission preset',
+      confirmPermissions: 'Confirm permission changes',
+      togglePermission: 'Toggle permission setting',
+      currentPermissions: 'Current permission settings:',
+      savePermissions: 'Save changes and return',
+      cancelPermissions: 'Cancel and return without saving',
+      enabled: 'Enabled',
+      disabled: 'Disabled',
+    },
+    warnings: {
+      protectionEnabledNoPasswords:
+        '⚠️  Warning: Password protection is enabled but no passwords are set. PDF will not be encrypted.',
+      passwordsSetButDisabled:
+        '⚠️  Note: Passwords are set but protection is disabled.',
+    },
+    presets: {
+      strict: 'Strict (No modifications allowed)',
+      standard: 'Standard (Basic operations allowed)',
+      permissive: 'Permissive (All operations allowed)',
+    },
+    inputs: {
+      userPassword: 'Enter user password (leave empty to remove)',
+      ownerPassword: 'Enter owner password (leave empty to remove)',
+    },
+    descriptions: {
+      userPassword: 'User password is required to open the PDF document',
+      ownerPassword:
+        'Owner password is required to modify document permissions',
+    },
+    permissions: {
+      printing: 'Allow Printing',
+      modifying: 'Allow Content Modification',
+      copying: 'Allow Text/Graphics Copying',
+      annotating: 'Allow Adding Comments/Annotations',
+      fillingForms: 'Allow Form Field Filling',
+      contentAccessibility: 'Allow Accessibility Features',
+      documentAssembly: 'Allow Page Assembly (Insert/Rotate/Delete)',
+    },
+  },
+
+  // Watermarks
+  watermarks: {
+    messages: {
+      comingSoon: '🚧 Watermark functionality is coming soon!',
+      featureDescription:
+        'This feature will allow you to add text or image watermarks to your PDF documents.',
+    },
+  },
+
+  // Errors
+  errors: {
+    metadataConfigurationError: '❌ Error in metadata configuration:',
   },
 
   // Anchor links

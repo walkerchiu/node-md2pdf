@@ -14,6 +14,7 @@ Transform your Markdown documents into beautiful PDFs with automatic table of co
 📚 **Batch Processing** - Process multiple files at once efficiently.<br/>
 🎨 **Customization** - Adjust styling, covers, headers, and footers.<br/>
 🔧 **Settings** - Save preferences for future use.<br/>
+🔐 **Password Protection** - Secure PDFs with user/owner passwords and granular permissions.<br/>
 📑 **Auto TOC** - Generate clickable table of contents from headings.<br/>
 🔖 **PDF Bookmarks** - Automatic PDF navigation bookmarks with hierarchical outline structure.<br/>
 🔗 **Anchor Links** - Smart back-to-TOC navigation links inserted at section endings for improved document navigation.<br/>
@@ -135,6 +136,7 @@ Handle multiple files efficiently:
 - **Mermaid Settings**: Local rendering with theme customization and caching.
 - **Admonitions**: 8 professional callout types with custom SVG icons, perfect alignment, and theme colors.
 - **Syntax Highlighting**: PrismJS-powered code highlighting with support for 50+ programming languages and customizable themes.
+- **Password Protection**: Comprehensive PDF security with user and owner passwords, granular permissions (printing, modifying, copying, annotating, form filling, accessibility, assembly), and preset security levels (strict, standard, permissive).
 - **Smart Navigation**: Back-to-TOC anchor links with configurable depth levels (H2-H6), automatic insertion at section endings, and customizable alignment (left/center/right).
 - **HTML Support**: Enhanced HTML tag support including hyperlinks with attributes, superscript/subscript for scientific notation, and text alignment utility classes (`.text-left`, `.text-center`, `.text-right`, `.text-justify`).
 - **Image Processing**: Automatic path resolution and base64 embedding.
@@ -144,6 +146,26 @@ Handle multiple files efficiently:
 - **Node.js**: Version 18.0.0 or higher.
 - **Memory**: 2GB+ recommended (Puppeteer requirement).
 - **Platforms**: macOS, Linux, Windows.
+
+### Optional: qpdf for Password Protection
+
+For PDF password protection and encryption features, install qpdf:
+
+```bash
+# macOS (Homebrew)
+brew install qpdf
+
+# Linux (Ubuntu/Debian)
+sudo apt-get install qpdf
+
+# Linux (CentOS/RHEL)
+sudo yum install qpdf
+
+# Windows (Chocolatey)
+choco install qpdf
+```
+
+**Note**: MD2PDF automatically detects qpdf installation. If qpdf is not available, password protection features will be disabled with helpful error messages.
 
 ### Optional: PlantUML Local Rendering
 
@@ -250,6 +272,26 @@ MD2PDF_LOG_ENABLE_ROTATION=true       # Enable log rotation
 MD2PDF_LOG_BUFFER_ENABLED=false       # Enable write buffering
 MD2PDF_LOG_BUFFER_SIZE=100            # Buffer size (number of entries)
 MD2PDF_LOG_FLUSH_INTERVAL=5000        # Flush interval in milliseconds
+```
+
+#### Password Protection
+
+Configure PDF security and encryption settings:
+
+```bash
+# Basic Password Protection
+MD2PDF_PASSWORD_ENABLED=true          # Enable password protection (default: false)
+MD2PDF_USER_PASSWORD=secret123         # User password (required to open PDF)
+MD2PDF_OWNER_PASSWORD=admin456         # Owner password (required to modify permissions)
+
+# PDF Permissions (true/false)
+MD2PDF_PERMISSION_PRINTING=true       # Allow printing (default: true)
+MD2PDF_PERMISSION_MODIFYING=false     # Allow content modification (default: false)
+MD2PDF_PERMISSION_COPYING=true        # Allow text/image copying (default: true)
+MD2PDF_PERMISSION_ANNOTATING=true     # Allow annotations (default: true)
+MD2PDF_PERMISSION_FILLING_FORMS=true  # Allow form filling (default: true)
+MD2PDF_PERMISSION_CONTENT_ACCESSIBILITY=true  # Allow screen readers (default: true)
+MD2PDF_PERMISSION_DOCUMENT_ASSEMBLY=false     # Allow document assembly (default: false)
 ```
 
 **Advanced Features:**
@@ -404,6 +446,29 @@ MD2PDF_LOG_LEVEL=debug MD2PDF_VERBOSE=true npm run dev
 tail -f logs/md2pdf.log
 ```
 
+### Password Protection Issues?
+
+Common password protection troubleshooting:
+
+```bash
+# Check if qpdf is installed and working
+which qpdf
+qpdf --version
+
+# Test qpdf functionality
+echo "test" | qpdf --encrypt user123 owner456 256 -- - test-output.pdf
+
+# Enable debug mode to see encryption details
+MD2PDF_LOG_LEVEL=debug MD2PDF_VERBOSE=true npm run dev
+```
+
+**Common password protection issues:**
+
+- **qpdf not found**: Install qpdf via package manager (brew, apt, yum, choco)
+- **Encryption fails**: Check qpdf version compatibility (requires qpdf 8.4.0+)
+- **Permission denied**: Verify qpdf has proper file system permissions
+- **Invalid passwords**: Passwords cannot be empty when protection is enabled
+
 ## 🎯 Best Practices
 
 1. **File Size**: Keep files under 10MB for best performance.
@@ -412,7 +477,8 @@ tail -f logs/md2pdf.log
 4. **Batch Mode**: Use batch processing for multiple files - it's more efficient.
 5. **PlantUML**: Install PlantUML locally for faster diagram rendering and better performance.
 6. **Logging**: Use file logging in production for better troubleshooting.
-7. **PDF Bookmarks**: Enable automatic bookmarks for better PDF navigation - they're automatically created when TOC is enabled.
+7. **Password Protection**: Use strong passwords and appropriate permission levels for sensitive documents. Install qpdf for encryption support.
+8. **PDF Bookmarks**: Enable automatic bookmarks for better PDF navigation - they're automatically created when TOC is enabled.
 
 ## 📊 What Makes This Special
 
@@ -422,6 +488,7 @@ tail -f logs/md2pdf.log
 - **Error Recovery**: Smart error handling and recovery mechanisms.
 - **Performance**: Optimized for both single files and batch processing.
 - **User Experience**: Interactive CLI with guided workflows.
+- **Security**: Enterprise-grade PDF password protection with qpdf integration and granular permissions.
 - **PDF Navigation**: Advanced bookmark system with hierarchical structure and smart TOC integration.
 
 ## 🤝 Contributing
@@ -448,4 +515,5 @@ Thanks to these amazing open source projects:
 - [Mermaid](https://mermaid.js.org/) - Modern diagramming and charting tool.
 - [Commander.js](https://github.com/tj/commander.js/) - CLI framework.
 - [Inquirer.js](https://github.com/SBoudrias/Inquirer.js/) - Interactive prompts.
+- [qpdf](https://qpdf.sourceforge.io/) - PDF encryption and password protection.
 - [Jest](https://jestjs.io/) - Testing framework with comprehensive coverage.

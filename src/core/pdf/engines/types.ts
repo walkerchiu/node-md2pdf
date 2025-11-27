@@ -63,6 +63,19 @@ export interface PDFGenerationContext {
   pdfOptions?: {
     includePageNumbers?: boolean;
   };
+  passwordProtection?: {
+    userPassword?: string;
+    ownerPassword?: string;
+    permissions?: {
+      printing?: boolean;
+      modifying?: boolean;
+      copying?: boolean;
+      annotating?: boolean;
+      fillingForms?: boolean;
+      contentAccessibility?: boolean;
+      documentAssembly?: boolean;
+    };
+  };
 }
 
 export interface PDFEngineResult {

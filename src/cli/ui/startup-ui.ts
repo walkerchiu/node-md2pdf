@@ -79,7 +79,7 @@ export class StartupUI {
    * Show warning message
    */
   showWarning(message: string): void {
-    console.warn(chalk.yellow(`⚠️ ${message}`));
+    console.warn(chalk.yellow(`⚠️  ${message}`));
   }
 
   /**

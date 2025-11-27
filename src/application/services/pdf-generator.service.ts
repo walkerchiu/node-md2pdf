@@ -773,6 +773,39 @@ export class PDFGeneratorService implements IPDFGeneratorService {
       context.bookmarks = bookmarkData;
     }
 
+    // Add password protection if enabled in configuration
+    const passwordConfig = this.configManager.get('passwordProtection', {
+      enabled: false,
+    }) as {
+      enabled: boolean;
+      userPassword?: string;
+      ownerPassword?: string;
+      permissions?: {
+        printing?: boolean;
+        modifying?: boolean;
+        copying?: boolean;
+        annotating?: boolean;
+        fillingForms?: boolean;
+        contentAccessibility?: boolean;
+        documentAssembly?: boolean;
+      };
+    };
+    if (
+      passwordConfig.enabled &&
+      (passwordConfig.userPassword || passwordConfig.ownerPassword)
+    ) {
+      context.passwordProtection = {};
+      if (passwordConfig.userPassword) {
+        context.passwordProtection.userPassword = passwordConfig.userPassword;
+      }
+      if (passwordConfig.ownerPassword) {
+        context.passwordProtection.ownerPassword = passwordConfig.ownerPassword;
+      }
+      if (passwordConfig.permissions) {
+        context.passwordProtection.permissions = passwordConfig.permissions;
+      }
+    }
+
     // Build engine options
     const engineOptions: PDFEngineOptions =
       await this.convertToEngineOptions(context);

@@ -157,6 +157,18 @@ export const defaultConfig: ConfigSchema = {
       maxSubjectLength: DEFAULT_METADATA.VALIDATION.MAX_SUBJECT_LENGTH,
     },
   },
+  passwordProtection: {
+    enabled: false,
+    permissions: {
+      printing: true,
+      modifying: false,
+      copying: true,
+      annotating: true,
+      fillingForms: true,
+      contentAccessibility: true,
+      documentAssembly: false,
+    },
+  },
   headersFooters: DEFAULT_HEADERS_FOOTERS_CONFIG,
 };
 
@@ -228,4 +240,17 @@ export const environmentMappings: Record<string, string> = {
   MD2PDF_MERMAID_SHOW_ERROR_PLACEHOLDER:
     'mermaid.fallback.showErrorPlaceholder',
   MD2PDF_MERMAID_ERROR_MESSAGE: 'mermaid.fallback.errorMessage',
+  MD2PDF_PASSWORD_ENABLED: 'passwordProtection.enabled',
+  MD2PDF_USER_PASSWORD: 'passwordProtection.userPassword',
+  MD2PDF_OWNER_PASSWORD: 'passwordProtection.ownerPassword',
+  MD2PDF_PERMISSION_PRINTING: 'passwordProtection.permissions.printing',
+  MD2PDF_PERMISSION_MODIFYING: 'passwordProtection.permissions.modifying',
+  MD2PDF_PERMISSION_COPYING: 'passwordProtection.permissions.copying',
+  MD2PDF_PERMISSION_ANNOTATING: 'passwordProtection.permissions.annotating',
+  MD2PDF_PERMISSION_FILLING_FORMS:
+    'passwordProtection.permissions.fillingForms',
+  MD2PDF_PERMISSION_CONTENT_ACCESSIBILITY:
+    'passwordProtection.permissions.contentAccessibility',
+  MD2PDF_PERMISSION_DOCUMENT_ASSEMBLY:
+    'passwordProtection.permissions.documentAssembly',
 };

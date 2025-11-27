@@ -212,9 +212,181 @@ export class PuppeteerPDFEngine implements IPDFEngine {
           }
         }
 
-        // Write the final PDF to file
+        // Apply password protection if configured
+        let finalBuffer = finalPdfBuffer as Buffer;
+        const hasUserPassword =
+          context.passwordProtection?.userPassword &&
+          context.passwordProtection.userPassword.trim().length > 0;
+        const hasOwnerPassword =
+          context.passwordProtection?.ownerPassword &&
+          context.passwordProtection.ownerPassword.trim().length > 0;
+
+        // Import fs/promises for file operations (needed both inside and outside password protection)
         const fs = await import('fs/promises');
-        await fs.writeFile(resolvedOutputPath, finalPdfBuffer as Buffer);
+
+        if (hasUserPassword || hasOwnerPassword) {
+          // Type guard to ensure context.passwordProtection exists
+          if (!context.passwordProtection) {
+            throw new Error('Password protection configuration is missing');
+          }
+
+          // Get passwords
+          const userPassword = hasUserPassword
+            ? context.passwordProtection.userPassword!
+            : hasOwnerPassword
+              ? context.passwordProtection.ownerPassword!
+              : '';
+          const ownerPassword = hasOwnerPassword
+            ? context.passwordProtection.ownerPassword!
+            : hasUserPassword
+              ? `${context.passwordProtection.userPassword!}_owner`
+              : '';
+
+          // Get permissions from configuration
+          const permissions = context.passwordProtection.permissions || {
+            printing: true,
+            modifying: false,
+            copying: false,
+            annotating: true,
+            fillingForms: true,
+            contentAccessibility: true,
+            documentAssembly: false,
+          };
+
+          console.log(
+            'Attempting PDF encryption with qpdf for Adobe Reader compatibility...',
+          );
+          console.log('Permissions configuration:', permissions);
+
+          // Import additional modules for encryption
+          const path = await import('path');
+          const { spawn } = await import('child_process');
+
+          // Create temporary files
+          const tempDir = await import('os').then((os) => os.tmpdir());
+          const tempInput = path.join(
+            tempDir,
+            `md2pdf_input_${Date.now()}.pdf`,
+          );
+          const tempOutput = path.join(
+            tempDir,
+            `md2pdf_output_${Date.now()}.pdf`,
+          );
+
+          try {
+            // Write unencrypted PDF to temp file
+            await fs.writeFile(tempInput, finalBuffer);
+
+            // Build qpdf encryption command based on actual permissions
+            const qpdfArgs = [
+              tempInput,
+              '--encrypt',
+              userPassword, // user password
+              ownerPassword, // owner password
+              '256', // key length (256-bit for strong security, required by newer qpdf)
+
+              // Printing permission
+              permissions.printing ? '--print=full' : '--print=none',
+
+              // Modification permissions - qpdf has granular modify options
+              // We need to determine the appropriate modify level based on permissions
+              (() => {
+                if (!permissions.modifying && !permissions.documentAssembly) {
+                  return '--modify=none';
+                } else if (
+                  permissions.modifying &&
+                  permissions.documentAssembly
+                ) {
+                  return '--modify=all';
+                } else if (
+                  permissions.modifying &&
+                  !permissions.documentAssembly
+                ) {
+                  return '--modify=annotate'; // Allow content changes but not assembly
+                } else if (
+                  !permissions.modifying &&
+                  permissions.documentAssembly
+                ) {
+                  return '--modify=assembly'; // Allow assembly but not content changes
+                }
+                return '--modify=none'; // fallback
+              })(),
+
+              // Content extraction/copying permission
+              permissions.copying ? '--extract=y' : '--extract=n',
+
+              // Annotation permission
+              permissions.annotating ? '--annotate=y' : '--annotate=n',
+
+              // Form filling permission
+              permissions.fillingForms ? '--form=y' : '--form=n',
+
+              // Content accessibility permission
+              permissions.contentAccessibility
+                ? '--accessibility=y'
+                : '--accessibility=n',
+
+              '--',
+              tempOutput,
+            ];
+
+            console.log('Running qpdf with args:', qpdfArgs.slice(2)); // Don't log file paths
+
+            // Execute qpdf
+            await new Promise<void>((resolve, reject) => {
+              const qpdf = spawn('qpdf', qpdfArgs);
+
+              let stderr = '';
+              qpdf.stderr.on('data', (data) => {
+                stderr += data.toString();
+              });
+
+              qpdf.on('close', (code) => {
+                if (code === 0) {
+                  resolve();
+                } else {
+                  reject(new Error(`qpdf failed with code ${code}: ${stderr}`));
+                }
+              });
+
+              qpdf.on('error', (error) => {
+                reject(new Error(`Failed to execute qpdf: ${error.message}`));
+              });
+            });
+
+            // Read encrypted PDF
+            finalBuffer = await fs.readFile(tempOutput);
+
+            // Clean up temp files
+            try {
+              await fs.unlink(tempInput);
+              await fs.unlink(tempOutput);
+            } catch (cleanupError) {
+              console.warn('Failed to clean up temp files:', cleanupError);
+            }
+
+            console.log('PDF encrypted successfully with qpdf');
+          } catch (error) {
+            // Clean up temp files if they exist
+            try {
+              await fs.unlink(tempInput).catch(() => {});
+              await fs.unlink(tempOutput).catch(() => {});
+            } catch (cleanupError) {
+              console.warn(
+                'Failed to clean up temp files after qpdf error:',
+                cleanupError,
+              );
+            }
+
+            console.error('qpdf encryption failed:', error);
+            throw new Error(
+              `PDF encryption failed. Please ensure qpdf is installed and accessible. Error: ${error instanceof Error ? error.message : String(error)}`,
+            );
+          }
+        }
+
+        // Write the final PDF to file
+        await fs.writeFile(resolvedOutputPath, finalBuffer);
 
         const generationTime = Date.now() - startTime;
         this.updateMetrics(true, generationTime);
@@ -224,7 +396,7 @@ export class PuppeteerPDFEngine implements IPDFEngine {
           outputPath: resolvedOutputPath,
           metadata: {
             pages: await this.getPageCount(page),
-            fileSize: finalPdfBuffer.length,
+            fileSize: finalBuffer.length,
             generationTime,
             engineUsed: this.name,
           },
