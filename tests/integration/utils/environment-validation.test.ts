@@ -199,7 +199,7 @@ describe('Environment Validation Integration Tests', () => {
 
       expect(result).toBe(true);
       expect(mockConsoleWarn).toHaveBeenCalledWith(
-        expect.stringContaining('⚠️ High memory usage: 191 MB'),
+        expect.stringContaining('⚠️  High memory usage: 191 MB'),
       );
     });
 
@@ -217,7 +217,7 @@ describe('Environment Validation Integration Tests', () => {
 
       expect(result).toBe(true); // Should still pass
       expect(mockConsoleWarn).toHaveBeenCalledWith(
-        expect.stringContaining('⚠️ Unable to check system resources'),
+        expect.stringContaining('⚠️  Unable to check system resources'),
       );
     });
 
@@ -235,7 +235,7 @@ describe('Environment Validation Integration Tests', () => {
 
       expect(result).toBe(true);
       expect(mockConsoleWarn).toHaveBeenCalledWith(
-        expect.stringContaining('⚠️ High memory usage: 100 MB'),
+        expect.stringContaining('⚠️  High memory usage: 100 MB'),
       );
     });
 
@@ -339,7 +339,7 @@ describe('Environment Validation Integration Tests', () => {
       await expect(validateEnvironment()).resolves.toBeUndefined();
 
       expect(mockConsoleWarn).toHaveBeenCalledWith(
-        expect.stringContaining('⚠️ High memory usage'),
+        expect.stringContaining('⚠️  High memory usage'),
       );
     });
 
@@ -355,7 +355,7 @@ describe('Environment Validation Integration Tests', () => {
       await expect(validateEnvironment()).resolves.toBeUndefined();
 
       expect(mockConsoleWarn).toHaveBeenCalledWith(
-        expect.stringContaining('⚠️ Unable to check system resources'),
+        expect.stringContaining('⚠️  Unable to check system resources'),
       );
     });
 
@@ -452,7 +452,7 @@ describe('Environment Validation Integration Tests', () => {
       await expect(validateEnvironment()).resolves.toBeUndefined();
 
       expect(mockConsoleWarn).toHaveBeenCalledWith(
-        expect.stringContaining('⚠️ High memory usage: 143 MB'),
+        expect.stringContaining('⚠️  High memory usage: 143 MB'),
       );
     });
 

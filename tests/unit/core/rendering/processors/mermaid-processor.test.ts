@@ -607,7 +607,7 @@ sequenceDiagram
       );
 
       expect(html).toContain('<div class="mermaid-error"');
-      expect(html).toContain('⚠️ Mermaid Diagram Error');
+      expect(html).toContain('⚠️  Mermaid Diagram Error');
       expect(html).toContain('Rendering failed');
       expect(html).toContain('graph TD');
     });

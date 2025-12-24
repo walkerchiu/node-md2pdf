@@ -188,7 +188,7 @@ describe('StartupUI', () => {
     it('should display warning message', () => {
       startupUI.showWarning('This is a warning');
 
-      expect(consoleWarnSpy).toHaveBeenCalledWith('⚠️ This is a warning');
+      expect(consoleWarnSpy).toHaveBeenCalledWith('⚠️  This is a warning');
     });
   });
 

@@ -8,25 +8,103 @@ import { jest } from '@jest/globals';
 import { CustomizationMode } from '../../../src/cli/customization-mode';
 import { DEFAULT_HEADERS_FOOTERS_CONFIG } from '../../../src/core/headers-footers';
 
+// Test constants following DRY principle
+const TEST_CONSTANTS = {
+  METADATA: {
+    TITLE: 'Test Title',
+    AUTHOR: 'Test Author',
+    SUBJECT: 'Test Subject',
+    KEYWORDS: 'test, keywords',
+    ORGANIZATION: 'Test Org',
+    COPYRIGHT: '© 2024',
+    LANGUAGE: 'en',
+  },
+  TEMPLATE: {
+    ID: 'test-template',
+    NAME: 'Test Template',
+    DESCRIPTION: 'Test Description',
+    TYPE: 'custom',
+  },
+  OPTIONS: {
+    BACK: 'back',
+    CONTINUE: 'continue',
+    PREVIEW: 'preview',
+    COVER: 'cover',
+    PASSWORD: 'password',
+    WATERMARKS: 'watermarks',
+    METADATA: 'metadata',
+    TEMPLATES: 'templates',
+    HEADERS: 'headers',
+  },
+} as const;
+
+// Test data builders following builder pattern
+const createMockMetadata = (overrides = {}) => ({
+  title: TEST_CONSTANTS.METADATA.TITLE,
+  author: TEST_CONSTANTS.METADATA.AUTHOR,
+  subject: '',
+  keywords: '',
+  organization: '',
+  copyright: '',
+  language: TEST_CONSTANTS.METADATA.LANGUAGE,
+  ...overrides,
+});
+
+const createMockTemplate = (overrides = {}) => ({
+  id: TEST_CONSTANTS.TEMPLATE.ID,
+  name: TEST_CONSTANTS.TEMPLATE.NAME,
+  description: TEST_CONSTANTS.TEMPLATE.DESCRIPTION,
+  type: TEST_CONSTANTS.TEMPLATE.TYPE,
+  config: {
+    pdf: {
+      format: 'A4',
+      orientation: 'portrait',
+      margin: { top: '2cm', right: '2cm', bottom: '2cm', left: '2cm' },
+    },
+    headerFooter: {
+      header: { enabled: true },
+      footer: { enabled: false },
+    },
+    styles: {
+      fonts: { body: 'Arial' },
+      codeBlock: { theme: 'default' },
+    },
+    features: { toc: true, pageNumbers: true },
+  },
+  ...overrides,
+});
+
 // Mock external ES modules
 jest.mock('inquirer');
 jest.mock('ora');
-jest.mock('chalk', () => ({
-  green: jest.fn((text) => text),
-  red: jest.fn((text) => text),
-  yellow: jest.fn((text) => text),
-  blue: jest.fn((text) => text),
-  cyan: jest.fn((text) => text),
-  magenta: jest.fn((text) => text),
-  white: jest.fn((text) => text),
-  gray: jest.fn((text) => text),
-  bold: jest.fn((text) => text),
-  dim: jest.fn((text) => text),
-  italic: jest.fn((text) => text),
-  underline: jest.fn((text) => text),
-  inverse: jest.fn((text) => text),
-  strikethrough: jest.fn((text) => text),
-}));
+jest.mock('chalk', () => {
+  // Create chainable mock function for chalk (defined inline to avoid hoisting issues)
+  const createChainableMock = () => {
+    const mockFn: any = jest.fn((text: string) => text);
+    mockFn.bold = jest.fn((text: string) => text);
+    mockFn.dim = jest.fn((text: string) => text);
+    mockFn.italic = jest.fn((text: string) => text);
+    mockFn.underline = jest.fn((text: string) => text);
+    return mockFn;
+  };
+
+  return {
+    green: createChainableMock(),
+    red: createChainableMock(),
+    yellow: createChainableMock(),
+    blue: createChainableMock(),
+    cyan: createChainableMock(),
+    magenta: createChainableMock(),
+    white: createChainableMock(),
+    gray: createChainableMock(),
+    bold: jest.fn((text: string) => text),
+    dim: jest.fn((text: string) => text),
+    italic: jest.fn((text: string) => text),
+    underline: jest.fn((text: string) => text),
+    inverse: jest.fn((text: string) => text),
+    strikethrough: jest.fn((text: string) => text),
+  };
+});
 
 describe('customization-mode', () => {
   let mockContainer: any;
@@ -146,9 +224,9 @@ describe('customization-mode', () => {
 
     it('should handle headers option entry', async () => {
       inquirerMock.prompt
-        .mockResolvedValueOnce({ option: 'headers' })
-        .mockResolvedValueOnce({ option: 'back' })
-        .mockResolvedValueOnce({ option: 'back' });
+        .mockResolvedValueOnce({ option: TEST_CONSTANTS.OPTIONS.HEADERS })
+        .mockResolvedValueOnce({ option: TEST_CONSTANTS.OPTIONS.BACK })
+        .mockResolvedValueOnce({ option: TEST_CONSTANTS.OPTIONS.BACK });
 
       await instance.start();
 
@@ -158,11 +236,11 @@ describe('customization-mode', () => {
 
     it('should handle headers option and preview settings', async () => {
       inquirerMock.prompt
-        .mockResolvedValueOnce({ option: 'headers' })
-        .mockResolvedValueOnce({ option: 'preview' })
-        .mockResolvedValueOnce({ key: 'continue' })
-        .mockResolvedValueOnce({ option: 'back' })
-        .mockResolvedValueOnce({ option: 'back' });
+        .mockResolvedValueOnce({ option: TEST_CONSTANTS.OPTIONS.HEADERS })
+        .mockResolvedValueOnce({ option: TEST_CONSTANTS.OPTIONS.PREVIEW })
+        .mockResolvedValueOnce({ key: TEST_CONSTANTS.OPTIONS.CONTINUE })
+        .mockResolvedValueOnce({ option: TEST_CONSTANTS.OPTIONS.BACK })
+        .mockResolvedValueOnce({ option: TEST_CONSTANTS.OPTIONS.BACK });
 
       await instance.start();
 
@@ -173,39 +251,39 @@ describe('customization-mode', () => {
     // These unit tests focus on basic flow and service interactions
 
     it('should handle metadata option', async () => {
-      // Mock metadata service
-      mockContainer.resolve = jest.fn((key: string) => {
-        const mocks: Record<string, any> = {
-          logger: mockLogger,
-          translator: mockTranslator,
-          config: mockConfig,
-          metadataService: {
-            getUserMetadata: jest.fn().mockReturnValue({}),
-          },
-        };
-        return mocks[key] || {};
-      });
-
       inquirerMock.prompt
-        .mockResolvedValueOnce({ option: 'metadata' })
-        .mockResolvedValueOnce({ action: 'back' })
-        .mockResolvedValueOnce({ option: 'back' });
+        .mockResolvedValueOnce({ option: TEST_CONSTANTS.OPTIONS.METADATA })
+        .mockResolvedValueOnce({ option: TEST_CONSTANTS.OPTIONS.BACK }) // selectMetadataOption returns back
+        .mockResolvedValueOnce({ option: TEST_CONSTANTS.OPTIONS.BACK });
 
       await instance.start();
 
       expect(mockTranslator.t).toHaveBeenCalled();
     });
 
-    it('should handle security option', async () => {
+    it('should handle password protection option', async () => {
       inquirerMock.prompt
-        .mockResolvedValueOnce({ option: 'security' })
-        .mockResolvedValueOnce({ key: 'continue' })
-        .mockResolvedValueOnce({ option: 'back' });
+        .mockResolvedValueOnce({ option: TEST_CONSTANTS.OPTIONS.PASSWORD })
+        .mockResolvedValueOnce({ option: TEST_CONSTANTS.OPTIONS.BACK })
+        .mockResolvedValueOnce({ option: TEST_CONSTANTS.OPTIONS.BACK });
 
       await instance.start();
 
       expect(mockTranslator.t).toHaveBeenCalledWith(
-        'customization.securitySettingsComingSoon',
+        'cli.customizationMenu.passwordProtection',
+      );
+    });
+
+    it('should handle watermarks option', async () => {
+      inquirerMock.prompt
+        .mockResolvedValueOnce({ option: TEST_CONSTANTS.OPTIONS.WATERMARKS })
+        .mockResolvedValueOnce({ key: TEST_CONSTANTS.OPTIONS.CONTINUE }) // pressAnyKey
+        .mockResolvedValueOnce({ option: TEST_CONSTANTS.OPTIONS.BACK });
+
+      await instance.start();
+
+      expect(mockTranslator.t).toHaveBeenCalledWith(
+        'cli.customizationMenu.watermarks',
       );
     });
 
@@ -292,18 +370,6 @@ describe('customization-mode', () => {
       await (instance as any).documentMetadata();
 
       expect(mockTranslator.t).toHaveBeenCalled();
-    });
-  });
-
-  describe('securitySettings', () => {
-    it('should show coming soon message', async () => {
-      inquirerMock.prompt.mockResolvedValue({ key: 'continue' });
-
-      await (instance as any).securitySettings();
-
-      expect(mockTranslator.t).toHaveBeenCalledWith(
-        'customization.securitySettingsComingSoon',
-      );
     });
   });
 

@@ -356,6 +356,7 @@ describe('InteractiveMode', () => {
       await interactiveMode.start();
 
       expect(consoleWarnSpy).toHaveBeenCalledWith('⚠️ interactive.cancelled');
+      expect(consoleWarnSpy).toHaveBeenCalledTimes(2); // Called twice: errorSearchingFiles + cancelled
       expect(mockFileProcessorService.processFile).not.toHaveBeenCalled();
     });
 
@@ -667,6 +668,7 @@ describe('InteractiveMode', () => {
       await interactiveMode.start();
 
       expect(consoleWarnSpy).toHaveBeenCalledWith('⚠️ interactive.cancelled');
+      expect(consoleWarnSpy).toHaveBeenCalledTimes(2); // Called twice: errorSearchingFiles + cancelled
     });
   });
 
@@ -1201,6 +1203,7 @@ describe('InteractiveMode', () => {
 
       // Verify cancellation flow - debug messages are not shown in non-verbose mode
       expect(consoleWarnSpy).toHaveBeenCalledWith('⚠️ interactive.cancelled');
+      expect(consoleWarnSpy).toHaveBeenCalledTimes(2); // Called twice: errorSearchingFiles + cancelled
       expect(mockFileProcessorService.processFile).not.toHaveBeenCalled();
     });
   });
@@ -1630,6 +1633,7 @@ describe('InteractiveMode', () => {
       expect(consoleWarnSpy).toHaveBeenCalledWith(
         '⚠️ interactive.errorSearchingFiles',
       );
+      expect(consoleWarnSpy).toHaveBeenCalledTimes(2); // Called twice: errorSearchingFiles + cancelled
     });
   });
 
