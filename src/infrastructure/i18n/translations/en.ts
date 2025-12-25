@@ -1467,6 +1467,12 @@ export const enTranslations: TranslationKey = {
         'Formatted for formal papers meeting academic standards with wider margins',
       useCase: 'Academic papers, research reports, thesis',
     },
+    meetingNotes: {
+      name: 'Meeting Notes',
+      description:
+        'Clean format for meeting minutes with date stamp for easy filing',
+      useCase: 'Meeting minutes, agendas, action items',
+    },
     custom: {
       name: 'Custom',
       description: 'Custom template category',

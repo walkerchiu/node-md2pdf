@@ -265,8 +265,8 @@ describe('TemplateStorageService', () => {
       const systemOnly = await storageService.list({ type: 'system' });
 
       expect(customOnly.length).toBe(2);
-      // Should have 4 default system templates
-      expect(systemOnly.length).toBe(4);
+      // Should have 5 default system templates
+      expect(systemOnly.length).toBe(5);
     });
 
     it('should filter by category', async () => {
@@ -317,8 +317,8 @@ describe('TemplateStorageService', () => {
 
     it('should return system templates even when no custom templates exist', async () => {
       const templates = await storageService.list();
-      // Should have 4 default system templates
-      expect(templates.length).toBe(4);
+      // Should have 5 default system templates
+      expect(templates.length).toBe(5);
       expect(templates.every((t) => t.type === 'system')).toBe(true);
     });
   });
@@ -328,8 +328,8 @@ describe('TemplateStorageService', () => {
       await createTestTemplates(storageService, 2);
 
       const systemTemplates = await storageService.getSystemTemplates();
-      // Should have 4 default system templates
-      expect(systemTemplates.length).toBe(4);
+      // Should have 5 default system templates
+      expect(systemTemplates.length).toBe(5);
       expect(systemTemplates.every((t) => t.type === 'system')).toBe(true);
     });
   });
@@ -339,8 +339,8 @@ describe('TemplateStorageService', () => {
       await createTestTemplates(storageService, 2);
 
       const collection = await storageService.getAllTemplates();
-      // Should have 4 default system templates
-      expect(collection.system.length).toBe(4);
+      // Should have 5 default system templates
+      expect(collection.system.length).toBe(5);
       expect(collection.custom.length).toBe(2);
     });
   });
@@ -414,8 +414,8 @@ describe('TemplateStorageService', () => {
     it('should return total count of templates', async () => {
       await createTestTemplates(storageService, 5);
       const count = await storageService.count();
-      // Should have 5 custom + 4 system templates
-      expect(count).toBe(9);
+      // Should have 5 custom + 5 system templates
+      expect(count).toBe(10);
     });
 
     it('should return filtered count', async () => {

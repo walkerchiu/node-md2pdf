@@ -1418,6 +1418,11 @@ export const zhTWTranslations: TranslationKey = {
       description: '適合需要符合學術規範、較寬邊距的正式論文',
       useCase: '學術論文，研究報告，畢業論文',
     },
+    meetingNotes: {
+      name: '會議記錄',
+      description: '適合會議紀要的簡潔格式，包含日期戳記便於歸檔',
+      useCase: '會議紀要，議程，待辦事項',
+    },
     custom: {
       name: '自訂',
       description: '自訂範本類別',

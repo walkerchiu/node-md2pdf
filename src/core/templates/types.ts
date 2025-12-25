@@ -11,6 +11,7 @@ export type TemplateCategory =
   | 'professional'
   | 'technical'
   | 'academic'
+  | 'business'
   | 'custom';
 
 /**

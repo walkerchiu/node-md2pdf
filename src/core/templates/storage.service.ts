@@ -4,8 +4,9 @@
  */
 
 import * as fs from 'fs';
-import * as path from 'path';
 import * as os from 'os';
+import * as path from 'path';
+
 import { v4 as uuidv4 } from 'uuid';
 
 import type {
@@ -612,6 +613,66 @@ export class TemplateStorageService {
           features: {
             toc: true,
             tocDepth: 3,
+            pageNumbers: true,
+            anchorLinks: false,
+            anchorDepth: 2,
+          },
+        },
+      },
+
+      // 5. Meeting Notes
+      {
+        id: 'system-meeting-notes',
+        name: 'presets.meetingNotes.name',
+        description: 'presets.meetingNotes.description',
+        type: 'system',
+        metadata: {
+          version: '1.0.0',
+          author: 'MD2PDF',
+          createdAt: now,
+          updatedAt: now,
+          category: 'business',
+          tags: ['meeting', 'notes', 'minutes', 'business'],
+        },
+        config: {
+          pdf: {
+            format: 'A4',
+            orientation: 'portrait',
+            margin: {
+              top: '2cm',
+              right: '2cm',
+              bottom: '2cm',
+              left: '2cm',
+            },
+            displayHeaderFooter: true,
+          },
+          headerFooter: {
+            header: {
+              enabled: true,
+              content: '{{title}} | {{date}}',
+              height: '1.5cm',
+            },
+            footer: {
+              enabled: true,
+              content: 'Page {{pageNumber}} of {{totalPages}}',
+              height: '1.5cm',
+            },
+          },
+          styles: {
+            theme: 'clean',
+            fonts: {
+              body: 'Inter',
+              heading: 'Inter',
+              code: 'Monaco',
+            },
+            colors: {},
+            codeBlock: {
+              theme: 'github',
+            },
+          },
+          features: {
+            toc: true,
+            tocDepth: 2,
             pageNumbers: true,
             anchorLinks: false,
             anchorDepth: 2,

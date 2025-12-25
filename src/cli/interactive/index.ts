@@ -532,6 +532,21 @@ export class InteractiveMode {
         const headerContent = template.config.headerFooter.header.content || '';
         const footerContent = template.config.headerFooter.footer.content || '';
 
+        // Parse header content for placeholders
+        const headerHasDate =
+          headerContent.includes('{{date}}') ||
+          headerContent.includes('{{time}}');
+        const headerHasPageNumber = headerContent.includes('{{pageNumber}}');
+
+        // Parse footer content for placeholders
+        const footerHasDate =
+          footerContent.includes('{{date}}') ||
+          footerContent.includes('{{time}}');
+        const footerHasPageNumber =
+          footerContent.includes('{{pageNumber}}') ||
+          footerContent.includes('{{totalPages}}') ||
+          template.config.features.pageNumbers;
+
         headersFootersConfig = {
           header: {
             enabled: template.config.headerFooter.header.enabled,
@@ -543,14 +558,14 @@ export class InteractiveMode {
               alignment: 'left' as const,
             },
             pageNumber: {
-              enabled: false,
-              mode: 'none' as const,
-              alignment: 'left' as const,
+              enabled: headerHasPageNumber,
+              mode: headerHasPageNumber ? ('show' as const) : ('none' as const),
+              alignment: 'right' as const,
             },
             dateTime: {
-              enabled: false,
-              mode: 'none' as const,
-              alignment: 'left' as const,
+              enabled: headerHasDate,
+              mode: headerHasDate ? ('date-iso' as const) : ('none' as const),
+              alignment: 'right' as const,
             },
             copyright: {
               enabled: false,
@@ -588,21 +603,21 @@ export class InteractiveMode {
           footer: {
             enabled: template.config.headerFooter.footer.enabled,
             title: {
-              enabled: false,
-              mode: 'none' as const,
-              alignment: 'right' as const,
+              enabled: footerContent.includes('{{title}}'),
+              mode: footerContent.includes('{{title}}')
+                ? ('metadata' as const)
+                : ('none' as const),
+              alignment: 'left' as const,
             },
             pageNumber: {
-              enabled: template.config.features.pageNumbers,
-              mode: template.config.features.pageNumbers
-                ? ('show' as const)
-                : ('none' as const),
+              enabled: footerHasPageNumber,
+              mode: footerHasPageNumber ? ('show' as const) : ('none' as const),
               alignment: 'right' as const,
             },
             dateTime: {
-              enabled: false,
-              mode: 'none' as const,
-              alignment: 'right' as const,
+              enabled: footerHasDate,
+              mode: footerHasDate ? ('date-iso' as const) : ('none' as const),
+              alignment: 'left' as const,
             },
             copyright: {
               enabled: false,
