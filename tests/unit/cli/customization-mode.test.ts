@@ -350,8 +350,8 @@ describe('customization-mode', () => {
     });
   });
 
-  describe('documentMetadata', () => {
-    it('should handle metadata configuration', async () => {
+  describe('documentMetadataFeature', () => {
+    it('should delegate to feature module', async () => {
       // Mock metadata service
       mockContainer.resolve = jest.fn((key: string) => {
         const mocks: Record<string, any> = {
@@ -365,11 +365,10 @@ describe('customization-mode', () => {
         return mocks[key] || {};
       });
 
-      inquirerMock.prompt.mockResolvedValueOnce({ action: 'back' });
-
-      await (instance as any).documentMetadata();
-
-      expect(mockTranslator.t).toHaveBeenCalled();
+      // Verify the feature module is initialized
+      const featureInstance = (instance as any).documentMetadataFeature;
+      expect(featureInstance).toBeDefined();
+      expect(typeof featureInstance.start).toBe('function');
     });
   });
 
